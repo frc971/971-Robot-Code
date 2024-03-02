@@ -4,39 +4,62 @@ namespace frc971::control_loops::drivetrain {
 
 LocalizationUtils::LocalizationUtils(aos::EventLoop *event_loop)
     : event_loop_(event_loop),
-      output_fetcher_(event_loop->MakeFetcher<Output>("/drivetrain")),
+      output_fetcher_(event_loop->TryMakeFetcher<Output>("/drivetrain")),
       position_fetcher_(event_loop->TryMakeFetcher<Position>("/drivetrain")),
+      combined_fetcher_(
+          event_loop->TryMakeFetcher<RioLocalizerInputs>("/drivetrain")),
       clock_offset_fetcher_(
           event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/roborio/aos")) {}
 
+namespace {
+template <typename T>
+Eigen::Vector2d GetVoltage(T &fetcher, aos::monotonic_clock::time_point now) {
+  fetcher.Fetch();
+  // Determine if the robot is likely to be disabled currently.
+  const bool disabled =
+      (fetcher.get() == nullptr) ||
+      (fetcher.context().monotonic_event_time + std::chrono::milliseconds(10) <
+       now);
+  return disabled ? Eigen::Vector2d::Zero()
+                  : Eigen::Vector2d{fetcher->left_voltage(),
+                                    fetcher->right_voltage()};
+}
+}  // namespace
 Eigen::Vector2d LocalizationUtils::VoltageOrZero(
     aos::monotonic_clock::time_point now) {
-  output_fetcher_.Fetch();
-  // Determine if the robot is likely to be disabled currently.
-  const bool disabled = (output_fetcher_.get() == nullptr) ||
-                        (output_fetcher_.context().monotonic_event_time +
-                             std::chrono::milliseconds(10) <
-                         now);
-  return disabled ? Eigen::Vector2d::Zero()
-                  : Eigen::Vector2d{output_fetcher_->left_voltage(),
-                                    output_fetcher_->right_voltage()};
+  if (output_fetcher_.valid()) {
+    return GetVoltage(output_fetcher_, now);
+  } else {
+    CHECK(combined_fetcher_.valid());
+    return GetVoltage(combined_fetcher_, now);
+  }
 }
+namespace {
+template <typename T>
+std::optional<Eigen::Vector2d> GetPosition(
+    T &fetcher, aos::monotonic_clock::time_point now) {
+  fetcher.Fetch();
+  const bool stale =
+      (fetcher.get() == nullptr) ||
+      (fetcher.context().monotonic_event_time + std::chrono::milliseconds(10) <
+       now);
+  return stale ? std::nullopt
+               : std::make_optional<Eigen::Vector2d>(fetcher->left_encoder(),
+                                                     fetcher->right_encoder());
+}
+}  // namespace
 
 std::optional<Eigen::Vector2d> LocalizationUtils::Encoders(
     aos::monotonic_clock::time_point now) {
-  CHECK(position_fetcher_.valid());
-  position_fetcher_.Fetch();
-  const bool stale = (position_fetcher_.get() == nullptr) ||
-                     (position_fetcher_.context().monotonic_event_time +
-                          std::chrono::milliseconds(10) <
-                      now);
-  return stale ? std::nullopt
-               : std::make_optional<Eigen::Vector2d>(
-                     position_fetcher_->left_encoder(),
-                     position_fetcher_->right_encoder());
+  if (position_fetcher_.valid()) {
+    return GetPosition(position_fetcher_, now);
+  } else {
+    CHECK(combined_fetcher_.valid());
+    return GetPosition(combined_fetcher_, now);
+  }
 }
 
 bool LocalizationUtils::MaybeInAutonomous() {

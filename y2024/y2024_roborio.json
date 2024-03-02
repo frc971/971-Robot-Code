@@ -222,6 +222,14 @@
       "source_node": "roborio",
       "frequency": 400,
       "max_size": 128,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.RioLocalizerInputs",
+      "source_node": "roborio",
+      "frequency": 400,
+      "max_size": 80,
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
@@ -241,18 +249,7 @@
       "source_node": "roborio",
       "frequency": 400,
       "max_size": 80,
-      "num_senders": 2,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "imu"
-      ],
-      "destination_nodes": [
-        {
-          "name": "imu",
-          "priority": 5,
-          "time_to_live": 5000000
-        }
-      ]
+      "num_senders": 2
     },
     {
       "name": "/drivetrain",

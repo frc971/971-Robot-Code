@@ -18,6 +18,7 @@
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
+#include "frc971/control_loops/drivetrain/rio_localizer_inputs_static.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 #include "frc971/control_loops/polytope.h"
@@ -191,6 +192,8 @@ class DrivetrainLoop
   bool has_been_enabled_ = false;
 
   aos::SendFailureCounter status_failure_counter_;
+  aos::Sender<::frc971::control_loops::drivetrain::RioLocalizerInputsStatic>
+      localizer_input_sender_;
 };
 
 }  // namespace frc971::control_loops::drivetrain

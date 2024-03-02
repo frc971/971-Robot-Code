@@ -13,6 +13,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
+        "//frc971/control_loops/drivetrain:rio_localizer_inputs_fbs",
         "//frc971/input:joystick_state_fbs",
         "//frc971/vision:calibration_fbs",
         "@org_tuxfamily_eigen//:eigen",

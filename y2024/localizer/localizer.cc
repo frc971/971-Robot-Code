@@ -406,11 +406,7 @@ void Localizer::HandleTarget(
   // the camera measurement and the current estimate of the
   // pose. This doesn't affect any of the math, it just makes the code a bit
   // more convenient to write given the Correct() interface we already have.
-  observations_.CorrectKnownH(
-      Eigen::Vector3d::Zero(), &U,
-      Corrector(state_at_capture.value(), H_field_target, H_robot_camera,
-                H_camera_target),
-      R, t_);
+  observations_.CorrectKnownH(Eigen::Vector3d::Zero(), &U, corrector, R, t_);
   ++total_accepted_targets_;
   ++cameras_.at(camera_index).total_accepted_targets;
   VLOG(1) << "new state " << ekf_.X_hat().topRows<3>().transpose();

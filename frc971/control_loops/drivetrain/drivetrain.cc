@@ -350,7 +350,11 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_openloop_(dt_config_, filters_.kf()),
       dt_closedloop_(dt_config_, filters_.kf(), localizer),
       dt_spline_(dt_config_),
-      dt_line_follow_(dt_config_, localizer->target_selector()) {
+      dt_line_follow_(dt_config_, localizer->target_selector()),
+      localizer_input_sender_(
+          event_loop->TryMakeSender<
+              frc971::control_loops::drivetrain::RioLocalizerInputsStatic>(
+              "/drivetrain")) {
   event_loop->SetRuntimeRealtimePriority(30);
   for (size_t ii = 0; ii < trajectory_fetchers_.size(); ++ii) {
     trajectory_fetchers_[ii].fetcher =
@@ -612,6 +616,17 @@ void DrivetrainLoop::RunIteration(
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
+  }
+
+  if (localizer_input_sender_.valid()) {
+    auto localizer_input_builder = localizer_input_sender_.MakeStaticBuilder();
+    localizer_input_builder->set_left_encoder(position->left_encoder());
+    localizer_input_builder->set_right_encoder(position->right_encoder());
+    if (output) {
+      localizer_input_builder->set_left_voltage(output_struct.left_voltage);
+      localizer_input_builder->set_right_voltage(output_struct.right_voltage);
+    }
+    localizer_input_builder.CheckOk(localizer_input_builder.Send());
   }
 }
 

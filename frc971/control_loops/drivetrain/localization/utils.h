@@ -7,6 +7,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
+#include "frc971/control_loops/drivetrain/rio_localizer_inputs_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/vision/calibration_generated.h"
@@ -50,6 +51,8 @@ class LocalizationUtils {
   aos::EventLoop *const event_loop_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   aos::Fetcher<frc971::control_loops::drivetrain::Position> position_fetcher_;
+  aos::Fetcher<frc971::control_loops::drivetrain::RioLocalizerInputs>
+      combined_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 };

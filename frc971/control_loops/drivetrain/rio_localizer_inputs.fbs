@@ -1,0 +1,12 @@
+namespace frc971.control_loops.drivetrain;
+
+// This combines the drivetrian Position and Output messages
+// to be forwarded to the imu orin.
+table RioLocalizerInputs {
+  left_voltage:double (id: 0);
+  right_voltage:double (id: 1);
+  left_encoder:double (id: 2);
+  right_encoder:double (id: 3);
+}
+
+root_type RioLocalizerInputs;

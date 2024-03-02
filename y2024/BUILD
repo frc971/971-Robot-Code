@@ -154,6 +154,7 @@ aos_config(
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2024/control_loops/superstructure:superstructure_can_position_fbs",
         "//y2024/control_loops/superstructure:superstructure_output_fbs",
+        "//frc971/control_loops/drivetrain:rio_localizer_inputs_fbs",
         "//y2024/control_loops/superstructure:superstructure_position_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//y2024/control_loops/superstructure:superstructure_status_fbs",

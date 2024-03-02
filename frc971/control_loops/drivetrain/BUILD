@@ -30,6 +30,11 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
+    name = "rio_localizer_inputs_fbs",
+    srcs = ["rio_localizer_inputs.fbs"],
+)
+
+static_flatbuffer(
     name = "drivetrain_output_fbs",
     srcs = ["drivetrain_output.fbs"],
 )
@@ -455,6 +460,7 @@ cc_library(
         ":localizer",
         ":localizer_fbs",
         ":polydrivetrain",
+        ":rio_localizer_inputs_fbs",
         ":spline_goal_fbs",
         ":splinedrivetrain",
         ":ssdrivetrain",

@@ -6,6 +6,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/control_loops/drivetrain/rio_localizer_inputs_static.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/vision/target_map_generated.h"
 #include "frc971/vision/target_map_utils.h"
@@ -60,6 +61,10 @@ class LocalizerTest : public ::testing::Test {
         constants_fetcher_(imu_test_event_loop_.get()),
         output_sender_(
             roborio_test_event_loop_->MakeSender<Output>("/drivetrain")),
+        combined_sender_(
+            roborio_test_event_loop_->MakeSender<
+                frc971::control_loops::drivetrain::RioLocalizerInputsStatic>(
+                "/drivetrain")),
         target_sender_(
             camera_test_event_loop_->MakeSender<frc971::vision::TargetMap>(
                 "/camera0")),
@@ -80,6 +85,14 @@ class LocalizerTest : public ::testing::Test {
           output_builder.add_left_voltage(output_voltages_(0));
           output_builder.add_right_voltage(output_voltages_(1));
           builder.CheckOk(builder.Send(output_builder.Finish()));
+        }
+        {
+          auto builder = combined_sender_.MakeStaticBuilder();
+          builder->set_left_voltage(output_voltages_(0));
+          builder->set_right_voltage(output_voltages_(1));
+          builder->set_left_encoder(drivetrain_plant_.GetLeftPosition());
+          builder->set_right_encoder(drivetrain_plant_.GetRightPosition());
+          builder.CheckOk(builder.Send());
         }
       });
       roborio_test_event_loop_->OnRun([timer, this]() {
@@ -274,6 +287,8 @@ class LocalizerTest : public ::testing::Test {
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
 
   aos::Sender<Output> output_sender_;
+  aos::Sender<frc971::control_loops::drivetrain::RioLocalizerInputsStatic>
+      combined_sender_;
   aos::Sender<frc971::vision::TargetMap> target_sender_;
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
       control_sender_;
