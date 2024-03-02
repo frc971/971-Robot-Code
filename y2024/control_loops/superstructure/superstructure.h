@@ -71,6 +71,8 @@ class Superstructure
 
   SuperstructureState state_ = SuperstructureState::IDLE;
 
+  NoteGoal requested_note_goal_ = NoteGoal::NONE;
+
   aos::monotonic_clock::time_point transfer_start_time_ =
       aos::monotonic_clock::time_point::min();
 

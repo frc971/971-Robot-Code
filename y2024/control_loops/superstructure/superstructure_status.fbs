@@ -54,6 +54,15 @@ table AimerStatus {
   shot_distance:double (id: 3);
 }
 
+// Enum representing where the superstructure
+// is currently trying to send the note.
+enum NoteStatus : ubyte {
+  NONE = 0,
+  CATAPULT = 1,
+  AMP = 2,
+  TRAP = 3,
+}
+
 table ShooterStatus {
   // Estimated angle and angular velocitiy of the turret.
   turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 0);
@@ -145,7 +154,9 @@ table Status {
   extend_ready_for_transfer:bool (id: 12);
 
   // Indicates that the turret is in position to avoid the extend.
-  turret_ready_for_extend_move:bool (id: 13);
+  turret_ready_for_extend_move:bool (id: 13, deprecated);
+
+  uncompleted_note_goal:NoteStatus = NONE (id: 14);
 }
 
 root_type Status;

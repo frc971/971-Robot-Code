@@ -100,7 +100,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     if (state_ != SuperstructureState::READY &&
         state_ != SuperstructureState::FIRING) {
       state_ = SuperstructureState::READY;
-      catapult_requested_ = true;
+      requested_note_goal_ = NoteGoal::CATAPULT;
     }
   }
 
@@ -143,9 +143,39 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const bool extend_at_retracted = PositionNear(
       extend_.position(), extend_set_points->retracted(), kExtendThreshold);
 
+  // Check if the turret is at the position to accept the note from extend
+  const bool turret_ready_for_load =
+      PositionNear(shooter_.turret().estimated_position(),
+                   robot_constants_->common()->turret_loading_position(),
+                   kTurretLoadingThreshold);
+
+  // Check if turret is at the right position for the extend to extend.
+  const bool turret_ready_for_extend_move = PositionNear(
+      shooter_.turret().estimated_position(),
+      robot_constants_->common()->turret_avoid_extend_collision_position(),
+      kTurretLoadingThreshold);
+
+  // Check if the altitude is at the position to accept the note from
+  // extend
+  const bool altitude_ready_for_load =
+      PositionNear(shooter_.altitude().estimated_position(),
+                   robot_constants_->common()->altitude_loading_position(),
+                   kAltitudeLoadingThreshold);
+
+  // Check if the extend is at the position to load the catapult
+  const bool extend_ready_for_catapult_transfer = PositionNear(
+      extend_.position(), extend_set_points->catapult(), kExtendThreshold);
+
   // If true, the turret should be moved to the position to avoid collision with
   // the extend.
   bool move_turret_to_standby = false;
+
+  // Only update the reuested note goal to the first goal that is requested by
+  // the manipulator
+  if (unsafe_goal != nullptr && unsafe_goal->note_goal() != NoteGoal::NONE &&
+      requested_note_goal_ == NoteGoal::NONE) {
+    requested_note_goal_ = unsafe_goal->note_goal();
+  }
 
   // Superstructure state machine:
   // 1. IDLE. The intake is retracted and there is no note in the robot.
@@ -170,9 +200,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // 7. FIRING. The note is being fired, either from the extend or the catapult.
   // Switch state back to IDLE when the note is fired.
 
-  std::optional<bool> turret_ready_for_extend_move;
   switch (state_) {
     case SuperstructureState::IDLE:
+      requested_note_goal_ = NoteGoal::NONE;
+
       if (unsafe_goal != nullptr &&
           unsafe_goal->intake_goal() == IntakeGoal::INTAKE &&
           extend_at_retracted) {
@@ -212,104 +243,63 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         state_ = SuperstructureState::IDLE;
       }
 
-      if (catapult_requested_ == true) {
-        state_ = SuperstructureState::MOVING;
-        break;
-      }
-
-      if (unsafe_goal != nullptr &&
-          unsafe_goal->note_goal() != NoteGoal::NONE) {
-        // If the goal is AMP or TRAP, check if the turret is in a position to
-        // avoid collision when the extend moves.
-        if (unsafe_goal->note_goal() == NoteGoal::AMP ||
-            unsafe_goal->note_goal() == NoteGoal::TRAP) {
-          turret_ready_for_extend_move =
-              PositionNear(shooter_.turret().estimated_position(),
-                           robot_constants_->common()
-                               ->turret_avoid_extend_collision_position(),
-                           kTurretLoadingThreshold);
+      switch (requested_note_goal_) {
+        case NoteGoal::NONE:
+          break;
+        case NoteGoal::CATAPULT:
+          state_ = SuperstructureState::MOVING;
+          transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
+          break;
+        case NoteGoal::TRAP:
+          [[fallthrough]];
+        case NoteGoal::AMP:
           transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
-
-          if (turret_ready_for_extend_move.value()) {
+          if (turret_ready_for_extend_move) {
             state_ = SuperstructureState::MOVING;
           } else {
             move_turret_to_standby = true;
           }
-        } else if (unsafe_goal->note_goal() == NoteGoal::CATAPULT) {
-          // If catapult is requested, switch to MOVING state
-          state_ = SuperstructureState::MOVING;
-        }
+          break;
       }
       extend_goal = ExtendStatus::RETRACTED;
-      if (!catapult_requested_ && unsafe_goal != nullptr &&
-          unsafe_goal->note_goal() == NoteGoal::CATAPULT) {
-        catapult_requested_ = true;
-      }
       break;
     case SuperstructureState::MOVING:
       transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
-
-      if (catapult_requested_) {
-        extend_goal = ExtendStatus::CATAPULT;
-
-        // Check if the extend is at the position to load the catapult
-        bool extend_ready_for_catapult_transfer =
-            PositionNear(extend_.position(), extend_set_points->catapult(),
-                         kExtendThreshold);
-
-        // Check if the turret is at the position to accept the note from extend
-        bool turret_ready_for_load =
-            PositionNear(shooter_.turret().estimated_position(),
-                         robot_constants_->common()->turret_loading_position(),
-                         kTurretLoadingThreshold);
-
-        // Check if the altitude is at the position to accept the note from
-        // extend
-        bool altitude_ready_for_load = PositionNear(
-            shooter_.altitude().estimated_position(),
-            robot_constants_->common()->altitude_loading_position(),
-            kAltitudeLoadingThreshold);
-
-        if (extend_ready_for_catapult_transfer && turret_ready_for_load &&
-            altitude_ready_for_load) {
-          state_ = SuperstructureState::LOADING_CATAPULT;
-        }
-      } else {
-        if (unsafe_goal != nullptr) {
-          switch (unsafe_goal->note_goal()) {
-            case NoteGoal::AMP:
-              extend_goal = ExtendStatus::AMP;
-              move_turret_to_standby = true;
-              // Check if the extend is at the AMP position and if it is
-              // switch to READY state
-              if (PositionNear(extend_.position(), extend_set_points->amp(),
-                               kExtendThreshold)) {
-                state_ = SuperstructureState::READY;
-              }
-              break;
-            case NoteGoal::TRAP:
-              extend_goal = ExtendStatus::TRAP;
-              move_turret_to_standby = true;
-              // Check if the extend is at the TRAP position and if it is
-              // switch to READY state
-              if (PositionNear(extend_.position(), extend_set_points->trap(),
-                               kExtendThreshold)) {
-                state_ = SuperstructureState::READY;
-              }
-              break;
-            case NoteGoal::NONE:
-              extend_goal = ExtendStatus::RETRACTED;
-              move_turret_to_standby = true;
-              if (extend_at_retracted) {
-                state_ = SuperstructureState::LOADED;
-              }
-              break;
-            case NoteGoal::CATAPULT:
-              catapult_requested_ = true;
-              extend_goal = ExtendStatus::CATAPULT;
-              break;
+      switch (requested_note_goal_) {
+        case NoteGoal::NONE:
+          extend_goal = ExtendStatus::RETRACTED;
+          move_turret_to_standby = true;
+          if (extend_at_retracted) {
+            state_ = SuperstructureState::LOADED;
           }
-        }
+          break;
+        case NoteGoal::CATAPULT:
+          extend_goal = ExtendStatus::CATAPULT;
+          if (extend_ready_for_catapult_transfer && turret_ready_for_load &&
+              altitude_ready_for_load) {
+            state_ = SuperstructureState::LOADING_CATAPULT;
+          }
+          break;
+        case NoteGoal::TRAP:
+          extend_goal = ExtendStatus::TRAP;
+          move_turret_to_standby = true;
+          // Check if the extend is at the TRAP position and if it is
+          // switch to READY state
+          if (PositionNear(extend_.position(), extend_set_points->trap(),
+                           kExtendThreshold)) {
+            state_ = SuperstructureState::READY;
+          }
+          break;
+        case NoteGoal::AMP:
+          extend_goal = ExtendStatus::AMP;
+          move_turret_to_standby = true;
+          // Check if the extend is at the AMP position and if it is
+          // switch to READY state
+          if (PositionNear(extend_.position(), extend_set_points->amp(),
+                           kExtendThreshold)) {
+            state_ = SuperstructureState::READY;
+          }
+          break;
       }
 
       extend_moving = true;
@@ -332,55 +322,55 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         state_ = SuperstructureState::FIRING;
       }
 
-      if (catapult_requested_) {
-        extend_goal = ExtendStatus::CATAPULT;
-      } else {
-        if (unsafe_goal != nullptr) {
-          if (unsafe_goal->note_goal() == NoteGoal::AMP) {
-            extend_goal = ExtendStatus::AMP;
-            move_turret_to_standby = true;
-          } else if (unsafe_goal->note_goal() == NoteGoal::TRAP) {
-            extend_goal = ExtendStatus::TRAP;
-            move_turret_to_standby = true;
-          } else {
-            extend_goal = ExtendStatus::RETRACTED;
-            extend_moving = true;
-            state_ = SuperstructureState::MOVING;
-          }
-        }
+      switch (requested_note_goal_) {
+        case NoteGoal::NONE:
+          extend_goal = ExtendStatus::RETRACTED;
+          extend_moving = true;
+          state_ = SuperstructureState::MOVING;
+          break;
+        case NoteGoal::CATAPULT:
+          extend_goal = ExtendStatus::CATAPULT;
+          break;
+        case NoteGoal::TRAP:
+          extend_goal = ExtendStatus::TRAP;
+          move_turret_to_standby = true;
+          break;
+        case NoteGoal::AMP:
+          extend_goal = ExtendStatus::AMP;
+          move_turret_to_standby = true;
+          break;
       }
-
       break;
     case SuperstructureState::FIRING:
-      if (catapult_requested_) {
-        extend_goal = ExtendStatus::CATAPULT;
+      switch (requested_note_goal_) {
+        case NoteGoal::NONE:
 
-        // Reset the state to IDLE when the game piece is fired from the
-        // catapult. We consider the game piece to be fired from the catapult
-        // when the catapultbeambreak is no longer triggered.
-        if (!position->catapult_beambreak()) {
-          state_ = SuperstructureState::IDLE;
-        }
-      } else {
-        move_turret_to_standby = true;
-        if (unsafe_goal != nullptr &&
-            unsafe_goal->note_goal() == NoteGoal::AMP) {
-          extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
-          extend_goal = ExtendStatus::AMP;
-        } else if (unsafe_goal != nullptr &&
-                   unsafe_goal->note_goal() == NoteGoal::TRAP) {
+          break;
+        case NoteGoal::CATAPULT:
+          extend_goal = ExtendStatus::CATAPULT;
+          // Reset the state to IDLE when the game piece is fired from the
+          // catapult. We consider the game piece to be fired from the catapult
+          // when the catapultbeambreak is no longer triggered.
+          if (!position->catapult_beambreak()) {
+            state_ = SuperstructureState::IDLE;
+          }
+          break;
+        case NoteGoal::TRAP:
           extend_roller_status = ExtendRollerStatus::SCORING_IN_TRAP;
           extend_goal = ExtendStatus::TRAP;
-        }
-
-        // Reset the state to IDLE when the game piece is fired from the extend.
-        // We consider the game piece to be fired from the extend when
-        // the extend beambreak is no longer triggered and the fire button is
-        // released.
-        if (!position->extend_beambreak() && unsafe_goal != nullptr &&
-            !unsafe_goal->fire()) {
-          state_ = SuperstructureState::IDLE;
-        }
+          if (!position->extend_beambreak() && unsafe_goal != nullptr &&
+              !unsafe_goal->fire()) {
+            state_ = SuperstructureState::IDLE;
+          }
+          break;
+        case NoteGoal::AMP:
+          extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
+          extend_goal = ExtendStatus::AMP;
+          if (!position->extend_beambreak() && unsafe_goal != nullptr &&
+              !unsafe_goal->fire()) {
+            state_ = SuperstructureState::IDLE;
+          }
+          break;
       }
       break;
   }
@@ -479,6 +469,23 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     case ExtendStatus::MOVING:
       // Should never happen
+      break;
+  }
+
+  NoteStatus uncompleted_note_goal_status = NoteStatus::NONE;
+
+  switch (requested_note_goal_) {
+    case NoteGoal::NONE:
+      uncompleted_note_goal_status = NoteStatus::NONE;
+      break;
+    case NoteGoal::CATAPULT:
+      uncompleted_note_goal_status = NoteStatus::CATAPULT;
+      break;
+    case NoteGoal::AMP:
+      uncompleted_note_goal_status = NoteStatus::AMP;
+      break;
+    case NoteGoal::TRAP:
+      uncompleted_note_goal_status = NoteStatus::TRAP;
       break;
   }
 
@@ -611,11 +618,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_extend_status(extend_status);
   status_builder.add_extend(extend_status_offset);
   status_builder.add_state(state_);
+  status_builder.add_uncompleted_note_goal(uncompleted_note_goal_status);
   status_builder.add_extend_ready_for_transfer(extend_at_retracted);
-  if (turret_ready_for_extend_move) {
-    status_builder.add_turret_ready_for_extend_move(
-        turret_ready_for_extend_move.value());
-  }
 
   (void)status->Send(status_builder.Finish());
 }

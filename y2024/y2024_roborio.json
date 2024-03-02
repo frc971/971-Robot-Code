@@ -128,7 +128,8 @@
       "source_node": "roborio",
       "frequency": 400,
       "max_size": 2048,
-      "num_senders": 2
+      "num_senders": 2,
+      "max_size": 1504
     },
     {
       "name": "/superstructure",

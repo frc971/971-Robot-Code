@@ -403,8 +403,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                 0.03);
 
     if (superstructure_goal_fetcher_->has_shooter_goal() &&
-        superstructure_goal_fetcher_->note_goal() != NoteGoal::AMP &&
-        superstructure_goal_fetcher_->note_goal() != NoteGoal::TRAP) {
+        superstructure_status_fetcher_->uncompleted_note_goal() !=
+            NoteStatus::AMP &&
+        superstructure_status_fetcher_->uncompleted_note_goal() !=
+            NoteStatus::TRAP) {
       if (superstructure_goal_fetcher_->shooter_goal()->has_turret_position() &&
           !superstructure_goal_fetcher_->shooter_goal()->auto_aim()) {
         EXPECT_NEAR(
@@ -414,8 +416,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             superstructure_status_fetcher_->shooter()->turret()->position(),
             0.001);
       }
-    } else if (superstructure_goal_fetcher_->note_goal() == NoteGoal::AMP ||
-               superstructure_goal_fetcher_->note_goal() == NoteGoal::TRAP) {
+    } else if (superstructure_status_fetcher_->uncompleted_note_goal() ==
+                   NoteStatus::AMP ||
+               superstructure_status_fetcher_->uncompleted_note_goal() ==
+                   NoteStatus::TRAP) {
       EXPECT_NEAR(
           simulated_robot_constants_->common()
               ->turret_avoid_extend_collision_position(),
@@ -465,18 +469,20 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                   superstructure_status_fetcher_->climber()->position(), 0.001);
     }
 
-    if (superstructure_goal_fetcher_->has_note_goal()) {
+    if (superstructure_status_fetcher_->has_uncompleted_note_goal()) {
       double set_point = simulated_robot_constants_->common()
                              ->extend_set_points()
                              ->retracted();
-      if (superstructure_goal_fetcher_->note_goal() == NoteGoal::TRAP) {
+      if (superstructure_status_fetcher_->uncompleted_note_goal() ==
+          NoteStatus::TRAP) {
         set_point =
             simulated_robot_constants_->common()->extend_set_points()->trap();
-      } else if (superstructure_goal_fetcher_->note_goal() == NoteGoal::AMP) {
+      } else if (superstructure_status_fetcher_->uncompleted_note_goal() ==
+                 NoteStatus::AMP) {
         set_point =
             simulated_robot_constants_->common()->extend_set_points()->amp();
-      } else if (superstructure_goal_fetcher_->note_goal() ==
-                 NoteGoal::CATAPULT) {
+      } else if (superstructure_status_fetcher_->uncompleted_note_goal() ==
+                 NoteStatus::CATAPULT) {
         set_point = simulated_robot_constants_->common()
                         ->extend_set_points()
                         ->catapult();
@@ -809,7 +815,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
   VerifyNearGoal();
 
   EXPECT_EQ(superstructure_status_fetcher_->state(),
-            SuperstructureState::LOADED);
+            SuperstructureState::READY);
 }
 
 // Tests that the loop zeroes when run for a while without a goal.
@@ -1321,6 +1327,9 @@ TEST_F(SuperstructureTest, Preloaded) {
 
   superstructure_status_fetcher_.Fetch();
   ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
+
+  LOG(INFO) << EnumNameNoteStatus(
+      superstructure_status_fetcher_->uncompleted_note_goal());
 
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::READY);
