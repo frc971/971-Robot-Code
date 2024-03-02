@@ -443,6 +443,7 @@
     {
       "name": "roborio_can_logger",
       "executable_name": "can_logger",
+      "autostart": false,
       "args": [
         "--poll"
       ],
