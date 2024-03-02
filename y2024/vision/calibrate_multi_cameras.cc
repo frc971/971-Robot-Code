@@ -44,11 +44,13 @@ DEFINE_string(target_type, "charuco_diamond",
               "Type of target being used [aruco, charuco, charuco_diamond]");
 DEFINE_int32(team_number, 0,
              "Required: Use the calibration for a node with this team number");
-DEFINE_bool(use_full_logs, false,
-            "If true, extract data from logs with images");
 DEFINE_uint64(
     wait_key, 1,
     "Time in ms to wait between images (0 to wait indefinitely until click)");
+
+DEFINE_bool(robot, false,
+            "If true we're calibrating extrinsics for the robot, use the "
+            "correct node path for the robot.");
 
 DECLARE_int32(min_target_id);
 DECLARE_int32(max_target_id);
@@ -78,7 +80,7 @@ using frc971::vision::VisualizeRobot;
 namespace calibration = frc971::vision::calibration;
 
 static constexpr double kImagePeriodMs =
-    1.0 / 30.0 * 1000.0;  // Image capture period in ms
+    1.0 / 60.0 * 1000.0;  // Image capture period in ms
 
 // Change reference frame from camera to robot
 Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
@@ -96,6 +98,38 @@ struct TimestampedPiDetection {
   std::string pi_name;
   int board_id;
 };
+
+struct CameraNode {
+  std::string node_name;
+  int camera_number;
+
+  inline const std::string camera_name() const {
+    return "/" + node_name + "/camera" + std::to_string(camera_number);
+  }
+};
+
+std::vector<CameraNode> CreateNodeList() {
+  std::vector<CameraNode> list;
+
+  list.push_back({.node_name = "orin1", .camera_number = 0});
+  list.push_back({.node_name = "orin1", .camera_number = 1});
+  list.push_back({.node_name = "imu", .camera_number = 0});
+  list.push_back({.node_name = "imu", .camera_number = 1});
+
+  return list;
+}
+
+std::vector<CameraNode> node_list(CreateNodeList());
+std::map<std::string, int> CreateOrderingMap() {
+  std::map<std::string, int> map;
+
+  for (uint i = 0; i < node_list.size(); i++) {
+    map.insert({node_list.at(i).camera_name(), i});
+  }
+
+  return map;
+}
+std::map<std::string, int> ordering_map(CreateOrderingMap());
 
 TimestampedPiDetection last_observation;
 std::vector<std::pair<TimestampedPiDetection, TimestampedPiDetection>>
@@ -252,11 +286,14 @@ void HandlePoses(cv::Mat rgb_image,
         kImagePeriodMs / 2.0 * 1000000.0) {
       // Sort by pi numbering, since this is how we will handle them
       std::pair<TimestampedPiDetection, TimestampedPiDetection> new_pair;
-      if (last_observation.pi_name < new_observation.pi_name) {
+      if (ordering_map.at(last_observation.pi_name) <
+          ordering_map.at(new_observation.pi_name)) {
         new_pair = std::pair(last_observation, new_observation);
-      } else if (last_observation.pi_name > new_observation.pi_name) {
+      } else if (ordering_map.at(last_observation.pi_name) >
+                 ordering_map.at(new_observation.pi_name)) {
         new_pair = std::pair(new_observation, last_observation);
       }
+
       detection_list.push_back(new_pair);
 
       // This bit is just for visualization and checking purposes-- use the
@@ -363,7 +400,7 @@ void HandleTargetMap(const TargetMap &map,
 
     Eigen::Affine3d H_camera_target =
         PoseUtils::Pose3dToAffine3d(target_pose.pose);
-    VLOG(2) << node_name << " saw target " << target_pose.id
+    VLOG(1) << node_name << " saw target " << target_pose.id
             << " from TargetMap at timestamp " << distributed_eof
             << " with pose = " << H_camera_target.matrix();
   }
@@ -424,16 +461,16 @@ void ExtrinsicsMain(int argc, char *argv[]) {
 
   reader.RemapLoggedChannel("/imu/constants", "y2024.Constants");
   reader.RemapLoggedChannel("/orin1/constants", "y2024.Constants");
+  if (FLAGS_robot) {
+    reader.RemapLoggedChannel("/roborio/constants", "y2024.Constants");
+  }
   reader.Register();
 
   y2024::SendSimulationConstants(reader.event_loop_factory(), FLAGS_team_number,
                                  FLAGS_constants_path);
 
   VLOG(1) << "Using target type " << FLAGS_target_type;
-  std::vector<std::string> node_list;
-  node_list.push_back("imu");
-  node_list.push_back("orin1");
-  std::vector<std::string> camera_list;
+
   std::vector<const calibration::CameraCalibration *> calibration_list;
 
   std::vector<std::unique_ptr<aos::EventLoop>> detection_event_loops;
@@ -441,87 +478,49 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   std::vector<frc971::vision::ImageCallback *> image_callbacks;
   std::vector<Eigen::Affine3d> default_extrinsics;
 
-  for (uint i = 0; i < node_list.size(); i++) {
-    std::string node = node_list[i];
-    const aos::Node *pi =
-        aos::configuration::GetNode(reader.configuration(), node.c_str());
+  for (const CameraNode &camera_node : node_list) {
+    const aos::Node *pi = aos::configuration::GetNode(
+        reader.configuration(), camera_node.node_name.c_str());
 
-    for (const std::string camera : {"/camera0", "/camera1"}) {
-      std::string camera_name = "/" + node + camera;
-      camera_list.push_back(camera_name);
+    detection_event_loops.emplace_back(
+        reader.event_loop_factory()->MakeEventLoop(
+            (camera_node.camera_name() + "_detection").c_str(), pi));
+    frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
+        detection_event_loops.back().get());
+    // Get the calibration for this orin/camera pair
+    const calibration::CameraCalibration *calibration =
+        y2024::vision::FindCameraCalibration(constants_fetcher.constants(),
+                                             camera_node.node_name,
+                                             camera_node.camera_number);
+    calibration_list.push_back(calibration);
 
-      detection_event_loops.emplace_back(
-          reader.event_loop_factory()->MakeEventLoop(
-              (camera_name + "_detection").c_str(), pi));
+    // Extract the extrinsics from the calibration, and save as "defaults"
+    cv::Mat extrinsics_cv =
+        frc971::vision::CameraExtrinsics(calibration).value();
+    Eigen::Matrix4d extrinsics_matrix;
+    cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
+    const auto ext_H_robot_pi = Eigen::Affine3d(extrinsics_matrix);
+    default_extrinsics.emplace_back(ext_H_robot_pi);
 
-      frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
-          detection_event_loops.back().get());
+    VLOG(1) << "Got extrinsics for " << camera_node.camera_name() << " as\n"
+            << default_extrinsics.back().matrix();
 
-      // Get the calibration for this orin/camera pair
-      int camera_id = std::stoi(camera.substr(7, 1));
-      const calibration::CameraCalibration *calibration =
-          y2024::vision::FindCameraCalibration(constants_fetcher.constants(),
-                                               node, camera_id);
-      calibration_list.push_back(calibration);
+    detection_event_loops.back()->MakeWatcher(
+        camera_node.camera_name(),
+        [&reader, &detection_event_loops, camera_node](const TargetMap &map) {
+          aos::distributed_clock::time_point pi_distributed_time =
+              reader.event_loop_factory()
+                  ->GetNodeEventLoopFactory(
+                      detection_event_loops.back().get()->node())
+                  ->ToDistributedClock(aos::monotonic_clock::time_point(
+                      aos::monotonic_clock::duration(
+                          map.monotonic_timestamp_ns())));
 
-      // Extract the extrinsics from the calibration, and save as "defaults"
-      cv::Mat extrinsics_cv =
-          frc971::vision::CameraExtrinsics(calibration).value();
-      Eigen::Matrix4d extrinsics_matrix;
-      cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
-      const auto ext_H_robot_pi = Eigen::Affine3d(extrinsics_matrix);
-      default_extrinsics.emplace_back(ext_H_robot_pi);
-
-      VLOG(1) << "Got extrinsics for " << node << ", " << camera << " as\n"
-              << default_extrinsics.back().matrix();
-
-      // If we've got full logs, we need to set up a charuco/april tag extractor
-      // nd a call back to handle the data
-      if (FLAGS_use_full_logs) {
-        frc971::vision::TargetType target_type =
-            frc971::vision::TargetTypeFromString(FLAGS_target_type);
-        frc971::vision::CharucoExtractor *charuco_ext =
-            new frc971::vision::CharucoExtractor(calibration, target_type);
-        charuco_extractors.emplace_back(charuco_ext);
-
-        LOG(INFO) << "Set up image callback for node " << node << ", camera "
-                  << camera;
-        frc971::vision::ImageCallback *image_callback =
-            new frc971::vision::ImageCallback(
-                detection_event_loops[i].get(), camera_name,
-                [&reader, &charuco_extractors, &detection_event_loops,
-                 &node_list, i](cv::Mat rgb_image,
-                                const aos::monotonic_clock::time_point eof) {
-                  aos::distributed_clock::time_point pi_distributed_time =
-                      reader.event_loop_factory()
-                          ->GetNodeEventLoopFactory(
-                              detection_event_loops[i].get()->node())
-                          ->ToDistributedClock(eof);
-                  HandleImage(detection_event_loops[i].get(), rgb_image, eof,
-                              pi_distributed_time, *charuco_extractors[i],
-                              node_list[i]);
-                });
-
-        image_callbacks.emplace_back(image_callback);
-      } else {
-        detection_event_loops[i]->MakeWatcher(
-            camera, [&reader, &detection_event_loops, camera_name,
-                     i](const TargetMap &map) {
-              aos::distributed_clock::time_point pi_distributed_time =
-                  reader.event_loop_factory()
-                      ->GetNodeEventLoopFactory(
-                          detection_event_loops[i]->node())
-                      ->ToDistributedClock(aos::monotonic_clock::time_point(
-                          aos::monotonic_clock::duration(
-                              map.monotonic_timestamp_ns())));
-
-              HandleTargetMap(map, pi_distributed_time, camera_name);
-            });
-        LOG(INFO) << "Created watcher for using the detection event loop for "
-                  << node << " with i = " << i << " and size "
-                  << detection_event_loops.size() << " and camera " << camera;
-      }
-    }
+          HandleTargetMap(map, pi_distributed_time, camera_node.camera_name());
+        });
+    LOG(INFO) << "Created watcher for using the detection event loop for "
+              << camera_node.camera_name() << " and size "
+              << detection_event_loops.size();
   }
 
   reader.event_loop_factory()->Run();
@@ -532,26 +531,27 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       << "Must have at least one view of both boards";
   int base_target_id = two_board_extrinsics_list[0].board_id;
   VLOG(1) << "Base id for two_board_extrinsics_list is " << base_target_id;
-  for (auto camera : camera_list) {
+
+  for (auto camera_node : node_list) {
     std::vector<TimestampedPiDetection> pose_list;
     for (auto ext : two_board_extrinsics_list) {
       CHECK_EQ(base_target_id, ext.board_id)
           << " All boards should have same reference id";
-      if (ext.pi_name == camera) {
+      if (ext.pi_name == camera_node.camera_name()) {
         pose_list.push_back(ext);
       }
     }
     Eigen::Affine3d avg_pose_from_pi = ComputeAveragePose(pose_list);
-    VLOG(1) << "Estimate from " << camera << " with " << pose_list.size()
-            << " observations is:\n"
+    VLOG(1) << "Estimate from " << camera_node.camera_name() << " with "
+            << pose_list.size() << " observations is:\n"
             << avg_pose_from_pi.matrix();
   }
   Eigen::Affine3d H_boardA_boardB_avg =
       ComputeAveragePose(two_board_extrinsics_list);
   // TODO: Should probably do some outlier rejection
-  LOG(INFO) << "Estimate of two board pose using all nodes with "
-            << two_board_extrinsics_list.size() << " observations is:\n"
-            << H_boardA_boardB_avg.matrix() << "\n";
+  VLOG(1) << "Estimate of two board pose using all nodes with "
+          << two_board_extrinsics_list.size() << " observations is:\n"
+          << H_boardA_boardB_avg.matrix() << "\n";
 
   // Next, compute the relative camera poses
   LOG(INFO) << "Got " << detection_list.size() << " extrinsic observations";
@@ -559,14 +559,14 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   std::vector<Eigen::Affine3d> updated_extrinsics;
   // Use the first node's extrinsics as our base, and fix from there
   updated_extrinsics.push_back(default_extrinsics[0]);
-  LOG(INFO) << "Default extrinsic for camera " << camera_list[0] << " is "
-            << default_extrinsics[0].matrix();
-  for (uint i = 0; i < camera_list.size() - 1; i++) {
+  LOG(INFO) << "Default extrinsic for camera " << node_list.at(0).camera_name()
+            << " is " << default_extrinsics[0].matrix();
+  for (uint i = 0; i < node_list.size() - 1; i++) {
     H_camera1_camera2_list.clear();
     // Go through the list, and find successive pairs of cameras
     for (auto [pose1, pose2] : detection_list) {
-      if ((pose1.pi_name == camera_list[i]) &&
-          (pose2.pi_name == camera_list[i + 1])) {
+      if ((pose1.pi_name == node_list.at(i).camera_name()) &&
+          (pose2.pi_name == node_list.at(i + 1).camera_name())) {
         Eigen::Affine3d H_camera1_boardA = pose1.H_camera_target;
         // If pose1 isn't referenced to base_target_id, correct that
         if (pose1.board_id != base_target_id) {
@@ -614,12 +614,14 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     // TODO<Jim>: If we don't get any matches, we could just use default
     // extrinsics
     CHECK(H_camera1_camera2_list.size() > 0)
-        << "Failed with zero poses for node " << camera_list[i];
+        << "Failed with zero poses for node " << node_list.at(i).camera_name()
+        << " and " << node_list.at(i + 1).camera_name();
     if (H_camera1_camera2_list.size() > 0) {
       Eigen::Affine3d H_camera1_camera2_avg =
           ComputeAveragePose(H_camera1_camera2_list);
-      LOG(INFO) << "From " << camera_list[i] << " to " << camera_list[i + 1]
-                << " found " << H_camera1_camera2_list.size()
+      LOG(INFO) << "From " << node_list.at(i).camera_name() << " to "
+                << node_list.at(i + 1).camera_name() << " found "
+                << H_camera1_camera2_list.size()
                 << " observations, and the average pose is:\n"
                 << H_camera1_camera2_avg.matrix();
       Eigen::Affine3d H_camera1_camera2_default =
@@ -641,10 +643,11 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       Eigen::Affine3d next_extrinsic =
           updated_extrinsics.back() * H_camera1_camera2_avg;
       updated_extrinsics.push_back(next_extrinsic);
-      LOG(INFO) << "Default Extrinsic for " << camera_list[i + 1] << " is \n"
-                << default_extrinsics[i + 1].matrix();
-      LOG(INFO) << "--> Updated Extrinsic for " << camera_list[i + 1]
+      LOG(INFO) << "Default Extrinsic for " << node_list.at(i + 1).camera_name()
                 << " is \n"
+                << default_extrinsics[i + 1].matrix();
+      LOG(INFO) << "--> Updated Extrinsic for "
+                << node_list.at(i + 1).camera_name() << " is \n"
                 << next_extrinsic.matrix();
 
       // Wirte out this extrinsic to a file
@@ -684,11 +687,11 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       // calibration filename
       const std::string calibration_filename =
           FLAGS_output_folder +
-          absl::StrFormat("/calibration_orin-%d-%s-%d_cam-%s_%s.json",
-                          FLAGS_team_number, camera_list[i + 1].substr(5, 1),
-                          calibration_list[i + 1]->camera_number(),
-                          calibration_list[i + 1]->camera_id()->data(),
-                          time_ss.str());
+          absl::StrFormat(
+              "/calibration_orin-%d-%s-%d_cam-%s_%s.json", FLAGS_team_number,
+              node_list.at(i + 1).camera_name().substr(5, 1),
+              calibration_list[i + 1]->camera_number(),
+              calibration_list[i + 1]->camera_id()->data(), time_ss.str());
 
       LOG(INFO) << calibration_filename << " -> "
                 << aos::FlatbufferToJson(merged_calibration,

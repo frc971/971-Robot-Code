@@ -44,7 +44,7 @@ DEFINE_double(
 DEFINE_string(mcap_output_path, "", "Log to output.");
 DEFINE_string(output_dir, "y2024/vision/maps",
               "Directory to write solved target map to");
-DEFINE_double(pause_on_distance, 5.0,
+DEFINE_double(pause_on_distance, 2.0,
               "Pause if two consecutive implied robot positions differ by more "
               "than this many meters");
 DEFINE_string(orin, "orin1",
@@ -98,7 +98,6 @@ class TargetMapperReplay {
   void HandleAprilTags(const TargetMap &map,
                        aos::distributed_clock::time_point node_distributed_time,
                        std::string camera_name, Eigen::Affine3d extrinsics);
-
   // Gets images from the given pi and passes apriltag positions to
   // HandleAprilTags()
   void HandleNodeCaptures(
@@ -324,7 +323,6 @@ void TargetMapperReplay::HandleAprilTags(
       last_H_world_robot_ = H_world_robot;
     }
   }
-
   if (FLAGS_visualize_solver) {
     if (drew) {
       // Collect all the labels from a given node, and add the text
