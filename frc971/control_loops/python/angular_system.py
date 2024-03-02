@@ -23,6 +23,7 @@ class AngularSystemParams(object):
                  kalman_r_position,
                  radius=None,
                  dt=0.00505,
+                 enable_voltage_error=True,
                  delayed_u=0):
         """Constructs an AngularSystemParams object.
 
@@ -43,6 +44,7 @@ class AngularSystemParams(object):
         self.kalman_r_position = kalman_r_position
         self.radius = radius
         self.dt = dt
+        self.enable_voltage_error = enable_voltage_error
         self.delayed_u = delayed_u
 
 
@@ -185,7 +187,8 @@ class IntegralAngularSystem(AngularSystem):
         self.K_unaugmented = self.K
         self.K = numpy.matrix(numpy.zeros((1, 3)))
         self.K[0, 0:2] = self.K_unaugmented
-        self.K[0, 2] = 1
+        if params.enable_voltage_error:
+            self.K[0, 2] = 1
 
         self.Kff = numpy.concatenate(
             (self.Kff, numpy.matrix(numpy.zeros((1, 1)))), axis=1)
