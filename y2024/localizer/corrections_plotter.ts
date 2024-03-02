@@ -91,7 +91,7 @@ export function plotVision(conn: Connection, element: Element): void {
     xPlot.addMessageLine(targets[ii], ['implied_robot_x'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
   xPlot.addMessageLine(localizerOutput, ['x'])
       .setDrawLine(false)
@@ -106,7 +106,7 @@ export function plotVision(conn: Connection, element: Element): void {
     correctionXPlot.addMessageLine(targets[ii], ['correction_x'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
 
   const yPlot = aosPlotter.addPlot(element);
@@ -118,7 +118,7 @@ export function plotVision(conn: Connection, element: Element): void {
     yPlot.addMessageLine(targets[ii], ['implied_robot_y'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
   yPlot.addMessageLine(localizerOutput, ['y'])
       .setDrawLine(false)
@@ -133,7 +133,7 @@ export function plotVision(conn: Connection, element: Element): void {
     correctionYPlot.addMessageLine(targets[ii], ['correction_y'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
 
   const thetaPlot = aosPlotter.addPlot(element);
@@ -145,7 +145,7 @@ export function plotVision(conn: Connection, element: Element): void {
     thetaPlot.addMessageLine(targets[ii], ['implied_robot_theta'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
   thetaPlot.addMessageLine(localizerOutput, ['theta'])
       .setDrawLine(false)
@@ -160,7 +160,7 @@ export function plotVision(conn: Connection, element: Element): void {
     aprilTagPlot.addMessageLine(targets[ii], ['april_tag'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
 
   const imageAgePlot = aosPlotter.addPlot(element);
@@ -172,6 +172,6 @@ export function plotVision(conn: Connection, element: Element): void {
     imageAgePlot.addMessageLine(targets[ii], ['image_age_sec'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
-        .setLabel('pi' + (ii + 1));
+        .setLabel(targetLabels[ii]);
   }
 }

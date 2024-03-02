@@ -21,6 +21,29 @@
  ],
  "calibration_timestamp": 1708833147338466592,
  "camera_id": "24-07",
- "camera_number": 0,
+ "camera_number": 1,
+ "fixed_extrinsics": {
+    "data": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+ },
  "reprojection_error": 1.362672
 }
