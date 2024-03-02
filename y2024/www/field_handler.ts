@@ -81,7 +81,7 @@ export class FieldHandler {
   private catapult: HTMLElement =
     (document.getElementById('catapult') as HTMLElement);
   private catapultAbs: HTMLElement =
-    (document.getElementById('turret_abs') as HTMLElement);
+    (document.getElementById('catapult_abs') as HTMLElement);
   private catapultPot: HTMLElement =
     (document.getElementById('catapult_pot') as HTMLElement);
 
