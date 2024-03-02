@@ -493,7 +493,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
     std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
-        12, false, "rio", &rio_signal_registry,
+        12, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->extend_stator_current_limit(),
         current_limits->extend_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
@@ -543,12 +543,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     }
 
     for (auto talonfx :
-         {intake_pivot, turret, altitude, catapult_one, catapult_two}) {
+         {intake_pivot, turret, altitude, catapult_one, catapult_two, extend}) {
       canivore_talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx : {intake_roller, transfer_roller, climber, extend,
-                         extend_roller, retention_roller}) {
+    for (auto talonfx : {intake_roller, transfer_roller, climber, extend_roller,
+                         retention_roller}) {
       rio_talonfxs.push_back(talonfx);
     }
 
@@ -569,8 +569,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         canivore_talonfxs,
         [drivetrain_talonfxs, &intake_pivot, &turret, &altitude, &catapult_one,
          &catapult_two, &drivetrain_can_position_sender,
-         &superstructure_can_position_sender](
-            ctre::phoenix::StatusCode status) {
+         &superstructure_can_position_sender,
+         &extend](ctre::phoenix::StatusCode status) {
           aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
               StaticBuilder drivetrain_can_builder =
                   drivetrain_can_position_sender.MakeStaticBuilder();
@@ -609,6 +609,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           catapult_two->SerializePosition(
               superstructure_can_builder->add_catapult_two(),
               control_loops::superstructure::catapult::kOutputRatio);
+          extend->SerializePosition(superstructure_can_builder->add_extend(),
+                                    superstructure::extend::kOutputRatio);
 
           superstructure_can_builder->set_timestamp(
               intake_pivot->GetTimestamp());
@@ -625,7 +627,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader rio_can_sensor_reader(
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talonfxs,
-        [&intake_roller, &transfer_roller, &climber, &extend, &extend_roller,
+        [&intake_roller, &transfer_roller, &climber, &extend_roller,
          &retention_roller, &superstructure_rio_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>::
@@ -640,8 +642,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               constants::Values::kIntakeRollerOutputRatio);
           climber->SerializePosition(superstructure_can_builder->add_climber(),
                                      superstructure::climber::kOutputRatio);
-          extend->SerializePosition(superstructure_can_builder->add_extend(),
-                                    superstructure::extend::kOutputRatio);
           extend_roller->SerializePosition(
               superstructure_can_builder->add_extend_roller(),
               constants::Values::kExtendRollerOutputRatio);
