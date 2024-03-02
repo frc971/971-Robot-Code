@@ -1123,7 +1123,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	log.Println("Got actions for match", request.MatchNumber(), "team", request.TeamNumber(), "from", username)
+	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "from", username)
 
 	for i := 0; i < request.ActionsListLength(); i++ {
 
@@ -1194,7 +1194,7 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	log.Println("Got actions for match", request.MatchNumber(), "team", request.TeamNumber(), "from", username)
+	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "from", username)
 
 	for i := 0; i < request.ActionsListLength(); i++ {
 
