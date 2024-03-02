@@ -82,7 +82,7 @@ std::string CsvPath(Args &&...args) {
 }
 }  // namespace
 
-size_t NewtonSolver::solve_number_ = 0u;
+std::atomic<size_t> NewtonSolver::solve_number_ = 0u;
 
 NewtonSolver::NewtonSolver() : my_solve_number_(solve_number_++) {}
 
