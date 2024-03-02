@@ -256,9 +256,6 @@ void HandlePoses(cv::Mat rgb_image,
         new_pair = std::pair(last_observation, new_observation);
       } else if (last_observation.pi_name > new_observation.pi_name) {
         new_pair = std::pair(new_observation, last_observation);
-      } else {
-        LOG(WARNING) << "Got 2 observations in a row from same pi. Probably "
-                        "not too much of an issue???";
       }
       detection_list.push_back(new_pair);
 
@@ -434,8 +431,8 @@ void ExtrinsicsMain(int argc, char *argv[]) {
 
   VLOG(1) << "Using target type " << FLAGS_target_type;
   std::vector<std::string> node_list;
-  node_list.push_back("orin1");
   node_list.push_back("imu");
+  node_list.push_back("orin1");
   std::vector<std::string> camera_list;
   std::vector<const calibration::CameraCalibration *> calibration_list;
 
@@ -449,13 +446,14 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     const aos::Node *pi =
         aos::configuration::GetNode(reader.configuration(), node.c_str());
 
-    detection_event_loops.emplace_back(
-        reader.event_loop_factory()->MakeEventLoop(
-            (node + "_detection").c_str(), pi));
-
     for (const std::string camera : {"/camera0", "/camera1"}) {
       std::string camera_name = "/" + node + camera;
       camera_list.push_back(camera_name);
+
+      detection_event_loops.emplace_back(
+          reader.event_loop_factory()->MakeEventLoop(
+              (camera_name + "_detection").c_str(), pi));
+
       frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
           detection_event_loops.back().get());
 
