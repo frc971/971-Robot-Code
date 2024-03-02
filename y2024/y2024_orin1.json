@@ -344,7 +344,6 @@
       "name": "argus_camera0",
       "executable_name": "argus_camera",
       "args": [
-          "--enable_ftrace",
           "--camera=0",
           "--channel=/camera0",
       ],
@@ -357,7 +356,6 @@
       "name": "argus_camera1",
       "executable_name": "argus_camera",
       "args": [
-          "--enable_ftrace",
           "--camera=1",
           "--channel=/camera1",
       ],
