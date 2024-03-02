@@ -22,6 +22,11 @@ constexpr double kAltitudeLoadingThreshold = 0.01;
 constexpr std::chrono::milliseconds kExtraIntakingTime =
     std::chrono::milliseconds(500);
 
+// Exit catapult loading state after this much time if we never
+// trigger any beambreaks.
+constexpr std::chrono::milliseconds kMaxCatapultLoadingTime =
+    std::chrono::milliseconds(3000);
+
 namespace y2024::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
@@ -262,6 +267,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           extend_goal_location = ExtendStatus::CATAPULT;
           if (extend_ready_for_catapult_transfer && turret_ready_for_load &&
               altitude_ready_for_load) {
+            loading_catapult_start_time_ = timestamp;
             state_ = SuperstructureState::LOADING_CATAPULT;
           }
           break;
@@ -291,6 +297,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       extend_moving = false;
       extend_goal_location = ExtendStatus::CATAPULT;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_CATAPULT;
+
+      // If we lost the game piece, reset state to idle.
+      if (((timestamp - loading_catapult_start_time_) >
+           kMaxCatapultLoadingTime) &&
+          !position->catapult_beambreak() && !position->extend_beambreak()) {
+        state_ = SuperstructureState::IDLE;
+      }
 
       // Switch to READY state when the catapult beambreak is triggered
       if (position->catapult_beambreak()) {
