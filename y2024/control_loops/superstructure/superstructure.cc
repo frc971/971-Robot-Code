@@ -228,7 +228,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                            robot_constants_->common()
                                ->turret_avoid_extend_collision_position(),
                            kTurretLoadingThreshold);
-          transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
+          transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
 
           if (turret_ready_for_extend_move.value()) {
             state_ = SuperstructureState::MOVING;
@@ -247,7 +247,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
       break;
     case SuperstructureState::MOVING:
-      transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
+      transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
 
       if (catapult_requested_) {
         extend_goal = ExtendStatus::CATAPULT;
@@ -419,6 +419,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       output_struct.transfer_roller_voltage = robot_constants_->common()
                                                   ->transfer_roller_voltages()
                                                   ->transfer_out();
+      break;
+    case TransferRollerStatus::EXTEND_MOVING:
+      output_struct.transfer_roller_voltage = robot_constants_->common()
+                                                  ->transfer_roller_voltages()
+                                                  ->extend_moving();
       break;
   }
 

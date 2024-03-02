@@ -400,7 +400,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     EXPECT_NEAR(set_point,
                 superstructure_status_fetcher_->intake_pivot()->position(),
-                0.015);
+                0.03);
 
     if (superstructure_goal_fetcher_->has_shooter_goal() &&
         superstructure_goal_fetcher_->note_goal() != NoteGoal::AMP &&

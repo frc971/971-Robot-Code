@@ -39,11 +39,11 @@
     "catapult_constants": {
       {% set _ = catapult_zero.update(
           {
-              "measured_absolute_position" : 2.8342002173381
+              "measured_absolute_position" : 0.741253220327565
           }
       ) %}
       "zeroing_constants": {{ catapult_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 8.54315997763211 - 0.189243355470936 + 0.148884325074452 }}
+      "potentiometer_offset": {{ 9.41595277209342 }}
     },
     "altitude_constants": {
       {% set _ = altitude_zero.update(
@@ -57,20 +57,20 @@
     "turret_constants": {
       {% set _ = turret_zero.update(
           {
-              "measured_absolute_position" : 0.143052032770428
+              "measured_absolute_position" : 0.138686395993591
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -6.26847263904651 + 0.00657023078932103 }}
+      "potentiometer_offset": {{ -6.47164779835404 }}
     },
     "extend_constants": {
       {% set _ = extend_zero.update(
           {
-              "measured_absolute_position" : 0.0223997590714573
+              "measured_absolute_position" : 0.0314256815130559
           }
       ) %}
       "zeroing_constants": {{ extend_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 }}
+      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 }}
     }
   },
   {% include 'y2024/constants/common.json' %}

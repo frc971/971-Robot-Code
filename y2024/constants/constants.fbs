@@ -89,8 +89,13 @@ table CurrentLimits {
 }
 
 table TransferRollerVoltages {
+  // Voltage to apply while intaking the game piece.
   transfer_in:double (id: 0);
+  // Voltage to apply while spitting the game piece.
   transfer_out:double (id: 1);
+  // Voltage to apply while the extend is moving and dragging the
+  // game piece out of the rollers.
+  extend_moving:double (id: 2);
 }
 
 table ExtendRollerVoltages {

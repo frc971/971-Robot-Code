@@ -75,6 +75,7 @@ enum TransferRollerStatus : ubyte {
     NONE = 0,
     TRANSFERING_IN = 1,
     TRANSFERING_OUT = 2,
+    EXTEND_MOVING = 3,
 }
 
 // Contains status of extend rollers

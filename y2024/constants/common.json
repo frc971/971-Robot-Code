@@ -24,7 +24,7 @@
   ],
   "intake_roller_voltages": {
     "spitting": -4.0,
-    "intaking": 6.0
+    "intaking": 12.0
   },
   "intake_pivot_set_points": {
     "extended": -0.03,
@@ -32,14 +32,14 @@
   },
   "intake_pivot": {
     "zeroing_voltage": 3.0,
-    "operating_voltage": 6.0,
+    "operating_voltage": 12.0,
     "zeroing_profile_params": {
       "max_velocity": 0.5,
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 2.0,
-      "max_acceleration": 5.0
+      "max_velocity": 4.0,
+      "max_acceleration": 10.0
     },
     "range": {
         "lower_hard": -0.2,
@@ -53,8 +53,8 @@
   // TODO: (niko) update the stator and supply current limits for the intake
   "current_limits": {
     // Values in amps
-    "intake_pivot_supply_current_limit": 5,
-    "intake_pivot_stator_current_limit": 40,
+    "intake_pivot_supply_current_limit": 40,
+    "intake_pivot_stator_current_limit": 100,
     "intake_roller_supply_current_limit": 20,
     "intake_roller_stator_current_limit": 50,
     "transfer_roller_supply_current_limit": 20,
@@ -79,11 +79,12 @@
     "retention_roller_supply_current_limit": 10
   },
   "transfer_roller_voltages": {
-    "transfer_in": 6.0,
-    "transfer_out": -4.0
+    "transfer_in": 12.0,
+    "transfer_out": -4.0,
+    "extend_moving": 4.0
   },
   "extend_roller_voltages": {
-    "scoring": 6.0,
+    "scoring": 12.0,
     "reversing": -4.0
   },
   "climber_set_points": {
