@@ -49,80 +49,23 @@ TEST_F(CANTranslatorTest, CheckValidFrame) {
           aos::monotonic_clock::epoch() + std::chrono::seconds(0),
           aos::realtime_clock::epoch() + std::chrono::seconds(100));
   can_frame_event_loop_->OnRun([this] {
-    aos::Sender<frc971::can_logger::CanFrameStatic>::StaticBuilder
-        can_frame_builder = can_frame_sender_.MakeStaticBuilder();
+    std::array<uint8_t, 64> full_frame{
+        226, 100, 108, 8,   152, 40,  202, 121, 202, 121, 202, 121, 85,
+        85,  81,  189, 0,   0,   8,   189, 85,  213, 127, 191, 12,  189,
+        34,  187, 255, 219, 220, 59,  147, 173, 5,   61,  88,  68,  205,
+        188, 230, 92,  24,  189, 235, 1,   127, 191, 210, 7,   34,  54,
+        86,  103, 133, 186, 100, 205, 101, 185, 29,  26,  26,  0};
+    for (size_t i = 0; i < 8; ++i) {
+      aos::Sender<frc971::can_logger::CanFrameStatic>::StaticBuilder
+          can_frame_builder = can_frame_sender_.MakeStaticBuilder();
 
-    can_frame_builder->set_can_id(1);
-    can_frame_builder->set_realtime_timestamp_ns(100e9 + 971);
-    auto can_data = can_frame_builder->add_data();
-    CHECK(can_data->reserve(sizeof(uint8_t) * 64));
+      can_frame_builder->set_can_id(i + 1);
+      can_frame_builder->set_realtime_timestamp_ns(100e9 + 971);
+      auto can_data = can_frame_builder->add_data();
+      CHECK(can_data->FromData(full_frame.data() + i * 8, 8));
 
-    CHECK(can_data->emplace_back(226));
-    CHECK(can_data->emplace_back(100));
-    CHECK(can_data->emplace_back(108));
-    CHECK(can_data->emplace_back(8));
-    CHECK(can_data->emplace_back(152));
-    CHECK(can_data->emplace_back(40));
-    CHECK(can_data->emplace_back(202));
-    CHECK(can_data->emplace_back(121));
-    CHECK(can_data->emplace_back(202));
-    CHECK(can_data->emplace_back(121));
-    CHECK(can_data->emplace_back(202));
-    CHECK(can_data->emplace_back(121));
-    CHECK(can_data->emplace_back(85));
-    CHECK(can_data->emplace_back(85));
-    CHECK(can_data->emplace_back(81));
-    CHECK(can_data->emplace_back(189));
-    CHECK(can_data->emplace_back(0));
-    CHECK(can_data->emplace_back(0));
-    CHECK(can_data->emplace_back(8));
-    CHECK(can_data->emplace_back(189));
-    CHECK(can_data->emplace_back(85));
-    CHECK(can_data->emplace_back(213));
-    CHECK(can_data->emplace_back(127));
-    CHECK(can_data->emplace_back(191));
-    CHECK(can_data->emplace_back(12));
-    CHECK(can_data->emplace_back(189));
-    CHECK(can_data->emplace_back(34));
-    CHECK(can_data->emplace_back(187));
-    CHECK(can_data->emplace_back(255));
-    CHECK(can_data->emplace_back(219));
-    CHECK(can_data->emplace_back(220));
-    CHECK(can_data->emplace_back(59));
-    CHECK(can_data->emplace_back(147));
-    CHECK(can_data->emplace_back(173));
-    CHECK(can_data->emplace_back(5));
-    CHECK(can_data->emplace_back(61));
-    CHECK(can_data->emplace_back(88));
-    CHECK(can_data->emplace_back(68));
-    CHECK(can_data->emplace_back(205));
-    CHECK(can_data->emplace_back(188));
-    CHECK(can_data->emplace_back(230));
-    CHECK(can_data->emplace_back(92));
-    CHECK(can_data->emplace_back(24));
-    CHECK(can_data->emplace_back(189));
-    CHECK(can_data->emplace_back(235));
-    CHECK(can_data->emplace_back(1));
-    CHECK(can_data->emplace_back(127));
-    CHECK(can_data->emplace_back(191));
-    CHECK(can_data->emplace_back(210));
-    CHECK(can_data->emplace_back(7));
-    CHECK(can_data->emplace_back(34));
-    CHECK(can_data->emplace_back(54));
-    CHECK(can_data->emplace_back(86));
-    CHECK(can_data->emplace_back(103));
-    CHECK(can_data->emplace_back(133));
-    CHECK(can_data->emplace_back(186));
-    CHECK(can_data->emplace_back(100));
-    CHECK(can_data->emplace_back(205));
-    CHECK(can_data->emplace_back(101));
-    CHECK(can_data->emplace_back(185));
-    CHECK(can_data->emplace_back(29));
-    CHECK(can_data->emplace_back(26));
-    CHECK(can_data->emplace_back(26));
-    CHECK(can_data->emplace_back(0));
-
-    can_frame_builder.CheckOk(can_frame_builder.Send());
+      can_frame_builder.CheckOk(can_frame_builder.Send());
+    }
   });
 
   event_loop_factory_.RunFor(std::chrono::milliseconds(200));
@@ -132,7 +75,7 @@ TEST_F(CANTranslatorTest, CheckValidFrame) {
 
   ASSERT_FALSE(can_translator_status_fetcher_->invalid_packet_count() > 0);
   ASSERT_FALSE(can_translator_status_fetcher_->invalid_can_id_count() > 0);
-  EXPECT_EQ(can_translator_status_fetcher_->valid_packet_count(), 1);
+  EXPECT_EQ(can_translator_status_fetcher_->valid_packet_count(), 8);
 
   EXPECT_EQ(dual_imu_fetcher_->board_timestamp_us(), 141321442);
   EXPECT_EQ(dual_imu_fetcher_->packet_counter(), 10392);
@@ -177,12 +120,11 @@ TEST_F(CANTranslatorTest, CheckInvalidFrame) {
     aos::Sender<frc971::can_logger::CanFrameStatic>::StaticBuilder
         can_frame_builder = can_frame_sender_.MakeStaticBuilder();
 
-    can_frame_builder->set_can_id(2);
+    can_frame_builder->set_can_id(10);
     can_frame_builder->set_realtime_timestamp_ns(100);
     auto can_data = can_frame_builder->add_data();
-    CHECK(can_data->reserve(sizeof(uint8_t) * 1));
-
-    CHECK(can_data->emplace_back(0));
+    CHECK(can_data->reserve(sizeof(uint8_t) * 8));
+    can_data->resize(8);
 
     can_frame_builder.CheckOk(can_frame_builder.Send());
   });
@@ -192,6 +134,6 @@ TEST_F(CANTranslatorTest, CheckInvalidFrame) {
   ASSERT_TRUE(can_translator_status_fetcher_.Fetch());
   ASSERT_FALSE(dual_imu_fetcher_.Fetch());
 
-  EXPECT_EQ(can_translator_status_fetcher_->invalid_packet_count(), 1);
+  EXPECT_EQ(can_translator_status_fetcher_->invalid_packet_count(), 0);
   EXPECT_EQ(can_translator_status_fetcher_->invalid_can_id_count(), 1);
 }

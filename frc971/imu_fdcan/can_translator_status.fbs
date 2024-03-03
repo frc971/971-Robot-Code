@@ -7,6 +7,8 @@ table CanTranslatorStatus {
   invalid_packet_count: uint64 (id: 1);
   // Number of times we've gotten an invalid can id
   invalid_can_id_count: uint64 (id: 2);
+  // Number of times that we have observed an out of order can id.
+  out_of_order_count: uint64 (id: 3);
 }
 
 root_type CanTranslatorStatus;

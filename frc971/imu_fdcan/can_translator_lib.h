@@ -21,9 +21,13 @@ class CANTranslator {
   aos::Sender<imu::DualImuStatic> dual_imu_sender_;
   aos::Sender<imu::CanTranslatorStatusStatic> can_translator_status_sender_;
 
+  std::array<uint8_t, 64> current_frame_;
+  std::array<bool, 8> packets_arrived_;
+
   uint64_t valid_packet_count_ = 0;
   uint64_t invalid_packet_count_ = 0;
   uint64_t invalid_can_id_count_ = 0;
+  uint64_t out_of_order_count_ = 0;
 };
 
 }  // namespace frc971::imu_fdcan

@@ -274,7 +274,8 @@
       "name": "/can/cana",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "imu",
-      "frequency": 6000,
+      "frequency": 9000,
+      "channel_storage_duration": 7000000000,
       "num_senders": 2,
       "max_size": 200
     },
@@ -385,7 +386,7 @@
       "name": "can_translator",
       "executable_name": "can_translator",
       "args": [
-          "--channel=/can/canb"
+          "--channel=/can/cana"
       ],
       "nodes": [
         "imu"
