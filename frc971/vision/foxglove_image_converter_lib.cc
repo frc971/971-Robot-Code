@@ -6,6 +6,8 @@
 DEFINE_int32(jpeg_quality, 60,
              "Compression quality of JPEGs, 0-100; lower numbers mean lower "
              "quality and resulting image sizes.");
+DEFINE_uint32(max_period_ms, 100,
+              "Fastest period at which to convert images, to limit CPU usage.");
 
 namespace frc971::vision {
 std::string_view ExtensionForCompression(ImageCompression compression) {
@@ -49,9 +51,13 @@ FoxgloveImageConverter::FoxgloveImageConverter(aos::EventLoop *event_loop,
           event_loop_, input_channel,
           [this, compression](const cv::Mat image,
                               const aos::monotonic_clock::time_point eof) {
-            auto builder = sender_.MakeBuilder();
-            builder.CheckOk(builder.Send(
-                CompressImage(image, eof, builder.fbb(), compression)));
+            if (event_loop_->monotonic_now() >
+                (std::chrono::milliseconds(FLAGS_max_period_ms) +
+                 sender_.monotonic_sent_time())) {
+              auto builder = sender_.MakeBuilder();
+              builder.CheckOk(builder.Send(
+                  CompressImage(image, eof, builder.fbb(), compression)));
+            }
           }),
       sender_(
           event_loop_->MakeSender<foxglove::CompressedImage>(output_channel)) {}
