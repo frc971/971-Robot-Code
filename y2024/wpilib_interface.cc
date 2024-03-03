@@ -53,6 +53,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024/constants.h"
 #include "y2024/constants/constants_generated.h"
+#include "y2024/control_loops/superstructure/led_indicator.h"
 #include "y2024/control_loops/superstructure/superstructure_can_position_static.h"
 #include "y2024/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_position_generated.h"
@@ -730,6 +731,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_output_event_loop);
+
+    // Thread 6
+    // Setup led_indicator
+    ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
+    led_indicator_event_loop.set_name("LedIndicator");
+    control_loops::superstructure::LedIndicator led_indicator(
+        &led_indicator_event_loop);
+    AddLoop(&led_indicator_event_loop);
 
     RunLoops();
   }
