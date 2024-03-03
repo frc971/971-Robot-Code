@@ -11,7 +11,7 @@
       "type": "aos.timing.Report",
       "source_node": "orin1",
       "frequency": 50,
-      "num_senders": 20,
+      "num_senders": 30,
       "max_size": 8192
     },
     {
@@ -267,7 +267,14 @@
       "name": "irq_affinity",
       "executable_name": "irq_affinity",
       "user": "root",
-      "args": ["--user=pi"],
+      "args": ["--user=pi", "--irq_config=orin_irq_config.json"],
+      "nodes": [
+          "orin1"
+      ]
+    },
+    {
+      "name": "filesystem_monitor",
+      "executable_name": "filesystem_monitor",
       "nodes": [
           "orin1"
       ]

@@ -9,6 +9,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
+#include "aos/util/filesystem_generated.h"
 #include "frc971/input/joystick_state_generated.h"
 
 DEFINE_string(config, "aos_config.json", "Config file to use.");
@@ -48,10 +49,13 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
+  aos::Fetcher<aos::util::FilesystemStatus> filesystem_status =
+      event_loop.MakeFetcher<aos::util::FilesystemStatus>("/aos");
+
   bool logging = false;
   bool enabled = false;
   aos::monotonic_clock::time_point last_disable_time =
-      event_loop.monotonic_now();
+      aos::monotonic_clock::min_time;
   aos::monotonic_clock::time_point last_rotation_time =
       event_loop.monotonic_now();
   aos::logger::Logger logger(&event_loop);
@@ -76,13 +80,36 @@ int main(int argc, char *argv[]) {
   event_loop.MakeWatcher(
       "/imu/aos", [&](const aos::JoystickState &joystick_state) {
         const auto timestamp = event_loop.context().monotonic_event_time;
+        filesystem_status.Fetch();
+
         // Store the last time we got disabled
         if (enabled && !joystick_state.enabled()) {
           last_disable_time = timestamp;
         }
         enabled = joystick_state.enabled();
 
-        if (!logging && enabled) {
+        bool enough_space = true;
+
+        if (filesystem_status.get() != nullptr) {
+          enough_space = false;
+          for (const aos::util::Filesystem *fs :
+               *filesystem_status->filesystems()) {
+            CHECK(fs->has_path());
+            if (fs->path()->string_view() == "/") {
+              if (fs->free_space() > 50ull * 1024ull * 1024ull * 1024ull) {
+                enough_space = true;
+              }
+            }
+          }
+        }
+
+        const bool should_be_logging =
+            (enabled ||
+             timestamp < last_disable_time + std::chrono::duration<double>(
+                                                 FLAGS_disabled_time)) &&
+            enough_space;
+
+        if (!logging && should_be_logging) {
           auto log_namer = MakeLogNamer(&event_loop);
           if (log_namer == nullptr) {
             return;
@@ -93,9 +120,7 @@ int main(int argc, char *argv[]) {
           logger.StartLogging(std::move(log_namer));
           logging = true;
           last_rotation_time = event_loop.monotonic_now();
-        } else if (logging && !enabled &&
-                   (timestamp - last_disable_time) >
-                       std::chrono::duration<double>(FLAGS_disabled_time)) {
+        } else if (logging && !should_be_logging) {
           // Stop logging if we've been disabled for a non-negligible amount of
           // time
           LOG(INFO) << "Stopping logging";

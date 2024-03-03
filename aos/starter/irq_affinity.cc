@@ -109,7 +109,7 @@ struct ParsedKThreadConfig {
     }
   }
 
-  void ConfigurePid(pid_t pid) const {
+  void ConfigurePid(pid_t pid, std::string_view name) const {
     struct sched_param param;
     param.sched_priority = priority;
     int new_scheduler;
@@ -126,7 +126,11 @@ struct ParsedKThreadConfig {
       default:
         LOG(FATAL) << "Unknown scheduler";
     }
-    PCHECK(sched_setscheduler(pid, new_scheduler, &param) == 0);
+    PCHECK(sched_setscheduler(pid, new_scheduler, &param) == 0)
+        << ", Failed to set " << name << "(" << pid << ") to "
+        << (new_scheduler == SCHED_OTHER
+                ? "SCHED_OTHER"
+                : (new_scheduler == SCHED_RR ? "SCHED_RR" : "SCHED_FIFO"));
 
     if (scheduler == starter::Scheduler::SCHEDULER_OTHER && nice.has_value()) {
       PCHECK(setpriority(PRIO_PROCESS, pid, *nice) == 0)
@@ -172,14 +176,14 @@ class IrqAffinity {
         if (reading.second.kthread) {
           for (const ParsedKThreadConfig &match : kthreads_) {
             if (match.Matches(reading.second.name)) {
-              match.ConfigurePid(reading.first);
+              match.ConfigurePid(reading.first, reading.second.name);
               break;
             }
           }
         } else {
           for (const ParsedKThreadConfig &match : threads_) {
             if (match.Matches(reading.second.name)) {
-              match.ConfigurePid(reading.first);
+              match.ConfigurePid(reading.first, reading.second.name);
               break;
             }
           }

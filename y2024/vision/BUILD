@@ -60,6 +60,7 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//aos/events/logging:log_writer",
         "//aos/logging:log_namer",
+        "//aos/util:filesystem_fbs",
         "//frc971/input:joystick_state_fbs",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",

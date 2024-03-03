@@ -328,11 +328,6 @@
       "priority": 51
     },
     {
-      "name": "ivc/*.rtc",
-      "scheduler": "SCHEDULER_FIFO",
-      "nice": 49
-    },
-    {
       "name": "nvgpu_nvs_ga10b",
       "scheduler": "SCHEDULER_OTHER",
       "affinity": [2, 3],

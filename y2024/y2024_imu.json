@@ -41,8 +41,8 @@
       "type": "aos.timing.Report",
       "source_node": "imu",
       "frequency": 50,
-      "num_senders": 20,
-      "max_size": 6184
+      "num_senders": 30,
+      "max_size": 8192
     },
     {
       "name": "/imu/aos",
@@ -343,6 +343,22 @@
       ],
       "nodes": [
         "imu"
+      ]
+    },
+    {
+      "name": "irq_affinity",
+      "executable_name": "irq_affinity",
+      "user": "root",
+      "args": ["--user=pi", "--irq_config=orin_irq_config.json"],
+      "nodes": [
+          "imu"
+      ]
+    },
+    {
+      "name": "filesystem_monitor",
+      "executable_name": "filesystem_monitor",
+      "nodes": [
+          "imu"
       ]
     },
     {

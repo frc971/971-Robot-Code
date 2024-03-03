@@ -55,6 +55,7 @@ robot_downloader(
         "//aos/util:foxglove_websocket",
         "//frc971/image_streamer:image_streamer",
         "//frc971/vision:intrinsics_calibration",
+        "//aos/util:filesystem_monitor",
         "//y2024/vision:viewer",
         "//y2024/constants:constants_sender",
         "//y2024/localizer:localizer_main",
@@ -63,7 +64,7 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        "//frc971/rockpi:rockpi_config.json",
+        "//frc971/orin:orin_irq_config.json",
         "//y2024/constants:constants.json",
         "//y2024/vision:image_streamer_start",
         "//y2024/www:www_files",

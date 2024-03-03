@@ -1,5 +1,7 @@
 load("//frc971:halide.bzl", "halide_library")
 
+exports_files(["orin_irq_config.json"])
+
 halide_library(
     name = "ycbcr",
     src = "crcv_generator.cc",
