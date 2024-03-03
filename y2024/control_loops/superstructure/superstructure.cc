@@ -615,6 +615,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_state(state_);
   status_builder.add_uncompleted_note_goal(uncompleted_note_goal_status);
   status_builder.add_extend_ready_for_transfer(extend_at_retracted);
+  status_builder.add_extend_at_retracted(extend_at_retracted);
+  status_builder.add_turret_ready_for_load(turret_ready_for_load);
+  status_builder.add_altitude_ready_for_load(altitude_ready_for_load);
+  status_builder.add_extend_ready_for_catapult_transfer(
+      extend_ready_for_catapult_transfer);
+  status_builder.add_extend_beambreak(position->extend_beambreak());
+  status_builder.add_catapult_beambreak(position->catapult_beambreak());
 
   (void)status->Send(status_builder.Finish());
 }

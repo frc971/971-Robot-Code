@@ -157,6 +157,23 @@ table Status {
   turret_ready_for_extend_move:bool (id: 13, deprecated);
 
   uncompleted_note_goal:NoteStatus = NONE (id: 14);
+
+  // Indicates if the extend is close enough to the retracted position to be
+  // considered ready to accept note from the transfer rollers.
+  extend_at_retracted:bool (id: 15);
+
+  // Indicates if the turret is at the position to accept the note from extend
+  turret_ready_for_load:bool (id: 16);
+
+  // Indicates if the altitude is at the position to accept the note from
+  // extend
+  altitude_ready_for_load:bool (id: 17);
+
+  // Indicates if the extend is at the position to load the catapult
+  extend_ready_for_catapult_transfer:bool (id: 18);
+
+  extend_beambreak:bool (id: 19);
+  catapult_beambreak:bool (id: 20);
 }
 
 root_type Status;
