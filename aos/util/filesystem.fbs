@@ -1,0 +1,23 @@
+namespace aos.util;
+
+table Filesystem {
+  // Mountpoint of the filesystem in question.
+  path: string (id: 0);
+  // Type (e.g., "ext4") of the filesystem.
+  type: string (id: 1);
+  // Total size of the filesystem, in bytes.
+  overall_space: uint64 (id: 2);
+  // Total free space on the filesystem, in bytes.
+  free_space: uint64 (id: 3);
+  // Total number of inodes on this filesystem.
+  overall_inodes: uint64 (id: 4);
+  // Total free inodes on this filesystem.
+  free_inodes: uint64 (id: 5);
+}
+
+// Table to track the current state of a compute platform's filesystem.
+table FilesystemStatus {
+  filesystems: [Filesystem] (id: 0);
+}
+
+root_type FilesystemStatus;

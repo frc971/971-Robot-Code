@@ -2,6 +2,12 @@
   "channels": [
     {
       "name": "/imu/aos",
+      "type": "aos.util.FilesystemStatus",
+      "source_node": "imu",
+      "frequency": 2
+    },
+    {
+      "name": "/imu/aos",
       "type": "aos.JoystickState",
       "source_node": "imu",
       "frequency": 100,

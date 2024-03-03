@@ -578,3 +578,25 @@ cc_test(
         "//aos/testing:path",
     ],
 )
+
+static_flatbuffer(
+    name = "filesystem_fbs",
+    srcs = ["filesystem.fbs"],
+)
+
+cc_static_flatbuffer(
+    name = "filesystem_schema",
+    function = "aos::util::FilesystemStatusSchema",
+    target = ":filesystem_fbs_reflection_out",
+)
+
+cc_binary(
+    name = "filesystem_monitor",
+    srcs = ["filesystem_monitor.cc"],
+    deps = [
+        ":filesystem_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_google_absl//absl/strings",
+    ],
+)

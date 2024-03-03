@@ -2,6 +2,12 @@
   "channels": [
     {
       "name": "/orin1/aos",
+      "type": "aos.util.FilesystemStatus",
+      "source_node": "orin1",
+      "frequency": 2
+    },
+    {
+      "name": "/orin1/aos",
       "type": "aos.timing.Report",
       "source_node": "orin1",
       "frequency": 50,
