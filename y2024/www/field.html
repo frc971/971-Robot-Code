@@ -1,12 +1,27 @@
 <html>
-  <head>
-    <script src="field_main_bundle.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <div id="field"> </div>
-    <div id="legend"> </div>
-    <div id="readouts">
+
+<head>
+  <script src="field_main_bundle.min.js" defer></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div style="display: grid;
+  grid-template-columns: auto auto auto; gap: 5px;">
+    <div>
+      <div id="field"> </div>
+      <div id="legend"> </div>
+      <div id="vision_readouts">
+      </div>
+      <div id="message_bridge_status">
+        <div>
+          <div>Node</div>
+          <div>Client</div>
+          <div>Server</div>
+        </div>
+      </div>
+    </div>
+    <div>
       <table>
         <tr>
           <th colspan="2" style="text-align: center;">Robot State</th>
@@ -24,7 +39,6 @@
           <td id="theta"> NA </td>
         </tr>
       </table>
-
       <table>
         <tr>
           <th colspan="2" style="text-align: center;">Images</th>
@@ -34,190 +48,224 @@
           <td id="images_accepted"> NA </td>
         </tr>
       </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Superstructure States</th>
+        </tr>
+        <tr>
+          <td style="font-weight: bold;">Superstructure State</td>
+          <td id="superstructure_state" style="font-weight: bold;"> NA </td>
+        </tr>
+        <tr>
+          <td style="font-weight: bold;">Note Goal</td>
+          <td id="uncompleted_note_goal" style="font-weight: bold;"> NA </td>
+        </tr>
+        <tr>
+          <td>Catapult State</td>
+          <td id="catapult_state"> NA </td>
+        </tr>
+        <tr>
+          <td>Intake Roller State</td>
+          <td id="intake_roller_state"> NA </td>
+        </tr>
+        <tr>
+          <td>Transfer Roller State</td>
+          <td id="transfer_roller_state"> NA </td>
+        </tr>
+        <tr>
+          <td>Extend State</td>
+          <td id="extend_state"> NA </td>
+        </tr>
+        <tr>
+          <td>Extend Roller State</td>
+          <td id="extend_roller_state"> NA </td>
+        </tr>
+        <tr>
+          <th colspan="2">Beambreaks</th>
+        </tr>
+        <tr>
+          <td>Extend Beambreak</td>
+          <td id="extend_beambreak">FALSE</td>
+        </tr>
+        <tr>
+          <td>Catapult Beambreak</td>
+          <td id="catapult_beambreak">FALSE</td>
+        </tr>
+        <tr>
+          <th colspan="2">Subsytems At Position</th>
+        </tr>
+        <tr>
+          <td>Extend At Retracted Position</td>
+          <td id="extend_at_retracted">FALSE</td>
+        </tr>
+        <tr>
+          <td>Extend Ready For Transfer</td>
+          <td id="extend_ready_for_transfer">FALSE</td>
+        </tr>
+        <tr>
+          <td>Extend Ready to Transfer to Catapult</td>
+          <td id="extend_ready_for_catapult_transfer">FALSE</td>
+        </tr>
+        <tr>
+          <td>Turret at Loading Position</td>
+          <td id="turret_ready_for_load">FALSE</td>
+        </tr>
+        <tr>
+          <td>Altitude at Loading Position</td>
+          <td id="altitude_ready_for_load">FALSE</td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Aimer</th>
+        </tr>
+        <tr>
+          <td>Turret Position</td>
+          <td id="turret_position"> NA </td>
+        </tr>
+        <tr>
+          <td>Turret Velocity </td>
+          <td id="turret_velocity"> NA </td>
+        </tr>
+        <tr>
+          <td>Target Distance</td>
+          <td id="target_distance"> NA </td>
+        </tr>
+        <tr>
+          <td>Shot Distance</td>
+          <td id="shot_distance"> NA </td>
+        </tr>
+      </table>
 
-    <table>
-    <tr>
-      <th colspan="2" style="text-align: center;">Superstructure</th>
-    </tr>
-    <tr>
-      <td>Superstructure State</td>
-      <td id="superstructure_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Catapult State</td>
-      <td id="catapult_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Intake Roller State</td>
-      <td id="intake_roller_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Transfer Roller State</td>
-      <td id="transfer_roller_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Extend State</td>
-      <td id="extend_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Extend Roller State</td>
-      <td id="extend_roller_state"> NA </td>
-    </tr>
-    <tr>
-      <th colspan="2">Intake Pivot</th>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="intake_pivot"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="intake_pivot_abs"> NA </td>
-    </tr>
-    <tr>
-      <th colspan="2">Climber</th>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="climber"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="climber_abs"> NA </td>
-    </tr>
-    <tr>
-      <td>Pot Position</td>
-      <td id="climber_pot"> NA </td>
-    </tr>
-    <tr>
-      <th colspan="2">Extend</th>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="extend"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="extend_abs"> NA </td>
-    </tr>
-    <tr>
-      <td>Pot Position</td>
-      <td id="extend_pot"> NA </td>
-    </tr>
-    <tr>
-      <th colspan="2">Turret</th>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="turret"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="turret_abs"> NA </td>
-    </tr>
-    <tr>
-      <td>Pot Position</td>
-      <td id="turret_pot"> NA </td>
-    </tr>
-      <th colspan="2">Catapult</th>
-    </tr>
-    <tr>
-      <td>Catapult State</td>
-      <td id="catapult_state"> NA </td>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="catapult"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="catapult_abs"> NA </td>
-    </tr>
-    <tr>
-      <td>Pot Position</td>
-      <td id="catapult_pot"> NA </td>
-    </tr>
-    <tr>
-      <th colspan="2">Altitude</th>
-    </tr>
-    <tr>
-      <td>Position</td>
-      <td id="altitude"> NA </td>
-    </tr>
-    <tr>
-      <td>Absolute Position</td>
-      <td id="altitude_abs"> NA </td>
-    </tr>
-    <tr>
-      <td>Pot Position</td>
-      <td id="altitude_pot"> NA </td>
-    </tr>
-    </table>
-    <table>
-    <tr>
-      <th colspan="2" style="text-align: center;">Aimer</th>
-    </tr>
-    <tr>
-      <td>Turret Position</td>
-      <td id="turret_position"> NA </td>
-    </tr>
-    <tr>
-      <td>Turret Velocity </td>
-      <td id="turret_velocity"> NA </td>
-    </tr>
-    <tr>
-      <td>Target Distance</td>
-      <td id="target_distance"> NA </td>
-    </tr>
-    <tr>
-      <td>Shot Distance</td>
-      <td id="shot_distance"> NA </td>
-    </tr>
-  </table>
+      <h3>Zeroing Faults:</h3>
+      <p id="zeroing_faults"> NA </p>
+    </div>
+    <div>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Subsystems</th>
+        </tr>
+        <tr>
+          <th colspan="2">Intake Pivot</th>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="intake_pivot"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="intake_pivot_abs"> NA </td>
+        </tr>
+        <tr>
+          <th colspan="2">Climber</th>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="climber"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="climber_abs"> NA </td>
+        </tr>
+        <tr>
+          <td>Pot Position</td>
+          <td id="climber_pot"> NA </td>
+        </tr>
+        <tr>
+          <th colspan="2">Extend</th>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="extend"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="extend_abs"> NA </td>
+        </tr>
+        <tr>
+          <td>Pot Position</td>
+          <td id="extend_pot"> NA </td>
+        </tr>
+        <tr>
+          <th colspan="2">Turret</th>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="turret"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="turret_abs"> NA </td>
+        </tr>
+        <tr>
+          <td>Pot Position</td>
+          <td id="turret_pot"> NA </td>
+        </tr>
+        <th colspan="2">Catapult</th>
+        </tr>
+        <tr>
+          <td>Catapult State</td>
+          <td id="catapult_state"> NA </td>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="catapult"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="catapult_abs"> NA </td>
+        </tr>
+        <tr>
+          <td>Pot Position</td>
+          <td id="catapult_pot"> NA </td>
+        </tr>
+        <tr>
+          <th colspan="2">Altitude</th>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="altitude"> NA </td>
+        </tr>
+        <tr>
+          <td>Absolute Position</td>
+          <td id="altitude_abs"> NA </td>
+        </tr>
+        <tr>
+          <td>Pot Position</td>
+          <td id="altitude_pot"> NA </td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;"> Drivetrain Encoder Positions </th>
+        </tr>
+        <tr>
+          <td> Left Encoder Position</td>
+          <td id="left_drivetrain_encoder"> NA </td>
+        </tr>
+        <tr>
+          <td> Right Encoder Position</td>
+          <td id="right_drivetrain_encoder"> NA </td>
+        </tr>
+        <tr>
+          <td> Right Front Falcon CAN Position</td>
+          <td id="falcon_right_front"> NA </td>
+        </tr>
+        <tr>
+          <td> Right Back Falcon CAN Position</td>
+          <td id="falcon_right_back"> NA </td>
+        </tr>
+        <tr>
+          <td> Left Front Falcon CAN Position</td>
+          <td id="falcon_left_front"> NA </td>
+        </tr>
+        <tr>
+          <td> Left Back Falcon CAN Position</td>
+          <td id="falcon_left_back"> NA </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</body>
 
-  <h3>Zeroing Faults:</h3>
-  <p id="zeroing_faults"> NA </p>
-  </div>
-  <div id="middle_readouts">
-    <div id="vision_readouts">
-    </div>
-    <div id="message_bridge_status">
-      <div>
-        <div>Node</div>
-        <div>Client</div>
-        <div>Server</div>
-      </div>
-    </div>
-  </div>
-  <table>
-      <tr>
-        <th colspan="2" style="text-align: center;"> Drivetrain Encoder Positions </th>
-      </tr>
-      <tr>
-        <td> Left Encoder Position</td>
-        <td id="left_drivetrain_encoder"> NA </td>
-      </tr>
-      <tr>
-        <td> Right Encoder Position</td>
-        <td id="right_drivetrain_encoder"> NA </td>
-      </tr>
-      <tr>
-        <td> Right Front Falcon CAN Position</td>
-        <td id="falcon_right_front"> NA </td>
-      </tr>
-      <tr>
-        <td> Right Back Falcon CAN Position</td>
-        <td id="falcon_right_back"> NA </td>
-      </tr>
-      <tr>
-        <td> Left Front Falcon CAN Position</td>
-        <td id="falcon_left_front"> NA </td>
-      </tr>
-      <tr>
-        <td> Left Back Falcon CAN Position</td>
-        <td id="falcon_left_back"> NA </td>
-      </tr>
-  </table>
-  </body>
 </html>
-

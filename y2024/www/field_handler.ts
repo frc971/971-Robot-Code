@@ -6,7 +6,7 @@ import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
 import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
 import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
-import {SuperstructureState, IntakeRollerStatus, CatapultState, TransferRollerStatus, ExtendRollerStatus, ExtendStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {SuperstructureState, IntakeRollerStatus, CatapultState, TransferRollerStatus, ExtendRollerStatus, ExtendStatus, NoteStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
 
@@ -51,6 +51,25 @@ export class FieldHandler {
     (document.getElementById('extend_roller_state') as HTMLElement);
   private catapultState: HTMLElement =
     (document.getElementById('catapult_state') as HTMLElement);
+  private uncompletedNoteGoal: HTMLElement =
+  (document.getElementById('uncompleted_note_goal') as HTMLElement);
+
+  private extend_beambreak: HTMLElement =
+  (document.getElementById('extend_beambreak') as HTMLElement);
+  private catapult_beambreak: HTMLElement =
+  (document.getElementById('catapult_beambreak') as HTMLElement);
+
+  private extend_at_retracted: HTMLElement =
+  (document.getElementById('extend_at_retracted') as HTMLElement);
+  private extend_ready_for_transfer: HTMLElement =
+  (document.getElementById('extend_ready_for_transfer') as HTMLElement);
+  private extend_ready_for_catapult_transfer: HTMLElement =
+  (document.getElementById('extend_ready_for_catapult_transfer') as HTMLElement);
+  private turret_ready_for_load: HTMLElement =
+  (document.getElementById('turret_ready_for_load') as HTMLElement);
+  private altitude_ready_for_load: HTMLElement =
+  (document.getElementById('altitude_ready_for_load') as HTMLElement);
+
 
   private intakePivot: HTMLElement =
     (document.getElementById('intake_pivot') as HTMLElement);
@@ -257,6 +276,18 @@ export class FieldHandler {
     div.classList.remove('zeroing');
     div.classList.remove('near');
   }
+
+  setBoolean(div: HTMLElement, triggered: boolean): void {
+    div.innerHTML = ((triggered) ? "TRUE" : "FALSE")
+    if (triggered) {
+      div.classList.remove('false');
+      div.classList.add('true');
+    } else {
+      div.classList.remove('true');
+      div.classList.add('false');
+    }
+  }
+
   draw(): void {
     this.reset();
     this.drawField();
@@ -275,6 +306,22 @@ export class FieldHandler {
         ExtendRollerStatus[this.superstructureStatus.extendRoller()];
       this.catapultState.innerHTML =
         CatapultState[this.superstructureStatus.shooter().catapultState()];
+      this.uncompletedNoteGoal.innerHTML =
+        NoteStatus[this.superstructureStatus.uncompletedNoteGoal()];
+
+      this.setBoolean(this.extend_beambreak, this.superstructureStatus.extendBeambreak());
+
+      this.setBoolean(this.catapult_beambreak, this.superstructureStatus.catapultBeambreak());
+
+      this.setBoolean(this.extend_ready_for_transfer, this.superstructureStatus.extendReadyForTransfer());
+
+      this.setBoolean(this.extend_at_retracted, this.superstructureStatus.extendAtRetracted());
+
+      this.setBoolean(this.turret_ready_for_load, this.superstructureStatus.turretReadyForLoad());
+
+      this.setBoolean(this.altitude_ready_for_load, this.superstructureStatus.altitudeReadyForLoad());
+
+      this.setBoolean(this.extend_ready_for_catapult_transfer, this.superstructureStatus.extendReadyForCatapultTransfer());
 
       if (this.superstructureStatus.shooter() &&
           this.superstructureStatus.shooter().aimer()) {
