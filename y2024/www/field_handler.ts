@@ -9,6 +9,8 @@ import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/
 import {SuperstructureState, IntakeRollerStatus, CatapultState, TransferRollerStatus, ExtendRollerStatus, ExtendStatus, NoteStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
+import {RejectionReason} from '../localizer/status_generated'
+import {TargetEstimateDebug, Visualization} from '../localizer/visualization_generated'
 
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
@@ -20,6 +22,9 @@ const FIELD_EDGE_X = FIELD_LENGTH / 2;
 const ROBOT_WIDTH = 29 * IN_TO_M;
 const ROBOT_LENGTH = 32 * IN_TO_M;
 
+const CAMERA_COLORS = ['#ff00ff', '#ffff00', '#00ffff', '#ffa500'];
+const CAMERAS = ['/orin1/camera0', '/orin1/camera1', '/imu/camera0', '/imu/camera1'];
+
 export class FieldHandler {
   private canvas = document.createElement('canvas');
   private localizerOutput: LocalizerOutput|null = null;
@@ -28,10 +33,25 @@ export class FieldHandler {
   private drivetrainCANPosition: DrivetrainCANPosition|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
 
+  // Image information indexed by timestamp (seconds since the epoch), so that
+  // we can stop displaying images after a certain amount of time.
+  private localizerImageMatches = new Map<number, Visualization>();
   private x: HTMLElement = (document.getElementById('x') as HTMLElement);
   private y: HTMLElement = (document.getElementById('y') as HTMLElement);
   private theta: HTMLElement =
       (document.getElementById('theta') as HTMLElement);
+
+  private imagesAcceptedCounter: HTMLElement =
+      (document.getElementById('images_accepted') as HTMLElement);
+  // HTML elements for rejection reasons for individual cameras. Indices
+  // corresponding to RejectionReason enum values will be for those reasons. The
+  // final row will account for images rejected by the aprilrobotics detector
+  // instead of the localizer.
+  private rejectionReasonCells: HTMLElement[][] = [];
+  private messageBridgeDiv: HTMLElement =
+      (document.getElementById('message_bridge_status') as HTMLElement);
+  private clientStatuses = new Map<string, HTMLElement>();
+  private serverStatuses = new Map<string, HTMLElement>();
 
   private fieldImage: HTMLImageElement = new Image();
 
@@ -138,7 +158,82 @@ export class FieldHandler {
 
     this.fieldImage.src = '2024.png';
 
+    // Construct a table header.
+    {
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
+      nameCell.innerHTML = 'Rejection Reason';
+      row.appendChild(nameCell);
+      for (const camera of CAMERAS) {
+        const nodeCell = document.createElement('div');
+        nodeCell.innerHTML = camera;
+        row.appendChild(nodeCell);
+      }
+      document.getElementById('vision_readouts').appendChild(row);
+    }
+
+    for (const value in RejectionReason) {
+      // Typescript generates an iterator that produces both numbers and
+      // strings... don't do anything on the string iterations.
+      if (isNaN(Number(value))) {
+        continue;
+      }
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
+      nameCell.innerHTML = RejectionReason[value];
+      row.appendChild(nameCell);
+      this.rejectionReasonCells.push([]);
+      for (const camera of CAMERAS) {
+        const valueCell = document.createElement('div');
+        valueCell.innerHTML = 'NA';
+        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(
+            valueCell);
+        row.appendChild(valueCell);
+      }
+      document.getElementById('vision_readouts').appendChild(row);
+    }
+
+    // Add rejection reason row for aprilrobotics rejections.
+    {
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
+      nameCell.innerHTML = 'Rejected by aprilrobotics';
+      row.appendChild(nameCell);
+      this.rejectionReasonCells.push([]);
+      for (const camera of CAMERAS) {
+        const valueCell = document.createElement('div');
+        valueCell.innerHTML = 'NA';
+        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(
+            valueCell);
+        row.appendChild(valueCell);
+      }
+      document.getElementById('vision_readouts').appendChild(row);
+    }
+
+    for (let ii = 0; ii < CAMERA_COLORS.length; ++ii) {
+      const legendEntry = document.createElement('div');
+      legendEntry.style.color = CAMERA_COLORS[ii];
+      legendEntry.innerHTML = CAMERAS[ii];
+      document.getElementById('legend').appendChild(legendEntry);
+    }
+
     this.connection.addConfigHandler(() => {
+      // Visualization message is reliable so that we can see *all* the vision
+      // matches.
+      for (const camera in CAMERAS) {
+        this.connection.addHandler(
+            CAMERAS[camera], 'y2024.localizer.Visualization',
+            (data) => {
+              this.handleLocalizerDebug(Number(camera), data);
+            });
+      }
+      for (const camera in CAMERAS) {
+        // Make unreliable to reduce network spam.
+        this.connection.addHandler(
+          CAMERAS[camera], 'frc971.vision.TargetMap', (data) => {
+              this.handleCameraTargetMap(camera, data);
+            });
+      }
 
       this.connection.addHandler(
         '/drivetrain', 'frc971.control_loops.drivetrain.Status', (data) => {
@@ -161,7 +256,42 @@ export class FieldHandler {
         (data) => {
           this.handleSuperstructureStatus(data)
           });
+      this.connection.addHandler(
+        '/aos', 'aos.message_bridge.ServerStatistics',
+        (data) => {this.handleServerStatistics(data)});
+      this.connection.addHandler(
+        '/aos', 'aos.message_bridge.ClientStatistics',
+        (data) => {this.handleClientStatistics(data)});
       });
+  }
+  private handleLocalizerDebug(camera: number, data: Uint8Array): void {
+    const now = Date.now() / 1000.0;
+
+    const fbBuffer = new ByteBuffer(data);
+    this.localizerImageMatches.set(
+        now, Visualization.getRootAsVisualization(fbBuffer));
+
+    const debug = this.localizerImageMatches.get(now);
+
+    if (debug.statistics()) {
+      if ((debug.statistics().rejectionReasonsLength() + 1) ==
+          this.rejectionReasonCells.length) {
+        for (let ii = 0; ii < debug.statistics().rejectionReasonsLength();
+             ++ii) {
+          this.rejectionReasonCells[ii][camera].innerHTML =
+              debug.statistics().rejectionReasons(ii).count().toString();
+        }
+      } else {
+        console.error('Unexpected number of rejection reasons in counter.');
+      }
+    }
+  }
+
+  private handleCameraTargetMap(pi: string, data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const targetMap = TargetMap.getRootAsTargetMap(fbBuffer);
+    this.rejectionReasonCells[this.rejectionReasonCells.length - 1][pi]
+        .innerHTML = targetMap.rejections().toString();
   }
 
   private handleDrivetrainStatus(data: Uint8Array): void {
@@ -187,6 +317,67 @@ export class FieldHandler {
   private handleSuperstructureStatus(data: Uint8Array): void {
 	  const fbBuffer = new ByteBuffer(data);
 	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
+  }
+
+  private populateNodeConnections(nodeName: string): void {
+    const row = document.createElement('div');
+    this.messageBridgeDiv.appendChild(row);
+    const nodeDiv = document.createElement('div');
+    nodeDiv.innerHTML = nodeName;
+    row.appendChild(nodeDiv);
+    const clientDiv = document.createElement('div');
+    clientDiv.innerHTML = 'N/A';
+    row.appendChild(clientDiv);
+    const serverDiv = document.createElement('div');
+    serverDiv.innerHTML = 'N/A';
+    row.appendChild(serverDiv);
+    this.serverStatuses.set(nodeName, serverDiv);
+    this.clientStatuses.set(nodeName, clientDiv);
+  }
+
+  private setCurrentNodeState(element: HTMLElement, state: ConnectionState):
+      void {
+    if (state === ConnectionState.CONNECTED) {
+      element.innerHTML = ConnectionState[state];
+      element.classList.remove('faulted');
+      element.classList.add('connected');
+    } else {
+      element.innerHTML = ConnectionState[state];
+      element.classList.remove('connected');
+      element.classList.add('faulted');
+    }
+  }
+
+  private handleServerStatistics(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const serverStatistics =
+        ServerStatistics.getRootAsServerStatistics(fbBuffer);
+
+    for (let ii = 0; ii < serverStatistics.connectionsLength(); ++ii) {
+      const connection = serverStatistics.connections(ii);
+      const nodeName = connection.node().name();
+      if (!this.serverStatuses.has(nodeName)) {
+        this.populateNodeConnections(nodeName);
+      }
+      this.setCurrentNodeState(
+          this.serverStatuses.get(nodeName), connection.state());
+    }
+  }
+
+  private handleClientStatistics(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const clientStatistics =
+        ClientStatistics.getRootAsClientStatistics(fbBuffer);
+
+    for (let ii = 0; ii < clientStatistics.connectionsLength(); ++ii) {
+      const connection = clientStatistics.connections(ii);
+      const nodeName = connection.node().name();
+      if (!this.clientStatuses.has(nodeName)) {
+        this.populateNodeConnections(nodeName);
+      }
+      this.setCurrentNodeState(
+          this.clientStatuses.get(nodeName), connection.state());
+    }
   }
 
   drawField(): void {
@@ -291,6 +482,9 @@ export class FieldHandler {
   draw(): void {
     this.reset();
     this.drawField();
+
+    // Draw the matches with debugging information from the localizer.
+    const now = Date.now() / 1000.0;
 
     if (this.superstructureStatus) {
       this.superstructureState.innerHTML =
@@ -536,6 +730,37 @@ export class FieldHandler {
       this.drawRobot(
           this.localizerOutput.x(), this.localizerOutput.y(),
           this.localizerOutput.theta());
+
+      this.imagesAcceptedCounter.innerHTML =
+          this.localizerOutput.imageAcceptedCount().toString();
+    }
+
+    for (const [time, value] of this.localizerImageMatches) {
+      const age = now - time;
+      const kRemovalAge = 1.0;
+      if (age > kRemovalAge) {
+        this.localizerImageMatches.delete(time);
+        continue;
+      }
+      const kMaxImageAlpha = 0.5;
+      const ageAlpha = kMaxImageAlpha * (kRemovalAge - age) / kRemovalAge
+      for (let i = 0; i < value.targetsLength(); i++) {
+        const imageDebug = value.targets(i);
+        const x = imageDebug.impliedRobotX();
+        const y = imageDebug.impliedRobotY();
+        const theta = imageDebug.impliedRobotTheta();
+        const cameraX = imageDebug.cameraX();
+        const cameraY = imageDebug.cameraY();
+        const cameraTheta = imageDebug.cameraTheta();
+        const accepted = imageDebug.accepted();
+        // Make camera readings fade over time.
+        const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
+        const dashed = false;
+        const cameraRgb = CAMERA_COLORS[imageDebug.camera()];
+        const cameraRgba = cameraRgb + alpha;
+        this.drawRobot(x, y, theta, cameraRgba, dashed);
+        this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba);
+      }
     }
 
     window.requestAnimationFrame(() => this.draw());

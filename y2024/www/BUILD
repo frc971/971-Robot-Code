@@ -39,6 +39,8 @@ ts_project(
         "//frc971/control_loops/drivetrain/localization:localizer_output_ts_fbs",
         "//frc971/vision:target_map_ts_fbs",
         "//y2024/control_loops/superstructure:superstructure_status_ts_fbs",
+        "//y2024/localizer:status_ts_fbs",
+        "//y2024/localizer:visualization_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
