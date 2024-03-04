@@ -74,7 +74,7 @@ void SplineDrivetrain::DeleteTrajectory(const fb::Trajectory *trajectory) {
 
 void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
   CHECK_LT(trajectories_.size(), trajectories_.capacity());
-  trajectories_.emplace_back(dt_config_, trajectory, velocity_drivetrain_);
+  trajectories_.emplace_back(&dt_config_, trajectory, velocity_drivetrain_);
   UpdateSplineHandles(commanded_spline_);
 }
 

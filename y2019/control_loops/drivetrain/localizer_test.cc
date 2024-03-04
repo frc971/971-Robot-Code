@@ -173,7 +173,7 @@ class ParameterizedLocalizerTest
           spline_goal_buffer(fbb.Release());
 
       frc971::control_loops::drivetrain::Trajectory trajectory(
-          spline_goal_buffer.message(), dt_config_);
+          spline_goal_buffer.message(), &dt_config_);
       trajectory.Plan();
 
       flatbuffers::FlatBufferBuilder traj_fbb;

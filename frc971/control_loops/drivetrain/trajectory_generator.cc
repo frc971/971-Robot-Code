@@ -14,7 +14,7 @@ TrajectoryGenerator::TrajectoryGenerator(aos::EventLoop *event_loop,
 }
 
 void TrajectoryGenerator::HandleSplineGoal(const SplineGoal &goal) {
-  Trajectory trajectory(goal, dt_config_);
+  Trajectory trajectory(goal, &dt_config_);
   trajectory.Plan();
 
   aos::Sender<fb::Trajectory>::Builder builder =

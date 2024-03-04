@@ -74,7 +74,7 @@ class ParameterizedSplineTest
     const int spline_index = 12345;
     // Run lots of steps to make the feedforwards terms more accurate.
     trajectory_ = ::std::unique_ptr<Trajectory>(new Trajectory(
-        DistanceSpline(GetParam().control_points), dt_config_,
+        DistanceSpline(GetParam().control_points), &dt_config_,
         /*constraints=*/nullptr, spline_index, GetParam().velocity_limit));
     distance_spline_ = &trajectory_->spline();
     trajectory_->set_lateral_acceleration(GetParam().lateral_acceleration);
@@ -111,7 +111,7 @@ class ParameterizedSplineTest
     EXPECT_EQ(spline_index, trajectory_buffer_->message().handle());
 
     finished_trajectory_ = std::make_unique<FinishedTrajectory>(
-        dt_config_, &trajectory_buffer_->message());
+        &dt_config_, &trajectory_buffer_->message());
   }
 
   void TearDown() {

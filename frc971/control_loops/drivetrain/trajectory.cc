@@ -33,7 +33,7 @@ float DefaultConstraint(ConstraintType type) {
 }  // namespace
 
 FinishedTrajectory::FinishedTrajectory(
-    const DrivetrainConfig<double> &config, const fb::Trajectory *buffer,
+    const DrivetrainConfig<double> *config, const fb::Trajectory *buffer,
     std::shared_ptr<
         StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                           HybridKalman<2, 2, 2>>>
@@ -80,15 +80,15 @@ void BaseTrajectory::K345(const double x, Eigen::Matrix<double, 2, 1> *K3,
 
 BaseTrajectory::BaseTrajectory(
     const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
-    const DrivetrainConfig<double> &config,
+    const DrivetrainConfig<double> *config,
     std::shared_ptr<
         StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                           HybridKalman<2, 2, 2>>>
         velocity_drivetrain)
     : velocity_drivetrain_(std::move(velocity_drivetrain)),
       config_(config),
-      robot_radius_l_(config.robot_radius),
-      robot_radius_r_(config.robot_radius),
+      robot_radius_l_(config->robot_radius),
+      robot_radius_r_(config->robot_radius),
       lateral_acceleration_(
           ConstraintValue(constraints, ConstraintType::LATERAL_ACCELERATION)),
       longitudinal_acceleration_(ConstraintValue(
@@ -96,7 +96,7 @@ BaseTrajectory::BaseTrajectory(
       voltage_limit_(ConstraintValue(constraints, ConstraintType::VOLTAGE)) {}
 
 Trajectory::Trajectory(const SplineGoal &spline_goal,
-                       const DrivetrainConfig<double> &config)
+                       const DrivetrainConfig<double> *config)
     : Trajectory(DistanceSpline{spline_goal.spline()}, config,
                  spline_goal.spline()->constraints(),
                  spline_goal.spline_idx()) {
@@ -104,7 +104,7 @@ Trajectory::Trajectory(const SplineGoal &spline_goal,
 }
 
 Trajectory::Trajectory(
-    DistanceSpline &&input_spline, const DrivetrainConfig<double> &config,
+    DistanceSpline &&input_spline, const DrivetrainConfig<double> *config,
     const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
     int spline_idx, double vmax, int num_distance)
     : BaseTrajectory(constraints, config),
@@ -125,6 +125,15 @@ Trajectory::Trajectory(
       }
     }
   }
+}
+
+Trajectory::Trajectory(
+    DistanceSpline &&spline, std::unique_ptr<DrivetrainConfig<double>> config,
+    const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+    int spline_idx, double vmax, int num_distance)
+    : Trajectory(std::move(spline), config.get(), constraints, spline_idx, vmax,
+                 num_distance) {
+  owned_config_ = std::move(config);
 }
 
 void Trajectory::LateralAccelPass() {
@@ -751,7 +760,8 @@ Eigen::Matrix<double, 5, 1> FinishedTrajectory::StateToPathRelativeState(
 // finite-horizon much longer (albeit with the extension just using the
 // linearization for the infal point).
 void Trajectory::CalculatePathGains() {
-  const std::vector<Eigen::Matrix<double, 3, 1>> xva_plan = PlanXVA(config_.dt);
+  const std::vector<Eigen::Matrix<double, 3, 1>> xva_plan =
+      PlanXVA(config_->dt);
   if (xva_plan.empty()) {
     LOG(ERROR) << "Plan is empty--unable to plan trajectory.";
     return;
@@ -783,7 +793,7 @@ void Trajectory::CalculatePathGains() {
     PathRelativeContinuousSystem(distance, &A_continuous, &B_continuous);
     Eigen::Matrix<double, 5, 5> A_discrete;
     Eigen::Matrix<double, 5, 2> B_discrete;
-    controls::C2D(A_continuous, B_continuous, config_.dt, &A_discrete,
+    controls::C2D(A_continuous, B_continuous, config_->dt, &A_discrete,
                   &B_discrete);
 
     if (i == max_index) {
@@ -898,9 +908,9 @@ const Eigen::Matrix<double, 5, 1> BaseTrajectory::GoalState(
   result(2, 0) = spline().Theta(distance);
 
   result.block<2, 1>(3, 0) =
-      config_.Tla_to_lr() * (Eigen::Matrix<double, 2, 1>() << velocity,
-                             spline().DThetaDt(distance, velocity))
-                                .finished();
+      config_->Tla_to_lr() * (Eigen::Matrix<double, 2, 1>() << velocity,
+                              spline().DThetaDt(distance, velocity))
+                                 .finished();
   return result;
 }
 

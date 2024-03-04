@@ -14,6 +14,11 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
+// Note for all of these classes:
+// Whenever a pointer to a DrivetrainConfig is taken in the constructor, it must
+// live for the entire lifetime of the object. The classes here do not take
+// ownership of the pointer.
+
 namespace frc971::control_loops::drivetrain {
 
 template <typename F>
@@ -43,16 +48,16 @@ class BaseTrajectory {
  public:
   BaseTrajectory(
       const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
-      const DrivetrainConfig<double> &config)
+      const DrivetrainConfig<double> *config)
       : BaseTrajectory(constraints, config,
                        std::make_shared<StateFeedbackLoop<
                            2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                            HybridKalman<2, 2, 2>>>(
-                           config.make_hybrid_drivetrain_velocity_loop())) {}
+                           config->make_hybrid_drivetrain_velocity_loop())) {}
 
   BaseTrajectory(
       const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
-      const DrivetrainConfig<double> &config,
+      const DrivetrainConfig<double> *config,
       std::shared_ptr<
           StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                             HybridKalman<2, 2, 2>>>
@@ -192,7 +197,7 @@ class BaseTrajectory {
                         HybridKalman<2, 2, 2>>>
       velocity_drivetrain_;
 
-  DrivetrainConfig<double> config_;
+  const DrivetrainConfig<double> *config_;
 
   // Robot radiuses.
   double robot_radius_l_;
@@ -209,20 +214,20 @@ class FinishedTrajectory : public BaseTrajectory {
   // Note: The lifetime of the supplied buffer is assumed to be greater than
   // that of this object.
   explicit FinishedTrajectory(
-      const DrivetrainConfig<double> &config, const fb::Trajectory *buffer,
+      const DrivetrainConfig<double> *config, const fb::Trajectory *buffer,
       std::shared_ptr<
           StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                             HybridKalman<2, 2, 2>>>
           velocity_drivetrain);
 
-  explicit FinishedTrajectory(const DrivetrainConfig<double> &config,
+  explicit FinishedTrajectory(const DrivetrainConfig<double> *config,
                               const fb::Trajectory *buffer)
       : FinishedTrajectory(
             config, buffer,
             std::make_shared<StateFeedbackLoop<
                 2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                 HybridKalman<2, 2, 2>>>(
-                config.make_hybrid_drivetrain_velocity_loop())) {}
+                config->make_hybrid_drivetrain_velocity_loop())) {}
 
   FinishedTrajectory(const FinishedTrajectory &) = delete;
   FinishedTrajectory &operator=(const FinishedTrajectory &) = delete;
@@ -264,16 +269,23 @@ class FinishedTrajectory : public BaseTrajectory {
 class Trajectory : public BaseTrajectory {
  public:
   Trajectory(const SplineGoal &spline_goal,
-             const DrivetrainConfig<double> &config);
+             const DrivetrainConfig<double> *config);
   Trajectory(
-      DistanceSpline &&spline, const DrivetrainConfig<double> &config,
+      DistanceSpline &&spline, const DrivetrainConfig<double> *config,
       const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
       int spline_idx = 0, double vmax = 10.0, int num_distance = 0);
+
+  // Version that owns its own DrivetrainConfig.
+  Trajectory(
+      DistanceSpline &&spline, std::unique_ptr<DrivetrainConfig<double>> config,
+      const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+      int spline_idx, double vmax, int num_distance);
 
   virtual ~Trajectory() = default;
 
   std::vector<Eigen::Matrix<double, 3, 1>> PlanXVA(std::chrono::nanoseconds dt);
 
+  const DrivetrainConfig<double> *drivetrain_config() { return config_; }
   enum class VoltageLimit {
     kConservative,
     kAggressive,
@@ -390,7 +402,8 @@ class Trajectory : public BaseTrajectory {
   // The spline we are planning for.
   const DistanceSpline spline_;
 
-  const DrivetrainConfig<double> config_;
+  std::unique_ptr<DrivetrainConfig<double>> owned_config_;
+  const DrivetrainConfig<double> *config_;
 
   // Velocities in the plan (distance for each index is defined by Distance())
   std::vector<double> plan_;

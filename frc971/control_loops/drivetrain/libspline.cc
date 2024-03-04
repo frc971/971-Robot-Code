@@ -120,8 +120,9 @@ Trajectory *NewTrajectory(DistanceSpline *spline, double vmax,
                           int num_distance) {
   return new Trajectory(
       DistanceSpline(*spline),
-      ::y2020::control_loops::drivetrain::GetDrivetrainConfig(), nullptr, -1,
-      vmax, num_distance);
+      std::make_unique<DrivetrainConfig<double>>(
+          ::y2020::control_loops::drivetrain::GetDrivetrainConfig()),
+      nullptr, -1, vmax, num_distance);
 }
 
 void deleteTrajectory(Trajectory *t) { delete t; }

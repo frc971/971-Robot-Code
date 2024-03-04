@@ -50,7 +50,7 @@ void Main() {
           (::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
            -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
               .finished()))),
-      config, nullptr);
+      &config, nullptr);
   trajectory.set_lateral_acceleration(2.0);
   trajectory.set_longitudinal_acceleration(1.0);
 
@@ -131,7 +131,7 @@ void Main() {
   aos::FlatbufferDetachedBuffer<fb::Trajectory> trajectory_buffer(
       fbb.Release());
 
-  FinishedTrajectory finished_trajectory(config, &trajectory_buffer.message());
+  FinishedTrajectory finished_trajectory(&config, &trajectory_buffer.message());
 
   ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
   state(0, 0) = FLAGS_dx;
