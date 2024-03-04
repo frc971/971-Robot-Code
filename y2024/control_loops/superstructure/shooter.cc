@@ -140,13 +140,18 @@ Shooter::Iterate(
                            ? shooter_goal->altitude_position()
                            : &altitude_goal_builder->AsFlatbuffer();
 
-  bool subsystems_in_range =
+  const bool turret_in_range =
       (std::abs(turret_.estimated_position() - turret_goal->unsafe_goal()) <
-           kCatapultActivationThreshold &&
-       std::abs(altitude_.estimated_position() - altitude_goal->unsafe_goal()) <
-           kCatapultActivationThreshold &&
-       altitude_.estimated_position() >
-           robot_constants_->common()->min_altitude_shooting_angle());
+       kCatapultActivationThreshold);
+  const bool altitude_in_range =
+      (std::abs(altitude_.estimated_position() - altitude_goal->unsafe_goal()) <
+       kCatapultActivationThreshold);
+  const bool altitude_above_min_angle =
+      (altitude_.estimated_position() >
+       robot_constants_->common()->min_altitude_shooting_angle());
+
+  bool subsystems_in_range =
+      (turret_in_range && altitude_in_range && altitude_above_min_angle);
 
   const bool disabled = turret_.Correct(turret_goal, position->turret(),
                                         turret_output == nullptr);
@@ -301,6 +306,9 @@ Shooter::Iterate(
   status_builder.add_altitude(altitude_status_offset);
   status_builder.add_catapult(catapult_status_offset);
   status_builder.add_catapult_state(state_);
+  status_builder.add_turret_in_range(turret_in_range);
+  status_builder.add_altitude_in_range(altitude_in_range);
+  status_builder.add_altitude_above_min_angle(altitude_above_min_angle);
   if (aiming) {
     status_builder.add_aimer(aimer_offset);
   }
