@@ -21,6 +21,9 @@
 
 DEFINE_int32(debug_blob_index, 4096, "Blob to print out for");
 
+constexpr int kUndistortIterationThreshold = 100;
+constexpr double kUndistortConvergenceEpsilon = 1e-6;
+
 extern "C" {
 
 void quad_decode_index(apriltag_detector_t *td, struct quad *quad_original,
@@ -333,16 +336,16 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 // https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
 void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
                DistCoeffs *distortion_coefficients) {
-  double k1 = distortion_coefficients->k1;
-  double k2 = distortion_coefficients->k2;
-  double p1 = distortion_coefficients->p1;
-  double p2 = distortion_coefficients->p2;
-  double k3 = distortion_coefficients->k3;
+  const double k1 = distortion_coefficients->k1;
+  const double k2 = distortion_coefficients->k2;
+  const double p1 = distortion_coefficients->p1;
+  const double p2 = distortion_coefficients->p2;
+  const double k3 = distortion_coefficients->k3;
 
-  double fx = camera_matrix->fx;
-  double cx = camera_matrix->cx;
-  double fy = camera_matrix->fy;
-  double cy = camera_matrix->cy;
+  const double fx = camera_matrix->fx;
+  const double cx = camera_matrix->cx;
+  const double fy = camera_matrix->fy;
+  const double cy = camera_matrix->cy;
 
   double xP = (*x - cx) / fx;
   double yP = (*y - cy) / fy;
@@ -350,14 +353,42 @@ void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
   double x0 = xP;
   double y0 = yP;
 
-  for (int i = 0; i < 10; i++) {
+  double prev_x = 0, prev_y = 0;
+
+  int iterations = 0;
+  do {
+    prev_x = xP;
+    prev_y = yP;
     double rSq = xP * xP + yP * yP;
-    double linCoef = 1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq;
-    double kInv = 1 / linCoef;
-    double dx = 2 * p1 * xP * yP + p2 * (rSq + k3 * rSq * rSq * rSq);
-    double dy = p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
-    xP = (x0 - dx) * kInv;
-    yP = (y0 - dy) * kInv;
+
+    double radial_distortion =
+        1 + (k1 * rSq) + (k2 * rSq * rSq) + (k3 * rSq * rSq * rSq);
+
+    double radial_distortion_inv = 1 / radial_distortion;
+
+    double tangential_dx = 2 * p1 * xP * yP + p2 * (rSq + k3 * rSq * rSq * rSq);
+    double tangential_dy = p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
+
+    xP = (x0 - tangential_dx) * radial_distortion_inv;
+    yP = (y0 - tangential_dy) * radial_distortion_inv;
+
+    if (iterations > kUndistortIterationThreshold) {
+      break;
+    }
+
+    iterations++;
+  } while (std::abs(xP - prev_x) > kUndistortConvergenceEpsilon ||
+           std::abs(yP - prev_y) > kUndistortConvergenceEpsilon);
+
+  if (iterations < kUndistortIterationThreshold) {
+    VLOG(1) << "Took " << iterations << " iterations to reach convergence.";
+  } else {
+    VLOG(1) << "Took " << iterations
+            << " iterations and didn't reach convergence with "
+            << " (xP, yP): "
+            << " (" << xP << ", " << yP << ")"
+            << " vs. (prev_x, prev_y): "
+            << " (" << prev_x << ", " << prev_y << ")";
   }
 
   *x = xP * fx + cx;
