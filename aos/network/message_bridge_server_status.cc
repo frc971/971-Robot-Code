@@ -506,4 +506,47 @@ void MessageBridgeServerStatus::EnableStatistics() {
                               kPingPeriod);
 }
 
+void MessageBridgeServerStatus::MaybeIncrementInvalidConnectionCount(
+    const Node *node) {
+  increment_invalid_connection_count();
+
+  if (node == nullptr) {
+    return;
+  }
+
+  if (!node->has_name()) {
+    return;
+  }
+
+  const aos::Node *client_node = configuration::GetNode(
+      event_loop_->configuration(), node->name()->string_view());
+
+  if (client_node == nullptr) {
+    return;
+  }
+
+  const int node_index =
+      configuration::GetNodeIndex(event_loop_->configuration(), client_node);
+
+  const std::vector<std::optional<MessageBridgeServerStatus::NodeState>>
+      &server_nodes = nodes();
+  // There is a chance that there is no server node for the given client
+  // `node_index`. This can happen if the other node has a different
+  // configuration such that it starts forwarding messages to the current node,
+  // but the current node's configuration does not expect messages from the
+  // other node. This is likely to happen during a multi-node software update
+  // where the other node has been updated with a different config, while the
+  // current node's update hasn't yet completed. In such cases, we want to
+  // ensure that a server node exists before attempting to access it.
+  if (server_nodes[node_index]) {
+    ServerConnection *connection =
+        server_nodes[node_index].value().server_connection;
+
+    if (connection != nullptr) {
+      connection->mutate_invalid_connection_count(
+          connection->invalid_connection_count() + 1);
+    }
+  }
+}
+
 }  // namespace aos::message_bridge

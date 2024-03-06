@@ -192,10 +192,6 @@ class MessageBridgeServer {
   // received.
   void HandleData(const Message *message);
 
-  // Increments the invalid connection count overall, and per node if we know
-  // which node (ie, node is not nullptr).
-  void MaybeIncrementInvalidConnectionCount(const Node *node);
-
   // The maximum number of channels we support on a single connection. We need
   // to configure the SCTP socket with this before any clients connect, so we
   // need an upper bound on the number of channels any of them will use.

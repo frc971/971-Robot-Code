@@ -113,6 +113,10 @@ class MessageBridgeServerStatus {
   // connection that got rejected.
   void increment_invalid_connection_count() { ++invalid_connection_count_; }
 
+  // Increments the invalid connection count overall, and per node if we know
+  // which node (ie, node is not nullptr).
+  void MaybeIncrementInvalidConnectionCount(const Node *node);
+
  private:
   static constexpr std::chrono::nanoseconds kStatisticsPeriod =
       std::chrono::seconds(1);

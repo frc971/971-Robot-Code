@@ -613,6 +613,23 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "message_bridge_server_status_test",
+    srcs = [
+        "message_bridge_server_status_test.cc",
+    ],
+    data = [
+        ":message_bridge_test_combined_timestamps_common_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":message_bridge_server_status",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
+
 flatbuffer_cc_library(
     name = "web_proxy_fbs",
     srcs = ["web_proxy.fbs"],
