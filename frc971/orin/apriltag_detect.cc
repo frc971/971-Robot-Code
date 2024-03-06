@@ -302,7 +302,7 @@ struct QuadDecodeTaskStruct {
 
 // Dewarps points from the image based on various constants
 // Algorithm mainly taken from
-// https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
+// https://docs.opencv.org/4.0.0/d9/d0c/group__calib3d.html#ga7dfb72c9cf9780a347fbe3d1c47e5d5a
 void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
                DistCoeffs *distortion_coefficients) {
   double k1 = distortion_coefficients->k1;
