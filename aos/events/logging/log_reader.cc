@@ -1177,7 +1177,9 @@ void LogReader::Deregister() {
   // Make sure that things get destroyed in the correct order, rather than
   // relying on getting the order correct in the class definition.
   for (std::unique_ptr<State> &state : states_) {
-    state->Deregister();
+    if (state) {
+      state->Deregister();
+    }
   }
 
   event_loop_factory_unique_ptr_.reset();
