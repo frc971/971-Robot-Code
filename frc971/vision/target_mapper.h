@@ -100,6 +100,10 @@ class TargetMapper {
   std::unique_ptr<ceres::CostFunction> BuildMapFittingOptimizationProblem(
       ceres::Problem *problem);
 
+  // Create and display a visualization of the graph connectivity of the
+  // constraints
+  void DisplayConstraintGraph();
+
   // Returns true if the solve was successful.
   bool SolveOptimizationProblem(ceres::Problem *problem);
 
