@@ -74,8 +74,10 @@ ApriltagDetector::ApriltagDetector(
       intrinsics_(frc971::vision::CameraIntrinsics(calibration_)),
       extrinsics_(frc971::vision::CameraExtrinsics(calibration_)),
       dist_coeffs_(frc971::vision::CameraDistCoeffs(calibration_)),
-      gpu_detector_(width, height, tag_detector_, GetCameraMatrix(calibration_),
-                    GetDistCoeffs(calibration_)),
+      distortion_camera_matrix_(GetCameraMatrix(calibration_)),
+      distortion_coefficients_(GetDistCoeffs(calibration_)),
+      gpu_detector_(width, height, tag_detector_, distortion_camera_matrix_,
+                    distortion_coefficients_),
       image_callback_(
           event_loop, channel_name,
           [this](cv::Mat image_color_mat,
@@ -136,23 +138,15 @@ ApriltagDetector::BuildTargetPose(const Detection &detection,
 }
 
 void ApriltagDetector::UndistortDetection(apriltag_detection_t *det) const {
-  // 4 corners
-  constexpr size_t kRows = 4;
-  // 2d points
-  constexpr size_t kCols = 2;
-
-  cv::Mat distorted_points(kRows, kCols, CV_64F, det->p);
-  cv::Mat undistorted_points = cv::Mat::zeros(kRows, kCols, CV_64F);
-
-  // Undistort the april tag points
-  cv::undistortPoints(distorted_points, undistorted_points, intrinsics_,
-                      dist_coeffs_, cv::noArray(), projection_matrix_);
-
   // Copy the undistorted points into det
-  for (size_t i = 0; i < kRows; i++) {
-    for (size_t j = 0; j < kCols; j++) {
-      det->p[i][j] = undistorted_points.at<double>(i, j);
-    }
+  for (size_t i = 0; i < 4; i++) {
+    double u = det->p[i][0];
+    double v = det->p[i][1];
+
+    GpuDetector::UnDistort(&u, &v, &distortion_camera_matrix_,
+                           &distortion_coefficients_);
+    det->p[i][0] = u;
+    det->p[i][1] = v;
   }
 }
 
@@ -267,7 +261,6 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
       // First create an apriltag_detection_info_t struct using your known
       // parameters.
       apriltag_detection_info_t info;
-      info.det = gpu_detection;
       info.tagsize = 6.5 * 0.0254;
 
       info.fx = intrinsics_.at<double>(0, 0);
@@ -283,6 +276,10 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
           std::vector<double>{0.0, 1.0, 0.0, 0.5}));
 
       UndistortDetection(gpu_detection);
+
+      // We're setting this here to use the undistorted corner points in pose
+      // estimation.
+      info.det = gpu_detection;
 
       const aos::monotonic_clock::time_point before_pose_estimation =
           aos::monotonic_clock::now();

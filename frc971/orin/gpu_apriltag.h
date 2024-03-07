@@ -81,6 +81,11 @@ class ApriltagDetector {
   std::optional<cv::Mat> extrinsics_;
   cv::Mat dist_coeffs_;
 
+  // The distortion constants passed into gpu_detector_ and used later on to do
+  // undistort before passing corners into apriltags pose estimation.
+  CameraMatrix distortion_camera_matrix_;
+  DistCoeffs distortion_coefficients_;
+
   frc971::apriltag::GpuDetector gpu_detector_;
   cv::Size image_size_;
 

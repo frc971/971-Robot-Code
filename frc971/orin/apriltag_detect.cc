@@ -334,8 +334,9 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 
 // We're undistorting using math found from this github page
 // https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
-void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
-               DistCoeffs *distortion_coefficients) {
+void GpuDetector::UnDistort(double *u, double *v,
+                            const CameraMatrix *camera_matrix,
+                            const DistCoeffs *distortion_coefficients) {
   const double k1 = distortion_coefficients->k1;
   const double k2 = distortion_coefficients->k2;
   const double p1 = distortion_coefficients->p1;
@@ -347,8 +348,11 @@ void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
   const double fy = camera_matrix->fy;
   const double cy = camera_matrix->cy;
 
-  double xP = (*x - cx) / fx;
-  double yP = (*y - cy) / fy;
+  const double xPP = (*u - cx) / fx;
+  const double yPP = (*v - cy) / fy;
+
+  double xP = xPP;
+  double yP = yPP;
 
   double x0 = xP;
   double y0 = yP;
@@ -391,8 +395,8 @@ void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
             << " (" << prev_x << ", " << prev_y << ")";
   }
 
-  *x = xP * fx + cx;
-  *y = yP * fy + cy;
+  *u = xP * fx + cx;
+  *v = yP * fy + cy;
 }
 
 // Mostly stolen from aprilrobotics, but modified to implement the dewarp.
@@ -494,7 +498,8 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       double bestx = x0 + n0 * nx;
       double besty = y0 + n0 * ny;
 
-      UnDistort(&bestx, &besty, camera_matrix, distortion_coefficients);
+      GpuDetector::UnDistort(&bestx, &besty, camera_matrix,
+                             distortion_coefficients);
 
       // update our line fit statistics
       Mx += bestx;
