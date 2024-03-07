@@ -20,5 +20,11 @@ input label {
 }
 
 #EndGame > div > label {
-  padding: 0;
+  padding: 0px;
+}
+
+.button_row {
+  display: flex;
+  width: 90vw;
+  justify-content: space-between;
 }

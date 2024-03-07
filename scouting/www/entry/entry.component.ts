@@ -75,7 +75,7 @@ type ActionT =
   | {
       type: 'robotDeathAction';
       timestamp?: number;
-      robotOn: boolean;
+      robotDead: boolean;
     }
   | {
       type: 'penaltyAction';
@@ -363,7 +363,7 @@ export class EntryComponent implements OnInit {
 
         case 'robotDeathAction':
           const robotDeathActionOffset =
-            RobotDeathAction.createRobotDeathAction(builder, action.robotOn);
+            RobotDeathAction.createRobotDeathAction(builder, action.robotDead);
           actionOffset = Action.createAction(
             builder,
             BigInt(action.timestamp || 0),

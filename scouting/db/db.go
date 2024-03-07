@@ -86,6 +86,7 @@ type Stats2024 struct {
 	NotesDropped                                 int32
 	Penalties                                    int32
 	AvgCycle                                     int64
+	RobotDied                                    bool
 	Park, OnStage, Harmony, TrapNote, Spotlight  bool
 
 	// The username of the person who collected these statistics.

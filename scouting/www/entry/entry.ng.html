@@ -123,7 +123,7 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
       >
         DEAD
       </button>
@@ -183,14 +183,20 @@
       selection and keep all buttons visible without scrolling on most devices.
     -->
     <div
-      [ngClass]="{'d-grid': true, 'gap-3': autoPhase === true, 'gap-5': autoPhase === false}"
+      [ngClass]="{'d-grid': true, 'gap-4': autoPhase === true, 'gap-3': autoPhase === false}"
     >
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
       >
         DEAD
+      </button>
+      <button
+        class="btn btn-info"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kDROPPED});"
+      >
+        Dropped
       </button>
       <div *ngIf="!autoPhase" class="d-grid gap-1" style="padding: 0">
         <div
@@ -298,40 +304,54 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
       >
         DEAD
       </button>
-      <label>
-        <input
-          #park
-          type="radio"
-          id="option1"
-          name="endgameaction"
-          value="park"
-        />
-        Park
-      </label>
-      <label>
-        <input
-          #onStage
-          type="radio"
-          id="option2"
-          name="endgameaction"
-          value="onStage"
-        />
-        On Stage
-      </label>
-      <label>
-        <input
-          #harmony
-          type="radio"
-          id="option3"
-          name="endgameaction"
-          value="harmony"
-        />
-        Harmony
-      </label>
+      <div class="button_row">
+        <label>
+          <input
+            #park
+            type="radio"
+            id="option1"
+            name="endgameaction"
+            value="park"
+          />
+          Park
+        </label>
+        <label>
+          <input
+            #onStage
+            type="radio"
+            id="option2"
+            name="endgameaction"
+            value="onStage"
+          />
+          On Stage
+        </label>
+      </div>
+      <div class="button_row">
+        <label>
+          <input
+            #harmony
+            type="radio"
+            id="option3"
+            name="endgameaction"
+            value="harmony"
+          />
+          Harmony
+        </label>
+        <label>
+          <input
+            #na
+            type="radio"
+            id="option2"
+            name="endgameaction"
+            value="na"
+          />
+          N/A
+        </label>
+      </div>
       <label>
         <input
           #trapNote
@@ -352,6 +372,7 @@
         />
         Spotlight
       </label>
+
       <div style="display: flex">
         <h5>Penalties :</h5>
         <button
@@ -381,12 +402,38 @@
   </div>
   <div *ngSwitchCase="'Dead'" id="Dead" class="container-fluid">
     <h2>Robot is dead</h2>
-    <div class="d-grid gap-2">
+    <div class="d-grid gap-3">
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <div style="display: flex">
+        <h5>Penalties :</h5>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-right: 15px"
+          (click)="removePenalty()"
+        >
+          -
+        </button>
+        <p>{{this.penalties}}</p>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-left: 15px"
+          (click)="addPenalty()"
+        >
+          +
+        </button>
+      </div>
       <button
         class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'robotDeathAction', robotOn: true}); "
+        (click)="changeSectionTo('Pickup'); addAction({type: 'robotDeathAction', robotDead: false}); "
       >
         Revive
+      </button>
+      <button
+        *ngIf="!autoPhase"
+        class="btn btn-info"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: (park.checked ? StageType.kPARK : onStage.checked ? StageType.kON_STAGE : harmony.checked ? StageType.kHARMONY : StageType.kMISSING), trapNote: trapNote.checked, spotlight: spotlight.checked});"
+      >
+        End Match
       </button>
     </div>
   </div>
@@ -414,7 +461,7 @@
               spotlight: {{action.spotlight}}
             </span>
             <span *ngSwitchCase="'robotDeathAction'">
-              Robot on: {{action.robotOn}}
+              Robot dead: {{action.robotDead}}
             </span>
             <span *ngSwitchCase="'mobilityAction'">
               Mobility: {{action.mobility}}
