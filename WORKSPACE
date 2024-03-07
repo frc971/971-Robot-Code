@@ -988,6 +988,11 @@ npm_repositories()
 
 http_archive(
     name = "aspect_rules_cypress",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:rules_cypress/0001-fix-incorrect-linux-checksums.patch",
+        "//third_party:rules_cypress/0002-Add-support-for-cypress-13.6.6.patch",
+    ],
     sha256 = "76947778d8e855eee3c15931e1fcdc1c2a25d56d6c0edd110b2227c05b794d08",
     strip_prefix = "rules_cypress-0.3.2",
     urls = [
@@ -1002,7 +1007,7 @@ rules_cypress_dependencies()
 
 cypress_register_toolchains(
     name = "cypress",
-    cypress_version = "12.3.0",
+    cypress_version = "13.3.1",
 )
 
 # Copied from:
@@ -1013,7 +1018,7 @@ cypress_register_toolchains(
 # LASTCHANGE_URL="https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2FLAST_CHANGE?alt=media"
 # CHROME_REVISION=$(curl -s -S $LASTCHANGE_URL)
 # echo "latest CHROME_REVISION_LINUX is $CHROME_REVISION"
-CHROME_REVISION_LINUX = "1072361"
+CHROME_REVISION_LINUX = "1264932"
 
 http_archive(
     name = "chrome_linux",
@@ -1022,7 +1027,7 @@ name = "all",
 srcs = glob(["**"]),
 visibility = ["//visibility:public"],
 )""",
-    sha256 = "0df22f743facd1e090eff9b7f8d8bdc293fb4dc31ce9156d2ef19b515974a72b",
+    sha256 = "4de54f43b2fc4812b9fad4145e44df6ed3063969174a8883ea42ed4c1ee58301",
     strip_prefix = "chrome-linux",
     urls = [
         "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F" + CHROME_REVISION_LINUX + "%2Fchrome-linux.zip?alt=media",

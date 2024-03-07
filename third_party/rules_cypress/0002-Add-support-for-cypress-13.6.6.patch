@@ -1,0 +1,27 @@
+From 2c8ec34c8fd4f6f485a7c7036e73fa82cd99859d Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Sat, 24 Feb 2024 16:08:46 -0800
+Subject: [PATCH] Add support for cypress 13.6.6
+
+---
+ cypress/private/versions.bzl | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/cypress/private/versions.bzl b/cypress/private/versions.bzl
+index f4b3a1f..6a3e665 100644
+--- a/cypress/private/versions.bzl
++++ b/cypress/private/versions.bzl
+@@ -3,6 +3,13 @@
+ # Use /scripts/mirror_release.sh to add a newer version below.
+ # Versions should be descending order so TOOL_VERSIONS.keys()[0] is the latest version.
+ TOOL_VERSIONS = {
++    "13.6.6": {
++        "darwin-x64": "4b845921f35f520b8217a4ebb9106180c56de37a9db7f57f14352060c9eddca6",
++        "darwin-arm64": "4c8818534bdab028a82aefc1936a552481fa0efb2a7c5c64350e9d9d1c709c85",
++        "linux-x64": "0fe6f52c41912245a71f71c0978a3a64e0dcc9dec4449809c5bf0442032a9912",
++        "linux-arm64": "0fc709f4ae9121f5f7f1bb68423b8ec9c9d9f6c9baf85fcbe0cde3ee9627cc38",
++        "win32-x64": "a31751f41f74af9c3f74860c00d50d0a0e5d5a5fa7c9049db9d56c6082382483",
++    },
+     "13.3.1": {
+         "darwin-x64": "417c5f1d77e15c8aef0a55f155c16c3dbbc637f918c1e51f8fec6eb1c73a9ba9",
+         "darwin-arm64": "143d905779c0b0a8a9049b0eb68b4b156db3d838d4546ce5082a8f7bd5dc5232",
