@@ -1,10 +1,9 @@
 {
-    "name": "@org_frc971/scouting/www/entry",
+    "name": "@org_frc971/scouting/www/scan",
     "private": true,
     "dependencies": {
         "pako": "2.1.0",
         "@types/pako": "2.0.3",
-        "@org_frc971/scouting/www/counter_button": "workspace:*",
         "@angular/forms": "v16-lts"
     }
 }

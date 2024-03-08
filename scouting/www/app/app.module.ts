@@ -10,6 +10,7 @@ import {ShiftScheduleModule} from '../shift_schedule';
 import {ViewModule} from '../view';
 import {DriverRankingModule} from '../driver_ranking';
 import {PitScoutingModule} from '../pit_scouting';
+import {ScanModule} from '../scan';
 
 @NgModule({
   declarations: [App],
@@ -23,6 +24,7 @@ import {PitScoutingModule} from '../pit_scouting';
     DriverRankingModule,
     ViewModule,
     PitScoutingModule,
+    ScanModule,
   ],
   exports: [App],
   bootstrap: [App],

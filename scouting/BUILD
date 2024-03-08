@@ -38,6 +38,22 @@ cypress_test(
     ],
 )
 
+# The QR code test is separate from scouting_test because it's slow. Most of
+# the time folks will want to iterate on `scouting_test`.
+cypress_test(
+    name = "scouting_qrcode_test",
+    size = "large",
+    data = [
+        "scouting_qrcode_test.cy.js",
+        "//scouting/testing:scouting_test_servers",
+        "//scouting/testing/camera_simulator",
+    ],
+    runner = "scouting_test_runner.js",
+    tags = [
+        "no-remote-cache",
+    ],
+)
+
 apache_wrapper(
     name = "https",
     binary = ":scouting",

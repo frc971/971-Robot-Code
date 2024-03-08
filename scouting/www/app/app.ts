@@ -7,10 +7,11 @@ type Tab =
   | 'DriverRanking'
   | 'ShiftSchedule'
   | 'View'
-  | 'Pit';
+  | 'Pit'
+  | 'Scan';
 
 // Ignore the guard for tabs that don't require the user to enter any data.
-const unguardedTabs: Tab[] = ['MatchList', 'View'];
+const unguardedTabs: Tab[] = ['MatchList', 'Scan', 'View'];
 
 type TeamInMatch = {
   teamNumber: string;

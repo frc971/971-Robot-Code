@@ -476,6 +476,9 @@
     </div>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button class="btn btn-info" (click)="changeSectionTo('QR Code');">
+        Create QR Code
+      </button>
       <button class="btn btn-warning" (click)="submit2024Actions();">
         Submit
       </button>
@@ -483,6 +486,75 @@
   </div>
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
     <h2>Successfully submitted data.</h2>
+  </div>
+  <div *ngSwitchCase="'QR Code'" id="QR Code" class="container-fluid">
+    <span>Density:</span>
+    <select
+      [(ngModel)]="qrCodeValuePieceSize"
+      (ngModelChange)="updateQrCodeValuePieceSize()"
+      type="number"
+      id="qr_code_piece_size"
+    >
+      <option
+        *ngFor="let pieceSize of QR_CODE_PIECE_SIZES"
+        [ngValue]="pieceSize"
+      >
+        {{pieceSize}}
+      </option>
+    </select>
+    <div class="qr-container">
+      <qrcode
+        [qrdata]="qrCodeValuePieces[qrCodeValueIndex]"
+        [width]="1000"
+        [errorCorrectionLevel]="'M'"
+        [margin]="6"
+        class="qrcode"
+      ></qrcode>
+    </div>
+    <nav class="qrcode-nav">
+      <ul
+        class="qrcode-buttons pagination pagination-lg justify-content-center"
+      >
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="#"
+            aria-label="Previous"
+            (click)="setQrCodeValueIndex(qrCodeValueIndex - 1)"
+          >
+            <span aria-hidden="true">&laquo;</span>
+            <span class="visually-hidden">Previous</span>
+          </a>
+        </li>
+        <li *ngFor="let _ of qrCodeValuePieces; index as i" class="page-item">
+          <a
+            class="page-link"
+            href="#"
+            (click)="setQrCodeValueIndex(i)"
+            [class.active]="qrCodeValueIndex == i"
+          >
+            {{i + 1}}
+          </a>
+        </li>
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="#"
+            aria-label="Next"
+            (click)="setQrCodeValueIndex(qrCodeValueIndex + 1)"
+          >
+            <span aria-hidden="true">&raquo;</span>
+            <span class="visually-hidden">Next</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <button
+      class="btn btn-secondary"
+      (click)="changeSectionTo('Review and Submit')"
+    >
+      BACK
+    </button>
   </div>
 
   <span class="progress_message" role="alert">{{ progressMessage }}</span>
