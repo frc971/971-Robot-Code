@@ -56,8 +56,8 @@ interface Input {
 const KEYWORD_CHECKBOX_LABELS = {
   goodDriving: 'Good Driving',
   badDriving: 'Bad Driving',
-  solidPlacing: 'Solid Placing',
-  sketchyPlacing: 'Sketchy Placing',
+  solidPlacing: 'Solid Shooting',
+  sketchyPlacing: 'Sketchy Shooting',
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
   easilyDefended: 'Easily Defended',
