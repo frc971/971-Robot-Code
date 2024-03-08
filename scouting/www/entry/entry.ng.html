@@ -429,7 +429,6 @@
         Revive
       </button>
       <button
-        *ngIf="!autoPhase"
         class="btn btn-info"
         (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: (park.checked ? StageType.kPARK : onStage.checked ? StageType.kON_STAGE : harmony.checked ? StageType.kHARMONY : StageType.kMISSING), trapNote: trapNote.checked, spotlight: spotlight.checked});"
       >
