@@ -30,6 +30,7 @@ class DualImuBlenderTest : public ::testing::Test {
         dual_imu_blender_(dual_imu_blender_event_loop_.get()) {}
 
   void CheckImuType(frc971::imu::ImuType type) {
+    dual_imu_blender_status_fetcher_.Fetch();
     EXPECT_EQ(dual_imu_blender_status_fetcher_->gyro_x(), type);
     EXPECT_EQ(dual_imu_blender_status_fetcher_->gyro_y(), type);
     EXPECT_EQ(dual_imu_blender_status_fetcher_->gyro_z(), type);
@@ -182,41 +183,43 @@ TEST_F(DualImuBlenderTest, Saturation) {
   CheckImuType(frc971::imu::ImuType::MURATA);
 
   // Make sure we switch to TDK on saturation
-  dual_imu_blender_event_loop_->OnRun([this] {
-    aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder dual_imu_builder =
-        dual_imu_sender_.MakeStaticBuilder();
+  dual_imu_blender_event_loop_->AddPhasedLoop(
+      [this](int) {
+        aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder
+            dual_imu_builder = dual_imu_sender_.MakeStaticBuilder();
 
-    frc971::imu::SingleImuStatic *murata = dual_imu_builder->add_murata();
+        frc971::imu::SingleImuStatic *murata = dual_imu_builder->add_murata();
 
-    auto *murata_chip_states = murata->add_chip_states();
-    frc971::imu::ChipStateStatic *murata_uno_chip_state =
-        murata_chip_states->emplace_back();
+        auto *murata_chip_states = murata->add_chip_states();
+        frc971::imu::ChipStateStatic *murata_uno_chip_state =
+            murata_chip_states->emplace_back();
 
-    frc971::imu::SingleImuStatic *tdk = dual_imu_builder->add_tdk();
+        frc971::imu::SingleImuStatic *tdk = dual_imu_builder->add_tdk();
 
-    dual_imu_builder->set_board_timestamp_us(1);
-    dual_imu_builder->set_kernel_timestamp(1);
+        dual_imu_builder->set_board_timestamp_us(1);
+        dual_imu_builder->set_kernel_timestamp(1);
 
-    tdk->set_gyro_x(6.0);
-    tdk->set_gyro_y(6.0);
-    tdk->set_gyro_z(6.0);
+        tdk->set_gyro_x(6.0);
+        tdk->set_gyro_y(6.0);
+        tdk->set_gyro_z(6.0);
 
-    murata->set_gyro_x(5.2);
-    murata->set_gyro_y(5.2);
-    murata->set_gyro_z(5.2);
+        murata->set_gyro_x(5.2);
+        murata->set_gyro_y(5.2);
+        murata->set_gyro_z(5.2);
 
-    tdk->set_accelerometer_x(6.2);
-    tdk->set_accelerometer_y(6.3);
-    tdk->set_accelerometer_z(6.5);
+        tdk->set_accelerometer_x(6.2);
+        tdk->set_accelerometer_y(6.3);
+        tdk->set_accelerometer_z(6.5);
 
-    murata->set_accelerometer_x(5.5);
-    murata->set_accelerometer_y(5.5);
-    murata->set_accelerometer_z(5.5);
+        murata->set_accelerometer_x(5.5);
+        murata->set_accelerometer_y(5.5);
+        murata->set_accelerometer_z(5.5);
 
-    murata_uno_chip_state->set_temperature(20);
+        murata_uno_chip_state->set_temperature(20);
 
-    dual_imu_builder.CheckOk(dual_imu_builder.Send());
-  });
+        dual_imu_builder.CheckOk(dual_imu_builder.Send());
+      },
+      std::chrono::milliseconds(1));
 
   event_loop_factory_.RunFor(std::chrono::milliseconds(200));
 
@@ -243,41 +246,43 @@ TEST_F(DualImuBlenderTest, Saturation) {
   CheckImuType(frc971::imu::ImuType::TDK);
 
   // Check negative values as well
-  dual_imu_blender_event_loop_->OnRun([this] {
-    aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder dual_imu_builder =
-        dual_imu_sender_.MakeStaticBuilder();
+  dual_imu_blender_event_loop_->AddPhasedLoop(
+      [this](int) {
+        aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder
+            dual_imu_builder = dual_imu_sender_.MakeStaticBuilder();
 
-    frc971::imu::SingleImuStatic *murata = dual_imu_builder->add_murata();
+        frc971::imu::SingleImuStatic *murata = dual_imu_builder->add_murata();
 
-    auto *murata_chip_states = murata->add_chip_states();
-    frc971::imu::ChipStateStatic *murata_uno_chip_state =
-        murata_chip_states->emplace_back();
+        auto *murata_chip_states = murata->add_chip_states();
+        frc971::imu::ChipStateStatic *murata_uno_chip_state =
+            murata_chip_states->emplace_back();
 
-    frc971::imu::SingleImuStatic *tdk = dual_imu_builder->add_tdk();
+        frc971::imu::SingleImuStatic *tdk = dual_imu_builder->add_tdk();
 
-    dual_imu_builder->set_board_timestamp_us(1);
-    dual_imu_builder->set_kernel_timestamp(1);
+        dual_imu_builder->set_board_timestamp_us(1);
+        dual_imu_builder->set_kernel_timestamp(1);
 
-    tdk->set_gyro_x(-6.0);
-    tdk->set_gyro_y(-6.0);
-    tdk->set_gyro_z(-6.0);
+        tdk->set_gyro_x(-6.0);
+        tdk->set_gyro_y(-6.0);
+        tdk->set_gyro_z(-6.0);
 
-    murata->set_gyro_x(-5.2);
-    murata->set_gyro_y(-5.2);
-    murata->set_gyro_z(-5.2);
+        murata->set_gyro_x(-5.2);
+        murata->set_gyro_y(-5.2);
+        murata->set_gyro_z(-5.2);
 
-    tdk->set_accelerometer_x(-6.2);
-    tdk->set_accelerometer_y(-6.3);
-    tdk->set_accelerometer_z(-6.5);
+        tdk->set_accelerometer_x(-6.2);
+        tdk->set_accelerometer_y(-6.3);
+        tdk->set_accelerometer_z(-6.5);
 
-    murata->set_accelerometer_x(-5.5);
-    murata->set_accelerometer_y(-5.5);
-    murata->set_accelerometer_z(-5.5);
+        murata->set_accelerometer_x(-5.5);
+        murata->set_accelerometer_y(-5.5);
+        murata->set_accelerometer_z(-5.5);
 
-    murata_uno_chip_state->set_temperature(20);
+        murata_uno_chip_state->set_temperature(20);
 
-    dual_imu_builder.CheckOk(dual_imu_builder.Send());
-  });
+        dual_imu_builder.CheckOk(dual_imu_builder.Send());
+      },
+      std::chrono::milliseconds(1));
 
   event_loop_factory_.RunFor(std::chrono::milliseconds(200));
 

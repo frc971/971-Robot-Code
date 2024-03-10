@@ -12,7 +12,7 @@
     {
       "name": "/imu",
       "type": "frc971.imu.DualImu",
-      "frequency": 200
+      "frequency": 2000
     },
     {
       "name": "/can",
@@ -32,7 +32,7 @@
     {
       "name": "/imu",
       "type": "frc971.imu.DualImuBlenderStatus",
-      "frequency": 100
+      "frequency": 2000
     },
   ]
 }

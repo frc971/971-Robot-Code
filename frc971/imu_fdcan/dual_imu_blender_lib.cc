@@ -14,6 +14,7 @@ static constexpr double kMurataAccelSaturation = 6.0;
 // Coefficient to multiply the saturation values by to give some room on where
 // we switch to tdk.
 static constexpr double kSaturationCoeff = 0.9;
+static constexpr size_t kSaturationCounterThreshold = 20;
 
 using frc971::imu_fdcan::DualImuBlender;
 
@@ -66,6 +67,12 @@ void DualImuBlender::HandleDualImu(const frc971::imu::DualImu *dual_imu) {
 
   if (std::abs(dual_imu->tdk()->gyro_z()) >=
       kSaturationCoeff * kMurataGyroSaturation) {
+    ++saturated_counter_;
+  } else {
+    saturated_counter_ = 0;
+  }
+
+  if (saturated_counter_ > kSaturationCounterThreshold) {
     dual_imu_blender_status_builder->set_gyro_z(imu::ImuType::TDK);
     imu_values->set_gyro_z(dual_imu->tdk()->gyro_z());
   } else {
