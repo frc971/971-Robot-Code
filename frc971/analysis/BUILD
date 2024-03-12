@@ -124,3 +124,18 @@ py_binary(
     ],
     deps = ["@RangeHTTPServer"],
 )
+
+cc_binary(
+    name = "pdp_values",
+    srcs = [
+        "pdp_values.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/util:simulation_logger",
+        "//frc971/wpilib:pdp_values_fbs",
+    ],
+)
