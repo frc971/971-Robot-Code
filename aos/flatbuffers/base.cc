@@ -7,6 +7,31 @@ void *DereferenceOffset(uoffset_t *offset) {
 }
 }  // namespace
 
+ResizeableObject::ResizeableObject(ResizeableObject &&other)
+    : buffer_(other.buffer_),
+      parent_(other.parent_),
+      owned_allocator_(std::move(other.owned_allocator_)),
+      allocator_(other.allocator_) {
+  // At this stage in the move the move constructors of the inherited types have
+  // not yet been called, so we edit the state of the other object now so that
+  // when everything is moved over into the new objects they will have the
+  // correct pointers.
+  for (size_t index = 0; index < other.NumberOfSubObjects(); ++index) {
+    SubObject object = other.GetSubObject(index);
+    if (object.object != nullptr) {
+      object.object->parent_ = this;
+    }
+  }
+  other.buffer_ = {};
+  other.allocator_ = nullptr;
+  other.parent_ = nullptr;
+  // Sanity check that the std::unique_ptr move didn't reallocate/move memory
+  // around.
+  if (owned_allocator_.get() != nullptr) {
+    CHECK_EQ(owned_allocator_.get(), allocator_);
+  }
+}
+
 bool ResizeableObject::InsertBytes(void *insertion_point, size_t bytes,
                                    SetZero set_zero) {
   // See comments on InsertBytes() declaration and in FixObjects()

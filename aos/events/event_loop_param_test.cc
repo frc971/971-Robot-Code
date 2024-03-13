@@ -133,6 +133,33 @@ TEST_P(AbstractEventLoopTest, BasicStatic) {
   EXPECT_TRUE(happened);
 }
 
+// Tests that a static sender's Builder object can be moved safely.
+TEST_P(AbstractEventLoopTest, StaticBuilderMoveConstructor) {
+  auto loop1 = MakePrimary();
+
+  aos::Sender<TestMessageStatic> sender =
+      loop1->MakeSender<TestMessageStatic>("/test");
+  aos::Fetcher<TestMessage> fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  std::optional<aos::Sender<TestMessageStatic>::StaticBuilder> moved_to_builder;
+  {
+    aos::Sender<TestMessageStatic>::StaticBuilder moved_from_builder =
+        sender.MakeStaticBuilder();
+    moved_to_builder.emplace(std::move(moved_from_builder));
+  }
+
+  loop1->OnRun([this, &moved_to_builder]() {
+    moved_to_builder.value()->set_value(200);
+    CHECK(moved_to_builder.value().builder()->Verify());
+    moved_to_builder.value().CheckOk(moved_to_builder.value().Send());
+    this->Exit();
+  });
+
+  ASSERT_FALSE(fetcher.Fetch());
+  Run();
+  ASSERT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(200, fetcher->value());
+}
+
 // Tests that watcher can receive messages from a sender, sent via SendDetached.
 TEST_P(AbstractEventLoopTest, BasicSendDetached) {
   auto loop1 = Make();
