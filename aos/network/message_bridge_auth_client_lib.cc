@@ -69,7 +69,7 @@ std::vector<uint8_t> MessageBridgeAuthClient::GetSctpKey() {
   Status status = client_->GetActiveKey(&context, request, &response);
   if (!status.ok()) {
     LOG_EVERY_N(ERROR, 50)
-        << "Unable to retreive active SCTP authentication key from server";
+        << "Unable to retrieve active SCTP authentication key from server";
     return {};
   }
 
