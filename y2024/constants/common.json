@@ -24,7 +24,7 @@
   ],
   "intake_roller_voltages": {
     "spitting": -4.0,
-    "intaking": 12.0
+    "intaking": 9.0
   },
   "intake_pivot_set_points": {
     "extended": -0.03,
@@ -38,8 +38,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 4.0,
-      "max_acceleration": 10.0
+      "max_velocity": 6.0,
+      "max_acceleration": 40.0
     },
     "range": {
         "lower_hard": -0.2,
@@ -59,18 +59,18 @@
     "intake_roller_stator_current_limit": 50,
     "transfer_roller_supply_current_limit": 20,
     "transfer_roller_stator_current_limit": 50,
-    "drivetrain_supply_current_limit": 35,
-    "drivetrain_stator_current_limit": 60,
+    "drivetrain_supply_current_limit": 50,
+    "drivetrain_stator_current_limit": 200,
     "climber_supply_current_limit": 30,
     "climber_stator_current_limit": 100,
-    "extend_supply_current_limit": 20,
-    "extend_stator_current_limit": 100,
-    "extend_roller_supply_current_limit": 60,
-    "extend_roller_stator_current_limit": 200,
+    "extend_supply_current_limit": 30,
+    "extend_stator_current_limit": 150,
+    "extend_roller_supply_current_limit": 50,
+    "extend_roller_stator_current_limit": 150,
     "turret_supply_current_limit": 20,
     "turret_stator_current_limit": 40,
-    "altitude_supply_current_limit": 10,
-    "altitude_stator_current_limit": 60,
+    "altitude_supply_current_limit": 30,
+    "altitude_stator_current_limit": 150,
     "catapult_supply_current_limit": 60,
     "catapult_stator_current_limit": 250,
     "retention_roller_stator_current_limit": 20,
@@ -79,12 +79,12 @@
     "retention_roller_supply_current_limit": 10
   },
   "transfer_roller_voltages": {
-    "transfer_in": 12.0,
+    "transfer_in": 9.0,
     "transfer_out": -4.0,
     "extend_moving": 4.0
   },
   "extend_roller_voltages": {
-    "scoring": 12.0,
+    "scoring": 7.0,
     "reversing": -4.0
   },
   "climber_set_points": {
@@ -139,8 +139,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 3.0,
-      "max_acceleration": 5.0
+      "max_velocity": 5.0,
+      "max_acceleration": 30.0
     },
     "range": {
         "lower_hard": -0.01,
@@ -158,8 +158,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 2.0,
-      "max_acceleration": 5.0
+      "max_velocity": 3.0,
+      "max_acceleration": 30.0
     },
     "range": {
         "lower_hard": -4.8,
@@ -177,8 +177,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 0.1,
-      "max_acceleration": 0.3
+      "max_velocity": 2.0,
+      "max_acceleration": 10.0
     },
     "range": {
         "lower_hard": -0.005,

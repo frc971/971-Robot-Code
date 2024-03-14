@@ -24,7 +24,7 @@ kAltitude = angular_system.AngularSystemParams(
     motor=control_loop.KrakenFOC(),
     G=(16.0 / 60.0) * (16.0 / 162.0),
     # 4340 in^ lb
-    J=1.27,
+    J=1.2,
     q_pos=0.60,
     q_vel=8.0,
     kalman_q_pos=0.12,
