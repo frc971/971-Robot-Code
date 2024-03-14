@@ -33,6 +33,18 @@ To update the keywords complete the following:
 // for all the teams being scouted.
 type Section = 'TeamSelection' | 'Data';
 
+const COMP_LEVELS = ['qm', 'ef', 'qf', 'sf', 'f'] as const;
+type CompLevel = typeof COMP_LEVELS[number];
+
+// TODO(phil): Deduplicate with match_list.component.ts.
+const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
+  qm: 'Qualifications',
+  ef: 'Eighth Finals',
+  qf: 'Quarter Finals',
+  sf: 'Semi Finals',
+  f: 'Finals',
+};
+
 // Every keyword checkbox corresponds to a boolean.
 // If the boolean is True, the checkbox is selected
 // and the note scout saw that the robot being scouted
@@ -45,12 +57,16 @@ interface Keywords {
   goodDefense: boolean;
   badDefense: boolean;
   easilyDefended: boolean;
+  noShow: boolean;
 }
 
 interface Input {
   teamNumber: string;
   notesData: string;
   keywordsData: Keywords;
+  matchNumber: number;
+  setNumber: number;
+  compLevel: string;
 }
 
 const KEYWORD_CHECKBOX_LABELS = {
@@ -61,6 +77,7 @@ const KEYWORD_CHECKBOX_LABELS = {
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
   easilyDefended: 'Easily Defended',
+  noShow: 'No Show',
 } as const;
 
 @Component({
@@ -71,6 +88,8 @@ const KEYWORD_CHECKBOX_LABELS = {
 export class Notes {
   // Re-export KEYWORD_CHECKBOX_LABELS so that we can
   // use it in the checkbox properties.
+  readonly COMP_LEVELS = COMP_LEVELS;
+  readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
   readonly KEYWORD_CHECKBOX_LABELS = KEYWORD_CHECKBOX_LABELS;
 
   // Necessary in order to iterate the keys of KEYWORD_CHECKBOX_LABELS.
@@ -79,7 +98,10 @@ export class Notes {
   section: Section = 'TeamSelection';
 
   errorMessage = '';
-  teamNumberSelection: string = '971';
+  teamNumber: string = '1';
+  matchNumber: number = 1;
+  setNumber: number = 1;
+  compLevel: CompLevel = 'qm';
 
   // Data inputted by user is stored in this array.
   // Includes the team number, notes, and keyword selection.
@@ -108,10 +130,17 @@ export class Notes {
     }
   }
 
-  setTeamNumber() {
+  setTeamData() {
     let data: Input = {
-      teamNumber: this.teamNumberSelection,
-      notesData: 'Match: \nAuto: \nTeleop: \nEndgame: ',
+      teamNumber: this.teamNumber,
+      notesData:
+        'Match ' +
+        this.matchNumber +
+        ' Set ' +
+        this.setNumber +
+        ' ' +
+        COMP_LEVEL_LABELS[this.compLevel] +
+        ' \nAuto: \nTeleop: \nEndgame: ',
       keywordsData: {
         goodDriving: false,
         badDriving: false,
@@ -120,7 +149,11 @@ export class Notes {
         goodDefense: false,
         badDefense: false,
         easilyDefended: false,
+        noShow: false,
       },
+      matchNumber: this.matchNumber,
+      setNumber: this.setNumber,
+      compLevel: this.compLevel,
     };
 
     this.newData.push(data);
@@ -146,6 +179,7 @@ export class Notes {
       const dataFb = builder.createString(this.newData[i].notesData);
 
       const teamNumber = builder.createString(this.newData[i].teamNumber);
+      const compLevel = builder.createString(this.newData[i].compLevel);
 
       builder.finish(
         SubmitNotes.createSubmitNotes(
@@ -158,7 +192,11 @@ export class Notes {
           this.newData[i].keywordsData.sketchyPlacing,
           this.newData[i].keywordsData.goodDefense,
           this.newData[i].keywordsData.badDefense,
-          this.newData[i].keywordsData.easilyDefended
+          this.newData[i].keywordsData.easilyDefended,
+          this.newData[i].keywordsData.noShow,
+          this.newData[i].matchNumber,
+          this.newData[i].setNumber,
+          compLevel
         )
       );
 

@@ -10,6 +10,10 @@ table Note {
     good_defense:bool (id: 6);
     bad_defense:bool (id: 7);
     easily_defended:bool (id: 8);
+    no_show:bool (id: 9);
+    match_number:int (id: 10);
+    set_number:int (id: 11);
+    comp_level:string (id: 12);
 }
 
 table RequestAllNotesResponse {

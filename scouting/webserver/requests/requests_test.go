@@ -696,6 +696,10 @@ func TestSubmitNotes(t *testing.T) {
 		GoodDefense:    true,
 		BadDefense:     false,
 		EasilyDefended: true,
+		NoShow:         false,
+		MatchNumber:    4,
+		CompLevel:      "qm",
+		SetNumber:      1,
 	}).Pack(builder))
 
 	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes())
@@ -714,6 +718,10 @@ func TestSubmitNotes(t *testing.T) {
 			GoodDefense:    true,
 			BadDefense:     false,
 			EasilyDefended: true,
+			NoShow:         false,
+			MatchNumber:    4,
+			CompLevel:      "qm",
+			SetNumber:      1,
 		},
 	}
 
@@ -734,6 +742,10 @@ func TestRequestNotes(t *testing.T) {
 			GoodDefense:    true,
 			BadDefense:     false,
 			EasilyDefended: true,
+			NoShow:         false,
+			MatchNumber:    4,
+			CompLevel:      "qm",
+			SetNumber:      1,
 		}},
 	}
 	scoutingServer := server.NewScoutingServer()
@@ -1098,6 +1110,10 @@ func TestRequestAllNotes(t *testing.T) {
 				GoodDefense:    true,
 				BadDefense:     false,
 				EasilyDefended: false,
+				NoShow:         false,
+				MatchNumber:    4,
+				CompLevel:      "qm",
+				SetNumber:      1,
 			},
 			{
 				TeamNumber:     "972",
@@ -1109,6 +1125,10 @@ func TestRequestAllNotes(t *testing.T) {
 				GoodDefense:    false,
 				BadDefense:     true,
 				EasilyDefended: false,
+				NoShow:         false,
+				MatchNumber:    1,
+				CompLevel:      "qm",
+				SetNumber:      2,
 			},
 		},
 	}
@@ -1137,6 +1157,10 @@ func TestRequestAllNotes(t *testing.T) {
 				GoodDefense:    true,
 				BadDefense:     false,
 				EasilyDefended: false,
+				NoShow:         false,
+				MatchNumber:    4,
+				CompLevel:      "qm",
+				SetNumber:      1,
 			},
 			{
 				Team:           "972",
@@ -1148,6 +1172,10 @@ func TestRequestAllNotes(t *testing.T) {
 				GoodDefense:    false,
 				BadDefense:     true,
 				EasilyDefended: false,
+				NoShow:         false,
+				MatchNumber:    1,
+				CompLevel:      "qm",
+				SetNumber:      2,
 			},
 		},
 	}

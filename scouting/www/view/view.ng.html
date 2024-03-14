@@ -71,7 +71,7 @@
             </div>
           </th>
           <th scope="col">Match</th>
-          <th scope="col">Note</th>
+          <th scope="col">Notes</th>
           <th scope="col">Keywords</th>
           <th scope="col"></th>
         </tr>
@@ -79,8 +79,7 @@
       <tbody>
         <tr *ngFor="let note of noteList; index as i;">
           <th scope="row">{{note.team()}}</th>
-          <!-- Placeholder for match number. -->
-          <td>0</td>
+          <th scope="row">{{note.matchNumber()}}</th>
           <td>{{note.notes()}}</td>
           <td>{{parseKeywords(note)}}</td>
           <!-- Delete Icon. -->

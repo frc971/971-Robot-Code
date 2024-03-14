@@ -107,9 +107,10 @@ class TestDebugCli(unittest.TestCase):
             "bad_driving": False,
             "solid_placing": False,
             "sketchy_placing": True,
-            "good_defense": False,
-            "bad_defense": False,
-            "easily_defended": False,
+            "no_show": False,
+            "match_number": 3,
+            "set_number": 1,
+            "comp_level": "qm",
         })
         exit_code, _, stderr = run_debug_cli(["-submitNotes", json_path])
         self.assertEqual(exit_code, 0, stderr)
@@ -132,7 +133,11 @@ class TestDebugCli(unittest.TestCase):
             SketchyPlacing: (bool) true,
             GoodDefense: (bool) false,
             BadDefense: (bool) false,
-            EasilyDefended: (bool) false
+            EasilyDefended: (bool) false,
+            NoShow: (bool) false,
+            MatchNumber: (int32) 3,
+            SetNumber: (int32) 1,
+            CompLevel: (string) (len=2) "qm"
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking(self):

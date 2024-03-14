@@ -398,6 +398,10 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		GoodDefense:    bool(request.GoodDefense()),
 		BadDefense:     bool(request.BadDefense()),
 		EasilyDefended: bool(request.EasilyDefended()),
+		NoShow:         bool(request.NoShow()),
+		MatchNumber:    request.MatchNumber(),
+		SetNumber:      request.SetNumber(),
+		CompLevel:      string(request.CompLevel()),
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
@@ -1060,6 +1064,10 @@ func (handler requestAllNotesHandler) ServeHTTP(w http.ResponseWriter, req *http
 			GoodDefense:    note.GoodDefense,
 			BadDefense:     note.BadDefense,
 			EasilyDefended: note.EasilyDefended,
+			NoShow:         note.NoShow,
+			MatchNumber:    note.MatchNumber,
+			CompLevel:      note.CompLevel,
+			SetNumber:      note.SetNumber,
 		})
 	}
 

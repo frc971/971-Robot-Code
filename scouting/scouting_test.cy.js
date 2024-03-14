@@ -309,6 +309,9 @@ describe('Scouting app tests', () => {
     // Navigate to add team selection and add another team.
     clickButton('Add team');
     setInputTo('#team_number_notes', '1235');
+    setInputTo('#match_number_notes', 1);
+    setInputTo('#set_number_notes', 2);
+    setInputTo('#comp_level_notes', 'qm');
     clickButton('Select');
 
     // Add note and select keyword for second team.
@@ -328,16 +331,25 @@ describe('Scouting app tests', () => {
 
     // Add first team.
     setInputTo('#team_number_notes', '1234');
+    setInputTo('#match_number_notes', 1);
+    setInputTo('#set_number_notes', 2);
+    setInputTo('#comp_level_notes', 'qm');
     clickButton('Select');
 
     // Add second team.
     clickButton('Add team');
     setInputTo('#team_number_notes', '1235');
+    setInputTo('#match_number_notes', 1);
+    setInputTo('#set_number_notes', 2);
+    setInputTo('#comp_level_notes', 'qm');
     clickButton('Select');
 
     // Add third team.
     clickButton('Add team');
     setInputTo('#team_number_notes', '1236');
+    setInputTo('#match_number_notes', 1);
+    setInputTo('#set_number_notes', 2);
+    setInputTo('#comp_level_notes', 'qm');
     clickButton('Select');
 
     for (let i = 1; i <= 3; i++) {
