@@ -297,7 +297,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       extend_moving = false;
       extend_goal_location = ExtendStatus::CATAPULT;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_CATAPULT;
-      transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
+      transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
 
       // If we lost the game piece, reset state to idle.
       if (((timestamp - loading_catapult_start_time_) >
@@ -564,7 +564,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           extend_goal_position, extend_.estimated_position(),
           &max_extend_position, &min_extend_position,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
-          &min_intake_pivot_position, status->fbb(), timestamp);
+          &min_intake_pivot_position, requested_note_goal_, status->fbb(),
+          timestamp);
 
   intake_pivot_.set_min_position(min_intake_pivot_position);
   intake_pivot_.set_max_position(max_intake_pivot_position);

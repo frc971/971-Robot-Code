@@ -521,6 +521,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->catapult_stator_current_limit(),
         current_limits->catapult_supply_current_limit());
 
+    transfer_roller->set_neutral_mode(
+        ctre::phoenix6::signals::NeutralModeValue::Coast);
+    intake_roller->set_neutral_mode(
+        ctre::phoenix6::signals::NeutralModeValue::Coast);
+
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(

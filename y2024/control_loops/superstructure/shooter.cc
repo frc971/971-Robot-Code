@@ -44,7 +44,7 @@ Shooter::Iterate(
     const double extend_goal, double *max_extend_position,
     double *min_extend_position, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
-    flatbuffers::FlatBufferBuilder *fbb,
+    NoteGoal requested_note_goal, flatbuffers::FlatBufferBuilder *fbb,
     aos::monotonic_clock::time_point monotonic_now) {
   drivetrain_status_fetcher_.Fetch();
 
@@ -96,8 +96,16 @@ Shooter::Iterate(
 
   bool aiming = false;
 
-  if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
-      (!piece_loaded && state_ == CatapultState::READY)) {
+  if (requested_note_goal == NoteGoal::AMP) {
+    // Being asked to amp, lift the altitude up.
+    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+        turret_goal_builder.get(),
+        robot_constants_->common()->turret_loading_position());
+
+    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+        altitude_goal_builder.get(), 0.3);
+  } else if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
+             (!piece_loaded && state_ == CatapultState::READY)) {
     // We don't have the note so we should be ready to intake it.
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         turret_goal_builder.get(),
@@ -106,7 +114,6 @@ Shooter::Iterate(
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         altitude_goal_builder.get(),
         robot_constants_->common()->altitude_loading_position());
-
   } else {
     // We have a game piece, lets start aiming.
     if (drivetrain_status_fetcher_.get() != nullptr) {

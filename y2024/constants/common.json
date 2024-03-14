@@ -89,7 +89,7 @@
   },
   "climber_set_points": {
     "full_extend": -0.005,
-    "stowed": -0.35,
+    "stowed": -0.478,
     "retract": -0.478
   },
   "climber": {
@@ -234,7 +234,7 @@
   },
   "extend_set_points": {
     "trap": 0.46,
-    "amp": 0.2,
+    "amp": 0.35,
     "catapult": 0.017,
     "retracted": 0.017
   },

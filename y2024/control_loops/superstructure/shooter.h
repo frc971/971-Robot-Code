@@ -106,7 +106,7 @@ class Shooter {
       const double extend_goal, double *max_extend_position,
       double *min_extend_position, const double intake_pivot_position,
       double *max_turret_intake_position, double *min_intake_pivot_position,
-      flatbuffers::FlatBufferBuilder *fbb,
+      NoteGoal requested_note_goal, flatbuffers::FlatBufferBuilder *fbb,
       aos::monotonic_clock::time_point monotonic_now);
 
  private:
