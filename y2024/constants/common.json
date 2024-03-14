@@ -234,7 +234,7 @@
   },
   "extend_set_points": {
     "trap": 0.46,
-    "amp": 0.2,
+    "amp": 0.35,
     "catapult": 0.017,
     "retracted": 0.017
   },
