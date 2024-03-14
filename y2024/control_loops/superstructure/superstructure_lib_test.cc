@@ -1184,6 +1184,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             ExtendRollerStatus::IDLE);
 
   // Should now be loaded.
+  superstructure_output_fetcher_.Fetch();
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
 
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->altitude()->position(),
