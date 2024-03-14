@@ -23,6 +23,8 @@ DEFINE_bool(visualize_solver, false, "If true, visualize the solving process.");
 DEFINE_double(outlier_std_devs, 1.0,
               "Number of standard deviations above average error needed for a "
               "constraint to be considered an outlier and get removed.");
+DEFINE_bool(do_map_fitting, false,
+            "Whether to do a final fit of the solved map to the original map");
 
 namespace frc971::vision {
 Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
@@ -448,36 +450,38 @@ void TargetMapper::Solve(std::string_view field_name,
   CHECK(SolveOptimizationProblem(&target_pose_problem_2))
       << "The target pose solve 2 was not successful, exiting.";
 
-  LOG(INFO) << "Solving the overall map's best alignment to the previous map";
-  ceres::Problem map_fitting_problem(
-      {.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP});
-  std::unique_ptr<ceres::CostFunction> map_fitting_cost_function =
-      BuildMapFittingOptimizationProblem(&map_fitting_problem);
-  CHECK(SolveOptimizationProblem(&map_fitting_problem))
-      << "The map fitting solve was not successful, exiting.";
-  map_fitting_cost_function.release();
+  if (FLAGS_do_map_fitting) {
+    LOG(INFO) << "Solving the overall map's best alignment to the previous map";
+    ceres::Problem map_fitting_problem(
+        {.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP});
+    std::unique_ptr<ceres::CostFunction> map_fitting_cost_function =
+        BuildMapFittingOptimizationProblem(&map_fitting_problem);
+    CHECK(SolveOptimizationProblem(&map_fitting_problem))
+        << "The map fitting solve was not successful, exiting.";
+    map_fitting_cost_function.release();
 
-  Eigen::Affine3d H_frozen_actual = T_frozen_actual_ * R_frozen_actual_;
-  LOG(INFO) << "H_frozen_actual: "
-            << PoseUtils::Affine3dToPose3d(H_frozen_actual);
+    Eigen::Affine3d H_frozen_actual = T_frozen_actual_ * R_frozen_actual_;
+    LOG(INFO) << "H_frozen_actual: "
+              << PoseUtils::Affine3dToPose3d(H_frozen_actual);
 
-  auto H_world_frozen =
-      PoseUtils::Pose3dToAffine3d(target_poses_[FLAGS_frozen_target_id]);
-  auto H_world_frozenactual = H_world_frozen * H_frozen_actual;
+    auto H_world_frozen =
+        PoseUtils::Pose3dToAffine3d(target_poses_[FLAGS_frozen_target_id]);
+    auto H_world_frozenactual = H_world_frozen * H_frozen_actual;
 
-  // Offset the solved poses to become the actual ones
-  for (auto &[id, pose] : target_poses_) {
-    // Don't offset targets we didn't solve for
-    if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
-      continue;
+    // Offset the solved poses to become the actual ones
+    for (auto &[id, pose] : target_poses_) {
+      // Don't offset targets we didn't solve for
+      if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
+        continue;
+      }
+
+      // Take the delta between the frozen target and the solved target, and put
+      // that on top of the actual pose of the frozen target
+      auto H_world_solved = PoseUtils::Pose3dToAffine3d(pose);
+      auto H_frozen_solved = H_world_frozen.inverse() * H_world_solved;
+      auto H_world_actual = H_world_frozenactual * H_frozen_solved;
+      pose = PoseUtils::Affine3dToPose3d(H_world_actual);
     }
-
-    // Take the delta between the frozen target and the solved target, and put
-    // that on top of the actual pose of the frozen target
-    auto H_world_solved = PoseUtils::Pose3dToAffine3d(pose);
-    auto H_frozen_solved = H_world_frozen.inverse() * H_world_solved;
-    auto H_world_actual = H_world_frozenactual * H_frozen_solved;
-    pose = PoseUtils::Affine3dToPose3d(H_world_actual);
   }
 
   auto map_json = MapToJson(field_name);
