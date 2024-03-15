@@ -540,14 +540,15 @@ void MessageBridgeServerStatus::MaybeIncrementInvalidConnectionCount(
   // where the other node has been updated with a different config, while the
   // current node's update hasn't yet completed. In such cases, we want to
   // ensure that a server node exists before attempting to access it.
-  if (server_nodes[node_index]) {
-    ServerConnection *connection =
-        server_nodes[node_index].value().server_connection;
+  if (!server_nodes[node_index]) {
+    return;
+  }
+  ServerConnection *connection =
+      server_nodes[node_index].value().server_connection;
 
-    if (connection != nullptr) {
-      connection->mutate_invalid_connection_count(
-          connection->invalid_connection_count() + 1);
-    }
+  if (connection != nullptr) {
+    connection->mutate_invalid_connection_count(
+        connection->invalid_connection_count() + 1);
   }
 }
 

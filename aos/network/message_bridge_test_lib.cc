@@ -40,249 +40,159 @@ void ThreadedEventLoopRunner::Exit() {
 }
 
 MessageBridgeParameterizedTest::MessageBridgeParameterizedTest()
-    : config(aos::configuration::ReadConfig(
-          ArtifactPath(absl::StrCat("aos/network/", GetParam().config)))),
-      config_sha256(Sha256(config.span())),
-      pi1_boot_uuid_(UUID::Random()),
-      pi2_boot_uuid_(UUID::Random()) {
+    : pi1_("pi1", "raspberrypi", "pi1_message_bridge_server",
+           GetParam().config),
+      pi2_("pi2", "raspberrypi2", "pi2_message_bridge_client",
+           GetParam().config),
+      config_(aos::configuration::ReadConfig(GetParam().config)),
+      config_sha256_(Sha256(config_.span())) {
   // Make sure that we clean up all the shared memory queues so that we cannot
   // inadvertently be influenced other tests or by previously run AOS
   // applications (in a fully sharded test running inside the bazel sandbox,
   // this should not matter).
-  util::UnlinkRecursive(ShmBase("pi1"));
-  util::UnlinkRecursive(ShmBase("pi2"));
+  util::UnlinkRecursive(ShmBase(pi1_.node_name_));
+  util::UnlinkRecursive(ShmBase(pi2_.node_name_));
 }
 
 bool MessageBridgeParameterizedTest::shared() const {
   return GetParam().shared;
 }
 
-void MessageBridgeParameterizedTest::OnPi1() {
-  DoSetShmBase("pi1");
-  FLAGS_override_hostname = "raspberrypi";
-  FLAGS_boot_uuid = pi1_boot_uuid_.ToString();
+PiNode::PiNode(const std::string node_name, const std::string host_name,
+               const std::string app_name, const std::string config_filename)
+    : boot_uuid_(UUID::Random()),
+      node_name_(node_name),
+      host_name_(host_name),
+      app_name_(app_name),
+      config_(aos::configuration::ReadConfig(config_filename)),
+      config_sha256_(Sha256(config_.span())) {}
+
+void PiNode::OnPi() {
+  DoSetShmBase(node_name_);
+  FLAGS_override_hostname = host_name_;
+  FLAGS_boot_uuid = boot_uuid_.ToString();
 }
 
-void MessageBridgeParameterizedTest::OnPi2() {
-  DoSetShmBase("pi2");
-  FLAGS_override_hostname = "raspberrypi2";
-  FLAGS_boot_uuid = pi2_boot_uuid_.ToString();
-}
-
-void MessageBridgeParameterizedTest::MakePi1Server(
-    std::string server_config_sha256) {
-  OnPi1();
-  LOG(INFO) << "Making pi1 server";
-  FLAGS_application_name = "pi1_message_bridge_server";
-  pi1_server_event_loop =
-      std::make_unique<aos::ShmEventLoop>(&config.message());
-  pi1_server_event_loop->SetRuntimeRealtimePriority(1);
-  pi1_message_bridge_server = std::make_unique<MessageBridgeServer>(
-      pi1_server_event_loop.get(),
-      server_config_sha256.size() == 0 ? config_sha256 : server_config_sha256,
+void PiNode::MakeServer(const std::string server_config_sha256) {
+  OnPi();
+  LOG(INFO) << "Making " << node_name_ << " server";
+  FLAGS_application_name = app_name_;
+  server_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
+  server_event_loop_->SetRuntimeRealtimePriority(1);
+  message_bridge_server_ = std::make_unique<MessageBridgeServer>(
+      server_event_loop_.get(),
+      server_config_sha256.size() == 0 ? config_sha256_ : server_config_sha256,
       SctpAuthMethod::kNoAuth);
 }
 
-void MessageBridgeParameterizedTest::RunPi1Server(
-    chrono::nanoseconds duration) {
-  LOG(INFO) << "Running pi1 server";
+void PiNode::RunServer(const chrono::nanoseconds duration) {
+  LOG(INFO) << "Running " << node_name_ << " server";
   // Set up a shutdown callback.
-  aos::TimerHandler *const quit = pi1_server_event_loop->AddTimer(
-      [this]() { pi1_server_event_loop->Exit(); });
-  pi1_server_event_loop->OnRun([this, quit, duration]() {
+  aos::TimerHandler *const quit =
+      server_event_loop_->AddTimer([this]() { server_event_loop_->Exit(); });
+  server_event_loop_->OnRun([this, quit, duration]() {
     // Stop between timestamps, not exactly on them.
-    quit->Schedule(pi1_server_event_loop->monotonic_now() + duration);
+    quit->Schedule(server_event_loop_->monotonic_now() + duration);
   });
 
-  pi1_server_event_loop->Run();
+  server_event_loop_->Run();
 }
 
-void MessageBridgeParameterizedTest::StartPi1Server() {
-  LOG(INFO) << "Starting pi1 server";
-  pi1_server_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi1_server_event_loop.get());
+void PiNode::StartServer() {
+  LOG(INFO) << "Starting " << node_name_ << " server";
+  server_thread_ =
+      std::make_unique<ThreadedEventLoopRunner>(server_event_loop_.get());
 }
 
-void MessageBridgeParameterizedTest::StopPi1Server() {
-  LOG(INFO) << "Stopping pi1 server";
-  pi1_server_thread.reset();
-  pi1_message_bridge_server.reset();
-  pi1_server_event_loop.reset();
+void PiNode::StopServer() {
+  LOG(INFO) << "Stopping " << node_name_ << " server";
+  server_thread_.reset();
+  message_bridge_server_.reset();
+  server_event_loop_.reset();
 }
 
-void MessageBridgeParameterizedTest::MakePi1Client() {
-  OnPi1();
-  LOG(INFO) << "Making pi1 client";
-  FLAGS_application_name = "pi1_message_bridge_client";
-  pi1_client_event_loop =
-      std::make_unique<aos::ShmEventLoop>(&config.message());
-  pi1_client_event_loop->SetRuntimeRealtimePriority(1);
-  pi1_message_bridge_client = std::make_unique<MessageBridgeClient>(
-      pi1_client_event_loop.get(), config_sha256, SctpAuthMethod::kNoAuth);
+void PiNode::MakeClient() {
+  OnPi();
+  LOG(INFO) << "Making " << node_name_ << " client";
+  FLAGS_application_name = app_name_;
+  client_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
+  client_event_loop_->SetRuntimeRealtimePriority(1);
+  message_bridge_client_ = std::make_unique<MessageBridgeClient>(
+      client_event_loop_.get(), config_sha256_, SctpAuthMethod::kNoAuth);
 }
 
-void MessageBridgeParameterizedTest::StartPi1Client() {
-  LOG(INFO) << "Starting pi1 client";
-  pi1_client_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi1_client_event_loop.get());
+void PiNode::StartClient() {
+  LOG(INFO) << "Starting " << node_name_ << " client";
+  client_thread_ =
+      std::make_unique<ThreadedEventLoopRunner>(client_event_loop_.get());
 }
 
-void MessageBridgeParameterizedTest::StopPi1Client() {
-  LOG(INFO) << "Stopping pi1 client";
-  pi1_client_thread.reset();
-  pi1_message_bridge_client.reset();
-  pi1_client_event_loop.reset();
+void PiNode::StopClient() {
+  LOG(INFO) << "Stopping " << node_name_ << " client";
+  client_thread_.reset();
+  message_bridge_client_.reset();
+  client_event_loop_.reset();
 }
 
-void MessageBridgeParameterizedTest::MakePi1Test() {
-  OnPi1();
-  LOG(INFO) << "Making pi1 test";
-  FLAGS_application_name = "test1";
-  pi1_test_event_loop = std::make_unique<aos::ShmEventLoop>(&config.message());
+void PiNode::MakeTest(const std::string test_app_name,
+                      const PiNode *other_node) {
+  OnPi();
+  LOG(INFO) << "Making " << node_name_ << " test";
+  FLAGS_application_name = test_app_name;
+  test_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
 
-  pi1_test_event_loop->MakeWatcher(
-      "/pi1/aos", [](const ServerStatistics &stats) {
-        VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
+  std::string channel_name = "/" + node_name_ + "/aos";
+  test_event_loop_->MakeWatcher(
+      channel_name, [channel_name](const ServerStatistics &stats) {
+        VLOG(1) << channel_name << " ServerStatistics "
+                << FlatbufferToJson(&stats);
       });
 
-  pi1_test_event_loop->MakeWatcher(
-      "/pi1/aos", [](const ClientStatistics &stats) {
-        VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
+  test_event_loop_->MakeWatcher(
+      channel_name, [channel_name](const ClientStatistics &stats) {
+        VLOG(1) << channel_name << " ClientStatistics "
+                << FlatbufferToJson(&stats);
       });
 
-  pi1_test_event_loop->MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
-    VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
-  });
-  pi1_test_event_loop->MakeWatcher("/pi2/aos", [this](
-                                                   const Timestamp &timestamp) {
-    VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
-    EXPECT_EQ(pi1_test_event_loop->context().source_boot_uuid, pi2_boot_uuid_);
-  });
+  test_event_loop_->MakeWatcher(channel_name,
+                                [channel_name](const Timestamp &timestamp) {
+                                  VLOG(1) << channel_name << " Timestamp "
+                                          << FlatbufferToJson(&timestamp);
+                                });
+  std::string other_channel_name = "/" + other_node->node_name_ + "/aos";
+  test_event_loop_->MakeWatcher(
+      other_channel_name,
+      [this, other_channel_name, other_node](const Timestamp &timestamp) {
+        VLOG(1) << other_channel_name << " Timestamp "
+                << FlatbufferToJson(&timestamp);
+        EXPECT_EQ(test_event_loop_->context().source_boot_uuid,
+                  other_node->boot_uuid_);
+      });
 }
 
-void MessageBridgeParameterizedTest::StartPi1Test() {
-  LOG(INFO) << "Starting pi1 test";
-  pi1_test_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi1_test_event_loop.get());
+void PiNode::StartTest() {
+  LOG(INFO) << "Starting " << node_name_ << " test";
+  test_thread_ =
+      std::make_unique<ThreadedEventLoopRunner>(test_event_loop_.get());
 }
 
-void MessageBridgeParameterizedTest::StopPi1Test() {
-  LOG(INFO) << "Stopping pi1 test";
-  pi1_test_thread.reset();
+void PiNode::StopTest() {
+  LOG(INFO) << "Stopping " << node_name_ << " test";
+  test_thread_.reset();
 }
 
-void MessageBridgeParameterizedTest::MakePi2Server() {
-  OnPi2();
-  LOG(INFO) << "Making pi2 server";
-  FLAGS_application_name = "pi2_message_bridge_server";
-  pi2_server_event_loop =
-      std::make_unique<aos::ShmEventLoop>(&config.message());
-  pi2_server_event_loop->SetRuntimeRealtimePriority(1);
-  pi2_message_bridge_server = std::make_unique<MessageBridgeServer>(
-      pi2_server_event_loop.get(), config_sha256, SctpAuthMethod::kNoAuth);
-}
-
-void MessageBridgeParameterizedTest::RunPi2Server(
-    chrono::nanoseconds duration) {
-  LOG(INFO) << "Running pi2 server";
-  // Schedule a shutdown callback.
-  aos::TimerHandler *const quit = pi2_server_event_loop->AddTimer(
-      [this]() { pi2_server_event_loop->Exit(); });
-  pi2_server_event_loop->OnRun([this, quit, duration]() {
-    // Stop between timestamps, not exactly on them.
-    quit->Schedule(pi2_server_event_loop->monotonic_now() + duration);
-  });
-
-  pi2_server_event_loop->Run();
-}
-
-void MessageBridgeParameterizedTest::StartPi2Server() {
-  LOG(INFO) << "Starting pi2 server";
-  pi2_server_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi2_server_event_loop.get());
-}
-
-void MessageBridgeParameterizedTest::StopPi2Server() {
-  LOG(INFO) << "Stopping pi2 server";
-  pi2_server_thread.reset();
-  pi2_message_bridge_server.reset();
-  pi2_server_event_loop.reset();
-}
-
-void MessageBridgeParameterizedTest::MakePi2Client() {
-  OnPi2();
-  LOG(INFO) << "Making pi2 client";
-  FLAGS_application_name = "pi2_message_bridge_client";
-  pi2_client_event_loop =
-      std::make_unique<aos::ShmEventLoop>(&config.message());
-  pi2_client_event_loop->SetRuntimeRealtimePriority(1);
-  pi2_message_bridge_client = std::make_unique<MessageBridgeClient>(
-      pi2_client_event_loop.get(), config_sha256, SctpAuthMethod::kNoAuth);
-}
-
-void MessageBridgeParameterizedTest::RunPi2Client(
-    chrono::nanoseconds duration) {
+void PiNode::RunClient(const chrono::nanoseconds duration) {
   LOG(INFO) << "Running pi2 client";
   // Run for 5 seconds to make sure we have time to estimate the offset.
-  aos::TimerHandler *const quit = pi2_client_event_loop->AddTimer(
-      [this]() { pi2_client_event_loop->Exit(); });
-  pi2_client_event_loop->OnRun([this, quit, duration]() {
+  aos::TimerHandler *const quit =
+      client_event_loop_->AddTimer([this]() { client_event_loop_->Exit(); });
+  client_event_loop_->OnRun([this, quit, duration]() {
     // Stop between timestamps, not exactly on them.
-    quit->Schedule(pi2_client_event_loop->monotonic_now() + duration);
+    quit->Schedule(client_event_loop_->monotonic_now() + duration);
   });
 
   // And go!
-  pi2_client_event_loop->Run();
-}
-
-void MessageBridgeParameterizedTest::StartPi2Client() {
-  LOG(INFO) << "Starting pi2 client";
-  pi2_client_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi2_client_event_loop.get());
-}
-
-void MessageBridgeParameterizedTest::StopPi2Client() {
-  LOG(INFO) << "Stopping pi2 client";
-  pi2_client_thread.reset();
-  pi2_message_bridge_client.reset();
-  pi2_client_event_loop.reset();
-}
-
-void MessageBridgeParameterizedTest::MakePi2Test() {
-  OnPi2();
-  LOG(INFO) << "Making pi2 test";
-  FLAGS_application_name = "test2";
-  pi2_test_event_loop = std::make_unique<aos::ShmEventLoop>(&config.message());
-
-  pi2_test_event_loop->MakeWatcher(
-      "/pi2/aos", [](const ServerStatistics &stats) {
-        VLOG(1) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
-      });
-
-  pi2_test_event_loop->MakeWatcher(
-      "/pi2/aos", [](const ClientStatistics &stats) {
-        VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
-      });
-
-  pi2_test_event_loop->MakeWatcher("/pi1/aos", [this](
-                                                   const Timestamp &timestamp) {
-    VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
-    EXPECT_EQ(pi2_test_event_loop->context().source_boot_uuid, pi1_boot_uuid_);
-  });
-  pi2_test_event_loop->MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
-    VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
-  });
-}
-
-void MessageBridgeParameterizedTest::StartPi2Test() {
-  LOG(INFO) << "Starting pi2 test";
-  pi2_test_thread =
-      std::make_unique<ThreadedEventLoopRunner>(pi2_test_event_loop.get());
-}
-
-void MessageBridgeParameterizedTest::StopPi2Test() {
-  LOG(INFO) << "Stopping pi2 test";
-  pi2_test_thread.reset();
+  client_event_loop_->Run();
 }
 
 }  // namespace aos::message_bridge::testing
