@@ -589,8 +589,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 control_loops::drivetrain::kHighOutputRatio);
           }
 
-          drivetrain_can_builder->set_timestamp(
-              drivetrain_talonfxs.front()->GetTimestamp());
           drivetrain_can_builder->set_status(static_cast<int>(status));
 
           drivetrain_can_builder.CheckOk(drivetrain_can_builder.Send());
@@ -617,8 +615,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           extend->SerializePosition(superstructure_can_builder->add_extend(),
                                     superstructure::extend::kOutputRatio);
 
-          superstructure_can_builder->set_timestamp(
-              intake_pivot->GetTimestamp());
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
         });
@@ -653,8 +649,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           retention_roller->SerializePosition(
               superstructure_can_builder->add_retention_roller(), 1.0);
 
-          superstructure_can_builder->set_timestamp(
-              intake_roller->GetTimestamp());
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
         },

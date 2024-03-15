@@ -123,4 +123,5 @@ void TalonFX::SerializePosition(control_loops::CANTalonFXStatic *can_talonfx,
   can_talonfx->set_torque_current(torque_current());
   can_talonfx->set_duty_cycle(duty_cycle());
   can_talonfx->set_position(position() * gear_ratio);
+  can_talonfx->set_timestamp(GetTimestamp());
 }

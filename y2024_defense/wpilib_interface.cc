@@ -332,7 +332,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 control_loops::drivetrain::kHighOutputRatio);
           }
 
-          builder->set_timestamp(falcons.front()->GetTimestamp());
           builder->set_status(static_cast<int>(status));
 
           builder.CheckOk(builder.Send());

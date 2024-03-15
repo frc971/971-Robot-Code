@@ -9,7 +9,7 @@ table CANPosition {
   // The timestamp of the measurement on the canivore clock in nanoseconds
   // This will have less jitter than the
   // timestamp of the message being sent out.
-  timestamp:int64 (id: 1);
+  timestamp:int64 (id: 1, deprecated);
 
   // The ctre::phoenix::StatusCode of the measurement
   // Should be OK = 0
