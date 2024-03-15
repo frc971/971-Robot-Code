@@ -58,6 +58,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       top_(&event_loop_) {
   event_loop_.SkipAosLog();
 
+  cleanup_timer_->set_name("cleanup");
+
   if (!aos::configuration::MultiNode(config_msg_)) {
     event_loop_.MakeWatcher(
         "/aos",

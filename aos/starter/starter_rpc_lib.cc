@@ -63,6 +63,7 @@ StarterClient::StarterClient(EventLoop *event_loop)
     : event_loop_(event_loop),
       timeout_timer_(event_loop_->AddTimer([this]() { Timeout(); })),
       cmd_sender_(event_loop_->MakeSender<StarterRpc>("/aos")) {
+  timeout_timer_->set_name("rpc_timeout");
   if (configuration::MultiNode(event_loop_->configuration())) {
     for (const aos::Node *node :
          configuration::GetNodes(event_loop_->configuration())) {
