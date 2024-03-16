@@ -41,7 +41,7 @@ class State {
       timer_handle_->set_name("jitter");
       event_loop->OnRun([this, event_loop]() {
         timer_handle_->Schedule(event_loop->monotonic_now(),
-                                std::chrono::microseconds(1000));
+                                std::chrono::milliseconds(1000));
       });
     }
   }
