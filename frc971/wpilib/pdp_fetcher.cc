@@ -26,7 +26,8 @@ PDPFetcher::PDPFetcher(::aos::ShmEventLoop *event_loop)
 PDPFetcher::~PDPFetcher() {}
 
 void PDPFetcher::Loop(int iterations) {
-  if (iterations != 1) {
+  // Only pollute the logs if we've missed many iterations.
+  if (iterations > 3) {
     AOS_LOG(DEBUG, "PDPFetcher skipped %d iterations\n", iterations - 1);
   }
   std::array<double, 16> currents;
