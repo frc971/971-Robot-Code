@@ -21,6 +21,7 @@
 
 DEFINE_bool(dump_lockless_queue_data, false,
             "If true, print the data out when dumping the queue.");
+DECLARE_bool(skip_realtime_scheduler);
 
 namespace aos::ipc_lib {
 namespace {
@@ -813,7 +814,19 @@ int LocklessQueueWakeUpper::Wakeup(const int current_priority) {
     // Boost if we are RT and there is a higher priority sender out there.
     // Otherwise we might run into priority inversions.
     if (max_priority > current_priority && current_priority > 0) {
-      SetCurrentThreadRealtimePriority(max_priority);
+      // Inline the setscheduler call rather than using aos/realtime.h.  This is
+      // quite performance sensitive, and halves the time needed to send a
+      // message when pi boosting is in effect.
+      if (!FLAGS_skip_realtime_scheduler) {
+        // TODO(austin): Do we need to boost the soft limit here too like we
+        // were before?
+        struct sched_param param;
+        param.sched_priority = max_priority;
+        PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
+            << ": changing to SCHED_FIFO with " << max_priority
+            << ", if you want to bypass this check for testing, use "
+               "--skip_realtime_scheduler";
+      }
     }
 
     // Build up the siginfo to send.
@@ -842,7 +855,14 @@ int LocklessQueueWakeUpper::Wakeup(const int current_priority) {
 
     // Drop back down if we were boosted.
     if (max_priority > current_priority && current_priority > 0) {
-      SetCurrentThreadRealtimePriority(current_priority);
+      if (!FLAGS_skip_realtime_scheduler) {
+        struct sched_param param;
+        param.sched_priority = current_priority;
+        PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
+            << ": changing to SCHED_FIFO with " << max_priority
+            << ", if you want to bypass this check for testing, use "
+               "--skip_realtime_scheduler";
+      }
     }
   }
 

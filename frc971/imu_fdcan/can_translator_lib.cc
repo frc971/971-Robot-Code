@@ -14,7 +14,7 @@ CANTranslator::CANTranslator(aos::EventLoop *event_loop,
               "/imu")) {
   packets_arrived_.fill(false);
   // TODO(max): Update this with a proper priority
-  event_loop->SetRuntimeRealtimePriority(15);
+  event_loop->SetRuntimeRealtimePriority(58);
 
   event_loop->MakeWatcher(
       canframe_channel, [this](const frc971::can_logger::CanFrame &can_frame) {
