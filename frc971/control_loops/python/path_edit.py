@@ -311,7 +311,8 @@ class FieldWidget(Gtk.DrawingArea):
             file = filename.with_suffix(f".{index}.json")
             print(f"  {file.relative_to(export_folder)}")
             with open(file, mode='w') as points_file:
-                json.dump(multispline.toJsonObject(), points_file)
+                # Indent to make the file actually readable
+                json.dump(multispline.toJsonObject(), points_file, indent=4)
 
     def import_json(self, file_name):
         # Abort place mode

@@ -148,7 +148,8 @@ def get_json_folder(field):
         return "y2022/actors/splines"
     elif field.year == 2023:
         return "y2023/autonomous/splines"
-    #TODO: Update 2024 spline jsons
+    elif field.year == 2024:
+        return "y2024/autonomous/splines"
     else:
         return "frc971/control_loops/python/spline_jsons"
 
