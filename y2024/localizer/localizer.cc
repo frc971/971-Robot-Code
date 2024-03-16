@@ -313,10 +313,6 @@ void Localizer::HandleImu(aos::monotonic_clock::time_point /*sample_time_pico*/,
                           Eigen::Vector3d gyro, Eigen::Vector3d accel) {
   std::optional<Eigen::Vector2d> encoders = utils_.Encoders(sample_time_orin);
   last_encoder_readings_ = encoders;
-  // Ignore invalid readings; the HybridEkf will handle it reasonably.
-  if (!encoders.has_value()) {
-    return;
-  }
   VLOG(1) << "Got encoders";
   if (t_ == aos::monotonic_clock::min_time) {
     t_ = sample_time_orin;
@@ -331,8 +327,12 @@ void Localizer::HandleImu(aos::monotonic_clock::time_point /*sample_time_pico*/,
   // convenient for debugging.
   down_estimator_.Predict(gyro, accel, dt);
   const double yaw_rate = (dt_config_.imu_transform * gyro)(2);
-  ekf_.UpdateEncodersAndGyro(encoders.value()(0), encoders.value()(1), yaw_rate,
-                             utils_.VoltageOrZero(sample_time_orin), accel, t_);
+  ekf_.UpdateEncodersAndGyro(
+      encoders.has_value() ? std::make_optional<double>(encoders.value()(0))
+                           : std::nullopt,
+      encoders.has_value() ? std::make_optional<double>(encoders.value()(1))
+                           : std::nullopt,
+      yaw_rate, utils_.VoltageOrZero(sample_time_orin), accel, t_);
   SendStatus();
 }
 

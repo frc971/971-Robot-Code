@@ -41,7 +41,9 @@ namespace {
 template <typename T>
 std::optional<Eigen::Vector2d> GetPosition(
     T &fetcher, aos::monotonic_clock::time_point now) {
-  fetcher.Fetch();
+  if (!fetcher.Fetch()) {
+    return std::nullopt;
+  }
   const bool stale =
       (fetcher.get() == nullptr) ||
       (fetcher.context().monotonic_event_time + std::chrono::milliseconds(10) <
