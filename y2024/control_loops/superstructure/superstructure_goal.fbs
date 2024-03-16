@@ -67,5 +67,8 @@ table Goal {
 
     // Tells the climber to go absurdly slow on FULL_EXTEND
     slow_climber: bool = false (id: 6);
+
+    // Spit on the extend motors
+    spit_extend: bool = false (id: 7);
 }
 root_type Goal;

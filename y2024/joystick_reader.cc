@@ -45,6 +45,7 @@ namespace superstructure = y2024::control_loops::superstructure;
 const ButtonLocation kIntake(2, 2);
 
 const ButtonLocation kSpitRollers(1, 13);
+const ButtonLocation kSpitExtend(1, 12);
 const ButtonLocation kIntakeRollers(2, 5);
 
 const ButtonLocation kCatapultLoad(2, 1);
@@ -112,6 +113,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     } else {
       superstructure_goal_builder->set_intake_goal(
           superstructure::IntakeGoal::NONE);
+    }
+
+    if (data.IsPressed(kSpitExtend)) {
+      superstructure_goal_builder->set_spit_extend(true);
+    } else {
+      superstructure_goal_builder->set_spit_extend(false);
     }
 
     if (data.IsPressed(kAmp)) {

@@ -435,6 +435,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
   }
 
+  if (unsafe_goal != nullptr && unsafe_goal->spit_extend()) {
+    output_struct.extend_roller_voltage = -extend_roller_voltages->scoring();
+  }
+
   double extend_goal_position = 0.0;
 
   if (unsafe_goal != nullptr && unsafe_goal->note_goal() == NoteGoal::TRAP) {
