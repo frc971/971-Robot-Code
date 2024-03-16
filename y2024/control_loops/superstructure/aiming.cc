@@ -9,7 +9,7 @@ using frc971::control_loops::aiming::ShotMode;
 using y2024::control_loops::superstructure::Aimer;
 
 // When the turret is at 0 the note will be leaving the robot at PI.
-static constexpr double kTurretZeroOffset = M_PI;
+static constexpr double kTurretZeroOffset = M_PI - 0.22;
 
 Aimer::Aimer(aos::EventLoop *event_loop,
              const y2024::Constants *robot_constants)
@@ -29,12 +29,20 @@ void Aimer::Update(
     frc971::control_loops::aiming::ShotMode shot_mode,
     frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic
         *turret_goal) {
+  if (status == nullptr) {
+    return;
+  }
   const frc971::control_loops::Pose robot_pose({status->x(), status->y(), 0},
                                                status->theta());
-  joystick_state_fetcher_.Fetch();
-  CHECK_NOTNULL(joystick_state_fetcher_.get());
+  aos::Alliance alliance = aos::Alliance::kRed;
+  if (!joystick_state_fetcher_.Fetch() && !received_joystick_state_) {
+    received_joystick_state_ = false;
+  } else {
+    received_joystick_state_ = true;
 
-  aos::Alliance alliance = joystick_state_fetcher_->alliance();
+    CHECK_NOTNULL(joystick_state_fetcher_.get());
+    alliance = joystick_state_fetcher_->alliance();
+  }
 
   const frc971::control_loops::Pose red_alliance_goal(
       frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
@@ -68,12 +76,11 @@ void Aimer::Update(
                      robot_constants_->common()->turret()->range()),
                  interpolation_table_.Get(current_goal_.target_distance)
                      .shot_speed_over_ground,
-                 /*wrap_mode=*/0.0, kTurretZeroOffset},
+                 /*wrap_mode=*/0.15, kTurretZeroOffset},
       RobotState{
           robot_pose, {xdot, ydot}, linear_angular(1), current_goal_.position});
 
   turret_goal->set_unsafe_goal(current_goal_.position);
-  turret_goal->set_goal_velocity(current_goal_.velocity);
 }
 
 flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(

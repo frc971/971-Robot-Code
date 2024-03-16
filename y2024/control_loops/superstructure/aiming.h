@@ -45,6 +45,8 @@ class Aimer {
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   frc971::control_loops::aiming::TurretGoal current_goal_;
+
+  bool received_joystick_state_ = false;
 };
 
 }  // namespace y2024::control_loops::superstructure
