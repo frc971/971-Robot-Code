@@ -32,6 +32,9 @@ using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 using Side = frc971::control_loops::drivetrain::RobotSide;
 
+DEFINE_double(speaker_altitude_position_override, -1,
+              "If set, use this as the altitude angle for the fixed shot.");
+
 namespace y2024::input::joysticks {
 
 namespace superstructure = y2024::control_loops::superstructure;
@@ -39,18 +42,22 @@ namespace superstructure = y2024::control_loops::superstructure;
 // TODO(Xander): add button location from physical wiring
 // Note: Due to use_redundant_joysticks, the AOS_LOG statements
 // for the internal joystick code will give offset joystick numbering.
-const ButtonLocation kIntake(2, 8);
-const ButtonLocation kSpit(0, 0);
-const ButtonLocation kCatapultLoad(1, 7);
-const ButtonLocation kAmp(2, 7);
-const ButtonLocation kFire(2, 6);
-const ButtonLocation kTrap(2, 5);
-const ButtonLocation kAutoAim(0, 0);
-const ButtonLocation kAimSpeaker(1, 6);
+const ButtonLocation kIntake(2, 2);
+
+const ButtonLocation kSpitRollers(1, 13);
+const ButtonLocation kIntakeRollers(2, 5);
+
+const ButtonLocation kCatapultLoad(2, 1);
+const ButtonLocation kAmp(2, 4);
+const ButtonLocation kFire(2, 8);
+const ButtonLocation kTrap(2, 6);
+const ButtonLocation kAutoAim(1, 8);
+const ButtonLocation kAimSpeaker(2, 11);
 const ButtonLocation kAimPodium(0, 0);
 const ButtonLocation kShoot(0, 0);
 const ButtonLocation kRaiseClimber(3, 2);
-const ButtonLocation kRetractClimber(2, 4);
+const ButtonLocation kSlowClimber(3, 1);
+const ButtonLocation kRetractClimber(2, 3);
 const ButtonLocation kExtraButtonOne(0, 0);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
@@ -88,12 +95,25 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     if (data.IsPressed(kIntake)) {
       // Intake is pressed
+      superstructure_goal_builder->set_intake_pivot(
+          superstructure::IntakePivotGoal::DOWN);
+    } else {
+      superstructure_goal_builder->set_intake_pivot(
+          superstructure::IntakePivotGoal::UP);
+    }
+
+    if (data.IsPressed(kIntakeRollers)) {
+      // Intake is pressed
       superstructure_goal_builder->set_intake_goal(
           superstructure::IntakeGoal::INTAKE);
+    } else if (data.IsPressed(kSpitRollers)) {
+      superstructure_goal_builder->set_intake_goal(
+          superstructure::IntakeGoal::SPIT);
     } else {
       superstructure_goal_builder->set_intake_goal(
           superstructure::IntakeGoal::NONE);
     }
+
     if (data.IsPressed(kAmp)) {
       superstructure_goal_builder->set_note_goal(superstructure::NoteGoal::AMP);
     } else if (data.IsPressed(kTrap)) {
@@ -107,7 +127,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           superstructure::NoteGoal::NONE);
     }
     auto shooter_goal = superstructure_goal_builder->add_shooter_goal();
-    shooter_goal->set_auto_aim(false);
+    shooter_goal->set_auto_aim(data.IsPressed(kAutoAim));
 
     // Updating aiming for shooter goal, only one type of aim should be possible
     // at a time, auto-aiming is preferred over the setpoints.
@@ -116,11 +136,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       catapult_goal->set_shot_velocity(robot_constants_->common()
                                            ->shooter_speaker_set_point()
                                            ->shot_velocity());
-      PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          shooter_goal->add_altitude_position(),
-          robot_constants_->common()
-              ->shooter_speaker_set_point()
-              ->altitude_position());
+      if (FLAGS_speaker_altitude_position_override > 0) {
+        PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            shooter_goal->add_altitude_position(),
+            FLAGS_speaker_altitude_position_override);
+      } else {
+        PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            shooter_goal->add_altitude_position(),
+            robot_constants_->common()
+                ->shooter_speaker_set_point()
+                ->altitude_position());
+      }
       PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
           shooter_goal->add_turret_position(), robot_constants_->common()
                                                    ->shooter_speaker_set_point()
@@ -128,15 +154,21 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
     superstructure_goal_builder->set_fire(data.IsPressed(kFire));
 
-    if (data.IsPressed(kRaiseClimber)) {
-      superstructure_goal_builder->set_climber_goal(
-          superstructure::ClimberGoal::FULL_EXTEND);
-    } else if (data.IsPressed(kRetractClimber)) {
+    if (data.IsPressed(kRetractClimber)) {
       superstructure_goal_builder->set_climber_goal(
           superstructure::ClimberGoal::RETRACT);
+    } else if (data.IsPressed(kRaiseClimber)) {
+      superstructure_goal_builder->set_climber_goal(
+          superstructure::ClimberGoal::FULL_EXTEND);
     } else {
       superstructure_goal_builder->set_climber_goal(
           superstructure::ClimberGoal::STOWED);
+    }
+
+    if (data.IsPressed(kSlowClimber)) {
+      superstructure_goal_builder->set_slow_climber(true);
+    } else {
+      superstructure_goal_builder->set_slow_climber(false);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
