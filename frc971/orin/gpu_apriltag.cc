@@ -26,7 +26,7 @@ DEFINE_double(
     "1.0.");
 DEFINE_double(min_decision_margin, 50.0,
               "Minimum decision margin (confidence) for an apriltag detection");
-DEFINE_int32(pixel_border, 10,
+DEFINE_int32(pixel_border, 150,
              "Size of image border within which to reject detected corners");
 DEFINE_uint64(pose_estimation_iterations, 50,
               "Number of iterations for apriltag pose estimation.");
@@ -302,8 +302,10 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
                                           before_pose_estimation)
                      .count()
               << " seconds for pose estimation";
-      VLOG(1) << "Pose err 1: " << pose_error_1;
-      VLOG(1) << "Pose err 2: " << pose_error_2;
+      VLOG(1) << "Pose err 1: " << std::setprecision(20) << std::fixed
+              << pose_error_1 << " " << (pose_error_1 < 1e-6 ? "Good" : "Bad");
+      VLOG(1) << "Pose err 2: " << std::setprecision(20) << std::fixed
+              << pose_error_2 << " " << (pose_error_2 < 1e-6 ? "Good" : "Bad");
 
       // Send undistorted corner points in pink
       std::vector<cv::Point2f> corner_points = MakeCornerVector(gpu_detection);
@@ -412,7 +414,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
     timeprofile_display(tag_detector_->tp);
   }
 
-  VLOG(1) << "Took " << chrono::duration<double>(end_time - start_time).count()
+  VLOG(2) << "Took " << chrono::duration<double>(end_time - start_time).count()
           << " seconds to detect overall";
 
   return;
