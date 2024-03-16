@@ -77,6 +77,10 @@ table ShooterStatus {
 
   // Status of the aimer
   aimer:AimerStatus (id: 4);
+
+  turret_in_range:bool (id: 5);
+  altitude_in_range:bool (id: 6);
+  altitude_above_min_angle:bool (id: 7);
 }
 
 // Contains status of transfer rollers

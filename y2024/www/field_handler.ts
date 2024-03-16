@@ -90,6 +90,13 @@ export class FieldHandler {
   private altitude_ready_for_load: HTMLElement =
   (document.getElementById('altitude_ready_for_load') as HTMLElement);
 
+  private turret_in_range: HTMLElement =
+  (document.getElementById('turret_in_range') as HTMLElement);
+  private altitude_in_range: HTMLElement =
+  (document.getElementById('altitude_in_range') as HTMLElement);
+  private altitude_above_min_angle: HTMLElement =
+  (document.getElementById('altitude_above_min_angle') as HTMLElement);
+
 
   private intakePivot: HTMLElement =
     (document.getElementById('intake_pivot') as HTMLElement);
@@ -516,6 +523,12 @@ export class FieldHandler {
       this.setBoolean(this.altitude_ready_for_load, this.superstructureStatus.altitudeReadyForLoad());
 
       this.setBoolean(this.extend_ready_for_catapult_transfer, this.superstructureStatus.extendReadyForCatapultTransfer());
+
+      this.setBoolean(this.turret_in_range, this.superstructureStatus.shooter().turretInRange())
+
+      this.setBoolean(this.altitude_in_range, this.superstructureStatus.shooter().altitudeInRange())
+
+      this.setBoolean(this.altitude_above_min_angle, this.superstructureStatus.shooter().altitudeAboveMinAngle())
 
       if (this.superstructureStatus.shooter() &&
           this.superstructureStatus.shooter().aimer()) {
