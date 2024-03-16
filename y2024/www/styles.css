@@ -65,7 +65,8 @@ td:first-child {
 #vision_readouts > div > div {
   display: table-cell;
   padding: 5px;
-  text-align: right;
+  text-align: left;
+  font: small;
 }
 
 #message_bridge_status > div {
