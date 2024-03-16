@@ -62,6 +62,7 @@ void TalonFX::WriteConfigs() {
   current_limits.StatorCurrentLimitEnable = true;
   current_limits.SupplyCurrentLimit = supply_current_limit_;
   current_limits.SupplyCurrentLimitEnable = true;
+  current_limits.SupplyTimeThreshold = 0.0;
 
   ctre::phoenix6::configs::MotorOutputConfigs output_configs;
   output_configs.NeutralMode = neutral_mode_;
