@@ -322,7 +322,7 @@
       "type": "y2024.localizer.Status",
       "source_node": "imu",
       "frequency": 1600,
-      "max_size": 1600,
+      "max_size": 3200,
       "num_senders": 2
     },
     {

@@ -1,5 +1,6 @@
 include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
 include "frc971/imu_reader/imu_failures.fbs";
+include "frc971/math/matrix.fbs";
 
 namespace y2024.localizer;
 
@@ -28,6 +29,8 @@ enum RejectionReason : uint8 {
   ROBOT_TOO_FAST = 7,
   // Pose estimation error ratio was higher than any normal detection.
   HIGH_POSE_ERROR_RATIO = 8,
+  // Distortion is too high to trust.
+  HIGH_DISTORTION = 9,
 }
 
 table RejectionCount {
@@ -38,7 +41,7 @@ table RejectionCount {
 table CumulativeStatistics {
   total_accepted:int (id: 0);
   total_candidates:int (id: 1);
-  rejection_reasons:[RejectionCount] (id: 2, static_length: 9);
+  rejection_reasons:[RejectionCount] (id: 2, static_length: 10);
 }
 
 table ImuStatus {
@@ -68,6 +71,7 @@ table Status {
   imu:ImuStatus (id: 2);
   // Statistics are per-camera, by camera index.
   statistics:[CumulativeStatistics] (id: 3);
+  ekf_covariance:frc971.fbs.Matrix (id: 4);
 }
 
 root_type Status;

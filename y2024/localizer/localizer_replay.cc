@@ -8,14 +8,21 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "aos/util/simulation_logger.h"
+#include "frc971/constants/constants_sender_lib.h"
+#include "frc971/imu_fdcan/dual_imu_blender_lib.h"
+#include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 #include "y2024/localizer/localizer.h"
 
 DEFINE_string(config, "y2024/aos_config.json",
               "Name of the config file to replay using.");
-DEFINE_int32(team, 9971, "Team number to use for logfile replay.");
+DEFINE_bool(override_config, false,
+            "If set, override the logged config with --config.");
+DEFINE_int32(team, 971, "Team number to use for logfile replay.");
 DEFINE_string(output_folder, "/tmp/replayed",
               "Name of the folder to write replayed logs to.");
+DEFINE_string(constants_path, "y2024/constants/constants.json",
+              "Path to the constant file");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -30,7 +37,8 @@ int main(int argc, char **argv) {
       aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
   // open logfiles
-  aos::logger::LogReader reader(logfiles, &config.message());
+  aos::logger::LogReader reader(
+      logfiles, FLAGS_override_config ? &config.message() : nullptr);
 
   reader.RemapLoggedChannel("/localizer", "y2024.localizer.Status");
   for (const auto orin : {"orin1", "imu"}) {
@@ -40,11 +48,19 @@ int main(int argc, char **argv) {
     }
   }
   reader.RemapLoggedChannel("/localizer", "frc971.controls.LocalizerOutput");
+  reader.RemapLoggedChannel("/localizer", "frc971.IMUValuesBatch");
+  reader.RemapLoggedChannel("/imu", "frc971.imu.DualImuBlenderStatus");
+  reader.RemapLoggedChannel("/imu/constants", "y2024.Constants");
+  reader.RemapLoggedChannel("/roborio/constants", "y2024.Constants");
+  reader.RemapLoggedChannel("/orin1/constants", "y2024.Constants");
 
   auto factory =
       std::make_unique<aos::SimulatedEventLoopFactory>(reader.configuration());
 
   reader.RegisterWithoutStarting(factory.get());
+
+  y2024::SendSimulationConstants(reader.event_loop_factory(), FLAGS_team,
+                                 FLAGS_constants_path);
 
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
@@ -56,6 +72,8 @@ int main(int argc, char **argv) {
     aos::NodeEventLoopFactory *node_factory =
         factory->GetNodeEventLoopFactory(node);
     node_factory->AlwaysStart<y2024::localizer::Localizer>("localizer");
+    node_factory->AlwaysStart<frc971::imu_fdcan::DualImuBlender>(
+        "dual_imu_blender");
     loggers.push_back(std::make_unique<aos::util::LoggerState>(
         factory.get(), node, FLAGS_output_folder));
   });

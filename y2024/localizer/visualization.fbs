@@ -37,6 +37,9 @@ table TargetEstimateDebug {
   expected_observation:Measurement (id: 15);
   actual_observation:Measurement (id: 16);
   modeled_noise:Measurement (id: 17);
+  expected_robot_x:double (id: 18);
+  expected_robot_y:double (id: 19);
+  expected_robot_theta:double (id: 20);
 }
 
 table Visualization {

@@ -11,6 +11,7 @@
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/control_loops/drivetrain/localization/utils.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/imu_reader/imu_watcher.h"
 #include "frc971/vision/target_map_generated.h"
 #include "y2024/constants/constants_generated.h"
@@ -89,6 +90,36 @@ class Localizer {
     const HMatrix H_;
   };
 
+  // A corrector that just does x/y/theta based corrections rather than doing
+  // heading/distance/skew corrections.
+  class XyzCorrector : public HybridEkf::ExpectedObservationFunctor {
+   public:
+    // Indices used for each of the members of the output vector for this
+    // Corrector.
+    enum OutputIdx {
+      kX = 0,
+      kY = 1,
+      kTheta = 2,
+    };
+    XyzCorrector(const State &state_at_capture, const Eigen::Vector3d &Z)
+        : state_at_capture_(state_at_capture), Z_(Z) {
+      H_.setZero();
+      H_(kX, StateIdx::kX) = 1;
+      H_(kY, StateIdx::kY) = 1;
+      H_(kTheta, StateIdx::kTheta) = 1;
+    }
+    Output H(const State &, const Input &) final;
+    Eigen::Matrix<double, HybridEkf::kNOutputs, HybridEkf::kNStates> DHDX(
+        const State &) final {
+      return H_;
+    }
+
+   private:
+    Eigen::Matrix<double, HybridEkf::kNOutputs, HybridEkf::kNStates> H_;
+    const State state_at_capture_;
+    const Eigen::Vector3d &Z_;
+  };
+
   struct CameraState {
     aos::Sender<VisualizationStatic> debug_sender;
     Transform extrinsics = Transform::Zero();
@@ -98,6 +129,9 @@ class Localizer {
     size_t total_accepted_targets = 0;
   };
 
+  // Returns true if we should use a lower weight for the specified april tag.
+  // This is used for tags where we do not trust the placement as much.
+  bool DeweightAprilTag(uint64_t target_id);
   static std::array<CameraState, kNumCameras> MakeCameras(
       const Constants &constants, aos::EventLoop *event_loop);
   void HandleTarget(int camera_index,
@@ -123,6 +157,8 @@ class Localizer {
                                   CumulativeStatisticsStatic *builder);
 
   bool UseAprilTag(uint64_t target_id);
+  void HandleControl(
+      const frc971::control_loops::drivetrain::LocalizerControl &msg);
 
   aos::EventLoop *const event_loop_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
@@ -134,6 +170,7 @@ class Localizer {
   frc971::control_loops::drivetrain::DrivetrainUkf down_estimator_;
   HybridEkf ekf_;
   HybridEkf::ExpectedObservationAllocator<Corrector> observations_;
+  HybridEkf::ExpectedObservationAllocator<XyzCorrector> xyz_observations_;
 
   frc971::controls::ImuWatcher imu_watcher_;
   frc971::control_loops::drivetrain::LocalizationUtils utils_;
@@ -153,6 +190,8 @@ class Localizer {
       server_statistics_fetcher_;
   aos::Fetcher<aos::message_bridge::ClientStatistics>
       client_statistics_fetcher_;
+  aos::Fetcher<frc971::control_loops::drivetrain::LocalizerControl>
+      control_fetcher_;
 };
 }  // namespace y2024::localizer
 #endif  // Y2024_LOCALIZER_LOCALIZER_H_

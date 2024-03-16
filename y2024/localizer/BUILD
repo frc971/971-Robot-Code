@@ -25,6 +25,7 @@ static_flatbuffer(
     deps = [
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/imu_reader:imu_failures_fbs",
+        "//frc971/math:matrix_fbs",
     ],
 )
 
@@ -35,6 +36,7 @@ flatbuffer_ts_library(
     deps = [
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//frc971/imu_reader:imu_failures_ts_fbs",
+        "//frc971/math:matrix_ts_fbs",
     ],
 )
 
@@ -77,6 +79,7 @@ cc_library(
         "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/control_loops/drivetrain/localization:utils",
         "//frc971/imu_reader:imu_watcher",
+        "//frc971/math:flatbuffers_matrix",
         "//frc971/vision:target_map_fbs",
         "//frc971/vision:target_map_utils",
         "//y2024:constants",
@@ -133,6 +136,7 @@ cc_binary(
     srcs = ["localizer_replay.cc"],
     data = [
         "//y2024:aos_config",
+        "//y2024/constants:constants.json",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -144,6 +148,9 @@ cc_binary(
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
         "//aos/util:simulation_logger",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/imu_fdcan:dual_imu_blender_lib",
+        "//y2024/constants:simulated_constants_sender",
         "//y2024/control_loops/drivetrain:drivetrain_base",
     ],
 )

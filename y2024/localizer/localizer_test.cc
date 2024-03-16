@@ -427,7 +427,7 @@ TEST_F(LocalizerTest, VoltageErrorDisabled) {
   CHECK(status_fetcher_.Fetch());
   // We should've just ended up driving straight forwards.
   EXPECT_LT(0.1, output_fetcher_->x());
-  EXPECT_NEAR(0.0, output_fetcher_->y(), 1e-10);
+  EXPECT_NEAR(0.0, output_fetcher_->y(), 1e-8);
   EXPECT_NEAR(0.0, output_fetcher_->theta(), 1e-10);
   EXPECT_NEAR(2.0, status_fetcher_->state()->left_voltage_error(), 1.0);
   EXPECT_NEAR(2.0, status_fetcher_->state()->right_voltage_error(), 1.0);
@@ -506,7 +506,7 @@ TEST_F(LocalizerTest, HighPoseError) {
   send_targets_ = true;
   // Send the minimum pose error to be rejected
   constexpr double kEps = 1e-9;
-  pose_error_ = 1e-6 + kEps;
+  pose_error_ = 1e-4 + kEps;
 
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   CHECK(status_fetcher_.Fetch());

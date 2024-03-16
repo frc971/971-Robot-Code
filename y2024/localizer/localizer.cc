@@ -5,19 +5,21 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/pose.h"
+#include "frc971/math/flatbuffers_matrix.h"
 #include "frc971/vision/target_map_utils.h"
 #include "y2024/constants.h"
 
-DEFINE_double(max_pose_error, 1e-6,
+DEFINE_double(max_pose_error, 1e-5,
               "Throw out target poses with a higher pose error than this");
+DEFINE_double(max_distortion, 0.1, "");
 DEFINE_double(
     max_pose_error_ratio, 0.4,
     "Throw out target poses with a higher pose error ratio than this");
-DEFINE_double(distortion_noise_scalar, 1.0,
+DEFINE_double(distortion_noise_scalar, 4.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
 DEFINE_double(
-    max_implied_yaw_error, 3.0,
+    max_implied_yaw_error, 5.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
 DEFINE_double(
@@ -30,6 +32,15 @@ DEFINE_double(max_distance_to_target, 5.0,
 DEFINE_double(max_auto_image_robot_speed, 2.0,
               "Reject target poses when the robot is travelling faster than "
               "this speed in auto.");
+DEFINE_bool(
+    do_xytheta_corrections, true,
+    "If set, uses the x/y/theta corrector rather than a heading/distance/skew "
+    "one. This is better conditioned currently, but is theoretically worse due "
+    "to not capturing noise effectively.");
+DEFINE_bool(
+    always_use_extra_tags, true,
+    "If set, we will use the \"deweighted\" tags even in auto mode (this "
+    "affects april tags whose field positions we do not trust as much).");
 
 namespace y2024::localizer {
 namespace {
@@ -61,6 +72,69 @@ std::map<uint64_t, Localizer::Transform> GetTargetLocations(
     transforms[target->id()] = PoseToTransform(target);
   }
   return transforms;
+}
+
+// Returns the "nominal" covariance of localizer---i.e., the values to which it
+// tends to converge during normal operation. By initializing the localizer's
+// covariance this way, we reduce the likelihood that the first few corrections
+// we receive will result in insane jumps in robot state.
+Eigen::Matrix<double, Localizer::HybridEkf::kNStates,
+              Localizer::HybridEkf::kNStates>
+NominalCovariance() {
+  Eigen::Matrix<double, Localizer::HybridEkf::kNStates,
+                Localizer::HybridEkf::kNStates>
+      P_transpose;
+  // Grabbed from when the robot was in a steady-state.
+  P_transpose << 0.00344391020344026, 2.78255540964953e-05,
+      -3.44257436790434e-09, 1.57165298196431e-09, 0.0207259965606711,
+      1.57165298180587e-09, 0.0207259965606711, 0.054775354511474,
+      0.0547753545094318, 3.6435938125014e-13, 0.0136249573295751,
+      -1.00705421392865e-05, 2.78255540964953e-05, 0.00107448929200992,
+      -7.42495169208041e-08, 1.85634700506266e-11, 0.000244343925617656,
+      1.85634874205036e-11, 0.000244343925617656, 0.000645553479721632,
+      0.000645553790286344, -3.98991820983687e-11, 0.000160471639203211,
+      0.00085437373557969, -3.44257436791122e-09, -7.42495169208033e-08,
+      8.84891122456971e-05, 5.60929454430362e-16, -3.19015358072956e-08,
+      1.00798618104673e-15, -3.19015357689791e-08, 4.05905848804053e-07,
+      -5.37043312466153e-07, 2.59177623699213e-08, -3.54286115799832e-08,
+      -2.46295184320124e-07, 1.57165298196416e-09, 1.85634700506217e-11,
+      5.60929459005148e-16, 4.99891338811926e-09, 3.59436612693873e-08,
+      3.54690022095621e-18, 3.59436612693713e-08, 1.47025442116767e-07,
+      1.47035806190949e-07, 4.66877989234937e-08, -1.08209016210542e-08,
+      -3.39984473837553e-14, 0.0207259965606711, 0.000244343925617655,
+      -3.19015358072649e-08, 3.59436612693935e-08, 0.301240404540565,
+      3.59436612690168e-08, 0.301240404540535, 1.05741200222346,
+      1.0574120022184, 8.29472747900822e-13, 0.138401597893958,
+      -1.43941751907531e-06, 1.57165298180564e-09, 1.85634874205096e-11,
+      1.00798617244172e-15, 3.54690020212816e-18, 3.59436612690224e-08,
+      4.99891338811924e-09, 3.59436612690048e-08, 1.4703580619019e-07,
+      1.47025442115683e-07, -4.66877989234395e-08, -1.0820901621393e-08,
+      -3.40023588372784e-14, 0.0207259965606711, 0.000244343925617655,
+      -3.19015357689244e-08, 3.59436612693859e-08, 0.301240404540535,
+      3.5943661269025e-08, 0.301240404540565, 1.05741200222289,
+      1.05741200221897, 8.29752131358864e-13, 0.138401597893958,
+      -1.43941751907531e-06, 0.0547753545114739, 0.000645553479721628,
+      4.05905848802199e-07, 1.4702544211661e-07, 1.05741200222346,
+      1.47035806190016e-07, 1.05741200222289, 5.51003071369415,
+      4.85571868991385, 3.11581831710161e-06, 0.388669918077443,
+      -2.97795819369728e-06, 0.054775354509432, 0.000645553790286345,
+      -5.37043312465425e-07, 1.47035806190839e-07, 1.0574120022184,
+      1.47025442115792e-07, 1.05741200221897, 4.85571868991385,
+      5.51003071367444, -3.11581462746269e-06, 0.388669918072973,
+      -2.97799067538699e-06, 3.64359250152554e-13, -3.98991820983e-11,
+      2.5917762369921e-08, 4.66877989234987e-08, 8.2947423101614e-13,
+      -4.66877989234886e-08, 8.29754326977491e-13, 3.11581831710969e-06,
+      -3.11581462747612e-06, 0.212136173309098, 8.06835372350592e-13,
+      8.80190080862899e-12, 0.0136249573295751, 0.000160471639203211,
+      -3.54286115799303e-08, -1.08209016210412e-08, 0.138401597893958,
+      -1.08209016213997e-08, 0.138401597893958, 0.388669918077444,
+      0.388669918072972, 8.06834601598773e-13, 0.187427410345505,
+      -1.28632768080328e-06, -1.00705421392865e-05, 0.000854373735579689,
+      -2.46295184320122e-07, -3.39984473838037e-14, -1.4394175190755e-06,
+      -3.40023588373113e-14, -1.4394175190755e-06, -2.97795819369787e-06,
+      -2.9779906753875e-06, 8.80190080900245e-12, -1.28632768080338e-06,
+      0.00381653175156393;
+  return P_transpose.transpose();
 }
 }  // namespace
 
@@ -107,8 +181,14 @@ Localizer::Localizer(aos::EventLoop *event_loop)
       cameras_(MakeCameras(constants_fetcher_.constants(), event_loop)),
       target_poses_(GetTargetLocations(constants_fetcher_.constants())),
       down_estimator_(dt_config_),
-      ekf_(dt_config_),
+      // Force the dt to 1 ms (the nominal IMU frequency) since we have observed
+      // issues with timing on the orins.
+      // TODO(james): Ostensibly, we should be able to use the timestamps from
+      // the IMU board itself for exactly this; however, I am currently worried
+      // about the impacts of clock drift in using that.
+      ekf_(dt_config_, std::chrono::milliseconds(1)),
       observations_(&ekf_),
+      xyz_observations_(&ekf_),
       imu_watcher_(event_loop, dt_config_,
                    y2024::constants::Values::DrivetrainEncoderToMeters(1),
                    std::bind(&Localizer::HandleImu, this, std::placeholders::_1,
@@ -124,7 +204,10 @@ Localizer::Localizer(aos::EventLoop *event_loop)
               "/aos")),
       client_statistics_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ClientStatistics>(
-              "/aos")) {
+              "/aos")),
+      control_fetcher_(event_loop_->MakeFetcher<
+                       frc971::control_loops::drivetrain::LocalizerControl>(
+          "/drivetrain")) {
   if (dt_config_.is_simulated) {
     down_estimator_.assume_perfect_gravity();
   }
@@ -186,25 +269,7 @@ Localizer::Localizer(aos::EventLoop *event_loop)
       "/drivetrain",
       [this](
           const frc971::control_loops::drivetrain::LocalizerControl &control) {
-        // This is triggered whenever we need to force the X/Y/(maybe theta)
-        // position of the robot to a particular point---e.g., during pre-match
-        // setup, or when commanded by a button on the driverstation.
-
-        // For some forms of reset, we choose to keep our current yaw estimate
-        // rather than overriding it from the control message.
-        const double theta = control.keep_current_theta()
-                                 ? ekf_.X_hat(StateIdx::kTheta)
-                                 : control.theta();
-        // Encoder values need to be reset based on the current values to ensure
-        // that we don't get weird corrections on the next encoder update.
-        const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
-        const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
-        ekf_.ResetInitialState(
-            t_,
-            (HybridEkf::State() << control.x(), control.y(), theta,
-             left_encoder, 0, right_encoder, 0, 0, 0, 0, 0, 0)
-                .finished(),
-            ekf_.P());
+        HandleControl(control);
       });
 
   ekf_.set_ignore_accel(true);
@@ -212,8 +277,34 @@ Localizer::Localizer(aos::EventLoop *event_loop)
   event_loop->SetRuntimeRealtimePriority(10);
   event_loop->OnRun([this, event_loop]() {
     ekf_.ResetInitialState(event_loop->monotonic_now(),
-                           HybridEkf::State::Zero(), ekf_.P());
+                           HybridEkf::State::Zero(), NominalCovariance());
+    if (control_fetcher_.Fetch()) {
+      HandleControl(*control_fetcher_.get());
+    }
   });
+}
+
+void Localizer::HandleControl(
+    const frc971::control_loops::drivetrain::LocalizerControl &control) {
+  // This is triggered whenever we need to force the X/Y/(maybe theta)
+  // position of the robot to a particular point---e.g., during pre-match
+  // setup, or when commanded by a button on the driverstation.
+
+  // For some forms of reset, we choose to keep our current yaw estimate
+  // rather than overriding it from the control message.
+  const double theta = control.keep_current_theta()
+                           ? ekf_.X_hat(StateIdx::kTheta)
+                           : control.theta();
+  // Encoder values need to be reset based on the current values to ensure
+  // that we don't get weird corrections on the next encoder update.
+  const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
+  const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
+  ekf_.ResetInitialState(t_,
+                         (HybridEkf::State() << control.x(), control.y(), theta,
+                          left_encoder, 0, right_encoder, 0, 0, 0, 0, 0, 0)
+                             .finished(),
+                         NominalCovariance());
+  VLOG(1) << "Reset state";
 }
 
 void Localizer::HandleImu(aos::monotonic_clock::time_point /*sample_time_pico*/,
@@ -226,6 +317,7 @@ void Localizer::HandleImu(aos::monotonic_clock::time_point /*sample_time_pico*/,
   if (!encoders.has_value()) {
     return;
   }
+  VLOG(1) << "Got encoders";
   if (t_ == aos::monotonic_clock::min_time) {
     t_ = sample_time_orin;
   }
@@ -257,7 +349,29 @@ void Localizer::RejectImage(int camera_index, RejectionReason reason,
 // (in the past) for ignoring april tags that tend to produce problematic
 // readings.
 bool Localizer::UseAprilTag(uint64_t target_id) {
-  return target_poses_.count(target_id) != 0;
+  if (target_poses_.count(target_id) == 0) {
+    return false;
+  }
+  return true;
+}
+
+bool Localizer::DeweightAprilTag(uint64_t target_id) {
+  const flatbuffers::Vector<uint64_t> *ignore_tags = nullptr;
+
+  switch (utils_.Alliance()) {
+    case aos::Alliance::kRed:
+      ignore_tags = CHECK_NOTNULL(
+          constants_fetcher_.constants().common()->ignore_targets()->red());
+      break;
+    case aos::Alliance::kBlue:
+      ignore_tags = CHECK_NOTNULL(
+          constants_fetcher_.constants().common()->ignore_targets()->blue());
+      break;
+    case aos::Alliance::kInvalid:
+      return false;
+  }
+  return std::find(ignore_tags->begin(), ignore_tags->end(), target_id) !=
+         ignore_tags->end();
 }
 
 namespace {
@@ -298,6 +412,16 @@ void Localizer::HandleTarget(
     RejectImage(camera_index, RejectionReason::NO_SUCH_TARGET, debug_builder);
     return;
   }
+  double april_tag_noise_scalar = 1.0;
+  if (DeweightAprilTag(target_id)) {
+    if (!FLAGS_always_use_extra_tags && utils_.MaybeInAutonomous()) {
+      VLOG(1) << "Rejecting target due to auto invalid ID " << target_id;
+      RejectImage(camera_index, RejectionReason::NO_SUCH_TARGET, debug_builder);
+      return;
+    } else {
+      april_tag_noise_scalar = 10.0;
+    }
+  }
 
   const Transform &H_field_target = target_poses_.at(target_id);
   const Transform &H_robot_camera = cameras_.at(camera_index).extrinsics;
@@ -335,31 +459,33 @@ void Localizer::HandleTarget(
 
   // Heading, distance, skew at 1 meter.
   Eigen::Matrix<double, 3, 1> noises(0.01, 0.05, 0.05);
-  const double distance_noise_scalar = std::pow(distance_to_target, 2.0);
+  const double distance_noise_scalar =
+      std::min(1.0, std::pow(distance_to_target, 2.0));
   noises(Corrector::kDistance) *= distance_noise_scalar;
   noises(Corrector::kSkew) *= distance_noise_scalar;
   // TODO(james): This is leftover from last year; figure out if we want it.
   // Scale noise by the distortion factor for this detection
   noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
+  noises *= april_tag_noise_scalar;
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
   R.diagonal() = noises.cwiseAbs2();
+  const Eigen::Vector3d camera_position =
+      corrector.observed_camera_pose().abs_pos();
+  // Calculate the camera-to-robot transformation matrix ignoring the
+  // pitch/roll of the camera.
+  const Transform H_camera_robot_stripped =
+      frc971::control_loops::Pose(ZToXCamera(H_robot_camera))
+          .AsTransformationMatrix()
+          .inverse();
+  const frc971::control_loops::Pose measured_pose(
+      corrector.observed_camera_pose().AsTransformationMatrix() *
+      H_camera_robot_stripped);
   if (debug_builder != nullptr) {
-    const Eigen::Vector3d camera_position =
-        corrector.observed_camera_pose().abs_pos();
     debug_builder->set_camera_x(camera_position.x());
     debug_builder->set_camera_y(camera_position.y());
     debug_builder->set_camera_theta(
         corrector.observed_camera_pose().abs_theta());
-    // Calculate the camera-to-robot transformation matrix ignoring the
-    // pitch/roll of the camera.
-    const Transform H_camera_robot_stripped =
-        frc971::control_loops::Pose(ZToXCamera(H_robot_camera))
-            .AsTransformationMatrix()
-            .inverse();
-    const frc971::control_loops::Pose measured_pose(
-        corrector.observed_camera_pose().AsTransformationMatrix() *
-        H_camera_robot_stripped);
     debug_builder->set_implied_robot_x(measured_pose.rel_pos().x());
     debug_builder->set_implied_robot_y(measured_pose.rel_pos().y());
     debug_builder->set_implied_robot_theta(measured_pose.rel_theta());
@@ -385,8 +511,12 @@ void Localizer::HandleTarget(
                                   : FLAGS_max_implied_teleop_yaw_error) *
       kDegToRad;
 
-  if (utils_.MaybeInAutonomous() &&
-      (std::abs(robot_speed) > FLAGS_max_auto_image_robot_speed)) {
+  if (target.distortion_factor() > FLAGS_max_distortion) {
+    VLOG(1) << "Rejecting target due to high distortion.";
+    return RejectImage(camera_index, RejectionReason::HIGH_DISTORTION,
+                       debug_builder);
+  } else if (utils_.MaybeInAutonomous() &&
+             (std::abs(robot_speed) > FLAGS_max_auto_image_robot_speed)) {
     return RejectImage(camera_index, RejectionReason::ROBOT_TOO_FAST,
                        debug_builder);
   } else if (std::abs(camera_yaw_error) > yaw_threshold) {
@@ -398,7 +528,7 @@ void Localizer::HandleTarget(
   }
 
   const Input U = ekf_.MostRecentInput();
-  VLOG(1) << "previous state " << ekf_.X_hat().topRows<3>().transpose();
+  VLOG(1) << "previous state " << ekf_.X_hat().transpose();
   const State prior_state = ekf_.X_hat();
   // For the correction step, instead of passing in the measurement directly,
   // we pass in (0, 0, 0) as the measurement and then for the expected
@@ -406,10 +536,27 @@ void Localizer::HandleTarget(
   // the camera measurement and the current estimate of the
   // pose. This doesn't affect any of the math, it just makes the code a bit
   // more convenient to write given the Correct() interface we already have.
-  observations_.CorrectKnownH(Eigen::Vector3d::Zero(), &U, corrector, R, t_);
+  if (FLAGS_do_xytheta_corrections) {
+    Eigen::Vector3d Z(measured_pose.rel_pos().x(), measured_pose.rel_pos().y(),
+                      measured_pose.rel_theta());
+    Eigen::Matrix<double, 3, 1> xyz_noises(0.2, 0.2, 0.5);
+    xyz_noises *= distance_noise_scalar;
+    xyz_noises *= april_tag_noise_scalar;
+    // Scale noise by the distortion factor for this detection
+    xyz_noises *=
+        (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
+
+    Eigen::Matrix3d R_xyz = Eigen::Matrix3d::Zero();
+    R_xyz.diagonal() = xyz_noises.cwiseAbs2();
+    xyz_observations_.CorrectKnownH(Eigen::Vector3d::Zero(), &U,
+                                    XyzCorrector(state_at_capture.value(), Z),
+                                    R_xyz, t_);
+  } else {
+    observations_.CorrectKnownH(Eigen::Vector3d::Zero(), &U, corrector, R, t_);
+  }
   ++total_accepted_targets_;
   ++cameras_.at(camera_index).total_accepted_targets;
-  VLOG(1) << "new state " << ekf_.X_hat().topRows<3>().transpose();
+  VLOG(1) << "new state " << ekf_.X_hat().transpose();
   if (debug_builder != nullptr) {
     debug_builder->set_correction_x(ekf_.X_hat()(StateIdx::kX) -
                                     prior_state(StateIdx::kX));
@@ -418,6 +565,9 @@ void Localizer::HandleTarget(
     debug_builder->set_correction_theta(ekf_.X_hat()(StateIdx::kTheta) -
                                         prior_state(StateIdx::kTheta));
     debug_builder->set_accepted(true);
+    debug_builder->set_expected_robot_x(ekf_.X_hat()(StateIdx::kX));
+    debug_builder->set_expected_robot_y(ekf_.X_hat()(StateIdx::kY));
+    debug_builder->set_expected_robot_theta(ekf_.X_hat()(StateIdx::kTheta));
   }
 }
 
@@ -546,11 +696,17 @@ void Localizer::SendStatus() {
       down_estimator_.PopulateStatus(builder.fbb(), t_);
   auto imu_offset = PopulateImu(builder.fbb());
   auto state_offset = PopulateState(ekf_.X_hat(), builder.fbb());
+  // covariance is a square; we use the number of rows in the state as the rows
+  // and cols of the covariance.
+  auto covariance_offset =
+      frc971::FromEigen<State::RowsAtCompileTime, State::RowsAtCompileTime>(
+          ekf_.P(), builder.fbb());
   Status::Builder status_builder = builder.MakeBuilder<Status>();
   status_builder.add_state(state_offset);
   status_builder.add_down_estimator(down_estimator_offset);
   status_builder.add_imu(imu_offset);
   status_builder.add_statistics(stats_offset);
+  status_builder.add_ekf_covariance(covariance_offset);
   builder.CheckOk(builder.Send(status_builder.Finish()));
 }
 
@@ -596,6 +752,16 @@ Localizer::Corrector::Corrector(const State &state_at_capture,
 
 Localizer::Output Localizer::Corrector::H(const State &, const Input &) {
   return expected_ - observed_;
+}
+
+Localizer::Output Localizer::XyzCorrector::H(const State &, const Input &) {
+  CHECK(Z_.allFinite());
+  Eigen::Vector3d Zhat = H_ * state_at_capture_ - Z_;
+  // Rewrap angle difference to put it back in range.
+  Zhat(2) = aos::math::NormalizeAngle(Zhat(2));
+  VLOG(1) << "Zhat " << Zhat.transpose() << " Z_ " << Z_.transpose()
+          << " state " << (H_ * state_at_capture_).transpose();
+  return Zhat;
 }
 
 }  // namespace y2024::localizer
