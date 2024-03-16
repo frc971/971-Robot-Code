@@ -522,6 +522,7 @@ int Main() {
   aos::ShmEventLoop event_loop(&config.message());
 
   event_loop.SetRuntimeRealtimePriority(55);
+  event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({2, 3, 4}));
 
   aos::Sender<frc971::vision::CameraImage> sender =
       event_loop.MakeSender<frc971::vision::CameraImage>(FLAGS_channel);
