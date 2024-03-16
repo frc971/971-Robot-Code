@@ -14,7 +14,7 @@ static constexpr double kMurataAccelSaturation = 6.0;
 // Coefficient to multiply the saturation values by to give some room on where
 // we switch to tdk.
 static constexpr double kSaturationCoeff = 0.9;
-static constexpr size_t kSaturationCounterThreshold = 20;
+static constexpr int kSaturationCounterThreshold = 20;
 
 using frc971::imu_fdcan::DualImuBlender;
 
@@ -46,6 +46,12 @@ void DualImuBlender::HandleDualImu(const frc971::imu::DualImu *dual_imu) {
   imu_values->set_pico_timestamp_us(dual_imu->board_timestamp_us());
   imu_values->set_monotonic_timestamp_ns(dual_imu->kernel_timestamp());
   imu_values->set_data_counter(dual_imu->packet_counter());
+  // Notes on saturation strategy:
+  // We use the TDK to detect saturation because we presume that if the Murata
+  // is saturated then it may produce poor or undefined behavior (including
+  // potentially producing values that make it look like it is not saturated).
+  // In practice, the Murata does seem to behave reasonably under saturation (it
+  // just maxes out its outputs at the given value).
 
   if (std::abs(dual_imu->tdk()->gyro_x()) >=
       kSaturationCoeff * kMurataGyroSaturation) {
@@ -65,14 +71,24 @@ void DualImuBlender::HandleDualImu(const frc971::imu::DualImu *dual_imu) {
     imu_values->set_gyro_y(dual_imu->murata()->gyro_y());
   }
 
+  // TODO(james): Currently we only do hysteresis for the gyro Z axis because
+  // this is the only axis that is particularly critical. We should do something
+  // like this for all axes.
   if (std::abs(dual_imu->tdk()->gyro_z()) >=
       kSaturationCoeff * kMurataGyroSaturation) {
     ++saturated_counter_;
   } else {
-    saturated_counter_ = 0;
+    --saturated_counter_;
+  }
+  if (saturated_counter_ <= -kSaturationCounterThreshold) {
+    is_saturated_ = false;
+    saturated_counter_ = -kSaturationCounterThreshold;
+  } else if (saturated_counter_ >= kSaturationCounterThreshold) {
+    is_saturated_ = true;
+    saturated_counter_ = kSaturationCounterThreshold;
   }
 
-  if (saturated_counter_ > kSaturationCounterThreshold) {
+  if (is_saturated_) {
     dual_imu_blender_status_builder->set_gyro_z(imu::ImuType::TDK);
     imu_values->set_gyro_z(dual_imu->tdk()->gyro_z());
   } else {
