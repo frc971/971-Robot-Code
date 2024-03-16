@@ -50,6 +50,7 @@ robot_downloader(
         ":joystick_republish",
         "//aos/events:aos_timing_report_streamer",
         "//aos/events/logging:log_cat",
+        "//aos:aos_jitter",
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
         "//aos/util:foxglove_websocket",

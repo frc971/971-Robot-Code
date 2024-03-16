@@ -595,6 +595,23 @@ cc_binary(
 )
 
 cc_binary(
+    name = "aos_jitter",
+    srcs = [
+        "aos_jitter.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":aos_cli_utils",
+        ":configuration",
+        ":init",
+        ":json_to_flatbuffer",
+        ":realtime",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
     name = "aos_send",
     srcs = [
         "aos_send.cc",
