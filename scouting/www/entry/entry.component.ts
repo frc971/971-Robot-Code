@@ -132,6 +132,8 @@ export class EntryComponent implements OnInit {
   @Input() compLevel: CompLevel = 'qm';
   @Input() skipTeamSelection = false;
 
+  @ViewChild('header') header: ElementRef;
+
   matchList: Match[] = [];
 
   actionList: ActionT[] = [];
@@ -315,8 +317,6 @@ export class EntryComponent implements OnInit {
     this.section = target;
   }
 
-  @ViewChild('header') header: ElementRef;
-
   private scrollToTop() {
     this.header.nativeElement.scrollIntoView();
   }
@@ -327,7 +327,6 @@ export class EntryComponent implements OnInit {
 
     for (const action of this.actionList) {
       let actionOffset: number | undefined;
-      console.log(action.type);
 
       switch (action.type) {
         case 'startMatchAction':
@@ -494,8 +493,8 @@ export class EntryComponent implements OnInit {
       this.section = 'Success';
       this.actionList = [];
 
-      // Keep track of the position of the last robot, use to figure out what the next robot in the same position is.
-
+      // Keep track of the position of the last robot, use to figure out what
+      // the next robot in the same position is.
       let lastTeamPos = '0';
       for (const match of this.matchList) {
         if (

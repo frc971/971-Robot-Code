@@ -40,8 +40,6 @@ export class App {
   @ViewChild('block_alerts') block_alerts: ElementRef;
 
   constructor() {
-    console.log(`Using development mode: ${isDevMode()}`);
-
     window.addEventListener('beforeunload', (e) => {
       if (!unguardedTabs.includes(this.tab)) {
         if (!this.block_alerts.nativeElement.checked) {
