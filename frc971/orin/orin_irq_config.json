@@ -40,7 +40,7 @@
     },
     {
       "name": "cana",
-      "affinity": [4]
+      "affinity": [5]
     },
     {
       "name": "uart-pl011",
@@ -276,12 +276,12 @@
     {
       "name": "irq/*-cana",
       "scheduler": "SCHEDULER_FIFO",
-      "priority": 51,
-      "affinity": [4]
+      "priority": 60,
+      "affinity": [5]
     },
     {
       "name": "irq/*-peak_pcie",
-      "scheduler": "SCHEDULER_FIFO",
+      "scheduler": "SCHEDULER_OTHER",
       "priority": 51,
       "affinity": [5]
     },
