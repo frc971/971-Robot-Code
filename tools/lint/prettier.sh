@@ -28,6 +28,7 @@ pushd "${BUILD_WORKSPACE_DIRECTORY}"
 # TODO(phil): Support more than just //scouting.
 web_files=($(git ls-tree --name-only --full-tree -r @ \
     | grep '^scouting/' \
+    | grep -v '\.jinja2\.' \
     | (grep \
         -e '\.ts$' \
         -e '\.js$' \

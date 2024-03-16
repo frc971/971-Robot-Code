@@ -8,6 +8,7 @@
         "@angular/platform-browser": "v16-lts",
         "@types/pako": "2.0.3",
         "@org_frc971/scouting/webserver/requests/messages": "workspace:*",
-        "@org_frc971/scouting/www/rpc": "workspace:*"
+        "@org_frc971/scouting/www/rpc": "workspace:*",
+        "@org_frc971/scouting/www/pipes": "workspace:*"
     }
 }

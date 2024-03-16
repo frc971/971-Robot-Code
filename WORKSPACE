@@ -918,6 +918,7 @@ npm_translate_lock(
         "@//scouting/www/entry:package.json",
         "@//scouting/www/match_list:package.json",
         "@//scouting/www/notes:package.json",
+        "@//scouting/www/pipes:package.json",
         "@//scouting/www/rpc:package.json",
         "@//scouting/www/scan:package.json",
         "@//scouting/www/shift_schedule:package.json",

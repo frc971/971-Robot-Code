@@ -252,6 +252,7 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], visibil
     srcs = native.glob(
         ["**/*.ts", "**/*.css", "**/*.html"],
         exclude = test_spec_srcs + [
+            "**/*.jinja2.*",
             "public-api.ts",
         ],
     ) + extra_srcs
