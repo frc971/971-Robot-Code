@@ -18,6 +18,8 @@ DEFINE_double(max_jitter, 0.01,
 DEFINE_bool(print_jitter, true,
             "If true, print jitter events.  These will impact RT performance.");
 DECLARE_bool(enable_ftrace);
+DEFINE_bool(print_latency_stats, false,
+            "If true, print latency stats.  These will impact RT performance.");
 
 namespace aos {
 
@@ -28,14 +30,27 @@ class State {
         channel_(channel),
         channel_name_(aos::configuration::StrippedChannelToString(channel_)) {
     LOG(INFO) << "Watching for jitter on " << channel_name_;
+
     event_loop->MakeRawWatcher(
         channel_, [this](const aos::Context &context, const void *message) {
           HandleMessage(context, message);
         });
+
+    if (FLAGS_print_latency_stats) {
+      timer_handle_ = event_loop->AddTimer([this]() { PrintLatencyStats(); });
+      timer_handle_->set_name("jitter");
+      event_loop->OnRun([this, event_loop]() {
+        timer_handle_->Schedule(event_loop->monotonic_now(),
+                                std::chrono::microseconds(1000));
+      });
+    }
   }
 
   void HandleMessage(const aos::Context &context, const void * /*message*/) {
     if (last_time_ != aos::monotonic_clock::min_time) {
+      latency_.push_back(std::chrono::duration<double>(
+                             context.monotonic_event_time - last_time_)
+                             .count());
       if (context.monotonic_event_time >
           last_time_ + std::chrono::duration_cast<std::chrono::nanoseconds>(
                            std::chrono::duration<double>(FLAGS_max_jitter))) {
@@ -68,6 +83,22 @@ class State {
     last_time_ = context.monotonic_event_time;
   }
 
+  void PrintLatencyStats() {
+    std::sort(latency_.begin(), latency_.end());
+    if (latency_.size() >= 100) {
+      LOG(INFO) << "Percentiles 25th: " << latency_[latency_.size() * 0.25]
+                << " 50th: " << latency_[latency_.size() * 0.5]
+                << " 75th: " << latency_[latency_.size() * 0.75]
+                << " 90th: " << latency_[latency_.size() * 0.9]
+                << " 95th: " << latency_[latency_.size() * 0.95]
+                << " 99th: " << latency_[latency_.size() * 0.99];
+      LOG(INFO) << "Max: " << latency_.back() << " Min: " << latency_.front()
+                << " Mean: "
+                << std::accumulate(latency_.begin(), latency_.end(), 0.0) /
+                       latency_.size();
+    }
+  }
+
  private:
   Ftrace *ftrace_;
   const Channel *channel_;
@@ -75,6 +106,10 @@ class State {
   std::string channel_name_;
 
   aos::monotonic_clock::time_point last_time_ = aos::monotonic_clock::min_time;
+
+  std::vector<double> latency_;
+
+  aos::TimerHandler *timer_handle_;
 };
 
 }  // namespace aos
