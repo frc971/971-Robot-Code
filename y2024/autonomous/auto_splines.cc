@@ -18,7 +18,7 @@ flatbuffers::Offset<frc971::MultiSpline> FixSpline(
   // For 2024: The field is mirrored across the center line, and is not
   // rotationally symmetric. As such, we only flip the X coordinates when
   // changing side of the field.
-  if (alliance == aos::Alliance::kBlue) {
+  if (alliance == aos::Alliance::kRed) {
     for (size_t ii = 0; ii < spline_x->size(); ++ii) {
       spline_x->Mutate(ii, -spline_x->Get(ii));
     }
@@ -119,6 +119,65 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   multispline_builder.add_spline_y(spline_y_offset);
 
   return FixSpline(builder, multispline_builder.Finish(), alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::MobilityAndShootSpline(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       mobility_and_shoot_spline_, builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FourPieceSpline1(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       four_piece_spline_1_, builder->fbb()),
+                   alliance);
+}
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FourPieceSpline2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       four_piece_spline_2_, builder->fbb()),
+                   alliance);
+}
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FourPieceSpline3(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       four_piece_spline_3_, builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FourPieceSpline4(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       four_piece_spline_4_, builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FourPieceSpline5(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       four_piece_spline_5_, builder->fbb()),
+                   alliance);
 }
 
 }  // namespace y2024::autonomous
