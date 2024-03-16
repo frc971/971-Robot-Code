@@ -115,6 +115,16 @@ table ExtendSetPoints {
   retracted:double (id: 3);
 }
 
+enum AutonomousMode : ubyte {
+  NONE = 0,
+  // Simple test S-spline auto mode
+  SPLINE_AUTO = 1,
+  // Simple drive-and-shoot to pick up at most one game piece.
+  MOBILITY_AND_SHOOT = 2,
+  // Auto to pick up four game pieces.
+  FOUR_PIECE = 3,
+}
+
 table RobotConstants {
   intake_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
   climber_constants:PotAndAbsEncoderConstants (id: 1);
@@ -147,6 +157,13 @@ table RetentionRollerVoltages {
   spitting:double (id: 1);
 }
 
+// Set of april tag targets, by april tag ID, to ignore when on a
+// given alliance.
+table IgnoreTargets {
+  red:[uint64] (id: 0);
+  blue:[uint64] (id: 1);
+}
+
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
@@ -173,10 +190,12 @@ table Common {
   max_altitude_shooting_angle: double (id: 25);
   shooter_speaker_set_point: ShooterSetPoint (id: 21);
   shooter_podium_set_point: ShooterSetPoint (id: 22);
-    extend_set_points:ExtendSetPoints (id: 23);
+  extend_set_points:ExtendSetPoints (id: 23);
   // The position to move the turret to when avoiding collision
   // with the extend when the extend is moving to amp/trap position.
   turret_avoid_extend_collision_position: double (id: 24);
+  autonomous_mode:AutonomousMode (id: 26);
+  ignore_targets:IgnoreTargets (id: 27);
 }
 
 table Constants {
