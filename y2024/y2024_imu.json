@@ -399,6 +399,10 @@
     {
       "name": "imu_can_logger",
       "executable_name": "can_logger",
+      "args": [
+        "--priority=55",
+        "--affinity=5"
+      ],
       "nodes": [
         "imu"
       ]

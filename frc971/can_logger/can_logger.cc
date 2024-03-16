@@ -4,6 +4,10 @@ DEFINE_bool(poll, false,
             "If true, poll the CAN bus every 100ms.  If false, wake up for "
             "each frame and publish it.");
 
+DEFINE_int32(priority, 10,
+             "If --poll is not set, set the realtime priority to this.");
+DEFINE_int32(affinity, -1, "If positive, pin to this core.");
+
 namespace frc971::can_logger {
 
 CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
@@ -14,7 +18,11 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
       frames_sender_(shm_event_loop_->MakeSender<CanFrame>(channel_name)) {
   // TODO(max): Figure out a proper priority
   if (!FLAGS_poll) {
-    shm_event_loop_->SetRuntimeRealtimePriority(10);
+    shm_event_loop_->SetRuntimeRealtimePriority(FLAGS_priority);
+  }
+  if (FLAGS_affinity >= 0) {
+    shm_event_loop_->SetRuntimeAffinity(
+        aos::MakeCpusetFromCpus({FLAGS_affinity}));
   }
   struct ifreq ifr;
   strcpy(ifr.ifr_name, interface_name.data());
