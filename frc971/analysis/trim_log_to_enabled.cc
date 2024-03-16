@@ -9,12 +9,19 @@
 
 DEFINE_string(output_folder, "/tmp/trimmed/",
               "Name of the folder to write the trimmed log to.");
+DEFINE_string(node, "roborio", "");
 DEFINE_double(pre_enable_time_sec, 10.0,
               "Amount of time to leave in the new log before the first enable "
               "signal happens.");
 DEFINE_double(post_enable_time_sec, 1.0,
               "Amount of time to leave in the new log after the final enable "
               "signal ends.");
+DEFINE_double(force_start_monotonic, -1.0,
+              "If set, time, in seconds, at which to forcibly trim the start "
+              "of the log.");
+DEFINE_double(
+    force_end_monotonic, -1.0,
+    "If set, time, in seconds, at which to forcibly trim the end of the log.");
 
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
@@ -26,15 +33,16 @@ int main(int argc, char *argv[]) {
   std::optional<aos::monotonic_clock::time_point> start_time;
   std::optional<aos::monotonic_clock::time_point> end_time;
   bool printed_match = false;
+  bool force_time_range = FLAGS_force_start_monotonic > 0;
   // We need to do two passes through the logfile; one to figure out when the
   // start/end times are, one to actually do the trimming.
-  {
+  if (!force_time_range) {
     aos::logger::LogReader reader(logfiles);
     const aos::Node *roborio =
-        aos::configuration::GetNode(reader.configuration(), "roborio");
+        aos::configuration::GetNode(reader.configuration(), FLAGS_node);
     reader.Register();
     std::unique_ptr<aos::EventLoop> event_loop =
-        reader.event_loop_factory()->MakeEventLoop("roborio", roborio);
+        reader.event_loop_factory()->MakeEventLoop(FLAGS_node, roborio);
     event_loop->MakeWatcher(
         "/aos", [&start_time, &end_time, &printed_match,
                  &event_loop](const aos::JoystickState &msg) {
@@ -60,25 +68,33 @@ int main(int argc, char *argv[]) {
     if (!printed_match) {
       LOG(INFO) << "No match info.";
     }
+    if (!start_time.has_value()) {
+      LOG(WARNING) << "Log does not ontain any JoystickState messages.";
+      return 1;
+    }
+    LOG(INFO) << "First enable at " << start_time.value();
+    LOG(INFO) << "Final enable at " << end_time.value();
+    start_time.value() -= std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(FLAGS_pre_enable_time_sec));
+    end_time.value() += std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(FLAGS_post_enable_time_sec));
+  } else {
+    CHECK_LT(FLAGS_force_start_monotonic, FLAGS_force_end_monotonic);
+    start_time = aos::monotonic_clock::time_point(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::duration<double>(FLAGS_force_start_monotonic)));
+    end_time = aos::monotonic_clock::time_point(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::duration<double>(FLAGS_force_end_monotonic)));
   }
-  if (!start_time.has_value()) {
-    LOG(WARNING) << "Log does not ontain any JoystickState messages.";
-    return 1;
-  }
-  LOG(INFO) << "First enable at " << start_time.value();
-  LOG(INFO) << "Final enable at " << end_time.value();
-  start_time.value() -= std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::duration<double>(FLAGS_pre_enable_time_sec));
-  end_time.value() += std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::duration<double>(FLAGS_post_enable_time_sec));
 
   {
     aos::logger::LogReader reader(logfiles);
     const aos::Node *roborio =
-        aos::configuration::GetNode(reader.configuration(), "roborio");
+        aos::configuration::GetNode(reader.configuration(), FLAGS_node);
     reader.Register();
     std::unique_ptr<aos::EventLoop> event_loop =
-        reader.event_loop_factory()->MakeEventLoop("roborio", roborio);
+        reader.event_loop_factory()->MakeEventLoop(FLAGS_node, roborio);
     auto exit_timer = event_loop->AddTimer(
         [&reader]() { reader.event_loop_factory()->Exit(); });
     exit_timer->Schedule(start_time.value());
