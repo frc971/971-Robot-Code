@@ -1,0 +1,39 @@
+{
+    "spline_count": 1,
+    "spline_x": [
+        -6.385753156016853,
+        -6.038148386644435,
+        -5.498099209905131,
+        -5.500010615292536,
+        -5.505673744840998,
+        -5.450725524128315
+    ],
+    "spline_y": [
+        -0.012742650262493882,
+        0.6970427431345343,
+        1.0584941253106013,
+        1.0226571920273129,
+        1.4628922679287215,
+        2.245294280677646
+    ],
+    "constraints": [
+        {
+            "constraint_type": "LONGITUDINAL_ACCELERATION",
+            "value": 3
+        },
+        {
+            "constraint_type": "LATERAL_ACCELERATION",
+            "value": 2
+        },
+        {
+            "constraint_type": "VOLTAGE",
+            "value": 10
+        },
+        {
+            "constraint_type": "VELOCITY",
+            "value": 0.4,
+            "start_distance": 1.5,
+            "end_distance": 10.0
+        }
+    ]
+}
