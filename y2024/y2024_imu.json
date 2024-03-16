@@ -400,7 +400,7 @@
       "name": "imu_can_logger",
       "executable_name": "can_logger",
       "args": [
-        "--priority=55",
+        "--priority=59",
         "--affinity=5"
       ],
       "nodes": [
