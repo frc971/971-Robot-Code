@@ -4,30 +4,55 @@
   "target_map": {% include 'y2024/vision/maps/target_map.json' %},
   "shooter_interpolation_table": [
     {
-        "distance_from_goal": 5.0,
+        "distance_from_goal": 0.8,
         "shot_params": {
-            "shot_velocity": 0.0,
-            "shot_altitude_angle": 0.0,
-            "shot_catapult_angle": 0.0,
-            "shot_speed_over_ground": 2.0
+            "shot_altitude_angle": 0.85,
+            "shot_speed_over_ground": 4.0
         }
     },
     {
-      "distance_from_goal": 10.0,
+      "distance_from_goal": 1.34,
       "shot_params": {
-          "shot_velocity": 0.0,
-          "shot_altitude_angle": 0.0,
-          "shot_catapult_angle": 0.0,
+          "shot_altitude_angle": 0.85,
+          "shot_speed_over_ground": 4.0
+      }
+    },
+    {
+      "distance_from_goal": 2.004,
+      "shot_params": {
+          "shot_altitude_angle": 0.73,
+          "shot_speed_over_ground": 4.0
+      }
+    },
+    // 2.2 -> high.
+    {
+      "distance_from_goal": 2.844,
+      "shot_params": {
+          "shot_altitude_angle": 0.62,
+          "shot_speed_over_ground": 4.0
+      }
+    },
+    {
+      "distance_from_goal": 3.374,
+      "shot_params": {
+          "shot_altitude_angle": 0.58,
+          "shot_speed_over_ground": 4.0
+      }
+    },
+    {
+      "distance_from_goal": 4.10,
+      "shot_params": {
+          "shot_altitude_angle": 0.54,
           "shot_speed_over_ground": 4.0
       }
     }
   ],
   "intake_roller_voltages": {
-    "spitting": -4.0,
+    "spitting": -6.0,
     "intaking": 9.0
   },
   "intake_pivot_set_points": {
-    "extended": -0.03,
+    "extended": 0.045,
     "retracted": 1.73
   },
   "intake_pivot": {
@@ -56,7 +81,7 @@
     "intake_pivot_supply_current_limit": 40,
     "intake_pivot_stator_current_limit": 100,
     "intake_roller_supply_current_limit": 20,
-    "intake_roller_stator_current_limit": 50,
+    "intake_roller_stator_current_limit": 100,
     "transfer_roller_supply_current_limit": 20,
     "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 50,
@@ -64,11 +89,11 @@
     "climber_supply_current_limit": 30,
     "climber_stator_current_limit": 100,
     "extend_supply_current_limit": 30,
-    "extend_stator_current_limit": 150,
+    "extend_stator_current_limit": 180,
     "extend_roller_supply_current_limit": 50,
-    "extend_roller_stator_current_limit": 150,
-    "turret_supply_current_limit": 20,
-    "turret_stator_current_limit": 40,
+    "extend_roller_stator_current_limit": 180,
+    "turret_supply_current_limit": 30,
+    "turret_stator_current_limit": 80,
     "altitude_supply_current_limit": 30,
     "altitude_stator_current_limit": 150,
     "catapult_supply_current_limit": 60,
@@ -84,13 +109,13 @@
     "extend_moving": 4.0
   },
   "extend_roller_voltages": {
-    "scoring": 7.0,
+    "scoring": 6.0,
     "reversing": -4.0
   },
   "climber_set_points": {
     "full_extend": -0.005,
-    "stowed": -0.478,
-    "retract": -0.478
+    "stowed": -0.442,
+    "retract": -0.472
   },
   "climber": {
     "zeroing_voltage": 3.0,
@@ -104,9 +129,9 @@
       "max_acceleration": 3.0
     },
     "range": {
-        "lower_hard": -0.488,
+        "lower_hard": -0.495,
         "upper_hard": 0.005,
-        "lower": -0.478,
+        "lower": -0.492,
         "upper": -0.005
     },
     "loop": {% include 'y2024/control_loops/superstructure/climber/integral_climber_plant.json' %}
@@ -158,7 +183,7 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 3.0,
+      "max_velocity": 12.0,
       "max_acceleration": 30.0
     },
     "range": {
@@ -196,7 +221,7 @@
             "storage_order": "ColMajor",
             // The data field contains the x, y and z
             // coordinates of the speaker on the red alliance
-            "data": [8.0645, 1.4435, 2.0705]
+            "data": [8.309, 1.4435, 2.0705]
         },
         "theta": 0.0
     },
@@ -207,7 +232,7 @@
             "storage_order": "ColMajor",
             // The data field contains the x, y and z
             // coordinates of the speaker on the blue alliance
-            "data": [-8.0645, 1.4435, 2.0705]
+            "data": [-8.309, 1.4435, 2.0705]
         },
         "theta": 0.0
     }
@@ -215,7 +240,7 @@
   "altitude_loading_position": 0.02,
   "turret_loading_position": 0.58,
   "catapult_return_position": 0.0,
-  "min_altitude_shooting_angle": 0.55,
+  "min_altitude_shooting_angle": 0.4,
   "max_altitude_shooting_angle": 0.89,
   "retention_roller_voltages": {
     "retaining": 1.5,
@@ -223,8 +248,8 @@
   },
   // TODO(Filip): Update the speaker and amp shooter setpoints
   "shooter_speaker_set_point": {
-    "turret_position": 0.0,
-    "altitude_position": 0.75,
+    "turret_position": 0.22,
+    "altitude_position": 0.85,
     "shot_velocity": 0.0
   },
   "shooter_podium_set_point":{
@@ -233,10 +258,15 @@
     "shot_velocity": 0.0
   },
   "extend_set_points": {
-    "trap": 0.46,
+    "trap": 0.40,
     "amp": 0.35,
     "catapult": 0.017,
     "retracted": 0.017
   },
-  "turret_avoid_extend_collision_position": 0.0
+  "turret_avoid_extend_collision_position": 0.0,
+  "autonomous_mode": "FOUR_PIECE",
+  "ignore_targets": {
+    "red": [1, 2, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16],
+    "blue": [1, 2, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16]
+  }
 }
