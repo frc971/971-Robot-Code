@@ -294,7 +294,6 @@ class CANSensorReader {
                 .MakeBuilder<frc971::control_loops::drivetrain::CANPosition>();
 
     can_position_builder.add_talonfxs(falcons_list);
-    can_position_builder.add_timestamp(right_front_->GetTimestamp());
     can_position_builder.add_status(static_cast<int>(status));
 
     builder.CheckOk(builder.Send(can_position_builder.Finish()));

@@ -22,5 +22,10 @@ table CANTalonFX {
   position:float (id: 5);
 
   // Nominal range is -1 to 1, but can be -2 to +2
-  duty_cycle: float (id: 6);
+  duty_cycle:float (id: 6);
+
+  // The timestamp of the measurement on the canivore clock in nanoseconds
+  // This will have less jitter than the
+  // timestamp of the message being sent out.
+  timestamp:int64 (id: 7);
 }
