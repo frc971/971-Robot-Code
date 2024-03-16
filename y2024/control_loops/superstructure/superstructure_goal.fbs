@@ -12,6 +12,11 @@ enum IntakeGoal : ubyte {
     SPIT = 2,
 }
 
+enum IntakePivotGoal : ubyte {
+    UP = 0,
+    DOWN = 1,
+}
+
 // Represents goal for climber
 // FULL_EXTEND is for fully extending the climber
 // RETRACT is for retracting the climber
@@ -54,9 +59,13 @@ enum NoteGoal : ubyte {
 
 table Goal {
     intake_goal:IntakeGoal = NONE (id: 0);
+    intake_pivot:IntakePivotGoal = UP (id: 5);
     climber_goal:ClimberGoal (id: 1);
     shooter_goal:ShooterGoal (id: 2);
     note_goal:NoteGoal (id: 3);
     fire: bool (id: 4);
+
+    // Tells the climber to go absurdly slow on FULL_EXTEND
+    slow_climber: bool = false (id: 6);
 }
 root_type Goal;

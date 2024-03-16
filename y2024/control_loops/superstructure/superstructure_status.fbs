@@ -78,9 +78,12 @@ table ShooterStatus {
   // Status of the aimer
   aimer:AimerStatus (id: 4);
 
-  turret_in_range:bool (id: 5);
-  altitude_in_range:bool (id: 6);
-  altitude_above_min_angle:bool (id: 7);
+  // True if auto-aiming.
+  auto_aiming:bool (id: 5);
+
+  turret_in_range:bool (id: 6);
+  altitude_in_range:bool (id: 7);
+  altitude_above_min_angle:bool (id: 8);
 }
 
 // Contains status of transfer rollers
@@ -178,6 +181,9 @@ table Status {
 
   extend_beambreak:bool (id: 19);
   catapult_beambreak:bool (id: 20);
+
+  // Number of shots we have taken.
+  shot_count:uint32 (id:21);
 }
 
 root_type Status;
