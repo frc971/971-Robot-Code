@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_HYBRID_EKF_H_
 
 #include <chrono>
+#include <optional>
 
 #include "Eigen/Dense"
 
@@ -306,22 +307,27 @@ class HybridEkf {
   // Currently, we use the drivetrain config for modelling constants
   // (continuous time A and B matrices) and for the noise matrices for the
   // encoders/gyro.
-  HybridEkf(const DrivetrainConfig<double> &dt_config)
+  // If force_dt is set, then all predict steps will use a dt of force_dt.
+  // This can be used in situations where there is no reliable clock guiding
+  // the measurement updates, but the source is coming in at a reasonably
+  // consistent period.
+  HybridEkf(const DrivetrainConfig<double> &dt_config,
+            std::optional<std::chrono::nanoseconds> force_dt = std::nullopt)
       : dt_config_(dt_config),
         velocity_drivetrain_coefficients_(
             dt_config.make_hybrid_drivetrain_velocity_loop()
                 .plant()
-                .coefficients()) {
+                .coefficients()),
+        force_dt_(force_dt) {
     InitializeMatrices();
   }
 
   // Set the initial guess of the state. Can only be called once, and before
-  // any measurement updates have occured.
+  // any measurement updates have occurred.
   void ResetInitialState(::aos::monotonic_clock::time_point t,
                          const State &state, const StateSquare &P) {
     observations_.clear();
     X_hat_ = state;
-    have_zeroed_encoders_ = true;
     P_ = P;
     observations_.PushFromBottom({
         t,
@@ -393,10 +399,8 @@ class HybridEkf {
       newstate(kAngularError) = 0.0;
       newstate(kLongitudinalVelocityOffset) = 0.0;
       newstate(kLateralVelocity) = 0.0;
-      ResetInitialState(t, newstate, P_);
-      // We need to set have_zeroed_encoders_ after ResetInitialPosition because
-      // the reset clears have_zeroed_encoders_...
       have_zeroed_encoders_ = true;
+      ResetInitialState(t, newstate, P_);
     }
 
     Output z(left_encoder, right_encoder, gyro_rate);
@@ -658,6 +662,9 @@ class HybridEkf {
 
   void PredictImpl(Observation *obs, std::chrono::nanoseconds dt, State *state,
                    StateSquare *P) {
+    if (force_dt_.has_value()) {
+      dt = force_dt_.value();
+    }
     // Only recalculate the discretization if the timestep has changed.
     // Technically, this isn't quite correct, since the discretization will
     // change depending on the current state. However, the slight loss of
@@ -728,6 +735,7 @@ class HybridEkf {
   State X_hat_;
   StateFeedbackHybridPlantCoefficients<2, 2, 2, double>
       velocity_drivetrain_coefficients_;
+  std::optional<std::chrono::nanoseconds> force_dt_;
   StateSquare A_continuous_;
   StateSquare Q_continuous_;
   StateSquare P_;

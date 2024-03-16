@@ -378,6 +378,14 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdate) {
   State true_X = ekf_.X_hat();
   Input U;
   U << -1.0, 5.0, 0.0, 0.0;
+  // Give one good update before starting to move things so that we initialize
+  // the encoders at zero.
+  ekf_.RawUpdateEncodersAndGyro(true_X(StateIdx::kLeftEncoder, 0),
+                                true_X(StateIdx::kRightEncoder, 0),
+                                (true_X(StateIdx::kRightVelocity, 0) -
+                                 true_X(StateIdx::kLeftVelocity, 0)) /
+                                    dt_config_.robot_radius / 2.0,
+                                U, t0_);
   for (int ii = 0; ii < 100; ++ii) {
     true_X = Update(true_X, U, false);
     ekf_.RawUpdateEncodersAndGyro(true_X(StateIdx::kLeftEncoder, 0),
@@ -423,6 +431,14 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdateConverges) {
   // small they are negligible.
   Input U;
   U << 10.0, 5.0, 0.0, 0.0;
+  // Give one good update before starting to move things so that we initialize
+  // the encoders at zero.
+  ekf_.RawUpdateEncodersAndGyro(true_X(StateIdx::kLeftEncoder, 0),
+                                true_X(StateIdx::kRightEncoder, 0),
+                                (true_X(StateIdx::kRightVelocity, 0) -
+                                 true_X(StateIdx::kLeftVelocity, 0)) /
+                                    dt_config_.robot_radius / 2.0,
+                                U, t0_);
   for (int ii = 0; ii < 100; ++ii) {
     true_X = Update(true_X, U, false);
     ekf_.RawUpdateEncodersAndGyro(true_X(StateIdx::kLeftEncoder, 0),
