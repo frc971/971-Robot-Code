@@ -121,6 +121,22 @@ bool FromEigen(
   return true;
 }
 
+template <int Rows, int Cols,
+          fbs::StorageOrder StorageOrder = fbs::StorageOrder::ColMajor>
+flatbuffers::Offset<fbs::Matrix> FromEigen(
+    const typename EigenMatrix<Rows, Cols, StorageOrder>::type &matrix,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  constexpr size_t kSize = Rows * Cols;
+  flatbuffers::Offset<flatbuffers::Vector<double>> data_offset =
+      fbb->CreateVector(matrix.data(), kSize);
+  fbs::Matrix::Builder builder(*fbb);
+  builder.add_rows(Rows);
+  builder.add_cols(Cols);
+  builder.add_storage_order(StorageOrder);
+  builder.add_data(data_offset);
+  return builder.Finish();
+}
+
 template <typename T>
 bool FromEigen(const T &matrix, fbs::MatrixStatic *flatbuffer) {
   return FromEigen<T::RowsAtCompileTime, T::ColsAtCompileTime,

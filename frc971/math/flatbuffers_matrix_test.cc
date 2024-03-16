@@ -24,11 +24,18 @@ TEST_F(FlatbuffersMatrixTest, ReadWriteMatrix) {
   const Eigen::Matrix<double, 3, 4> expected{
       {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}};
   aos::fbs::Builder<fbs::MatrixStatic> builder;
+  flatbuffers::FlatBufferBuilder fbb;
   ASSERT_TRUE(FromEigen(expected, builder.get()));
+  fbb.Finish(FromEigen<3, 4>(expected, &fbb));
   EXPECT_EQ(
       "{ \"rows\": 3, \"cols\": 4, \"storage_order\": \"ColMajor\", \"data\": "
       "[ 0.0, 4.0, 8.0, 1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0 ] }",
       aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
+  EXPECT_EQ(
+      "{ \"rows\": 3, \"cols\": 4, \"storage_order\": \"ColMajor\", \"data\": "
+      "[ 0.0, 4.0, 8.0, 1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0 ] }",
+      aos::FlatbufferToJson(
+          aos::FlatbufferDetachedBuffer<fbs::Matrix>(fbb.Release())));
 
   const Eigen::Matrix<double, 3, 4> result =
       ToEigenOrDie<3, 4>(builder->AsFlatbuffer());
