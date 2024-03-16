@@ -193,6 +193,9 @@ class GpuDetector {
     distortion_coefficients_ = distortion_coefficients;
   }
 
+  static void UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+                        const DistCoeffs *distortion_coefficients);
+
  private:
   void UpdateFitQuads();
 
