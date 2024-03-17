@@ -239,7 +239,7 @@
         {
           "name": "imu",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 20000000
         }
       ]
     },
