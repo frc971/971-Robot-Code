@@ -159,9 +159,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       robot_constants_->common()->extend_set_points();
 
   // Checks if the extend is close enough to the retracted position to be
-  // considered ready to accept note from the transfer rollers.
-  const bool extend_at_retracted = PositionNear(
-      extend_.position(), extend_set_points->retracted(), kExtendThreshold);
+  // considered ready to accept note from the transfer rollers. If disable
+  // extend is triggered, this will autoatically be false.
+  const bool extend_at_retracted =
+      (!robot_constants_->common()->disable_extend() &&
+       PositionNear(extend_.position(), extend_set_points->retracted(),
+                    kExtendThreshold));
 
   // Check if the turret is at the position to accept the note from extend
   const bool turret_ready_for_load =
@@ -525,10 +528,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   drivetrain_status_fetcher_.Fetch();
 
+  // Zero out extend position if "disable_extend" is true
   const bool collided = collision_avoidance_.IsCollided({
       .intake_pivot_position = intake_pivot_.estimated_position(),
       .turret_position = shooter_.turret().estimated_position(),
-      .extend_position = extend_.estimated_position(),
+      .extend_position = ((!robot_constants_->common()->disable_extend())
+                              ? extend_.estimated_position()
+                              : 0.0),
   });
 
   aos::FlatbufferFixedAllocatorArray<
@@ -634,6 +640,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           extend_goal, position->extend(),
           output != nullptr ? &output_struct.extend_voltage : nullptr,
           status->fbb());
+
+  // Zero out extend voltage if "disable_extend" is true
+  if (robot_constants_->common()->disable_extend()) {
+    output_struct.extend_voltage = 0.0;
+  }
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));

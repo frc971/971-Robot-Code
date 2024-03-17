@@ -197,6 +197,7 @@ table Common {
   altitude_avoid_extend_collision_position: double (id: 28);
   autonomous_mode:AutonomousMode (id: 26);
   ignore_targets:IgnoreTargets (id: 27);
+  disable_extend:bool (id: 29);
 }
 
 table Constants {
