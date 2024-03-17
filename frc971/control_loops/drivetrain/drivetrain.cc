@@ -355,7 +355,7 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
           event_loop->TryMakeSender<
               frc971::control_loops::drivetrain::RioLocalizerInputsStatic>(
               "/drivetrain")) {
-  event_loop->SetRuntimeRealtimePriority(30);
+  event_loop->SetRuntimeRealtimePriority(37);
   for (size_t ii = 0; ii < trajectory_fetchers_.size(); ++ii) {
     trajectory_fetchers_[ii].fetcher =
         event_loop->MakeFetcher<fb::Trajectory>("/drivetrain");
