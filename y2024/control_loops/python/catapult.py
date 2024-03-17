@@ -40,7 +40,8 @@ kCatapultWithGamePiece = angular_system.AngularSystemParams(
     kalman_q_voltage=0.7,
     kalman_r_position=0.05,
     radius=12 * 0.0254,
-    delayed_u=1)
+    delayed_u=1,
+    dt=0.005)
 
 kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
     name='Catapult',
@@ -57,7 +58,8 @@ kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
     kalman_q_voltage=0.7,
     kalman_r_position=0.05,
     radius=12 * 0.0254,
-    delayed_u=1)
+    delayed_u=1,
+    dt=0.005)
 
 
 def main(argv):

@@ -120,11 +120,18 @@ void SensorReader::DoStart() {
     AOS_LOG(INFO, "Defaulting to open loop pwm synchronization\n");
   }
 
-  // Now that we are configured, actually fill in the defaults.
-  timer_handler_->Schedule(
-      event_loop_->monotonic_now() +
-          (pwm_trigger_ ? chrono::milliseconds(3) : chrono::milliseconds(4)),
-      period_);
+  if (pwm_trigger_) {
+    // Now that we are configured, actually fill in the defaults.
+    timer_handler_->Schedule(
+        event_loop_->monotonic_now() +
+            (pwm_trigger_ ? chrono::milliseconds(3) : chrono::milliseconds(4)),
+        period_);
+  } else {
+    // Synchronous CAN wakes up at round multiples of the clock.  Use a phased
+    // loop to calculate it.
+    aos::time::PhasedLoop phased_loop(period_, monotonic_clock::now());
+    timer_handler_->Schedule(phased_loop.sleep_time(), period_);
+  }
 
   last_monotonic_now_ = monotonic_clock::now();
 }

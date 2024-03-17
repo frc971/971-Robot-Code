@@ -28,6 +28,7 @@ kDrivetrain = drivetrain.DrivetrainParams(
     force=True,
     kf_q_voltage=1.0,
     controller_poles=[0.82, 0.82],
+    dt=0.005,
 )
 
 

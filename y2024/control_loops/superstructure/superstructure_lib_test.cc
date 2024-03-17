@@ -328,7 +328,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2024/aos_config.json"),
-            std::chrono::microseconds(5050)),
+            std::chrono::microseconds(5000)),
         simulated_constants_dummy_(SendSimulationConstants(
             event_loop_factory(), 7971, "y2024/constants/test_constants.json")),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),

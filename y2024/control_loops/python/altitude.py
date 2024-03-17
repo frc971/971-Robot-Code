@@ -31,7 +31,8 @@ kAltitude = angular_system.AngularSystemParams(
     kalman_q_vel=2.0,
     kalman_q_voltage=2.0,
     kalman_r_position=0.05,
-    radius=10.5 * 0.0254)
+    radius=10.5 * 0.0254,
+    dt=0.005)
 
 
 def main(argv):

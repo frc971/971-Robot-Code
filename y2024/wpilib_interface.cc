@@ -419,7 +419,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
-    sensor_reader.set_pwm_trigger(true);
+    sensor_reader.set_pwm_trigger(false);
     sensor_reader.set_drivetrain_left_encoder(
         std::make_unique<frc::Encoder>(8, 9));
     sensor_reader.set_drivetrain_right_encoder(
@@ -529,7 +529,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
+        constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
 
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
@@ -719,16 +719,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_output_event_loop);
-
-    ::aos::ShmEventLoop pwm_event_loop(&config.message());
-    SuperstructurePWMWriter superstructure_pwm_writer(&pwm_event_loop);
-    superstructure_pwm_writer.set_catapult_kraken_one(
-        make_unique<frc::TalonFX>(0));
-    superstructure_pwm_writer.set_catapult_kraken_two(
-        make_unique<frc::TalonFX>(1));
-
-    AddLoop(&pwm_event_loop);
-    // Thread 6
 
     RunLoops();
   }
