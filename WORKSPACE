@@ -913,7 +913,6 @@ npm_translate_lock(
         "@//:package.json",
         "@//:pnpm-workspace.yaml",
         "@//scouting/www:package.json",
-        "@//scouting/www/counter_button:package.json",
         "@//scouting/www/driver_ranking:package.json",
         "@//scouting/www/entry:package.json",
         "@//scouting/www/match_list:package.json",
