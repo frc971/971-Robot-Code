@@ -22,7 +22,7 @@
             teamNumber: team.teamNumber,
             matchNumber: match.matchNumber(),
             setNumber: match.setNumber(),
-            compLevel: match.compLevel()
+            compLevel: validateCompLevel(match.compLevel()),
             })"
         class="match-item"
         [ngClass]="team.color"

@@ -17,5 +17,10 @@
   },
   "bazelOptions": {
     "workspaceName": "971-Robot-Code"
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
   }
 }
