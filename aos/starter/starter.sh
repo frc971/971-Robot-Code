@@ -19,7 +19,7 @@ elif [[ "$(hostname)" == "orin-"* ]]; then
   export PATH="${PATH}:/home/pi/bin"
 
   # Turn the fans up.
-  echo 255 > /sys/devices/platform/pwm-fan/hwmon/hwmon1/pwm1
+  echo 255 > /sys/devices/platform/pwm-fan/hwmon/hwmon?/pwm1
 
   exec starterd --user=pi --purge_shm_base
 else
