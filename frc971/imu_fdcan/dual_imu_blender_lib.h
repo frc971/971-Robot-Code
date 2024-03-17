@@ -20,7 +20,8 @@ class DualImuBlender {
  private:
   aos::Sender<IMUValuesBatchStatic> imu_values_batch_sender_;
   aos::Sender<imu::DualImuBlenderStatusStatic> dual_imu_blender_status_sender_;
-  size_t saturated_counter_ = 0;
+  int saturated_counter_ = 0;
+  bool is_saturated_ = false;
 };
 
 }  // namespace frc971::imu_fdcan
