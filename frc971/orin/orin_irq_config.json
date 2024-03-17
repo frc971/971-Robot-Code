@@ -306,6 +306,11 @@
       "nice": -20
     },
     {
+      "name": "ivc/bc00000.rtc",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 55
+    },
+    {
       "name": "irq/*-aerdrv",
       "scheduler": "SCHEDULER_OTHER",
       "nice": -20
@@ -319,7 +324,7 @@
       "name": "irq/*-host_sy",
       "scheduler": "SCHEDULER_FIFO",
       "affinity": [2, 3],
-      "priority": 51
+      "priority": 58
     },
     {
       "name": "irq/*-b950000",

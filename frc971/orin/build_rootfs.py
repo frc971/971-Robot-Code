@@ -1253,6 +1253,8 @@ def main():
         copyfile("root:root", "644", "etc/systemd/network/80-canc.network")
         copyfile("root:root", "644", "etc/udev/rules.d/nvidia.rules")
         copyfile("root:root", "644", "etc/udev/rules.d/can.rules")
+        copyfile("root:root", "644",
+                 "lib/systemd/system/nvargus-daemon.service")
         target(["/root/bin/change_hostname.sh", "orin-971-1"])
 
         target(["systemctl", "enable", "systemd-networkd"])

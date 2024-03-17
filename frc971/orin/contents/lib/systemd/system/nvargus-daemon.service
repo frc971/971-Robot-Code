@@ -1,0 +1,16 @@
+[Unit]
+Description=NVIDIA Argus daemon
+After=local-fs.target network.target nvpmodel.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/nvargus-daemon
+StandardOutput=journal
+Restart=on-failure
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=51
+#Environment=enableCamPclLogs=5
+#Environment=enableCamScfLogs=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,5 @@
+#include <dirent.h>
+
 #include <chrono>
 #include <filesystem>
 #include <thread>
@@ -630,6 +632,25 @@ int Main() {
     });
 
     camera.Start();
+
+    // Set the libargus threads which got spawned to RT priority.
+    {
+      DIR *dirp = opendir("/proc/self/task");
+      PCHECK(dirp != nullptr);
+      const int main_pid = getpid();
+      struct dirent *directory_entry;
+      while ((directory_entry = readdir(dirp)) != NULL) {
+        const int thread_id = std::atoi(directory_entry->d_name);
+
+        // ignore . and .. which are zeroes for some reason
+        if (thread_id != 0 && thread_id != main_pid) {
+          struct sched_param param;
+          param.sched_priority = 56;
+          sched_setscheduler(thread_id, SCHED_FIFO, &param);
+        }
+      }
+      closedir(dirp);
+    }
 
     event_loop.Run();
     LOG(INFO) << "Event loop shutting down";

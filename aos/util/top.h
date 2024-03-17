@@ -11,7 +11,7 @@
 namespace aos::util {
 
 // ProcStat is a struct to hold all the fields available in /proc/[pid]/stat.
-// Currently we only use a small subset of the feilds. See man 5 proc for
+// Currently we only use a small subset of the fields. See man 5 proc for
 // details on what the fields are--these are in the same order as they appear in
 // the stat file.
 //
