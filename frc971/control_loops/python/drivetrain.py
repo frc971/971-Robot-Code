@@ -6,6 +6,7 @@ import numpy
 import math
 import sys
 from matplotlib import pylab
+import matplotlib
 import glog
 
 
@@ -563,6 +564,9 @@ def WriteDrivetrain(drivetrain_files,
 
 
 def PlotDrivetrainSprint(drivetrain_params):
+    # Set up the gtk backend before running matplotlib.
+    matplotlib.use("GTK3Agg")
+
     # Simulate the response of the system to a step input.
     drivetrain = KFDrivetrain(left_low=False,
                               right_low=False,
@@ -810,6 +814,9 @@ def PlotDrivetrainSprint(drivetrain_params):
 
 
 def PlotDrivetrainMotions(drivetrain_params):
+    # Set up the gtk backend before running matplotlib.
+    matplotlib.use("GTK3Agg")
+
     # Test out the voltage error.
     drivetrain = KFDrivetrain(left_low=False,
                               right_low=False,
