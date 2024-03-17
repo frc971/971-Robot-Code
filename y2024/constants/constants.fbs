@@ -194,6 +194,7 @@ table Common {
   // The position to move the turret to when avoiding collision
   // with the extend when the extend is moving to amp/trap position.
   turret_avoid_extend_collision_position: double (id: 24);
+  altitude_avoid_extend_collision_position: double (id: 28);
   autonomous_mode:AutonomousMode (id: 26);
   ignore_targets:IgnoreTargets (id: 27);
 }

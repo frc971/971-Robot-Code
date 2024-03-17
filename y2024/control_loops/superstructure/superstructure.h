@@ -67,11 +67,14 @@ class Superstructure
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
-  bool catapult_requested_ = false;
-
   SuperstructureState state_ = SuperstructureState::IDLE;
 
+  bool trap_override_ = false;
+
   NoteGoal requested_note_goal_ = NoteGoal::NONE;
+
+  aos::monotonic_clock::time_point transfer_start_time_ =
+      aos::monotonic_clock::time_point::min();
 
   aos::monotonic_clock::time_point intake_end_time_ =
       aos::monotonic_clock::time_point::min();
@@ -85,6 +88,9 @@ class Superstructure
   Shooter shooter_;
 
   PotAndAbsoluteEncoderSubsystem extend_;
+
+  Debouncer extend_debouncer_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

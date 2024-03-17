@@ -109,8 +109,21 @@ class Shooter {
       NoteGoal requested_note_goal, flatbuffers::FlatBufferBuilder *fbb,
       aos::monotonic_clock::time_point monotonic_now);
 
+  bool loaded() const { return state_ == CatapultState::LOADED; }
+
+  uint32_t shot_count() const { return shot_count_; }
+
+  bool Firing() const {
+    return state_ != CatapultState::READY && state_ != CatapultState::LOADED &&
+           state_ != CatapultState::RETRACTING;
+  }
+
  private:
   CatapultState state_ = CatapultState::RETRACTING;
+
+  bool CatapultRetracted() const {
+    return catapult_.estimated_position() < 0.5;
+  }
 
   bool CatapultClose() const {
     return (std::abs(catapult_.estimated_position() -
@@ -138,6 +151,8 @@ class Shooter {
       interpolation_table_;
 
   Debouncer debouncer_;
+
+  uint32_t shot_count_ = 0;
 };
 
 }  // namespace y2024::control_loops::superstructure
