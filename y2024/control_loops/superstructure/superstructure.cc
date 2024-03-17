@@ -52,7 +52,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           robot_constants_->robot()->extend_constants()->zeroing_constants()),
       extend_debouncer_(std::chrono::milliseconds(30),
                         std::chrono::milliseconds(8)) {
-  event_loop->SetRuntimeRealtimePriority(30);
+  event_loop->SetRuntimeRealtimePriority(37);
 }
 
 bool PositionNear(double position, double goal, double threshold) {
