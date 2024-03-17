@@ -1,3 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//frc971:halide.bzl", "halide_library")
 
 exports_files(["orin_irq_config.json"])
@@ -148,5 +150,29 @@ cc_library(
         "//frc971/vision:target_mapper",
         "//frc971/vision:vision_util_lib",
         "//third_party:opencv",
+    ],
+)
+
+static_flatbuffer(
+    name = "hardware_stats_fbs",
+    srcs = ["hardware_stats.fbs"],
+    visibility = ["//visibility:public"],
+)
+
+cc_static_flatbuffer(
+    name = "hardware_stats_schema",
+    function = "aos::util::HardwareStatsSchema",
+    target = ":hardware_stats_fbs_reflection_out",
+)
+
+cc_binary(
+    name = "hardware_monitor",
+    srcs = ["hardware_monitor.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hardware_stats_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_google_absl//absl/strings",
     ],
 )

@@ -1,0 +1,37 @@
+namespace frc971.orin;
+
+// Per-zone stats for a single thermal zone.
+table ThermalZone {
+  // Number of the thermal zone in question.
+  id: uint64 (id: 0);
+  // Name of the thermal zone.
+  name: string (id: 1);
+  // Temperature of the thermal zone in millidegrees C.
+  temperature: uint64 (id: 2);
+}
+
+// Electrical readings from the INA3221 monitoring chip.
+table ElectricalReading {
+  // Number of the INA3221 measurement channel.
+  channel: uint64 (id: 0);
+  // Label of the INA3221 measurement point.
+  label: string (id: 1);
+  // Voltage reading in mV at the measurement point.
+  voltage: uint64 (id: 2);
+  // Current reading in mA through the measurement point.
+  current: uint64 (id: 3);
+  // Power usage in mW at the measurement point.
+  power: uint64 (id: 4);
+}
+
+// Table to track the current state of a compute platform's hardware.
+table HardwareStats {
+  // Per-zone thermal stats
+  thermal_zones: [ThermalZone] (id: 0);
+  // RPM of the fan
+  fan_speed: uint64 (id: 1);
+  // Electrical readings
+  electrical_readings: [ElectricalReading] (id: 2);
+}
+
+root_type HardwareStats;
