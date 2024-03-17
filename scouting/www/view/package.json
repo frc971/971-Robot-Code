@@ -2,6 +2,8 @@
     "name": "@org_frc971/scouting/www/view",
     "private": true,
     "dependencies": {
-      "@angular/forms": "v16-lts"
+      "@angular/forms": "v16-lts",
+      "@org_frc971/scouting/webserver/requests/messages": "workspace:*",
+      "@org_frc971/scouting/www/rpc": "workspace:*"
     }
 }

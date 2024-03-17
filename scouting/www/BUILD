@@ -36,16 +36,7 @@ ng_application(
         "assets/971_144.png",
     ],
     deps = [
-        "//:node_modules/@angular/animations",
-        "//:node_modules/@angular/service-worker",
-        "//scouting/www/driver_ranking",
-        "//scouting/www/entry",
-        "//scouting/www/match_list",
-        "//scouting/www/notes",
-        "//scouting/www/pit_scouting",
-        "//scouting/www/scan",
-        "//scouting/www/shift_schedule",
-        "//scouting/www/view",
+        ":node_modules",
     ],
 )
 

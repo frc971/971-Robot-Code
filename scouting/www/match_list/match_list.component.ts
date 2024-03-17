@@ -1,13 +1,13 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
-import {RequestAllMatches} from '../../webserver/requests/messages/request_all_matches_generated';
+import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {RequestAllMatches} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_generated';
 import {
   Match,
   RequestAllMatchesResponse,
-} from '../../webserver/requests/messages/request_all_matches_response_generated';
+} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 
-import {MatchListRequestor} from '../rpc';
+import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
 type TeamInMatch = {
   teamNumber: string;

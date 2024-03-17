@@ -2,6 +2,7 @@
     "name": "@org_frc971/scouting/www/driver_ranking",
     "private": true,
     "dependencies": {
-        "@angular/forms": "v16-lts"
+        "@angular/forms": "v16-lts",
+        "@org_frc971/scouting/webserver/requests/messages": "workspace:*"
     }
 }
