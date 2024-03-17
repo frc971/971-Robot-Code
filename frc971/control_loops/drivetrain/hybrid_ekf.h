@@ -364,8 +364,9 @@ class HybridEkf {
 
   // A utility function for specifically updating with encoder and gyro
   // measurements.
-  void UpdateEncodersAndGyro(const Scalar left_encoder,
-                             const Scalar right_encoder, const Scalar gyro_rate,
+  void UpdateEncodersAndGyro(const std::optional<Scalar> left_encoder,
+                             const std::optional<Scalar> right_encoder,
+                             const Scalar gyro_rate,
                              const Eigen::Matrix<Scalar, 2, 1> &voltage,
                              const Eigen::Matrix<Scalar, 3, 1> &accel,
                              aos::monotonic_clock::time_point t) {
@@ -377,8 +378,8 @@ class HybridEkf {
   }
   // Version of UpdateEncodersAndGyro that takes a input matrix rather than
   // taking in a voltage/acceleration separately.
-  void RawUpdateEncodersAndGyro(const Scalar left_encoder,
-                                const Scalar right_encoder,
+  void RawUpdateEncodersAndGyro(const std::optional<Scalar> left_encoder,
+                                const std::optional<Scalar> right_encoder,
                                 const Scalar gyro_rate, const Input &U,
                                 aos::monotonic_clock::time_point t) {
     // Because the check below for have_zeroed_encoders_ will add an
@@ -392,24 +393,38 @@ class HybridEkf {
       // wpilib_interface, then we can get some obnoxious initial corrections
       // that mess up the localization.
       State newstate = X_hat_;
-      newstate(kLeftEncoder) = left_encoder;
-      newstate(kRightEncoder) = right_encoder;
+      have_zeroed_encoders_ = true;
+      if (left_encoder.has_value()) {
+        newstate(kLeftEncoder) = left_encoder.value();
+      } else {
+        have_zeroed_encoders_ = false;
+      }
+      if (right_encoder.has_value()) {
+        newstate(kRightEncoder) = right_encoder.value();
+      } else {
+        have_zeroed_encoders_ = false;
+      }
       newstate(kLeftVoltageError) = 0.0;
       newstate(kRightVoltageError) = 0.0;
       newstate(kAngularError) = 0.0;
       newstate(kLongitudinalVelocityOffset) = 0.0;
       newstate(kLateralVelocity) = 0.0;
-      have_zeroed_encoders_ = true;
       ResetInitialState(t, newstate, P_);
     }
 
-    Output z(left_encoder, right_encoder, gyro_rate);
+    Output z(left_encoder.value_or(0.0), right_encoder.value_or(0.0),
+             gyro_rate);
 
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
     R.setZero();
     R.diagonal() << encoder_noise_, encoder_noise_, gyro_noise_;
     CHECK(H_encoders_and_gyro_.has_value());
-    Correct(z, &U, nullptr, &H_encoders_and_gyro_.value(), R, t);
+    CHECK(H_gyro_only_.has_value());
+    LinearH *H = &H_encoders_and_gyro_.value();
+    if (!left_encoder.has_value() || !right_encoder.has_value()) {
+      H = &H_gyro_only_.value();
+    }
+    Correct(z, &U, nullptr, H, R, t);
   }
 
   // Sundry accessor:
@@ -740,6 +755,7 @@ class HybridEkf {
   StateSquare Q_continuous_;
   StateSquare P_;
   std::optional<LinearH> H_encoders_and_gyro_;
+  std::optional<LinearH> H_gyro_only_;
   Scalar encoder_noise_, gyro_noise_;
   Eigen::Matrix<Scalar, kNStates, kNInputs> B_continuous_;
 
@@ -920,13 +936,14 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   {
     Eigen::Matrix<Scalar, kNOutputs, kNStates> H_encoders_and_gyro;
     H_encoders_and_gyro.setZero();
+    // Gyro rate is just the difference between right/left side speeds:
+    H_encoders_and_gyro(2, kLeftVelocity) = -1.0 / diameter;
+    H_encoders_and_gyro(2, kRightVelocity) = 1.0 / diameter;
+    H_gyro_only_.emplace(H_encoders_and_gyro);
     // Encoders are stored directly in the state matrix, so are a minor
     // transform away.
     H_encoders_and_gyro(0, kLeftEncoder) = 1.0;
     H_encoders_and_gyro(1, kRightEncoder) = 1.0;
-    // Gyro rate is just the difference between right/left side speeds:
-    H_encoders_and_gyro(2, kLeftVelocity) = -1.0 / diameter;
-    H_encoders_and_gyro(2, kRightVelocity) = 1.0 / diameter;
     H_encoders_and_gyro_.emplace(H_encoders_and_gyro);
   }
 

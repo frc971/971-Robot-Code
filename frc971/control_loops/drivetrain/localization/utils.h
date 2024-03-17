@@ -31,9 +31,9 @@ class LocalizationUtils {
   // [left_voltage, right_voltage]
   Eigen::Vector2d VoltageOrZero(aos::monotonic_clock::time_point now);
 
-  // Returns the latest drivetrain encoder values (in meters), or nullopt if no
-  // position message is available (or if the message is stale).
-  // Returns encoders as [left_position, right_position]
+  // Returns the latest drivetrain encoder values (in meters), or nullopt if
+  // there has been no new encoder reading since the last call. Returns encoders
+  // as [left_position, right_position]
   std::optional<Eigen::Vector2d> Encoders(aos::monotonic_clock::time_point now);
 
   // Returns true if either there is no JoystickState message available or if
