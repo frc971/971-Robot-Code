@@ -48,7 +48,7 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.1725
+              "measured_absolute_position" : 0.1877
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
@@ -66,11 +66,11 @@
     "extend_constants": {
       {% set _ = extend_zero.update(
           {
-              "measured_absolute_position" : 0.135593394632399
+              "measured_absolute_position" : 0.1547
           }
       ) %}
       "zeroing_constants": {{ extend_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879 }}
+      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879  - 0.1577}}
     }
   },
   {% include 'y2024/constants/common.json' %}
