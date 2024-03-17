@@ -193,7 +193,9 @@ class GpuDetector {
     distortion_coefficients_ = distortion_coefficients;
   }
 
-  static void UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+  // Undistort pixels based on our camera model, using iterative algorithm
+  // Returns false if we fail to converge
+  static bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
                         const DistCoeffs *distortion_coefficients);
 
  private:

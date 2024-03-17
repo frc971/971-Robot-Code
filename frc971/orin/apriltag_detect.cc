@@ -334,9 +334,10 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 
 // We're undistorting using math found from this github page
 // https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
-void GpuDetector::UnDistort(double *u, double *v,
+bool GpuDetector::UnDistort(double *u, double *v,
                             const CameraMatrix *camera_matrix,
                             const DistCoeffs *distortion_coefficients) {
+  bool converged = true;
   const double k1 = distortion_coefficients->k1;
   const double k2 = distortion_coefficients->k2;
   const double p1 = distortion_coefficients->p1;
@@ -377,6 +378,7 @@ void GpuDetector::UnDistort(double *u, double *v,
     yP = (y0 - tangential_dy) * radial_distortion_inv;
 
     if (iterations > kUndistortIterationThreshold) {
+      converged = false;
       break;
     }
 
@@ -397,6 +399,8 @@ void GpuDetector::UnDistort(double *u, double *v,
 
   *u = xP * fx + cx;
   *v = yP * fy + cy;
+
+  return converged;
 }
 
 // Mostly stolen from aprilrobotics, but modified to implement the dewarp.

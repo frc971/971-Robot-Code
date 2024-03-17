@@ -53,7 +53,8 @@ class ApriltagDetector {
 
   // Undistorts the april tag corners using the camera calibration.
   // Returns the detections in place.
-  void UndistortDetection(apriltag_detection_t *det) const;
+  // Returns false if any of the corner undistortions fail to converge
+  bool UndistortDetection(apriltag_detection_t *det) const;
 
   // Computes the distortion effect on this detection taking the scaled average
   // delta between orig_corners (distorted corners) and corners (undistorted

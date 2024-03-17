@@ -137,17 +137,19 @@ ApriltagDetector::BuildTargetPose(const Detection &detection,
       detection.distortion_factor, detection.pose_error_ratio);
 }
 
-void ApriltagDetector::UndistortDetection(apriltag_detection_t *det) const {
+bool ApriltagDetector::UndistortDetection(apriltag_detection_t *det) const {
   // Copy the undistorted points into det
+  bool converged = true;
   for (size_t i = 0; i < 4; i++) {
     double u = det->p[i][0];
     double v = det->p[i][1];
 
-    GpuDetector::UnDistort(&u, &v, &distortion_camera_matrix_,
-                           &distortion_coefficients_);
+    converged &= GpuDetector::UnDistort(&u, &v, &distortion_camera_matrix_,
+                                        &distortion_coefficients_);
     det->p[i][0] = u;
     det->p[i][1] = v;
   }
+  return converged;
 }
 
 double ApriltagDetector::ComputeDistortionFactor(
@@ -275,7 +277,20 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
           builder.fbb(), eof, orig_corner_points,
           std::vector<double>{0.0, 1.0, 0.0, 0.5}));
 
-      UndistortDetection(gpu_detection);
+      bool converged = UndistortDetection(gpu_detection);
+
+      if (!converged) {
+        VLOG(1) << "Rejecting detection because Undistort failed to coverge";
+
+        // Send rejected corner points to foxglove in red
+        std::vector<cv::Point2f> rejected_corner_points =
+            MakeCornerVector(gpu_detection);
+        foxglove_corners.push_back(frc971::vision::BuildPointsAnnotation(
+            builder.fbb(), eof, rejected_corner_points,
+            std::vector<double>{1.0, 0.0, 0.0, 0.5}));
+        rejections_++;
+        continue;
+      }
 
       // We're setting this here to use the undistorted corner points in pose
       // estimation.
