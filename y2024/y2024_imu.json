@@ -339,7 +339,8 @@
       "name": "message_bridge_client",
       "args": [
         "--rt_priority=16",
-        "--sinit_max_init_timeout=5000"
+        "--sinit_max_init_timeout=5000",
+        "--rmem=8388608"
       ],
       "nodes": [
         "imu"
@@ -374,7 +375,8 @@
       "executable_name": "message_bridge_server",
       "user": "pi",
       "args": [
-        "--rt_priority=16"
+        "--rt_priority=16",
+        "--force_wmem_max=131072"
       ],
       "nodes": [
         "imu"

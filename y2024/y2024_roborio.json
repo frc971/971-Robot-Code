@@ -401,7 +401,8 @@
       "executable_name": "message_bridge_client",
       "args": [
         "--rt_priority=16",
-        "--sinit_max_init_timeout=5000"
+        "--sinit_max_init_timeout=5000",
+        "--rmem=2097152"
       ],
       "nodes": [
         "roborio"
@@ -411,7 +412,8 @@
       "name": "roborio_message_bridge_server",
       "executable_name": "message_bridge_server",
       "args": [
-        "--rt_priority=16"
+        "--rt_priority=16",
+        "--force_wmem_max=131072"
       ],
       "nodes": [
         "roborio"
