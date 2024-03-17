@@ -78,6 +78,8 @@ export class FieldHandler {
   (document.getElementById('extend_beambreak') as HTMLElement);
   private catapult_beambreak: HTMLElement =
   (document.getElementById('catapult_beambreak') as HTMLElement);
+  private transfer_beambreak: HTMLElement =
+  (document.getElementById('transfer_beambreak') as HTMLElement);
 
   private extend_at_retracted: HTMLElement =
   (document.getElementById('extend_at_retracted') as HTMLElement);
@@ -513,6 +515,8 @@ export class FieldHandler {
       this.setBoolean(this.extend_beambreak, this.superstructureStatus.extendBeambreak());
 
       this.setBoolean(this.catapult_beambreak, this.superstructureStatus.catapultBeambreak());
+
+      this.setBoolean(this.transfer_beambreak, this.superstructureStatus.transferBeambreak());
 
       this.setBoolean(this.extend_ready_for_transfer, this.superstructureStatus.extendReadyForTransfer());
 

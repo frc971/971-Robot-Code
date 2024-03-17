@@ -701,6 +701,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       extend_ready_for_catapult_transfer);
   status_builder.add_extend_beambreak(extend_beambreak);
   status_builder.add_catapult_beambreak(position->catapult_beambreak());
+  status_builder.add_transfer_beambreak(transfer_beambreak);
 
   (void)status->Send(status_builder.Finish());
 }

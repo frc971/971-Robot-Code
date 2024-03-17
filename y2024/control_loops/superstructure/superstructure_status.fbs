@@ -181,6 +181,7 @@ table Status {
 
   extend_beambreak:bool (id: 19);
   catapult_beambreak:bool (id: 20);
+  transfer_beambreak:bool (id: 22);
 
   // Number of shots we have taken.
   shot_count:uint32 (id:21);
