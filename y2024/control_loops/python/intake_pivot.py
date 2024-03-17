@@ -29,7 +29,8 @@ kIntakePivot = angular_system.AngularSystemParams(
     kalman_q_voltage=1.0,
     kalman_r_position=0.05,
     radius=6.85 * 0.0254,
-    enable_voltage_error=False)
+    enable_voltage_error=False,
+    dt=0.005)
 
 
 def main(argv):

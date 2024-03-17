@@ -419,7 +419,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
-    sensor_reader.set_pwm_trigger(true);
+    sensor_reader.set_pwm_trigger(false);
     sensor_reader.set_drivetrain_left_encoder(
         std::make_unique<frc::Encoder>(8, 9));
     sensor_reader.set_drivetrain_right_encoder(

@@ -26,6 +26,7 @@ kClimber = linear_system.LinearSystemParams(
     kalman_q_vel=2.00,
     kalman_q_voltage=35.0,
     kalman_r_position=0.05,
+    dt=0.005,
 )
 
 
