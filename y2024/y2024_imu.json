@@ -286,22 +286,6 @@
       "max_size": 200
     },
     {
-      "name": "/can/canb",
-      "type": "frc971.can_logger.CanFrame",
-      "source_node": "imu",
-      "frequency": 6000,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
-      "name": "/can/canc",
-      "type": "frc971.can_logger.CanFrame",
-      "source_node": "imu",
-      "frequency": 6000,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
       "name": "/localizer",
       "type": "frc971.IMUValuesBatch",
       "source_node": "imu",
