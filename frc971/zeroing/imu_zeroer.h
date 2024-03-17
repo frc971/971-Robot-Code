@@ -30,7 +30,13 @@ class ImuZeroer {
     kTemporary
   };
 
-  explicit ImuZeroer(FaultBehavior fault_behavior = FaultBehavior::kLatch);
+  // Max variation (difference between the maximum and minimum value) in a
+  // kSamplesToAverage range before we allow using the samples for zeroing.
+  // These values are currently based on looking at results from the ADIS16448.
+  static constexpr double kGyroMaxVariation = 0.02;  // rad / sec
+
+  explicit ImuZeroer(FaultBehavior fault_behavior = FaultBehavior::kLatch,
+                     double gyro_max_variation = kGyroMaxVariation);
   bool Zeroed() const;
   bool Faulted() const;
   bool InsertMeasurement(const IMUValues &values);
@@ -45,10 +51,6 @@ class ImuZeroer {
       flatbuffers::FlatBufferBuilder *fbb) const;
 
  private:
-  // Max variation (difference between the maximum and minimum value) in a
-  // kSamplesToAverage range before we allow using the samples for zeroing.
-  // These values are currently based on looking at results from the ADIS16448.
-  static constexpr double kGyroMaxVariation = 0.02;  // rad / sec
   // Maximum magnitude we allow the gyro zero to have--this is used to prevent
   // us from zeroing the gyro if we just happen to be spinning at a very
   // consistent non-zero rate. Currently this is only plausible in simulation.
@@ -74,6 +76,7 @@ class ImuZeroer {
   Eigen::Vector3d last_accel_sample_;
 
   const FaultBehavior fault_behavior_;
+  const double gyro_max_variation_;
   bool reading_faulted_ = false;
   bool zeroing_faulted_ = false;
 

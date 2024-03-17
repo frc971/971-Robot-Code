@@ -25,8 +25,8 @@ bool ReadingHasFaults(const IMUValues &values) {
 }
 }  // namespace
 
-ImuZeroer::ImuZeroer(FaultBehavior fault_behavior)
-    : fault_behavior_(fault_behavior) {
+ImuZeroer::ImuZeroer(FaultBehavior fault_behavior, double gyro_max_variation)
+    : fault_behavior_(fault_behavior), gyro_max_variation_(gyro_max_variation) {
   gyro_average_.setZero();
   last_gyro_sample_.setZero();
   last_accel_sample_.setZero();
@@ -53,7 +53,7 @@ Eigen::Vector3d ImuZeroer::GyroOffset() const { return gyro_average_; }
 
 bool ImuZeroer::GyroZeroReady() const {
   return gyro_averager_.full() &&
-         gyro_averager_.GetRange() < kGyroMaxVariation &&
+         gyro_averager_.GetRange() < gyro_max_variation_ &&
          (last_gyro_sample_.lpNorm<Eigen::Infinity>() <
           kGyroMaxZeroingMagnitude);
 }
