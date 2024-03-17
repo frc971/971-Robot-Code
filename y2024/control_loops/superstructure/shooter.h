@@ -134,9 +134,6 @@ class Shooter {
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
 
-  aos::Fetcher<y2024::control_loops::superstructure::CANPosition>
-      superstructure_can_position_fetcher_;
-
   const Constants *robot_constants_;
 
   CatapultSubsystem catapult_;

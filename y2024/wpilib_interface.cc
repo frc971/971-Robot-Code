@@ -720,16 +720,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     AddLoop(&can_output_event_loop);
 
-    ::aos::ShmEventLoop pwm_event_loop(&config.message());
-    SuperstructurePWMWriter superstructure_pwm_writer(&pwm_event_loop);
-    superstructure_pwm_writer.set_catapult_kraken_one(
-        make_unique<frc::TalonFX>(0));
-    superstructure_pwm_writer.set_catapult_kraken_two(
-        make_unique<frc::TalonFX>(1));
-
-    AddLoop(&pwm_event_loop);
-    // Thread 6
-
     RunLoops();
   }
 };
