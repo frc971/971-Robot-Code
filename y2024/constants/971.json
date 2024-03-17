@@ -48,7 +48,7 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.1964
+              "measured_absolute_position" : 0.1725
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
