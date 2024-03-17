@@ -16,16 +16,11 @@ DEFINE_bool(ignore_distance, false,
 // continue.
 constexpr double kExtendThreshold = 0.01;
 
-constexpr double kTurretLoadingThreshold = 0.01;
-constexpr double kAltitudeLoadingThreshold = 0.01;
+constexpr double kTurretLoadingThreshold = 0.05;
+constexpr double kAltitudeLoadingThreshold = 0.02;
 
 constexpr std::chrono::milliseconds kExtraIntakingTime =
     std::chrono::milliseconds(500);
-
-// Exit catapult loading state after this much time if we never
-// trigger any beambreaks.
-constexpr std::chrono::milliseconds kMaxCatapultLoadingTime =
-    std::chrono::milliseconds(3000);
 
 namespace y2024::control_loops::superstructure {
 
@@ -54,7 +49,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       shooter_(event_loop, robot_constants_),
       extend_(
           robot_constants_->common()->extend(),
-          robot_constants_->robot()->extend_constants()->zeroing_constants()) {
+          robot_constants_->robot()->extend_constants()->zeroing_constants()),
+      extend_debouncer_(std::chrono::milliseconds(30),
+                        std::chrono::milliseconds(8)) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -79,23 +76,45 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   OutputT output_struct;
 
+  extend_debouncer_.Update(position->extend_beambreak(), timestamp);
+  const bool extend_beambreak = extend_debouncer_.state();
+
   // Handle Climber Goal separately from main superstructure state machine
   double climber_position =
       robot_constants_->common()->climber_set_points()->retract();
+
+  double climber_velocity = robot_constants_->common()
+                                ->climber()
+                                ->default_profile_params()
+                                ->max_velocity();
+  const double climber_accel = robot_constants_->common()
+                                   ->climber()
+                                   ->default_profile_params()
+                                   ->max_acceleration();
 
   if (unsafe_goal != nullptr) {
     switch (unsafe_goal->climber_goal()) {
       case ClimberGoal::FULL_EXTEND:
         climber_position =
             robot_constants_->common()->climber_set_points()->full_extend();
+        // The climber can go reasonably fast when extending out.
+        climber_velocity = 0.5;
+
+        if (unsafe_goal->slow_climber()) {
+          climber_velocity = 0.01;
+        }
         break;
       case ClimberGoal::RETRACT:
         climber_position =
             robot_constants_->common()->climber_set_points()->retract();
+        // Keep the climber slower while retracting.
+        climber_velocity = 0.1;
         break;
       case ClimberGoal::STOWED:
         climber_position =
             robot_constants_->common()->climber_set_points()->stowed();
+        // Keep the climber slower while retracting.
+        climber_velocity = 0.1;
     }
   }
 
@@ -115,17 +134,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       robot_constants_->common()->intake_pivot_set_points()->retracted();
 
   if (unsafe_goal != nullptr) {
-    switch (unsafe_goal->intake_goal()) {
-      case IntakeGoal::INTAKE:
+    switch (unsafe_goal->intake_pivot()) {
+      case IntakePivotGoal::DOWN:
         intake_pivot_position =
             robot_constants_->common()->intake_pivot_set_points()->extended();
         intake_end_time_ = timestamp;
         break;
-      case IntakeGoal::SPIT:
-        intake_pivot_position =
-            robot_constants_->common()->intake_pivot_set_points()->retracted();
-        break;
-      case IntakeGoal::NONE:
+      case IntakePivotGoal::UP:
         intake_pivot_position =
             robot_constants_->common()->intake_pivot_set_points()->retracted();
         break;
@@ -206,23 +221,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       extend_goal_location = ExtendStatus::RETRACTED;
-      catapult_requested_ = false;
       break;
     case SuperstructureState::INTAKING:
       // Switch to LOADED state when the extend beambreak is triggered
       // meaning the note is loaded in the extend
-      if (position->extend_beambreak()) {
+      if (extend_beambreak) {
         state_ = SuperstructureState::LOADED;
       }
       intake_roller_state = IntakeRollerStatus::INTAKING;
       transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_EXTEND;
       extend_goal_location = ExtendStatus::RETRACTED;
-
-      if (!catapult_requested_ && unsafe_goal != nullptr &&
-          unsafe_goal->note_goal() == NoteGoal::CATAPULT) {
-        catapult_requested_ = true;
-      }
 
       // If we are no longer requesting INTAKE or we are no longer requesting
       // an INTAKE goal, wait 0.5 seconds then go back to IDLE.
@@ -234,7 +243,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       break;
     case SuperstructureState::LOADED:
-      if (!position->extend_beambreak() && !position->catapult_beambreak()) {
+      if (!extend_beambreak && !position->catapult_beambreak()) {
         state_ = SuperstructureState::IDLE;
       }
 
@@ -242,7 +251,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         case NoteGoal::NONE:
           break;
         case NoteGoal::CATAPULT:
-          state_ = SuperstructureState::MOVING;
+          state_ = SuperstructureState::LOADING_CATAPULT;
           transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
           break;
         case NoteGoal::TRAP:
@@ -267,8 +276,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           extend_goal_location = ExtendStatus::CATAPULT;
           if (extend_ready_for_catapult_transfer && turret_ready_for_load &&
               altitude_ready_for_load) {
-            loading_catapult_start_time_ = timestamp;
             state_ = SuperstructureState::LOADING_CATAPULT;
+            loading_catapult_start_time_ = timestamp;
           }
           break;
         case NoteGoal::TRAP:
@@ -296,18 +305,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     case SuperstructureState::LOADING_CATAPULT:
       extend_moving = false;
       extend_goal_location = ExtendStatus::CATAPULT;
-      extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_CATAPULT;
-      transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
 
-      // If we lost the game piece, reset state to idle.
-      if (((timestamp - loading_catapult_start_time_) >
-           kMaxCatapultLoadingTime) &&
-          !position->catapult_beambreak() && !position->extend_beambreak()) {
+      if (extend_beambreak) {
+        loading_catapult_start_time_ = timestamp;
+      }
+
+      if (loading_catapult_start_time_ + std::chrono::seconds(10) < timestamp) {
         state_ = SuperstructureState::IDLE;
       }
 
+      if (turret_ready_for_load && altitude_ready_for_load) {
+        extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_CATAPULT;
+        transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
+      }
+
       // Switch to READY state when the catapult beambreak is triggered
-      if (position->catapult_beambreak()) {
+      if (shooter_.loaded()) {
         state_ = SuperstructureState::READY;
       }
       break;
@@ -327,6 +340,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           break;
         case NoteGoal::CATAPULT:
           extend_goal_location = ExtendStatus::CATAPULT;
+
+          if (!shooter_.loaded()) {
+            state_ = SuperstructureState::LOADING_CATAPULT;
+          }
           break;
         case NoteGoal::TRAP:
           extend_goal_location = ExtendStatus::TRAP;
@@ -346,14 +363,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           // Reset the state to IDLE when the game piece is fired from the
           // catapult. We consider the game piece to be fired from the catapult
           // when the catapultbeambreak is no longer triggered.
-          if (!position->catapult_beambreak()) {
+          if (!shooter_.loaded() && !shooter_.Firing()) {
             state_ = SuperstructureState::IDLE;
           }
           break;
         case NoteGoal::TRAP:
           extend_roller_status = ExtendRollerStatus::SCORING_IN_TRAP;
           extend_goal_location = ExtendStatus::TRAP;
-          if (!position->extend_beambreak() && unsafe_goal != nullptr &&
+          if (!extend_beambreak && unsafe_goal != nullptr &&
               !unsafe_goal->fire()) {
             state_ = SuperstructureState::IDLE;
           }
@@ -361,7 +378,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         case NoteGoal::AMP:
           extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
           extend_goal_location = ExtendStatus::AMP;
-          if (!position->extend_beambreak() && unsafe_goal != nullptr &&
+          if (!extend_beambreak && unsafe_goal != nullptr &&
               !unsafe_goal->fire()) {
             state_ = SuperstructureState::IDLE;
           }
@@ -374,6 +391,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       unsafe_goal->intake_goal() == IntakeGoal::SPIT) {
     intake_roller_state = IntakeRollerStatus::SPITTING;
     transfer_roller_status = TransferRollerStatus::TRANSFERING_OUT;
+    extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
   }
 
   // Update Intake Roller voltage based on status from state machine.
@@ -441,7 +459,20 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   double extend_goal_position = 0.0;
 
+  // If we request trap, override the extend goal to be trap unless we request
+  // amp.
   if (unsafe_goal != nullptr && unsafe_goal->note_goal() == NoteGoal::TRAP) {
+    trap_override_ = true;
+  }
+
+  if (unsafe_goal != nullptr && unsafe_goal->note_goal() == NoteGoal::AMP &&
+      trap_override_) {
+    trap_override_ = false;
+    requested_note_goal_ = NoteGoal::AMP;
+    state_ = SuperstructureState::READY;
+  }
+
+  if (trap_override_) {
     extend_goal_location = ExtendStatus::TRAP;
   }
 
@@ -504,9 +535,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
       climber_goal_buffer;
 
-  climber_goal_buffer.Finish(
-      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          *climber_goal_buffer.fbb(), climber_position));
+  {
+    flatbuffers::FlatBufferBuilder *climber_fbb = climber_goal_buffer.fbb();
+    flatbuffers::Offset<frc971::ProfileParameters> climber_profile =
+        frc971::CreateProfileParameters(*climber_fbb, climber_velocity,
+                                        climber_accel);
+
+    climber_goal_buffer.Finish(
+        frc971::control_loops::
+            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                *climber_fbb, climber_position, climber_profile));
+  }
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *climber_goal = &climber_goal_buffer.message();
@@ -619,6 +658,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_extend_status(extend_status);
   status_builder.add_extend(extend_status_offset);
   status_builder.add_state(state_);
+  status_builder.add_shot_count(shooter_.shot_count());
   status_builder.add_uncompleted_note_goal(uncompleted_note_goal_status);
   status_builder.add_extend_ready_for_transfer(extend_at_retracted);
   status_builder.add_extend_at_retracted(extend_at_retracted);
@@ -626,7 +666,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_altitude_ready_for_load(altitude_ready_for_load);
   status_builder.add_extend_ready_for_catapult_transfer(
       extend_ready_for_catapult_transfer);
-  status_builder.add_extend_beambreak(position->extend_beambreak());
+  status_builder.add_extend_beambreak(extend_beambreak);
   status_builder.add_catapult_beambreak(position->catapult_beambreak());
 
   (void)status->Send(status_builder.Finish());

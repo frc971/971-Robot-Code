@@ -10,7 +10,8 @@ namespace y2024::control_loops::superstructure {
 
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
-constexpr double kCatapultActivationThreshold = 0.01;
+constexpr double kCatapultActivationTurretThreshold = 0.03;
+constexpr double kCatapultActivationAltitudeThreshold = 0.01;
 
 Shooter::Shooter(aos::EventLoop *event_loop, const Constants *robot_constants)
     : drivetrain_status_fetcher_(
@@ -68,6 +69,15 @@ Shooter::Iterate(
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::
           StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
+      auto_aim_allocator;
+
+  aos::fbs::Builder<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic>
+      auto_aim_goal_builder(&auto_aim_allocator);
+
+  aos::fbs::FixedStackAllocator<aos::fbs::Builder<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
       altitude_allocator;
 
   aos::fbs::Builder<
@@ -96,14 +106,16 @@ Shooter::Iterate(
 
   bool aiming = false;
 
-  if (requested_note_goal == NoteGoal::AMP) {
+  if (requested_note_goal == NoteGoal::AMP ||
+      requested_note_goal == NoteGoal::TRAP) {
     // Being asked to amp, lift the altitude up.
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         turret_goal_builder.get(),
         robot_constants_->common()->turret_loading_position());
 
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-        altitude_goal_builder.get(), 0.3);
+        altitude_goal_builder.get(),
+        robot_constants_->common()->altitude_avoid_extend_collision_position());
   } else if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
              (!piece_loaded && state_ == CatapultState::READY)) {
     // We don't have the note so we should be ready to intake it.
@@ -118,15 +130,19 @@ Shooter::Iterate(
     // We have a game piece, lets start aiming.
     if (drivetrain_status_fetcher_.get() != nullptr) {
       aiming = true;
-      aimer_.Update(drivetrain_status_fetcher_.get(),
-                    frc971::control_loops::aiming::ShotMode::kShootOnTheFly,
-                    turret_goal_builder.get());
     }
   }
 
+  // Auto aim builder is a dummy so we get a status when we aren't aiming.
+  aimer_.Update(
+      drivetrain_status_fetcher_.get(),
+      frc971::control_loops::aiming::ShotMode::kShootOnTheFly,
+      aiming ? turret_goal_builder.get() : auto_aim_goal_builder.get());
+
   // We have a game piece and are being asked to aim.
   constants::Values::ShotParams shot_params;
-  if (piece_loaded && shooter_goal != nullptr && shooter_goal->auto_aim() &&
+  if ((piece_loaded || state_ == CatapultState::FIRING) &&
+      shooter_goal != nullptr && shooter_goal->auto_aim() &&
       interpolation_table_.GetInRange(distance_to_goal, &shot_params)) {
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         altitude_goal_builder.get(), shot_params.shot_altitude_angle);
@@ -137,22 +153,24 @@ Shooter::Iterate(
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
+                      (piece_loaded || state_ == CatapultState::FIRING) &&
                       shooter_goal->has_turret_position())
                          ? shooter_goal->turret_position()
                          : &turret_goal_builder->AsFlatbuffer();
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *altitude_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
+                        (piece_loaded || state_ == CatapultState::FIRING) &&
                         shooter_goal->has_altitude_position())
                            ? shooter_goal->altitude_position()
                            : &altitude_goal_builder->AsFlatbuffer();
 
   const bool turret_in_range =
       (std::abs(turret_.estimated_position() - turret_goal->unsafe_goal()) <
-       kCatapultActivationThreshold);
+       kCatapultActivationTurretThreshold);
   const bool altitude_in_range =
       (std::abs(altitude_.estimated_position() - altitude_goal->unsafe_goal()) <
-       kCatapultActivationThreshold);
+       kCatapultActivationAltitudeThreshold);
   const bool altitude_above_min_angle =
       (altitude_.estimated_position() >
        robot_constants_->common()->min_altitude_shooting_angle());
@@ -168,6 +186,20 @@ Shooter::Iterate(
        .turret_position = turret_.estimated_position(),
        .extend_position = extend_position},
       turret_goal->unsafe_goal(), extend_goal);
+
+  if (!CatapultRetracted()) {
+    altitude_.set_min_position(
+        robot_constants_->common()->min_altitude_shooting_angle());
+  } else {
+    altitude_.clear_min_position();
+  }
+
+  if (!CatapultRetracted()) {
+    altitude_.set_min_position(
+        robot_constants_->common()->min_altitude_shooting_angle());
+  } else {
+    altitude_.clear_min_position();
+  }
 
   turret_.set_min_position(collision_avoidance->min_turret_goal());
   turret_.set_max_position(collision_avoidance->max_turret_goal());
@@ -225,8 +257,8 @@ Shooter::Iterate(
       state_ = CatapultState::RETRACTING;
     }
 
-    constexpr double kLoadingAcceleration = 20.0;
-    constexpr double kLoadingDeceleration = 10.0;
+    constexpr double kLoadingAcceleration = 40.0;
+    constexpr double kLoadingDeceleration = 20.0;
 
     switch (state_) {
       case CatapultState::READY:
@@ -271,6 +303,7 @@ Shooter::Iterate(
         catapult_.set_unprofiled_goal(2.0, 0.0);
         if (CatapultClose()) {
           state_ = CatapultState::RETRACTING;
+          ++shot_count_;
         } else {
           break;
         }
@@ -303,9 +336,7 @@ Shooter::Iterate(
   }
 
   flatbuffers::Offset<AimerStatus> aimer_offset;
-  if (aiming) {
-    aimer_offset = aimer_.PopulateStatus(fbb);
-  }
+  aimer_offset = aimer_.PopulateStatus(fbb);
 
   y2024::control_loops::superstructure::ShooterStatus::Builder status_builder(
       *fbb);
@@ -316,9 +347,8 @@ Shooter::Iterate(
   status_builder.add_turret_in_range(turret_in_range);
   status_builder.add_altitude_in_range(altitude_in_range);
   status_builder.add_altitude_above_min_angle(altitude_above_min_angle);
-  if (aiming) {
-    status_builder.add_aimer(aimer_offset);
-  }
+  status_builder.add_auto_aiming(aiming);
+  status_builder.add_aimer(aimer_offset);
 
   return status_builder.Finish();
 }
