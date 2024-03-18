@@ -43,7 +43,19 @@ void Main() {
       << "Need a base intrinsics json to use to auto-capture images when the "
          "camera moves.";
   std::unique_ptr<aos::ExitHandle> exit_handle = event_loop.MakeExitHandle();
-  IntrinsicsCalibration extractor(&event_loop, hostname, FLAGS_channel,
+
+  std::string camera_name = absl::StrCat(
+      "/", aos::network::ParsePiOrOrin(hostname).value(),
+      std::to_string(aos::network::ParsePiOrOrinNumber(hostname).value()),
+      FLAGS_channel);
+  // THIS IS A HACK FOR 2024, since we call Orin2 "Imu"
+  if (aos::network::ParsePiOrOrin(hostname).value() == "orin" &&
+      aos::network::ParsePiOrOrinNumber(hostname).value() == 2) {
+    LOG(INFO) << "\nHACK for 2024: Renaming orin2 to imu\n";
+    camera_name = absl::StrCat("/imu", FLAGS_channel);
+  }
+
+  IntrinsicsCalibration extractor(&event_loop, hostname, camera_name,
                                   FLAGS_camera_id, FLAGS_base_intrinsics,
                                   FLAGS_display_undistorted,
                                   FLAGS_calibration_folder, exit_handle.get());

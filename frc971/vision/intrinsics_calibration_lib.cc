@@ -36,17 +36,27 @@ IntrinsicsCalibration::IntrinsicsCalibration(
                           rvecs_eigen, tvecs_eigen);
           }),
       image_callback_(
-          event_loop,
-          absl::StrCat("/", aos::network::ParsePiOrOrin(hostname_).value(),
-                       std::to_string(cpu_number_.value()), camera_channel_),
+          event_loop, camera_channel_,
           [this](cv::Mat rgb_image,
                  const aos::monotonic_clock::time_point eof) {
+            if (exit_collection_) {
+              return;
+            }
             charuco_extractor_.HandleImage(rgb_image, eof);
           },
           kMaxImageAge),
       display_undistorted_(display_undistorted),
       calibration_folder_(calibration_folder),
-      exit_handle_(exit_handle) {
+      exit_handle_(exit_handle),
+      exit_collection_(false) {
+  if (!FLAGS_visualize) {
+    // The only way to exit into the calibration routines is by hitting "q"
+    // while visualization is running.  The event_loop doesn't pause enough
+    // to handle ctrl-c exit requests
+    LOG(INFO) << "Setting visualize to true, since currently the intrinsics "
+                 "only works this way";
+    FLAGS_visualize = true;
+  }
   LOG(INFO) << "Hostname is: " << hostname_ << " and camera channel is "
             << camera_channel_;
 
@@ -81,7 +91,11 @@ void IntrinsicsCalibration::HandleCharuco(
   }
 
   int keystroke = cv::waitKey(1);
-
+  if ((keystroke & 0xFF) == static_cast<int>('q')) {
+    LOG(INFO) << "Going to exit";
+    exit_collection_ = true;
+    exit_handle_->Exit();
+  }
   // If we haven't got a valid pose estimate, don't use these points
   if (!valid) {
     LOG(INFO) << "Skipping because pose is not valid";
@@ -161,9 +175,6 @@ void IntrinsicsCalibration::HandleCharuco(
                   << kDeltaTThreshold;
       }
     }
-
-  } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
-    exit_handle_->Exit();
   }
 }
 
@@ -175,8 +186,14 @@ IntrinsicsCalibration::BuildCalibration(
     std::string_view camera_id, uint16_t team_number,
     double reprojection_error) {
   flatbuffers::FlatBufferBuilder fbb;
+  // THIS IS A HACK FOR 2024, since we call Orin2 "Imu"
+  std::string cpu_name = absl::StrFormat("%s%d", cpu_type, cpu_number);
+  if (cpu_type == "orin" && cpu_number == 2) {
+    LOG(INFO) << "Renaming orin2 to imu";
+    cpu_name = "imu";
+  }
   flatbuffers::Offset<flatbuffers::String> name_offset =
-      fbb.CreateString(absl::StrFormat("%s%d", cpu_type, cpu_number));
+      fbb.CreateString(cpu_name.c_str());
   flatbuffers::Offset<flatbuffers::String> camera_id_offset =
       fbb.CreateString(camera_id);
   flatbuffers::Offset<flatbuffers::Vector<float>> intrinsics_offset =
