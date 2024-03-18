@@ -822,6 +822,7 @@ void Trajectory::CalculatePathGains() {
     const Eigen::Matrix<double, 2, 5> K = RBPBinv * APB.transpose();
     plan_gains_[i].second = K.cast<float>();
     P = AP * A_discrete - APB * K + Q;
+    CHECK_LT(P.norm(), 1e30) << "LQR calculations became unstable.";
   }
 }
 
