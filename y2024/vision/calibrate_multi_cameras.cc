@@ -11,6 +11,7 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/extrinsics_calibration.h"
 #include "frc971/vision/target_mapper.h"
+#include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
 // clang-format off
 // OpenCV eigen files must be included after Eigen includes
@@ -47,7 +48,6 @@ DEFINE_int32(team_number, 0,
 DEFINE_uint64(
     wait_key, 1,
     "Time in ms to wait between images (0 to wait indefinitely until click)");
-
 DEFINE_bool(robot, false,
             "If true we're calibrating extrinsics for the robot, use the "
             "correct node path for the robot.");
@@ -364,7 +364,7 @@ void HandlePoses(cv::Mat rgb_image,
 void HandleTargetMap(const TargetMap &map,
                      aos::distributed_clock::time_point distributed_eof,
                      std::string node_name) {
-  VLOG(1) << "Got april tag map call from node " << node_name;
+  VLOG(1) << "Got april tag map call from camera " << node_name;
   // Create empty RGB image in this case
   cv::Mat rgb_image;
   std::vector<TargetMapper::TargetPose> target_poses;
@@ -478,6 +478,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   std::vector<frc971::vision::ImageCallback *> image_callbacks;
   std::vector<Eigen::Affine3d> default_extrinsics;
 
+  uint camera_count = 0;
   for (const CameraNode &camera_node : node_list) {
     const aos::Node *pi = aos::configuration::GetNode(
         reader.configuration(), camera_node.node_name.c_str());
@@ -507,20 +508,22 @@ void ExtrinsicsMain(int argc, char *argv[]) {
 
     detection_event_loops.back()->MakeWatcher(
         camera_node.camera_name(),
-        [&reader, &detection_event_loops, camera_node](const TargetMap &map) {
+        [&reader, &detection_event_loops, camera_node,
+         camera_count](const TargetMap &map) {
           aos::distributed_clock::time_point pi_distributed_time =
               reader.event_loop_factory()
                   ->GetNodeEventLoopFactory(
-                      detection_event_loops.back().get()->node())
+                      detection_event_loops.at(camera_count).get()->node())
                   ->ToDistributedClock(aos::monotonic_clock::time_point(
                       aos::monotonic_clock::duration(
                           map.monotonic_timestamp_ns())));
 
           HandleTargetMap(map, pi_distributed_time, camera_node.camera_name());
         });
-    LOG(INFO) << "Created watcher for using the detection event loop for "
-              << camera_node.camera_name() << " and size "
-              << detection_event_loops.size();
+    VLOG(1) << "Created watcher for using the detection event loop for "
+            << camera_node.camera_name() << " and size "
+            << detection_event_loops.size();
+    camera_count++;
   }
 
   reader.event_loop_factory()->Run();
@@ -564,6 +567,8 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   for (uint i = 0; i < node_list.size() - 1; i++) {
     H_camera1_camera2_list.clear();
     // Go through the list, and find successive pairs of cameras
+    // We'll be calculating and writing the second of the pair (the i+1'th
+    // camera)
     for (auto [pose1, pose2] : detection_list) {
       if ((pose1.pi_name == node_list.at(i).camera_name()) &&
           (pose2.pi_name == node_list.at(i + 1).camera_name())) {
@@ -576,7 +581,8 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         }
 
         // Now, get the camera2->boardA map (notice it's boardA, same as
-        // camera1, so we can compute the difference based both on boardA)
+        // camera1, so we can compute the difference between the cameras with
+        // both referenced to boardA)
         Eigen::Affine3d H_camera2_boardA = pose2.H_camera_target;
         // If pose2 isn't referenced to boardA (base_target_id), correct
         // that
@@ -682,17 +688,12 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       std::stringstream time_ss;
       time_ss << realtime_now;
 
-      // TODO: This breaks because we're naming orin1 and imu as nodes
-      // Assumes camera_list name is of form "/orin#/cameraX" to create
-      // calibration filename
+      CameraNode &camera_node = node_list[i + 1];
       const std::string calibration_filename =
-          FLAGS_output_folder +
-          absl::StrFormat(
-              "/calibration_orin-%d-%s-%d_cam-%s_%s.json", FLAGS_team_number,
-              node_list.at(i + 1).camera_name().substr(5, 1),
-              calibration_list[i + 1]->camera_number(),
-              calibration_list[i + 1]->camera_id()->data(), time_ss.str());
-
+          frc971::vision::CalibrationFilename(
+              FLAGS_output_folder, camera_node.node_name, FLAGS_team_number,
+              camera_node.camera_number, cal_copy.message().camera_id()->data(),
+              time_ss.str());
       LOG(INFO) << calibration_filename << " -> "
                 << aos::FlatbufferToJson(merged_calibration,
                                          {.multi_line = true});
