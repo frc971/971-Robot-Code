@@ -18,6 +18,7 @@ class TrajectoryGenerator {
   aos::EventLoop *const event_loop_;
   const DrivetrainConfig<double> dt_config_;
   aos::Sender<fb::Trajectory> trajectory_sender_;
+  aos::Fetcher<SplineGoal> spline_goal_fetcher_;
 };
 
 }  // namespace frc971::control_loops::drivetrain
