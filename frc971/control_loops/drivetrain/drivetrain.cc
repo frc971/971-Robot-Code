@@ -28,7 +28,7 @@ namespace frc971::control_loops::drivetrain {
 
 namespace {
 // Maximum variation to allow in the gyro when zeroing.
-constexpr double kMaxYawGyroZeroingRange = 0.08;
+constexpr double kMaxYawGyroZeroingRange = 0.15;
 }  // namespace
 
 DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
@@ -570,6 +570,7 @@ void DrivetrainLoop::RunIteration(
     builder.add_down_estimator(down_estimator_state_offset);
     builder.add_localizer(localizer_offset);
     builder.add_zeroing(zeroer_offset);
+    builder.add_filters_ready(filters_.Ready());
 
     builder.add_send_failures(status_failure_counter_.failures());
 

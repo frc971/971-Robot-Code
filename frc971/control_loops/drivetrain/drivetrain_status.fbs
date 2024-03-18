@@ -279,6 +279,8 @@ table Status {
   send_failures:uint64 (id: 28);
 
   encoder_faults:Faults (id: 29);
+
+  filters_ready:bool (id: 30);
 }
 
 root_type Status;
