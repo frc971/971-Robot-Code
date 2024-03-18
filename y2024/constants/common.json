@@ -7,43 +7,50 @@
         "distance_from_goal": 0.7,
         "shot_params": {
             "shot_altitude_angle": 0.85,
-            "shot_speed_over_ground": 8.0
+            "shot_speed_over_ground": 16.0
         }
     },
     {
       "distance_from_goal": 1.24,
       "shot_params": {
           "shot_altitude_angle": 0.85,
-          "shot_speed_over_ground": 8.0
+          "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 1.904,
       "shot_params": {
           "shot_altitude_angle": 0.73,
-          "shot_speed_over_ground": 8.0
+          "shot_speed_over_ground": 16.0
       }
     },
     // 2.2 -> high.
     {
       "distance_from_goal": 2.744,
       "shot_params": {
-          "shot_altitude_angle": 0.62,
-          "shot_speed_over_ground": 8.0
+          "shot_altitude_angle": 0.61,
+          "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 3.274,
       "shot_params": {
-          "shot_altitude_angle": 0.58,
-          "shot_speed_over_ground": 8.0
+          "shot_altitude_angle": 0.55,
+          "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 4.00,
       "shot_params": {
-          "shot_altitude_angle": 0.54,
-          "shot_speed_over_ground": 8.0
+          "shot_altitude_angle": 0.515,
+          "shot_speed_over_ground": 16.0
+      }
+    },
+    {
+      "distance_from_goal": 4.68,
+      "shot_params": {
+          "shot_altitude_angle": 0.51,
+          "shot_speed_over_ground": 16.0
       }
     }
   ],
@@ -248,7 +255,7 @@
   },
   // TODO(Filip): Update the speaker and amp shooter setpoints
   "shooter_speaker_set_point": {
-    "turret_position": 0.22,
+    "turret_position": 0.13,
     "altitude_position": 0.85,
     "shot_velocity": 0.0
   },

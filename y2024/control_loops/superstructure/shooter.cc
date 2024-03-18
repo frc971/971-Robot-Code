@@ -248,7 +248,7 @@ Shooter::Iterate(
     //
     // accel = v^2 / (2 * x)
     catapult_.mutable_profile()->set_maximum_velocity(
-        catapult::kFreeSpeed * catapult::kOutputRatio * 4.0 / 12.0);
+        catapult::kFreeSpeed * catapult::kOutputRatio * 5.5 / 12.0);
 
     if (disabled) {
       state_ = CatapultState::RETRACTING;
@@ -272,6 +272,7 @@ Shooter::Iterate(
         if (subsystems_in_range && shooter_goal != nullptr && fire &&
             catapult_close && piece_loaded) {
           state_ = CatapultState::FIRING;
+          max_catapult_goal_velocity_ = catapult_.goal(1);
         } else {
           catapult_.set_controller_index(0);
           catapult_.mutable_profile()->set_maximum_acceleration(
@@ -294,10 +295,17 @@ Shooter::Iterate(
             robot_constants_->common()
                 ->current_limits()
                 ->shooting_retention_roller_stator_current_limit();
-        catapult_.set_controller_index(1);
+        max_catapult_goal_velocity_ =
+            std::max(max_catapult_goal_velocity_, catapult_.goal(1));
+
+        if (max_catapult_goal_velocity_ > catapult_.goal(1) + 0.1) {
+          catapult_.set_controller_index(2);
+        } else {
+          catapult_.set_controller_index(1);
+        }
         catapult_.mutable_profile()->set_maximum_acceleration(400.0);
-        catapult_.mutable_profile()->set_maximum_deceleration(500.0);
-        catapult_.set_unprofiled_goal(2.0, 0.0);
+        catapult_.mutable_profile()->set_maximum_deceleration(1000.0);
+        catapult_.set_unprofiled_goal(2.45, 0.0);
         if (CatapultClose()) {
           state_ = CatapultState::RETRACTING;
           ++shot_count_;

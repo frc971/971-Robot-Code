@@ -17,6 +17,9 @@ namespace y2024::control_loops::superstructure {
 
 class Aimer {
  public:
+  // When the turret is at 0 the note will be leaving the robot at PI.
+  static constexpr double kTurretZeroOffset = 0.13;
+
   Aimer(aos::EventLoop *event_loop, const Constants *robot_constants);
 
   void Update(

@@ -138,6 +138,10 @@ class Shooter {
 
   CatapultSubsystem catapult_;
 
+  // Max speed we have seen during this shot.  This is used to figure out when
+  // we start decelerating and switch controllers.
+  double max_catapult_goal_velocity_ = 0.0;
+
   PotAndAbsoluteEncoderSubsystem turret_;
   PotAndAbsoluteEncoderSubsystem altitude_;
 

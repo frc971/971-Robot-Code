@@ -25,14 +25,14 @@ def AddResistance(motor, resistance):
     return motor
 
 
-kCatapultWithGamePiece = angular_system.AngularSystemParams(
+kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
     name='Catapult',
     # Add the battery series resistance to make it better match.
     motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
                         0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
-    # 208.7328 in^2 lb
-    J=0.065 + 0.04,
+    # 135.2928 in^2 lb
+    J=0.06,
     q_pos=0.80,
     q_vel=15.0,
     kalman_q_pos=0.12,
@@ -43,14 +43,32 @@ kCatapultWithGamePiece = angular_system.AngularSystemParams(
     delayed_u=1,
     dt=0.005)
 
-kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
-    name='Catapult',
+kCatapultWithGamePiece = angular_system.AngularSystemParams(
+    name='CatapultWithPiece',
+    # Add the battery series resistance to make it better match.
+    motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
+                        0.00),
+    G=(14.0 / 60.0) * (12.0 / 24.0),
+    # 208.7328 in^2 lb
+    J=0.065 + 0.06,
+    q_pos=0.80,
+    q_vel=15.0,
+    kalman_q_pos=0.12,
+    kalman_q_vel=2.0,
+    kalman_q_voltage=0.7,
+    kalman_r_position=0.05,
+    radius=12 * 0.0254,
+    delayed_u=1,
+    dt=0.005)
+
+kCatapultWithoutGamePieceDecel = angular_system.AngularSystemParams(
+    name='CatapultWithoutPieceDecel',
     # Add the battery series resistance to make it better match.
     motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
                         0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 135.2928 in^2 lb
-    J=0.06,
+    J=0.04,
     q_pos=0.80,
     q_vel=15.0,
     kalman_q_pos=0.12,
@@ -76,9 +94,10 @@ def main(argv):
         )
     else:
         namespaces = ['y2024', 'control_loops', 'superstructure', 'catapult']
-        angular_system.WriteAngularSystem(
-            [kCatapultWithoutGamePiece, kCatapultWithGamePiece], argv[1:4],
-            argv[4:7], namespaces)
+        angular_system.WriteAngularSystem([
+            kCatapultWithoutGamePiece, kCatapultWithGamePiece,
+            kCatapultWithoutGamePieceDecel
+        ], argv[1:4], argv[4:7], namespaces)
 
 
 if __name__ == '__main__':
