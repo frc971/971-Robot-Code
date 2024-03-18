@@ -228,6 +228,11 @@ TargetMapper::TargetMapper(
       T_frozen_actual_(Eigen::Vector3d::Zero()),
       R_frozen_actual_(Eigen::Quaterniond::Identity()),
       vis_robot_(cv::Size(kImageWidth_, kImageHeight_)) {
+  // Compute focal length so that image shows field with viewpoint at 10m above
+  // it (default for viewer)
+  const double focal_length = kImageWidth_ * 10.0 / kFieldWidth_;
+  vis_robot_.SetDefaultViewpoint(kImageWidth_, focal_length);
+
   aos::FlatbufferDetachedBuffer<TargetMap> target_map =
       aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
   for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
@@ -340,7 +345,7 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
     if (id_pair.second > max_constraint_id) {
       max_constraint_id = id_pair.second;
     }
-    // Normalize constraint cost by occurances
+    // Normalize constraint cost by occurrences
     size_t constraint_count = constraint_counts_[id_pair];
     // Scale all costs so the total cost comes out to more reasonable numbers
     constexpr double kGlobalWeight = 1000.0;
@@ -390,10 +395,6 @@ std::unique_ptr<ceres::CostFunction>
 TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   // Set up robot visualization.
   vis_robot_.ClearImage();
-  // Compute focal length so that image shows field with viewpoint at 10m above
-  // it (default for viewer)
-  const double kFocalLength = kImageWidth_ * 10.0 / kFieldWidth_;
-  vis_robot_.SetDefaultViewpoint(kImageWidth_, kFocalLength);
 
   const size_t num_targets = FLAGS_max_target_id - FLAGS_min_target_id;
   // Translation and rotation error for each target
@@ -414,6 +415,34 @@ TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   problem->SetParameterization(R_frozen_actual_.coeffs().data(),
                                quaternion_local_parameterization);
   return cost_function;
+}
+
+void TargetMapper::DisplayConstraintGraph() {
+  vis_robot_.ClearImage();
+  for (auto constraint : constraint_counts_) {
+    Eigen::Vector3d start_line =
+        PoseUtils::Pose3dToAffine3d(
+            ideal_target_poses_.at(constraint.first.first))
+            .translation();
+    Eigen::Vector3d end_line =
+        PoseUtils::Pose3dToAffine3d(
+            ideal_target_poses_.at(constraint.first.second))
+            .translation();
+    // Weight the green intensity by # of constraints
+    // TODO: This could be improved
+    int color_scale =
+        50 + std::min(155, static_cast<int>(constraint.second * 155.0 / 200.0));
+    vis_robot_.DrawLine(start_line, end_line, cv::Scalar(0, color_scale, 0));
+  }
+
+  for (const auto &[id, solved_pose] : target_poses_) {
+    Eigen::Affine3d H_world_ideal =
+        PoseUtils::Pose3dToAffine3d(ideal_target_poses_.at(id));
+    vis_robot_.DrawFrameAxes(H_world_ideal, std::to_string(id),
+                             cv::Scalar(255, 255, 255));
+  }
+  cv::imshow("Constraint graph", vis_robot_.image_);
+  cv::waitKey(0);
 }
 
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
@@ -442,6 +471,11 @@ void TargetMapper::Solve(std::string_view field_name,
       << "The target pose solve 1 was not successful, exiting.";
 
   RemoveOutlierConstraints();
+
+  if (FLAGS_visualize_solver) {
+    LOG(INFO) << "Displaying constraint graph after removing outliers";
+    DisplayConstraintGraph();
+  }
 
   // Solve again once we've thrown out bad constraints
   ceres::Problem target_pose_problem_2;
