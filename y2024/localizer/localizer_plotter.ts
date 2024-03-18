@@ -21,6 +21,8 @@ export function plotLocalizer(conn: Connection, element: Element): void {
       '/drivetrain', 'frc971.control_loops.drivetrain.Output');
   const localizer = aosPlotter.addMessageSource(
       '/localizer', 'y2024.localizer.Status');
+  const rio_inputs = aosPlotter.addMessageSource(
+      '/drivetrain', 'frc971.control_loops.drivetrain.RioLocalizerInputs');
   const imu = aosPlotter.addRawMessageSource(
       '/localizer', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
@@ -41,6 +43,12 @@ export function plotLocalizer(conn: Connection, element: Element): void {
       .setColor(BROWN)
       .setDrawLine(false);
   positionPlot.addMessageLine(position, ['right_encoder'])
+      .setColor(CYAN)
+      .setDrawLine(false);
+  positionPlot.addMessageLine(rio_inputs, ['left_encoder'])
+      .setColor(BROWN)
+      .setDrawLine(false);
+  positionPlot.addMessageLine(rio_inputs, ['right_encoder'])
       .setColor(CYAN)
       .setDrawLine(false);
 
@@ -98,6 +106,12 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   voltagePlot.addMessageLine(output, ['right_voltage'])
       .setColor(GREEN)
       .setPointSize(0);
+  voltagePlot.addMessageLine(rio_inputs, ['left_voltage'])
+      .setColor(RED)
+      .setDrawLine(false);
+  voltagePlot.addMessageLine(rio_inputs, ['right_voltage'])
+      .setColor(GREEN)
+      .setDrawLine(false);
 
   // Heading
   const yawPlot = aosPlotter.addPlot(element);
