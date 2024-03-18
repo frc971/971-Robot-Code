@@ -105,6 +105,9 @@ class SplineDrivetrain {
 
   // Information used for status message.
   ::Eigen::Matrix<double, 2, 1> uncapped_U_;
+  ::Eigen::Matrix<double, 5, 1> last_state_error_;
+  ::Eigen::Matrix<double, 2, 5> last_U_components_;
+  ::Eigen::Matrix<double, 2, 1> last_U_ff_;
   bool enable_ = false;
   bool output_was_capped_ = false;
 };
