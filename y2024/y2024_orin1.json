@@ -141,6 +141,7 @@
       "name": "/orin1/camera0",
       "type": "foxglove.CompressedImage",
       "source_node": "orin1",
+      "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
       "frequency": 65,
       "max_size": 622384
@@ -149,6 +150,7 @@
       "name": "/orin1/camera1",
       "type": "foxglove.CompressedImage",
       "source_node": "orin1",
+      "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
       "frequency": 65,
       "max_size": 622384

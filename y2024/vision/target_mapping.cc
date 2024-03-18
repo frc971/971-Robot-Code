@@ -389,6 +389,7 @@ void TargetMapperReplay::MaybeSolve() {
     target_constraints.erase(
         std::remove_if(target_constraints.begin(), target_constraints.end(),
                        [](const auto &constraint) {
+                         // TODO(james): This no longer makes sense.
                          constexpr TargetMapper::TargetId kMaxRedId = 4;
                          TargetMapper::TargetId min_id =
                              std::min(constraint.id_begin, constraint.id_end);

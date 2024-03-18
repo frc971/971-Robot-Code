@@ -121,23 +121,28 @@ ceres::examples::VectorOfConstraints DataAdapter::MatchTargetDetections(
   ceres::examples::VectorOfConstraints target_constraints;
   for (auto detection = timestamped_target_detections.begin() + 1;
        detection < timestamped_target_detections.end(); detection++) {
-    auto last_detection = detection - 1;
+    for (int past = 1;
+         past <=
+         std::min<int>(4, detection - timestamped_target_detections.begin());
+         ++past) {
+      auto last_detection = detection - past;
 
-    // Skip two consecutive detections of the same target, because the solver
-    // doesn't allow this
-    if (detection->id == last_detection->id) {
-      continue;
+      // Skip two consecutive detections of the same target, because the solver
+      // doesn't allow this
+      if (detection->id == last_detection->id) {
+        continue;
+      }
+
+      // Don't take into account constraints too far apart in time, because the
+      // recording device could have moved too much
+      if ((detection->time - last_detection->time) > max_dt) {
+        continue;
+      }
+
+      auto confidence = ComputeConfidence(*last_detection, *detection);
+      target_constraints.emplace_back(
+          ComputeTargetConstraint(*last_detection, *detection, confidence));
     }
-
-    // Don't take into account constraints too far apart in time, because the
-    // recording device could have moved too much
-    if ((detection->time - last_detection->time) > max_dt) {
-      continue;
-    }
-
-    auto confidence = ComputeConfidence(*last_detection, *detection);
-    target_constraints.emplace_back(
-        ComputeTargetConstraint(*last_detection, *detection, confidence));
   }
 
   return target_constraints;

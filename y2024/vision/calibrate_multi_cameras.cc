@@ -478,7 +478,6 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   std::vector<frc971::vision::ImageCallback *> image_callbacks;
   std::vector<Eigen::Affine3d> default_extrinsics;
 
-  uint camera_count = 0;
   for (const CameraNode &camera_node : node_list) {
     const aos::Node *pi = aos::configuration::GetNode(
         reader.configuration(), camera_node.node_name.c_str());
@@ -486,8 +485,9 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     detection_event_loops.emplace_back(
         reader.event_loop_factory()->MakeEventLoop(
             (camera_node.camera_name() + "_detection").c_str(), pi));
+    aos::EventLoop *const event_loop = detection_event_loops.back().get();
     frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
-        detection_event_loops.back().get());
+        event_loop);
     // Get the calibration for this orin/camera pair
     const calibration::CameraCalibration *calibration =
         y2024::vision::FindCameraCalibration(constants_fetcher.constants(),
@@ -506,14 +506,12 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     VLOG(1) << "Got extrinsics for " << camera_node.camera_name() << " as\n"
             << default_extrinsics.back().matrix();
 
-    detection_event_loops.back()->MakeWatcher(
+    event_loop->MakeWatcher(
         camera_node.camera_name(),
-        [&reader, &detection_event_loops, camera_node,
-         camera_count](const TargetMap &map) {
+        [&reader, event_loop, camera_node](const TargetMap &map) {
           aos::distributed_clock::time_point pi_distributed_time =
               reader.event_loop_factory()
-                  ->GetNodeEventLoopFactory(
-                      detection_event_loops.at(camera_count).get()->node())
+                  ->GetNodeEventLoopFactory(event_loop->node())
                   ->ToDistributedClock(aos::monotonic_clock::time_point(
                       aos::monotonic_clock::duration(
                           map.monotonic_timestamp_ns())));
@@ -523,7 +521,6 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     VLOG(1) << "Created watcher for using the detection event loop for "
             << camera_node.camera_name() << " and size "
             << detection_event_loops.size();
-    camera_count++;
   }
 
   reader.event_loop_factory()->Run();
