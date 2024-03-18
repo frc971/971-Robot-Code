@@ -175,6 +175,7 @@ void SplineDrivetrain::Update(
     Eigen::Matrix<double, 5, 1> state_error = relative_goal - relative_state;
     state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
+    last_U_components_ = K * Eigen::DiagonalMatrix<double, 5>(state_error);
 
     if (backwards) {
       Eigen::Matrix<double, 2, 1> swapU(U_fb(1), U_fb(0));
@@ -186,6 +187,8 @@ void SplineDrivetrain::Update(
     next_U_ = U_ff + U_fb - voltage_error;
     uncapped_U_ = next_U_;
     ScaleCapU(&next_U_);
+    last_state_error_ = state_error;
+    last_U_ff_ = U_ff;
   }
 }
 
@@ -215,6 +218,20 @@ void SplineDrivetrain::PopulateStatus(
   }
 }
 
+namespace {
+template <typename Matrix>
+flatbuffers::Offset<SplineState> MakeSplineState(
+    const Matrix &state, flatbuffers::FlatBufferBuilder *fbb) {
+  SplineState::Builder builder(*fbb);
+  builder.add_x(state(0));
+  builder.add_y(state(1));
+  builder.add_theta(::aos::math::NormalizeAngle(state(2)));
+  builder.add_left_velocity(state(3));
+  builder.add_right_velocity(state(4));
+  return builder.Finish();
+}
+}  // namespace
+
 flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
     flatbuffers::FlatBufferBuilder *builder) const {
   int *spline_handles;
@@ -224,6 +241,13 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
     spline_handles[ii] = trajectories_[ii].spline_handle();
   }
+
+  const flatbuffers::Offset<SplineState> state_error_offset =
+      MakeSplineState(last_state_error_, builder);
+  const flatbuffers::Offset<SplineState> left_voltage_components_offset =
+      MakeSplineState(last_U_components_.row(0), builder);
+  const flatbuffers::Offset<SplineState> right_voltage_components_offset =
+      MakeSplineState(last_U_components_.row(1), builder);
 
   drivetrain::TrajectoryLogging::Builder trajectory_logging_builder(*builder);
   if (executing_spline_) {
@@ -241,6 +265,13 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
       trajectory_logging_builder.add_left_velocity(goal_state(3));
       trajectory_logging_builder.add_right_velocity(goal_state(4));
     }
+    trajectory_logging_builder.add_state_error(state_error_offset);
+    trajectory_logging_builder.add_left_voltage_components(
+        left_voltage_components_offset);
+    trajectory_logging_builder.add_right_voltage_components(
+        right_voltage_components_offset);
+    trajectory_logging_builder.add_left_ff_voltage(last_U_ff_(0));
+    trajectory_logging_builder.add_right_ff_voltage(last_U_ff_(1));
   }
   trajectory_logging_builder.add_is_executing(!IsAtEnd() && executing_spline_);
   trajectory_logging_builder.add_is_executed(executing_spline_ && IsAtEnd());

@@ -52,6 +52,14 @@ enum PlanningState : byte {
   PLANNED,
 }
 
+table SplineState {
+  x:double (id: 0);
+  y:double (id: 1);
+  theta:double (id: 2);
+  left_velocity:double (id: 3);
+  right_velocity:double (id: 4);
+}
+
 // For logging information about the state of the trajectory planning.
 table TrajectoryLogging {
   // state of planning the trajectory.
@@ -82,6 +90,12 @@ table TrajectoryLogging {
 
   // Splines that we have full plans for.
   available_splines:[int] (id: 12);
+
+  state_error:SplineState (id: 14);
+  left_voltage_components:SplineState (id: 15);
+  right_voltage_components:SplineState (id: 16);
+  left_ff_voltage:double (id: 17);
+  right_ff_voltage:double (id: 18);
 }
 
 enum RobotSide : ubyte {
