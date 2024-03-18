@@ -19,7 +19,7 @@
       "type": "aos.logging.LogMessageFbs",
       "source_node": "orin1",
       "frequency": 200,
-      "num_senders": 20
+      "num_senders": 30
     },
     {
       "name": "/orin1/aos",
