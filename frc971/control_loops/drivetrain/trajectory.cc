@@ -770,17 +770,8 @@ void Trajectory::CalculatePathGains() {
 
   // Set up reasonable gain matrices. Current choices of gains are arbitrary
   // and just setup to work well enough for the simulation tests.
-  // TODO(james): Tune this on a real robot.
-  // TODO(james): Pull these out into a config.
-  Eigen::Matrix<double, 5, 5> Q;
-  Q.setIdentity();
-  Q.diagonal() << 30.0, 30.0, 20.0, 15.0, 15.0;
-  Q *= 2.0;
-  Q = (Q * Q).eval();
-
-  Eigen::Matrix<double, 2, 2> R;
-  R.setIdentity();
-  R *= 5.0;
+  Eigen::Matrix<double, 5, 5> Q = config_->spline_follower_config.Q;
+  Eigen::Matrix<double, 2, 2> R = config_->spline_follower_config.R;
 
   Eigen::Matrix<double, 5, 5> P = Q;
 
