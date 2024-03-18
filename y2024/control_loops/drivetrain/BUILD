@@ -140,3 +140,29 @@ jinja2_template(
     parameters = {},
     visibility = ["//visibility:public"],
 )
+
+cc_binary(
+    name = "drivetrain_replay",
+    srcs = ["drivetrain_replay.cc"],
+    data = [
+        "//y2024:aos_config",
+        "//y2024/constants:constants.json",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/events/logging:log_writer",
+        "//aos/util:simulation_logger",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain:trajectory_generator",
+        "//frc971/control_loops/drivetrain/localization:puppet_localizer",
+        "//frc971/imu_fdcan:dual_imu_blender_lib",
+        "//y2024/constants:simulated_constants_sender",
+        "//y2024/control_loops/drivetrain:drivetrain_base",
+    ],
+)

@@ -6,8 +6,13 @@
 
 namespace y2024 {
 bool SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
-                             std::string constants_path) {
+                             std::string constants_path,
+                             const std::set<std::string_view> &node_names) {
   for (const aos::Node *node : factory->nodes()) {
+    if (!node_names.empty() &&
+        !node_names.contains(node->name()->string_view())) {
+      continue;
+    }
     std::unique_ptr<aos::EventLoop> event_loop =
         factory->MakeEventLoop("constants_sender", node);
     frc971::constants::ConstantSender<Constants, ConstantsList> sender(
