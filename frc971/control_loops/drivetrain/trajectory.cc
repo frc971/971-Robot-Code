@@ -196,13 +196,13 @@ double BaseTrajectory::BestAcceleration(double x, double v,
             << min_friction_accel << " max fric accel " << max_friction_accel;
   }
   if (best_accel < min_voltage_accel || best_accel > max_voltage_accel) {
-    LOG(WARNING) << "Viable friction limits and viable voltage limits do not "
-                    "overlap (x: "
-                 << x << ", v: " << v << ", backwards: " << backwards
-                 << ") best_accel = " << best_accel << ", min voltage "
-                 << min_voltage_accel << ", max voltage " << max_voltage_accel
-                 << " min friction " << min_friction_accel << " max friction "
-                 << max_friction_accel << ".";
+    VLOG(1) << "Viable friction limits and viable voltage limits do not "
+               "overlap (x: "
+            << x << ", v: " << v << ", backwards: " << backwards
+            << ") best_accel = " << best_accel << ", min voltage "
+            << min_voltage_accel << ", max voltage " << max_voltage_accel
+            << " min friction " << min_friction_accel << " max friction "
+            << max_friction_accel << ".";
 
     // Don't actually do anything--this will just result in attempting to drive
     // higher voltages thatn we have available. In practice, that'll probably
