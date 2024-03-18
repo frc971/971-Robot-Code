@@ -310,6 +310,12 @@
       "num_senders": 2
     },
     {
+      "name": "/imu/hardware_monitor",
+      "type": "frc971.orin.HardwareStats",
+      "source_node": "imu",
+      "frequency": 2
+    },
+    {
       "name": "/imu/constants",
       "type": "y2024.Constants",
       "source_node": "imu",
@@ -342,6 +348,13 @@
     {
       "name": "filesystem_monitor",
       "executable_name": "filesystem_monitor",
+      "nodes": [
+          "imu"
+      ]
+    },
+    {
+      "name": "hardware_monitor",
+      "executable_name": "hardware_monitor",
       "nodes": [
           "imu"
       ]
@@ -562,6 +575,15 @@
       },
       "rename": {
         "name": "/imu/camera"
+      }
+    },
+    {
+      "match": {
+        "name": "/hardware_monitor*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/hardware_monitor"
       }
     }
   ],

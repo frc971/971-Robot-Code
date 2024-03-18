@@ -242,6 +242,12 @@
       "max_size": 208
     },
     {
+      "name": "/orin1/hardware_monitor",
+      "type": "frc971.orin.HardwareStats",
+      "source_node": "orin1",
+      "frequency": 2
+    },
+    {
       "name": "/orin1/constants",
       "type": "y2024.Constants",
       "source_node": "orin1",
@@ -276,6 +282,13 @@
     {
       "name": "filesystem_monitor",
       "executable_name": "filesystem_monitor",
+      "nodes": [
+          "orin1"
+      ]
+    },
+    {
+      "name": "hardware_monitor",
+      "executable_name": "hardware_monitor",
       "nodes": [
           "orin1"
       ]
@@ -428,6 +441,15 @@
       },
       "rename": {
         "name": "/orin1/camera"
+      }
+    },
+    {
+      "match": {
+        "name": "/hardware_monitor*",
+        "source_node": "orin1"
+      },
+      "rename": {
+        "name": "/orin1/hardware_monitor"
       }
     }
   ],
