@@ -206,6 +206,12 @@ table LogFileHeader {
   oldest_remote_reliable_monotonic_timestamps:[int64] (id: 28);
   oldest_local_reliable_monotonic_timestamps:[int64] (id: 29);
 
+  // For all channels *excluding* the unreliable channels (ttl != 0), record the
+  // oldest time a reliable message was sent to the kernel to be transmitted over
+  // the network.
+  oldest_remote_reliable_monotonic_transmit_timestamps:[int64] (id: 35);
+  oldest_local_reliable_monotonic_transmit_timestamps:[int64] (id: 36);
+
   // For all the remote timestamps which come back to the logger.  The "local"
   // time here is the logger node boot, and "remote" is the node which sent the
   // timestamps.
@@ -257,6 +263,30 @@ table MessageHeader {
   // Time this timestamp was received on the monotonic clock of the logger node
   // in nanoseconds.
   monotonic_timestamp_time:int64 = -9223372036854775808 (id: 8);
+
+  // Time that this message was handed to the kernel to be published over the
+  // network on the remote node.
+  //
+  // monotonic_sent_time captures the time the message was pushed into queue.
+  // For reliable messages (ttl != 0) this may not be equal to the time it was
+  // published.
+  //
+  // For example:
+  // 1. Node A sends a reliable message RM1 to the queue at 10 seconds.
+  // 2. Node B reboots at 80 seconds and requests for all reliable messages.
+  // 3. The reliable message RM1 is sent to node B with a sent time of 10 seconds
+  //    even though time is past 80 seconds.
+  // 4. Using this as a valid timestamp point confuses the timestamp solver.
+  //
+  // i.e. monotonic_sent_time for reliable messages is not very useful to
+  // estimate network latency.
+  //
+  // Having more timestamp information such as transmit time can improve reliablity
+  // of the log reader (timestamp solver) especially when reliable messages are involved.
+  //
+  // This data also provides higher visibility into the path of a message across the
+  // network.
+  monotonic_remote_transmit_time:int64 = -9223372036854775808 (id: 9);
 }
 
 root_type MessageHeader;

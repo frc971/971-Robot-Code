@@ -395,7 +395,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 35u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 37u)
+      << ": If you added new fields to the LogFileHeader table, don't forget "
+         "to add it below!";
+  ;
+  // TODO(Mithun): Add  oldest_remote_reliable_monotonic_transmit_timestamps,
+  // and oldest_local_reliable_monotonic_transmit_timestamps to logfile header.
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
