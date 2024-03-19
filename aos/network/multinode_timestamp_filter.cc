@@ -2933,7 +2933,8 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
     }
 
     if (VLOG_IS_ON(1)) {
-      VLOG(1) << "Candidate solution for node " << node_a_index << " is";
+      VLOG(1) << "Candidate solution for node " << node_a_index
+              << " on solve number " << solver.my_solve_number() << " is";
       for (size_t i = 0; i < solution.size(); ++i) {
         VLOG(1) << "  " << solution[i];
       }
