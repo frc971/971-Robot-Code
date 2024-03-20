@@ -8,6 +8,6 @@
 namespace aos::util {
 
 void ConfigIsValid(const aos::Configuration *config,
-                   const ConfigValidatorConfig *validation_config);
+                   const ConfigValidatorConfig *validation_config_raw);
 }  // namespace aos::util
 #endif  // AOS_UTIL_CONFIG_VALIDATOR_H_

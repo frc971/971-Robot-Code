@@ -21,6 +21,10 @@
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
       "frequency": 15,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "pi2"
+      ],
       "max_size": 200,
       "destination_nodes": [
         {
@@ -37,6 +41,10 @@
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi2",
       "frequency": 15,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "pi1"
+      ],
       "max_size": 200,
       "destination_nodes": [
         {
@@ -109,14 +117,28 @@
       "max_size": 2048
     },
     {
+      "name": "/pi1/test/local",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/test/local",
+      "type": "aos.examples.Ping",
+      "source_node": "pi2"
+    },
+    {
       "name": "/test",
       "type": "aos.examples.Ping",
       "source_node": "pi1",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "pi2"
+      ],
       "destination_nodes": [
         {
           "name": "pi2",
           "priority": 1,
-          "timestamp_logger": "REMOTE_LOGGER",
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi1"]
         }
       ],
