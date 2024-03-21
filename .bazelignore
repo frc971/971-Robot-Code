@@ -1,7 +1,6 @@
 external
 node_modules
 scouting/www/node_modules
-scouting/www/counter_button/node_modules
 scouting/www/driver_ranking/node_modules
 scouting/www/entry/node_modules
 scouting/www/match_list/node_modules

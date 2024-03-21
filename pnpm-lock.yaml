@@ -101,8 +101,6 @@ importers:
 
   scouting/www: {}
 
-  scouting/www/counter_button: {}
-
   scouting/www/driver_ranking:
     dependencies:
       '@angular/forms':
@@ -114,9 +112,6 @@ importers:
       '@angular/forms':
         specifier: v16-lts
         version: 16.2.12(@angular/common@16.2.12)(@angular/core@16.2.12)(@angular/platform-browser@16.2.12)(rxjs@7.5.7)
-      '@org_frc971/scouting/www/counter_button':
-        specifier: workspace:*
-        version: link:../counter_button
       '@types/pako':
         specifier: 2.0.3
         version: 2.0.3
