@@ -1,4 +1,8 @@
 {
     "name": "@org_frc971/scouting/www/rpc",
-    "private": true
+    "private": true,
+    "dependencies": {
+        "@org_frc971/scouting/webserver/requests/messages": "workspace:*",
+        "dexie": "^3.2.5"
+    }
 }

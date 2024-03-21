@@ -1,4 +1,15 @@
 {
     "private": true,
-    "dependencies": {}
+    "dependencies": {
+        "@angular/animations": "v16-lts",
+        "@angular/service-worker": "v16-lts",
+        "@org_frc971/scouting/www/driver_ranking": "workspace:*",
+        "@org_frc971/scouting/www/entry": "workspace:*",
+        "@org_frc971/scouting/www/match_list": "workspace:*",
+        "@org_frc971/scouting/www/notes": "workspace:*",
+        "@org_frc971/scouting/www/pit_scouting": "workspace:*",
+        "@org_frc971/scouting/www/scan": "workspace:*",
+        "@org_frc971/scouting/www/shift_schedule": "workspace:*",
+        "@org_frc971/scouting/www/view": "workspace:*"
+    }
 }

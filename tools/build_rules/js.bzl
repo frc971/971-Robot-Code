@@ -1,4 +1,5 @@
 load("@aspect_rules_js//js:providers.bzl", "JsInfo")
+load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
@@ -276,11 +277,18 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], visibil
         srcs.append(":_public_api")
 
     ng_project(
-        name = name,
+        name = "_lib",
         srcs = srcs + [":_index"],
         deps = deps + PACKAGE_DEPS,
-        visibility = visibility,
+        visibility = ["//visibility:private"],
         **kwargs
+    )
+
+    npm_package(
+        name = name,
+        srcs = ["package.json", ":_lib"],
+        include_runfiles = False,
+        visibility = visibility,
     )
 
 def rollup_bundle(name, entry_point, node_modules = "//:node_modules", deps = [], visibility = None, **kwargs):

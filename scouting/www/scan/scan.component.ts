@@ -1,5 +1,5 @@
 import {Component, NgZone, OnInit, ViewChild, ElementRef} from '@angular/core';
-import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
+import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import * as pako from 'pako';
 

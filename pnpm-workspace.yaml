@@ -1,3 +1,4 @@
 packages:
+  - 'scouting/webserver/requests/messages'
   - 'scouting/www'
   - 'scouting/www/*'

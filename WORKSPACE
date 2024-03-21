@@ -912,6 +912,7 @@ npm_translate_lock(
     data = [
         "@//:package.json",
         "@//:pnpm-workspace.yaml",
+        "@//scouting/webserver/requests/messages:package.json",
         "@//scouting/www:package.json",
         "@//scouting/www/driver_ranking:package.json",
         "@//scouting/www/entry:package.json",

@@ -4,14 +4,14 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {ServiceWorkerModule} from '@angular/service-worker';
 
 import {App} from './app';
-import {EntryModule} from '../entry';
-import {MatchListModule} from '../match_list';
-import {NotesModule} from '../notes';
-import {ShiftScheduleModule} from '../shift_schedule';
-import {ViewModule} from '../view';
-import {DriverRankingModule} from '../driver_ranking';
-import {PitScoutingModule} from '../pit_scouting';
-import {ScanModule} from '../scan';
+import {EntryModule} from '@org_frc971/scouting/www/entry';
+import {MatchListModule} from '@org_frc971/scouting/www/match_list';
+import {NotesModule} from '@org_frc971/scouting/www/notes';
+import {ShiftScheduleModule} from '@org_frc971/scouting/www/shift_schedule';
+import {ViewModule} from '@org_frc971/scouting/www/view';
+import {DriverRankingModule} from '@org_frc971/scouting/www/driver_ranking';
+import {PitScoutingModule} from '@org_frc971/scouting/www/pit_scouting';
+import {ScanModule} from '@org_frc971/scouting/www/scan';
 
 @NgModule({
   declarations: [App],

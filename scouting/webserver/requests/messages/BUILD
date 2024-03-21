@@ -1,3 +1,4 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
@@ -60,3 +61,14 @@ filegroup(
         visibility = ["//visibility:public"],
     ),
 ) for name in FILE_NAMES]
+
+npm_package(
+    name = "messages",
+    srcs = [
+        ":package.json",
+    ] + [
+        ":{}_ts_fbs_ts".format(lib)
+        for lib in FILE_NAMES
+    ],
+    visibility = ["//visibility:public"],
+)

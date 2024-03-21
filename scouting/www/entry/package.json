@@ -2,8 +2,12 @@
     "name": "@org_frc971/scouting/www/entry",
     "private": true,
     "dependencies": {
+        "angularx-qrcode": "^16.0.2",
         "pako": "2.1.0",
+        "@angular/forms": "v16-lts",
+        "@angular/platform-browser": "v16-lts",
         "@types/pako": "2.0.3",
-        "@angular/forms": "v16-lts"
+        "@org_frc971/scouting/webserver/requests/messages": "workspace:*",
+        "@org_frc971/scouting/www/rpc": "workspace:*"
     }
 }

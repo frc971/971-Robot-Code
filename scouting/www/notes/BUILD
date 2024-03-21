@@ -9,12 +9,7 @@ ng_pkg(
         "//scouting/www:app_common_css",
     ],
     deps = [
-        ":node_modules/@angular/forms",
-        "//scouting/webserver/requests/messages:error_response_ts_fbs",
-        "//scouting/webserver/requests/messages:request_notes_for_team_response_ts_fbs",
-        "//scouting/webserver/requests/messages:request_notes_for_team_ts_fbs",
-        "//scouting/webserver/requests/messages:submit_notes_response_ts_fbs",
-        "//scouting/webserver/requests/messages:submit_notes_ts_fbs",
-        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
+        ":node_modules",
+        "//:node_modules/flatbuffers",
     ],
 )

@@ -34,5 +34,14 @@
     "typescript": "5.1.6",
     "terser": "5.16.4",
     "zone.js": "^0.13.0"
+  },
+  "pnpm": {
+    "packageExtensions": {
+      "angularx-qrcode": {
+        "peerDependencies": {
+          "@angular/platform-browser": "*"
+        }
+      }
+    }
   }
 }

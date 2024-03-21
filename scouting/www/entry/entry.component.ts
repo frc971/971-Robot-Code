@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
+import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {
   StartMatchAction,
   ScoreType,
@@ -23,9 +23,9 @@ import {
   EndMatchAction,
   ActionType,
   Action,
-} from '../../webserver/requests/messages/submit_2024_actions_generated';
-import {Match} from '../../webserver/requests/messages/request_all_matches_response_generated';
-import {MatchListRequestor} from '../rpc';
+} from '@org_frc971/scouting/webserver/requests/messages/submit_2024_actions_generated';
+import {Match} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
+import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 import * as pako from 'pako';
 
 type Section =
