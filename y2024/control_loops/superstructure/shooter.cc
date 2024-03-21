@@ -181,18 +181,15 @@ Shooter::Iterate(
   const bool disabled = turret_.Correct(turret_goal, position->turret(),
                                         turret_output == nullptr);
 
+  // Zero out extend goal and position if "disable_extend" is true
   collision_avoidance->UpdateGoal(
       {.intake_pivot_position = intake_pivot_position,
        .turret_position = turret_.estimated_position(),
-       .extend_position = extend_position},
-      turret_goal->unsafe_goal(), extend_goal);
-
-  if (!CatapultRetracted()) {
-    altitude_.set_min_position(
-        robot_constants_->common()->min_altitude_shooting_angle());
-  } else {
-    altitude_.clear_min_position();
-  }
+       .extend_position =
+           ((!robot_constants_->common()->disable_extend()) ? extend_position
+                                                            : 0.0)},
+      turret_goal->unsafe_goal(),
+      ((!robot_constants_->common()->disable_extend()) ? extend_goal : 0.0));
 
   if (!CatapultRetracted()) {
     altitude_.set_min_position(

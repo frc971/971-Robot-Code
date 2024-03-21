@@ -492,10 +492,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         7, true, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
-    std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
-        12, false, "Drivetrain Bus", &canivore_signal_registry,
-        current_limits->extend_stator_current_limit(),
-        current_limits->extend_supply_current_limit());
+    std::shared_ptr<TalonFX> extend =
+        (robot_constants->common()->disable_extend())
+            ? nullptr
+            : std::make_shared<TalonFX>(
+                  12, false, "Drivetrain Bus", &canivore_signal_registry,
+                  current_limits->extend_stator_current_limit(),
+                  current_limits->extend_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
         8, false, "rio", &rio_signal_registry,
         current_limits->intake_roller_stator_current_limit(),
@@ -549,7 +552,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     for (auto talonfx :
          {intake_pivot, turret, altitude, catapult_one, catapult_two, extend}) {
-      canivore_talonfxs.push_back(talonfx);
+      if (talonfx != nullptr) {
+        canivore_talonfxs.push_back(talonfx);
+      }
     }
 
     for (auto talonfx : {intake_roller, transfer_roller, climber, extend_roller,
@@ -612,8 +617,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           catapult_two->SerializePosition(
               superstructure_can_builder->add_catapult_two(),
               control_loops::superstructure::catapult::kOutputRatio);
-          extend->SerializePosition(superstructure_can_builder->add_extend(),
-                                    superstructure::extend::kOutputRatio);
+          if (extend != nullptr) {
+            extend->SerializePosition(superstructure_can_builder->add_extend(),
+                                      superstructure::extend::kOutputRatio);
+          }
 
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
@@ -682,8 +689,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   output.turret_voltage());
               talonfx_map.find("climber")->second->WriteVoltage(
                   output.climber_voltage());
-              talonfx_map.find("extend")->second->WriteVoltage(
-                  output.extend_voltage());
+              if (talonfx_map.find("extend") != talonfx_map.end()) {
+                talonfx_map.find("extend")->second->WriteVoltage(
+                    output.extend_voltage());
+              }
               talonfx_map.find("intake_roller")
                   ->second->WriteVoltage(output.intake_roller_voltage());
               talonfx_map.find("transfer_roller")
@@ -705,7 +714,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("catapult_two", catapult_two);
     can_superstructure_writer.add_talonfx("turret", turret);
     can_superstructure_writer.add_talonfx("climber", climber);
-    can_superstructure_writer.add_talonfx("extend", extend);
+    if (!robot_constants->common()->disable_extend()) {
+      can_superstructure_writer.add_talonfx("extend", extend);
+    }
     can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
     can_superstructure_writer.add_talonfx("transfer_roller", transfer_roller);
     can_superstructure_writer.add_talonfx("extend_roller", extend_roller);
