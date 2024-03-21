@@ -162,7 +162,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // considered ready to accept note from the transfer rollers. If disable
   // extend is triggered, this will autoatically be false.
   const bool extend_at_retracted =
-      (!robot_constants_->common()->disable_extend() &&
+      (!robot_constants_->robot()->disable_extend() &&
        PositionNear(extend_.position(), extend_set_points->retracted(),
                     kExtendThreshold));
 
@@ -532,7 +532,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const bool collided = collision_avoidance_.IsCollided({
       .intake_pivot_position = intake_pivot_.estimated_position(),
       .turret_position = shooter_.turret().estimated_position(),
-      .extend_position = ((!robot_constants_->common()->disable_extend())
+      .extend_position = ((!robot_constants_->robot()->disable_extend())
                               ? extend_.estimated_position()
                               : 0.0),
   });
@@ -642,8 +642,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           status->fbb());
 
   // Zero out extend voltage if "disable_extend" is true
-  if (robot_constants_->common()->disable_extend()) {
+  if (robot_constants_->robot()->disable_extend()) {
     output_struct.extend_voltage = 0.0;
+  }
+
+  // Zero out climber voltage if "disable_climber" is true
+  if (robot_constants_->robot()->disable_climber()) {
+    output_struct.climber_voltage = 0.0;
   }
 
   if (output) {

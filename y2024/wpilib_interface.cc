@@ -493,7 +493,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
     std::shared_ptr<TalonFX> extend =
-        (robot_constants->common()->disable_extend())
+        (robot_constants->robot()->disable_extend())
             ? nullptr
             : std::make_shared<TalonFX>(
                   12, false, "Drivetrain Bus", &canivore_signal_registry,
@@ -714,7 +714,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("catapult_two", catapult_two);
     can_superstructure_writer.add_talonfx("turret", turret);
     can_superstructure_writer.add_talonfx("climber", climber);
-    if (!robot_constants->common()->disable_extend()) {
+    if (!robot_constants->robot()->disable_extend()) {
       can_superstructure_writer.add_talonfx("extend", extend);
     }
     can_superstructure_writer.add_talonfx("intake_roller", intake_roller);

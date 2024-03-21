@@ -132,6 +132,8 @@ table RobotConstants {
   altitude_constants:PotAndAbsEncoderConstants (id: 3);
   turret_constants:PotAndAbsEncoderConstants (id: 4);
   extend_constants:PotAndAbsEncoderConstants (id: 5);
+  disable_extend:bool (id: 6);
+  disable_climber:bool (id: 7);
 }
 
 table ShooterSetPoint {
@@ -197,7 +199,6 @@ table Common {
   altitude_avoid_extend_collision_position: double (id: 28);
   autonomous_mode:AutonomousMode (id: 26);
   ignore_targets:IgnoreTargets (id: 27);
-  disable_extend:bool (id: 29);
 }
 
 table Constants {
