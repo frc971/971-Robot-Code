@@ -120,7 +120,7 @@
       "type": "frc971.vision.CameraImage",
       "source_node": "orin1",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 4752384,
       "num_readers": 6,
       "read_method": "PIN",
@@ -131,7 +131,7 @@
       "type": "frc971.vision.CameraImage",
       "source_node": "orin1",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 4752384,
       "num_readers": 6,
       "read_method": "PIN",
@@ -143,7 +143,7 @@
       "source_node": "orin1",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 622384
     },
     {
@@ -152,42 +152,42 @@
       "source_node": "orin1",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 622384
     },
     {
       "name": "/orin1/camera0",
       "type": "foxglove.ImageAnnotations",
       "source_node": "orin1",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/orin1/camera1",
       "type": "foxglove.ImageAnnotations",
       "source_node": "orin1",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/orin1/camera0",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/orin1/camera1",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/orin1/camera0",
       "type": "frc971.vision.TargetMap",
       "source_node": "orin1",
-      "frequency": 65,
+      "frequency": 70,
       "num_senders": 2,
       "max_size": 1024,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -210,7 +210,7 @@
       "name": "/orin1/camera1",
       "type": "frc971.vision.TargetMap",
       "source_node": "orin1",
-      "frequency": 65,
+      "frequency": 70,
       "num_senders": 2,
       "max_size": 1024,
       "logger": "LOCAL_AND_REMOTE_LOGGER",

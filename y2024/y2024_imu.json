@@ -181,7 +181,7 @@
       "type": "frc971.vision.CameraImage",
       "source_node": "imu",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 4752384,
       "num_readers": 6,
       "read_method": "PIN",
@@ -192,7 +192,7 @@
       "type": "frc971.vision.CameraImage",
       "source_node": "imu",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 4752384,
       "num_readers": 6,
       "read_method": "PIN",
@@ -204,7 +204,7 @@
       "source_node": "imu",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 622384
     },
     {
@@ -213,42 +213,42 @@
       "source_node": "imu",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 622384
     },
     {
       "name": "/imu/camera0",
       "type": "foxglove.ImageAnnotations",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/imu/camera1",
       "type": "foxglove.ImageAnnotations",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/imu/camera0",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/imu/camera1",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "max_size": 50000
     },
     {
       "name": "/imu/camera0",
       "type": "frc971.vision.TargetMap",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "num_senders": 2,
       "max_size": 1024
     },
@@ -256,7 +256,7 @@
       "name": "/imu/camera1",
       "type": "frc971.vision.TargetMap",
       "source_node": "imu",
-      "frequency": 65,
+      "frequency": 70,
       "num_senders": 2,
       "max_size": 1024
     },
