@@ -79,6 +79,44 @@ INSTANTIATE_TEST_SUITE_P(
                          ForceTimestampBuffering::kAutoBuffer}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
+// Class to spam Pong messages blindly.
+class PongSender {
+ public:
+  PongSender(EventLoop *loop, std::string_view channel_name)
+      : sender_(loop->MakeSender<examples::Pong>(channel_name)) {
+    loop->AddPhasedLoop(
+        [this](int) {
+          aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
+          examples::Pong::Builder pong_builder =
+              builder.MakeBuilder<examples::Pong>();
+          CHECK_EQ(builder.Send(pong_builder.Finish()), RawSender::Error::kOk);
+        },
+        chrono::milliseconds(10));
+  }
+
+ private:
+  aos::Sender<examples::Pong> sender_;
+};
+
+// Class to spam Ping messages blindly.
+class PingSender {
+ public:
+  PingSender(EventLoop *loop, std::string_view channel_name)
+      : sender_(loop->MakeSender<examples::Ping>(channel_name)) {
+    loop->AddPhasedLoop(
+        [this](int) {
+          aos::Sender<examples::Ping>::Builder builder = sender_.MakeBuilder();
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          CHECK_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
+        },
+        chrono::milliseconds(10));
+  }
+
+ private:
+  aos::Sender<examples::Ping> sender_;
+};
+
 // Tests that we can write and read simple multi-node log files.
 TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
   if (file_strategy() == FileStrategy::kCombine) {
@@ -4686,24 +4724,71 @@ TEST(MultinodeLoggerLoopTest, StartDisconnected) {
   auto result = ConfirmReadable(filenames);
 }
 
-// Class to spam Pong messages blindly.
-class PongSender {
- public:
-  PongSender(EventLoop *loop, std::string_view channel_name)
-      : sender_(loop->MakeSender<examples::Pong>(channel_name)) {
-    loop->AddPhasedLoop(
-        [this](int) {
-          aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
-          examples::Pong::Builder pong_builder =
-              builder.MakeBuilder<examples::Pong>();
-          CHECK_EQ(builder.Send(pong_builder.Finish()), RawSender::Error::kOk);
-        },
-        chrono::milliseconds(10));
+// Tests that only having a delayed, reliable message from a boot results in a
+// readable log.
+//
+// Note: this is disabled since it doesn't work yet.  Un-disable this when the
+// code is fixed!
+TEST(MultinodeLoggerLoopTest, DISABLED_ReliableOnlyTimestamps) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/logging/"
+                       "multinode_pingpong_reboot_reliable_only_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  constexpr chrono::nanoseconds kRebootTime = chrono::seconds(100);
+  {
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + kRebootTime,
+        {BootTimestamp::epoch() + kRebootTime,
+         BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()}});
   }
 
- private:
-  aos::Sender<examples::Pong> sender_;
-};
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+
+  // We want unreliable timestamps from one boot, a reliable timestamp from the
+  // same boot, and then a long delayed reliable timestamp from the second boot.
+  // This produces conflicting information about when the second boot happened.
+  std::vector<std::string> filenames;
+  PingSender *app1 = pi1->AlwaysStart<PingSender>("pingsender", "/atest1");
+  PingSender *app2 = pi1->AlwaysStart<PingSender>("pingsender", "/atest2");
+  event_loop_factory.RunFor(chrono::seconds(1));
+  pi1->Stop(app2);
+  event_loop_factory.RunFor(kRebootTime - chrono::seconds(2));
+  pi1->Stop(app1);
+
+  event_loop_factory.RunFor(chrono::seconds(1) + kRebootTime * 2);
+
+  {
+    // Collect a small log after reboot.
+    LoggerState pi1_logger = MakeLoggerState(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
+    pi1_logger.StartLogger(kLogfile1_1);
+
+    event_loop_factory.RunFor(chrono::seconds(1));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Make sure we can read this.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  auto result = ConfirmReadable(filenames);
+}
 
 // Tests that we log correctly as nodes connect slowly.
 TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
