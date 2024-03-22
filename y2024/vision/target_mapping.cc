@@ -32,7 +32,7 @@ DEFINE_string(dump_constraints_to, "/tmp/mapping_constraints.txt",
               "Write the target constraints to this path");
 DEFINE_string(dump_stats_to, "/tmp/mapping_stats.txt",
               "Write the mapping stats to this path");
-DEFINE_string(field_name, "charged_up",
+DEFINE_string(field_name, "crescendo",
               "Field name, for the output json filename and flatbuffer field");
 DEFINE_string(json_path, "y2024/vision/maps/target_map.json",
               "Specify path for json with initial pose guesses.");
@@ -52,6 +52,8 @@ DEFINE_string(orin, "orin1",
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
+DEFINE_bool(split_field, false,
+            "Whether to break solve into two sides of field");
 DEFINE_int32(team_number, 0,
              "Required: Use the calibration for a node with this team number");
 DEFINE_uint64(wait_key, 1,
@@ -89,6 +91,9 @@ class TargetMapperReplay {
   // Contains fixed target poses without solving, for use with visualization
   static const TargetMapper kFixedTargetMapper;
 
+  // Map of TargetId to alliance "color" for splitting field
+  static std::map<uint, std::string> kIdAllianceMap;
+
   // Change reference frame from camera to robot
   static Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
                                                 Eigen::Affine3d extrinsics);
@@ -110,8 +115,8 @@ class TargetMapperReplay {
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections_;
 
   VisualizeRobot vis_robot_;
-  // Set of node names which are currently drawn on the display
-  std::set<std::string> drawn_nodes_;
+  // Set of camera names which are currently drawn on the display
+  std::set<std::string> drawn_cameras_;
   // Number of frames displayed
   size_t display_count_;
   // Last time we drew onto the display image.
@@ -124,6 +129,9 @@ class TargetMapperReplay {
   // used to determine if we need to pause for the user to see this frame
   // clearly
   double max_delta_T_world_robot_;
+  double ignore_count_;
+
+  std::map<std::string, int> camera_numbering_map_;
 
   std::vector<std::unique_ptr<aos::EventLoop>> mapping_event_loops_;
 
@@ -137,6 +145,12 @@ const auto TargetMapperReplay::kOrinColors = std::map<std::string, cv::Scalar>{
     {"/imu/camera0", cv::Scalar(0, 255, 255)},
     {"/imu/camera1", cv::Scalar(255, 165, 0)},
 };
+
+std::map<uint, std::string> TargetMapperReplay::kIdAllianceMap = {
+    {1, "red"},  {2, "red"},   {3, "red"},   {4, "red"},
+    {5, "red"},  {6, "blue"},  {7, "blue"},  {8, "blue"},
+    {9, "blue"}, {10, "blue"}, {11, "red"},  {12, "red"},
+    {13, "red"}, {14, "blue"}, {15, "blue"}, {16, "blue"}};
 
 const auto TargetMapperReplay::kFixedTargetMapper =
     TargetMapper(FLAGS_json_path, ceres::examples::VectorOfConstraints{});
@@ -152,13 +166,17 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     : reader_(reader),
       timestamped_target_detections_(),
       vis_robot_(cv::Size(1280, 1000)),
-      drawn_nodes_(),
+      drawn_cameras_(),
       display_count_(0),
       last_draw_time_(aos::distributed_clock::min_time),
       last_H_world_robot_(Eigen::Matrix4d::Identity()),
       max_delta_T_world_robot_(0.0) {
   reader_->RemapLoggedChannel("/orin1/constants", "y2024.Constants");
   reader_->RemapLoggedChannel("/imu/constants", "y2024.Constants");
+  // If it's Box of Orins, don't remap roborio constants
+  if (FLAGS_team_number == 7971) {
+    reader_->RemapLoggedChannel("/roborio/constants", "y2024.Constants");
+  }
   reader_->Register();
 
   SendSimulationConstants(reader_->event_loop_factory(), FLAGS_team_number,
@@ -168,6 +186,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
   node_list.push_back("imu");
   node_list.push_back("orin1");
 
+  int camera_count = 0;
   for (std::string node : node_list) {
     const aos::Node *pi =
         aos::configuration::GetNode(reader->configuration(), node);
@@ -186,6 +205,10 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     HandleNodeCaptures(
         mapping_event_loops_[mapping_event_loops_.size() - 1].get(),
         &constants_fetcher, 1);
+    std::string camera0_name = "/" + node + "/camera0";
+    camera_numbering_map_[camera0_name] = camera_count++;
+    std::string camera1_name = "/" + node + "/camera1";
+    camera_numbering_map_[camera1_name] = camera_count++;
   }
 
   if (FLAGS_visualize_solver) {
@@ -204,6 +227,11 @@ void TargetMapperReplay::HandleAprilTags(
   bool drew = false;
   std::stringstream label;
   label << camera_name << " - ";
+
+  if (map.target_poses()->size() == 0) {
+    VLOG(2) << "Got 0 AprilTags for camera " << camera_name;
+    return;
+  }
 
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with invalid ids
@@ -242,13 +270,18 @@ void TargetMapperReplay::HandleAprilTags(
     double distance_from_camera = target_pose_camera.p.norm();
     double distortion_factor = target_pose_fbs->distortion_factor();
 
-    if (distance_from_camera > 5.0) {
+    double distance_threshold = 5.0;
+    if (distance_from_camera > distance_threshold) {
+      ignore_count_++;
+      LOG(INFO) << "Ignored " << ignore_count_ << " AprilTags with distance "
+                << distance_from_camera << " > " << distance_threshold;
       continue;
     }
 
     CHECK(map.has_monotonic_timestamp_ns())
         << "Need detection timestamps for mapping";
 
+    // Detection is usable, so store it
     timestamped_target_detections_.emplace_back(
         DataAdapter::TimestampedDetection{
             .time = node_distributed_time,
@@ -260,7 +293,7 @@ void TargetMapperReplay::HandleAprilTags(
     if (FLAGS_visualize_solver) {
       // If we've already drawn this camera_name in the current image,
       // display the image before clearing and adding the new poses
-      if (drawn_nodes_.count(camera_name) != 0) {
+      if (drawn_cameras_.count(camera_name) != 0) {
         display_count_++;
         cv::putText(vis_robot_.image_,
                     "Poses #" + std::to_string(display_count_),
@@ -268,7 +301,7 @@ void TargetMapperReplay::HandleAprilTags(
                     cv::Scalar(255, 255, 255));
 
         if (display_count_ >= FLAGS_skip_to) {
-          VLOG(1) << "Showing image for node " << camera_name
+          VLOG(1) << "Showing image for camera " << camera_name
                   << " since we've drawn it already";
           cv::imshow("View", vis_robot_.image_);
           // Pause if delta_T is too large, but only after first image (to make
@@ -284,10 +317,10 @@ void TargetMapperReplay::HandleAprilTags(
           }
           max_delta_T_world_robot_ = 0.0;
         } else {
-          VLOG(1) << "At poses #" << std::to_string(display_count_);
+          VLOG(2) << "At poses #" << std::to_string(display_count_);
         }
         vis_robot_.ClearImage();
-        drawn_nodes_.clear();
+        drawn_cameras_.clear();
       }
 
       Eigen::Affine3d H_world_target = PoseUtils::Pose3dToAffine3d(
@@ -316,7 +349,7 @@ void TargetMapperReplay::HandleAprilTags(
       max_delta_T_world_robot_ =
           std::max(delta_T_world_robot, max_delta_T_world_robot_);
 
-      VLOG(1) << "Drew in info for robot " << camera_name << " and target #"
+      VLOG(1) << "Drew in info for camera " << camera_name << " and target #"
               << target_pose_fbs->id();
       drew = true;
       last_draw_time_ = node_distributed_time;
@@ -325,26 +358,30 @@ void TargetMapperReplay::HandleAprilTags(
   }
   if (FLAGS_visualize_solver) {
     if (drew) {
-      // Collect all the labels from a given node, and add the text
-      size_t pi_number =
-          static_cast<size_t>(camera_name[camera_name.size() - 1] - '0');
+      // Collect all the labels from a given camera, and add the text
+      // TODO: Need to fix this one
+      int position_number = camera_numbering_map_[camera_name];
       cv::putText(vis_robot_.image_, label.str(),
-                  cv::Point(10, 10 + 20 * pi_number), cv::FONT_HERSHEY_PLAIN,
-                  1.0, kOrinColors.at(camera_name));
+                  cv::Point(10, 10 + 20 * position_number),
+                  cv::FONT_HERSHEY_PLAIN, 1.0, kOrinColors.at(camera_name));
 
-      drawn_nodes_.emplace(camera_name);
+      drawn_cameras_.emplace(camera_name);
     } else if (node_distributed_time - last_draw_time_ >
                    std::chrono::milliseconds(30) &&
-               display_count_ >= FLAGS_skip_to) {
-      cv::putText(vis_robot_.image_, "No detections", cv::Point(10, 0),
-                  cv::FONT_HERSHEY_PLAIN, 1.0, kOrinColors.at(camera_name));
+               display_count_ >= FLAGS_skip_to && drew) {
+      // TODO: Check on 30ms value-- does this make sense?
+      double delta_t = (node_distributed_time - last_draw_time_).count() / 1e6;
+      VLOG(1) << "Last result was " << delta_t << "ms ago";
+      cv::putText(vis_robot_.image_, "No detections in last 30ms",
+                  cv::Point(10, 0), cv::FONT_HERSHEY_PLAIN, 1.0,
+                  kOrinColors.at(camera_name));
       // Display and clear the image if we haven't draw in a while
       VLOG(1) << "Displaying image due to time lapse";
       cv::imshow("View", vis_robot_.image_);
       cv::waitKey(FLAGS_wait_key);
       vis_robot_.ClearImage();
       max_delta_T_world_robot_ = 0.0;
-      drawn_nodes_.clear();
+      drawn_cameras_.clear();
     }
   }
 }
@@ -383,21 +420,20 @@ void TargetMapperReplay::MaybeSolve() {
     auto target_constraints =
         DataAdapter::MatchTargetDetections(timestamped_target_detections_);
 
-    // Remove constraints between the two sides of the field - these are
-    // basically garbage because of how far the camera is. We will use seeding
-    // below to connect the two sides
-    target_constraints.erase(
-        std::remove_if(target_constraints.begin(), target_constraints.end(),
-                       [](const auto &constraint) {
-                         // TODO(james): This no longer makes sense.
-                         constexpr TargetMapper::TargetId kMaxRedId = 4;
-                         TargetMapper::TargetId min_id =
-                             std::min(constraint.id_begin, constraint.id_end);
-                         TargetMapper::TargetId max_id =
-                             std::max(constraint.id_begin, constraint.id_end);
-                         return (min_id <= kMaxRedId && max_id > kMaxRedId);
-                       }),
-        target_constraints.end());
+    if (FLAGS_split_field) {
+      // Remove constraints between the two sides of the field - these are
+      // basically garbage because of how far the camera is. We will use seeding
+      // below to connect the two sides
+      target_constraints.erase(
+          std::remove_if(
+              target_constraints.begin(), target_constraints.end(),
+              [](const auto &constraint) {
+                return (
+                    kIdAllianceMap[static_cast<uint>(constraint.id_begin)] !=
+                    kIdAllianceMap[static_cast<uint>(constraint.id_end)]);
+              }),
+          target_constraints.end());
+    }
 
     LOG(INFO) << "Solving for locations of tags with "
               << target_constraints.size() << " constraints";
