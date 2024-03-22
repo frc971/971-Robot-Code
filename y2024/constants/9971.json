@@ -8,8 +8,17 @@
 {
   "cameras": [
     {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-971-1_cam-24-00.json' %}
-    }
+      "calibration": {% include 'y2024/constants/calib_files/calibration_imu-9971-1-0_cam-24-10_2024-02-24_16-44-05.975708672.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/calib_files/calibration_imu-9971-1-1_cam-24-12_2024-02-24_19-52-39.488095264.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-9971-1-0_cam-24-09_2024-02-24_16-10-16.872521280.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-9971-1-1_cam-24-11_2024-02-24_16-44-06.986729504.json' %}
+    },
   ],
   "robot": {
     {% set _ = intake_pivot_zero.update(

@@ -142,8 +142,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   };
   void Start() override {
     AddToDMA(&imu_yaw_rate_reader_);
-    AddToDMA(&turret_encoder_.reader());
-    AddToDMA(&altitude_encoder_.reader());
+    if (aos::network::GetTeamNumber() != 9971) {
+      AddToDMA(&turret_encoder_.reader());
+      AddToDMA(&altitude_encoder_.reader());
+    }
   }
 
   // Auto mode switches.
@@ -157,7 +159,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void RunIteration() override {
-    {
+    if (aos::network::GetTeamNumber() != 9971) {
       aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
           superstructure_position_sender_.MakeStaticBuilder();
 
@@ -399,6 +401,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     frc971::constants::WaitForConstants<y2024::Constants>(&config.message());
 
+    const int team_number = aos::network::GetTeamNumber();
+
     ::aos::ShmEventLoop constant_fetcher_event_loop(&config.message());
     frc971::constants::ConstantsFetcher<Constants> constants_fetcher(
         &constant_fetcher_event_loop);
@@ -426,28 +430,125 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_right_encoder(
         std::make_unique<frc::Encoder>(6, 7));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
-    sensor_reader.set_intake_pivot(make_encoder(3),
-                                   make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
-    sensor_reader.set_extend_beambreak(make_unique<frc::DigitalInput>(24));
-    sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(22));
 
-    sensor_reader.set_climber(make_encoder(4),
-                              make_unique<frc::DigitalInput>(4),
-                              make_unique<frc::AnalogInput>(4));
-    sensor_reader.set_extend(make_encoder(5), make_unique<frc::DigitalInput>(5),
-                             make_unique<frc::AnalogInput>(5));
-    sensor_reader.set_catapult(make_encoder(0),
-                               make_unique<frc::DigitalInput>(0),
-                               make_unique<frc::AnalogInput>(0));
-    sensor_reader.set_turret(make_encoder(2), make_unique<frc::DigitalInput>(2),
-                             make_unique<frc::AnalogInput>(2));
-    sensor_reader.set_altitude(make_encoder(1),
-                               make_unique<frc::DigitalInput>(1),
-                               make_unique<frc::AnalogInput>(1));
+    if (team_number != 9971) {
+      sensor_reader.set_intake_pivot(make_encoder(3),
+                                     make_unique<frc::DigitalInput>(3));
+      sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
+      sensor_reader.set_extend_beambreak(make_unique<frc::DigitalInput>(24));
+      sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(22));
+
+      sensor_reader.set_climber(make_encoder(4),
+                                make_unique<frc::DigitalInput>(4),
+                                make_unique<frc::AnalogInput>(4));
+      sensor_reader.set_extend(make_encoder(5),
+                               make_unique<frc::DigitalInput>(5),
+                               make_unique<frc::AnalogInput>(5));
+      sensor_reader.set_catapult(make_encoder(0),
+                                 make_unique<frc::DigitalInput>(0),
+                                 make_unique<frc::AnalogInput>(0));
+      sensor_reader.set_turret(make_encoder(2),
+                               make_unique<frc::DigitalInput>(2),
+                               make_unique<frc::AnalogInput>(2));
+      sensor_reader.set_altitude(make_encoder(1),
+                                 make_unique<frc::DigitalInput>(1),
+                                 make_unique<frc::AnalogInput>(1));
+    }
 
     AddLoop(&sensor_reader_event_loop);
 
+    if (team_number == 9971) {
+      std::vector<ctre::phoenix6::BaseStatusSignal *> signal_registry;
+
+      if (!FLAGS_ctre_diag_server) {
+        c_Phoenix_Diagnostics_SetSecondsToStart(-1);
+        c_Phoenix_Diagnostics_Dispose();
+      }
+
+      const CurrentLimits *current_limits =
+          robot_constants->common()->current_limits();
+
+      std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
+          2, true, "Drivetrain Bus", &signal_registry,
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->drivetrain_stator_current_limit());
+      std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
+          1, true, "Drivetrain Bus", &signal_registry,
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->drivetrain_stator_current_limit());
+      std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
+          4, false, "Drivetrain Bus", &signal_registry,
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->drivetrain_stator_current_limit());
+      std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
+          5, false, "Drivetrain Bus", &signal_registry,
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->drivetrain_stator_current_limit());
+
+      ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
+          constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
+      ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
+          constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
+
+      ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+      can_sensor_reader_event_loop.set_name("CANSensorReader");
+
+      std::vector<std::shared_ptr<TalonFX>> drivetrain_krakens;
+
+      for (auto talonfx : {right_front, right_back, left_front, left_back}) {
+        drivetrain_krakens.push_back(talonfx);
+      }
+
+      aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>
+          drivetrain_can_position_sender =
+              can_sensor_reader_event_loop.MakeSender<
+                  frc971::control_loops::drivetrain::CANPositionStatic>(
+                  "/drivetrain");
+
+      frc971::wpilib::CANSensorReader can_sensor_reader(
+          &can_sensor_reader_event_loop, std::move(signal_registry),
+          drivetrain_krakens,
+          [drivetrain_krakens,
+           &drivetrain_can_position_sender](ctre::phoenix::StatusCode status) {
+            aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
+                StaticBuilder drivetrain_can_builder =
+                    drivetrain_can_position_sender.MakeStaticBuilder();
+
+            auto drivetrain_falcon_vector =
+                CHECK_NOTNULL(drivetrain_can_builder->add_talonfxs());
+
+            for (auto talonfx : drivetrain_krakens) {
+              talonfx->SerializePosition(
+                  drivetrain_falcon_vector->emplace_back(),
+                  control_loops::drivetrain::kHighOutputRatio);
+            }
+
+            drivetrain_can_builder->set_status(static_cast<int>(status));
+
+            drivetrain_can_builder.CheckOk(drivetrain_can_builder.Send());
+          });
+
+      AddLoop(&can_sensor_reader_event_loop);
+
+      ::aos::ShmEventLoop can_output_event_loop(&config.message());
+      can_output_event_loop.set_name("CANOutputWriter");
+
+      frc971::wpilib::CANDrivetrainWriter can_drivetrain_writer(
+          &can_output_event_loop);
+
+      can_drivetrain_writer.set_talonfxs({right_front, right_back},
+                                         {left_front, left_back});
+      can_output_event_loop.MakeWatcher(
+          "/roborio", [&can_drivetrain_writer](
+                          const frc971::CANConfiguration &configuration) {
+            can_drivetrain_writer.HandleCANConfiguration(configuration);
+          });
+
+      AddLoop(&can_output_event_loop);
+
+      RunLoops();
+      return;
+    }
     // Thread 4.
     // Set up CAN.
     if (!FLAGS_ctre_diag_server) {
