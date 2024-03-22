@@ -95,6 +95,8 @@ func main() {
 		"If specified, parse the file as a requestAllDriverRankings JSON request.")
 	requestAllNotesPtr := flag.String("requestAllNotes", "",
 		"If specified, parse the file as a requestAllNotes JSON request.")
+	requestCurrentScoutingPtr := flag.String("requestCurrentScouting", "",
+		"If specified, parse the file as a requestCurrentScouting JSON request.")
 	flag.Parse()
 
 	spew.Config.Indent = *indentPtr
@@ -144,4 +146,11 @@ func main() {
 		*requestAllNotesPtr,
 		*addressPtr,
 		debug.RequestAllNotes)
+
+	maybePerformRequest(
+		"requestCurrentScouting",
+		"scouting/webserver/requests/messages/request_current_scouting.fbs",
+		*requestCurrentScoutingPtr,
+		*addressPtr,
+		debug.RequestCurrentScouting)
 }

@@ -39,6 +39,8 @@ import {
   MatchListRequestor,
   ActionsSubmitter,
 } from '@org_frc971/scouting/www/rpc';
+import {RequestCurrentScouting} from '@org_frc971/scouting/webserver/requests/messages/request_current_scouting_generated';
+import {RequestCurrentScoutingResponse} from '@org_frc971/scouting/webserver/requests/messages/request_current_scouting_response_generated';
 import {ActionHelper, ConcreteAction} from './action_helper';
 import * as pako from 'pako';
 
@@ -136,6 +138,8 @@ export class EntryComponent implements OnInit {
   penalties: number = 0;
 
   teamSelectionIsValid = false;
+  searchForDuplicateScouting: boolean = false;
+  duplicateSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // When the user chooses to generate QR codes, we convert the flatbuffer into
   // a long string. Since we frequently have more data than we can display in a
@@ -165,8 +169,13 @@ export class EntryComponent implements OnInit {
     this.fetchMatchList();
   }
 
+  ngOnDestroy() {
+    clearInterval(this.duplicateSearchTimer);
+  }
+
   goToNextTeam() {
     this.ngOnInit();
+    this.ngOnDestroy();
     this.teamNumber = this.nextTeamNumber;
     this.nextTeamNumber = '';
   }
@@ -181,6 +190,53 @@ export class EntryComponent implements OnInit {
     } catch (e) {
       this.errorMessage = e;
       this.progressMessage = '';
+    }
+  }
+
+  async findOthersScoutingThisRobot() {
+    const builder = new Builder();
+    const teamNumber = builder.createString(this.teamNumber);
+
+    builder.finish(
+      RequestCurrentScouting.createRequestCurrentScouting(builder, teamNumber)
+    );
+
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/request/current_scouting', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    if (!res.ok) {
+      const resBuffer = await res.arrayBuffer();
+      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+    } else {
+      const resBuffer = await res.arrayBuffer();
+      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+      const parsedResponse =
+        RequestCurrentScoutingResponse.getRootAsRequestCurrentScoutingResponse(
+          fbBuffer
+        );
+      const collectedBy = [];
+      for (let i = 0; i < parsedResponse.collectedByLength(); i++) {
+        collectedBy.push(parsedResponse.collectedBy(i).name());
+      }
+      this.duplicateSearchTimer = setInterval(() => {
+        if (this.searchForDuplicateScouting && collectedBy.length != 0) {
+          if (
+            confirm(
+              'This team is currently being scouted by ' +
+                collectedBy +
+                '. Would you like to receive more alerts?'
+            ) != true
+          ) {
+            this.searchForDuplicateScouting = false;
+          }
+        }
+      }, 10000);
     }
   }
 
@@ -312,6 +368,11 @@ export class EntryComponent implements OnInit {
     // For the QR code screen, we need to make the value to encode available.
     if (target == 'QR Code') {
       this.updateQrCodeValuePieceSize();
+    }
+
+    if (target == 'Init') {
+      this.searchForDuplicateScouting = true;
+      this.findOthersScoutingThisRobot();
     }
 
     this.section = target;
@@ -457,6 +518,7 @@ export class EntryComponent implements OnInit {
       this.compType = 'Regular';
       this.matchStartTimestamp = 0;
       this.selectedValue = 0;
+      this.searchForDuplicateScouting = false;
     } else {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));

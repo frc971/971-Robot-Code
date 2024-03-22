@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting"
@@ -29,6 +30,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
@@ -69,6 +72,8 @@ type RequestPitImages = request_pit_images.RequestPitImages
 type RequestPitImagesResponseT = request_pit_images_response.RequestPitImagesResponseT
 type RequestAllPitImages = request_all_pit_images.RequestAllPitImages
 type RequestAllPitImagesResponseT = request_all_pit_images_response.RequestAllPitImagesResponseT
+type RequestCurrentScouting = request_current_scouting.RequestCurrentScouting
+type RequestCurrentScoutingResponseT = request_current_scouting_response.RequestCurrentScoutingResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
 type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
@@ -114,6 +119,16 @@ type Database interface {
 	DeleteFromStats(string, int32, int32, string) error
 	DeleteFromStats2024(string, int32, int32, string) error
 	DeleteFromActions(string, int32, int32, string) error
+}
+
+type Clock interface {
+	Now() time.Time
+}
+
+type RealClock struct{}
+
+func (RealClock) Now() time.Time {
+	return time.Now()
 }
 
 // Handles unknown requests. Just returns a 404.
@@ -368,6 +383,56 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type requestCurrentScoutingHandler struct {
+	// Map that has a key of team number with a value is a map of names to timestamps
+	// so there aren't duplicate timestamps for one person.
+	scoutingMap map[string]map[string]time.Time
+	db          Database
+	clock       Clock
+}
+
+func (handler requestCurrentScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "RequestCurrentScouting", request_current_scouting.GetRootAsRequestCurrentScouting)
+	if !success {
+		return
+	}
+	currentTime := handler.clock.Now()
+	teamNumber := string(request.TeamNumber())
+	collectedBy := parseUsername(req)
+
+	if handler.scoutingMap[teamNumber] == nil {
+		handler.scoutingMap[teamNumber] = map[string]time.Time{}
+	}
+	handler.scoutingMap[teamNumber][collectedBy] = currentTime
+	// Delete any scout information from 10+ seconds ago.
+	for team, teamMap := range handler.scoutingMap {
+		for name, timeStamp := range teamMap {
+			if currentTime.Sub(timeStamp) >= 10*time.Second {
+				delete(handler.scoutingMap[team], name)
+			}
+		}
+	}
+
+	var response RequestCurrentScoutingResponseT
+	for name, _ := range handler.scoutingMap[teamNumber] {
+		if name != collectedBy {
+			response.CollectedBy = append(response.CollectedBy, &request_current_scouting_response.CollectedByT{
+				Name: name,
+			})
+		}
+	}
+
+	builder := flatbuffers.NewBuilder(10)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
@@ -1299,7 +1364,7 @@ func (handler Delete2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 	w.Write(builder.FinishedBytes())
 }
 
-func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
+func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clock) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
@@ -1310,6 +1375,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/pit_images", requestPitImagesHandler{db})
 	scoutingServer.Handle("/requests/request/all_pit_images", requestAllPitImagesHandler{db})
+	scoutingServer.Handle("/requests/request/current_scouting", requestCurrentScoutingHandler{make(map[string]map[string]time.Time), db, clock})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})

@@ -96,6 +96,15 @@ class TestDebugCli(unittest.TestCase):
 
             time.sleep(0.25)
 
+    def test_request_current_scouting(self):
+        self.start_servers(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({"team_number": "971"})
+        exit_code, _, stderr = run_debug_cli(
+            ["-requestCurrentScouting", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
     def test_submit_and_request_notes(self):
         self.start_servers(year=2020, event_code="fake")
 

@@ -86,6 +86,8 @@ npm_link_package(
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response //scouting/webserver/requests/messages:request_pit_images_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images //scouting/webserver/requests/messages:request_all_pit_images_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response //scouting/webserver/requests/messages:request_all_pit_images_response_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting //scouting/webserver/requests/messages:request_current_scouting_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response //scouting/webserver/requests/messages:request_current_scouting_response_go_fbs
 
 gazelle(
     name = "gazelle",
