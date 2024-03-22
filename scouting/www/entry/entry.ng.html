@@ -91,7 +91,7 @@
           type="radio"
           name="radio-group"
           [value]="i"
-          (change)="selectedValue = $event.target.value"
+          [(ngModel)]="selectedValue"
         />
         {{ i }}
       </label>
@@ -311,21 +311,19 @@
       <div class="button_row">
         <label>
           <input
-            #park
             type="radio"
-            id="option1"
             name="endgameaction"
-            value="park"
+            [value]="StageType.kPARK"
+            [(ngModel)]="endGameAction"
           />
           Park
         </label>
         <label>
           <input
-            #onStage
             type="radio"
-            id="option2"
             name="endgameaction"
-            value="onStage"
+            [value]="StageType.kON_STAGE"
+            [(ngModel)]="endGameAction"
           />
           On Stage
         </label>
@@ -333,42 +331,32 @@
       <div class="button_row">
         <label>
           <input
-            #harmony
             type="radio"
-            id="option3"
             name="endgameaction"
-            value="harmony"
+            [value]="StageType.kHARMONY"
+            [(ngModel)]="endGameAction"
           />
           Harmony
         </label>
         <label>
           <input
-            #na
             type="radio"
-            id="option2"
             name="endgameaction"
-            value="na"
+            [value]="StageType.kMISSING"
+            [(ngModel)]="endGameAction"
           />
           N/A
         </label>
       </div>
       <label>
-        <input
-          #trapNote
-          type="checkbox"
-          id="trapnote"
-          name="trapnote"
-          value="trapNote"
-        />
+        <input type="checkbox" name="trapnote" [(ngModel)]="noteIsTrapped" />
         Trap Note
       </label>
       <label>
         <input
-          #spotlight
           type="checkbox"
-          id="spotlight"
           name="spotlight"
-          value="spotlight"
+          [(ngModel)]="endGameSpotlight"
         />
         Spotlight
       </label>
@@ -394,7 +382,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: (park.checked ? StageType.kPARK : onStage.checked ? StageType.kON_STAGE : harmony.checked ? StageType.kHARMONY : StageType.kMISSING), trapNote: trapNote.checked, spotlight: spotlight.checked});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match
       </button>
@@ -430,7 +418,7 @@
       </button>
       <button
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: (park.checked ? StageType.kPARK : onStage.checked ? StageType.kON_STAGE : harmony.checked ? StageType.kHARMONY : StageType.kMISSING), trapNote: trapNote.checked, spotlight: spotlight.checked});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match
       </button>
@@ -439,35 +427,30 @@
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
     <div class="row">
       <ul id="review_data">
-        <li
-          *ngFor="let action of actionList"
-          [ngValue]="action"
-          style="display: flex"
-        >
+        <li *ngFor="let action of actionList" style="display: flex">
           <div [ngSwitch]="action.type" style="padding: 0px">
             <span *ngSwitchCase="'startMatchAction'">
-              Started match at position {{action.position}}
+              Started match at position {{$any(action).position}}
             </span>
             <span *ngSwitchCase="'pickupNoteAction'">Picked up Note</span>
             <span *ngSwitchCase="'placeNoteAction'">
-              Placed at {{stringifyScoreType(action.scoreType)}}
+              Placed at {{stringifyScoreType($any(action).scoreType)}}
             </span>
             <span *ngSwitchCase="'endAutoPhase'">Ended auto phase</span>
             <span *ngSwitchCase="'endMatchAction'">
-              Ended Match; stageType: {{(action.stageType === 0 ? "kON_STAGE" :
-              action.stageType === 1 ? "kPARK" : action.stageType === 2 ?
-              "kHARMONY" : "kMISSING")}}, trapNote: {{action.trapNote}},
-              spotlight: {{action.spotlight}}
+              Ended Match; stageType:
+              {{stringifyStageType($any(action).stageType)}}, trapNote:
+              {{$any(action).trapNote}}, spotlight: {{$any(action).spotlight}}
             </span>
             <span *ngSwitchCase="'robotDeathAction'">
-              Robot dead: {{action.robotDead}}
+              Robot dead: {{$any(action).robotDead}}
             </span>
             <span *ngSwitchCase="'mobilityAction'">
-              Mobility: {{action.mobility}}
+              Mobility: {{$any(action).mobility}}
             </span>
             <span *ngSwitchDefault>{{action.type}}</span>
             <span *ngSwitchCase="'penaltyAction'">
-              Penalties: {{action.penalties}}
+              Penalties: {{$any(action).penalties}}
             </span>
           </div>
         </li>

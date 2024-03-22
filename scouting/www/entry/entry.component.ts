@@ -41,7 +41,7 @@ type Section =
 
 // TODO(phil): Deduplicate with match_list.component.ts.
 const COMP_LEVELS = ['qm', 'ef', 'qf', 'sf', 'f'] as const;
-type CompLevel = typeof COMP_LEVELS[number];
+export type CompLevel = typeof COMP_LEVELS[number];
 
 // TODO(phil): Deduplicate with match_list.component.ts.
 const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
@@ -141,7 +141,12 @@ export class EntryComponent implements OnInit {
   errorMessage: string = '';
   autoPhase: boolean = true;
   mobilityCompleted: boolean = false;
+  // TODO(phil): Come up with a better name here.
   selectedValue = 0;
+  endGameAction: StageType = StageType.kMISSING;
+  noteIsTrapped: boolean = false;
+  endGameSpotlight: boolean = false;
+
   nextTeamNumber = '';
 
   preScouting: boolean = false;

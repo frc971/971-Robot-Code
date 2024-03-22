@@ -1,5 +1,7 @@
 import {Component, ElementRef, ViewChild, isDevMode} from '@angular/core';
 
+import {CompLevel} from '@org_frc971/scouting/www/entry';
+
 type Tab =
   | 'MatchList'
   | 'Notes'
@@ -17,7 +19,7 @@ type TeamInMatch = {
   teamNumber: string;
   matchNumber: number;
   setNumber: number;
-  compLevel: string;
+  compLevel: CompLevel;
 };
 
 @Component({

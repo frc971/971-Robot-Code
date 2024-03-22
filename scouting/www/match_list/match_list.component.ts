@@ -9,11 +9,15 @@ import {
 
 import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
+// TODO(phil): Deduplicate with entry.component.ts.
+const COMP_LEVELS = ['qm', 'ef', 'qf', 'sf', 'f'] as const;
+export type CompLevel = typeof COMP_LEVELS[number];
+
 type TeamInMatch = {
   teamNumber: string;
   matchNumber: number;
   setNumber: number;
-  compLevel: string;
+  compLevel: CompLevel;
 };
 
 @Component({
@@ -23,12 +27,21 @@ type TeamInMatch = {
 })
 export class MatchListComponent implements OnInit {
   @Output() selectedTeamEvent = new EventEmitter<TeamInMatch>();
+
   progressMessage: string = '';
   errorMessage: string = '';
   matchList: Match[] = [];
   hideCompletedMatches: boolean = true;
 
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
+
+  // Validates that the specified string is a proper comp level.
+  validateCompLevel(compLevel: string): CompLevel {
+    if (COMP_LEVELS.indexOf(compLevel as any) !== -1) {
+      return compLevel as CompLevel;
+    }
+    throw new Error(`Could not parse "${compLevel}" as a valid comp level.`);
+  }
 
   // Returns true if the match is fully scouted. Returns false otherwise.
   matchIsFullyScouted(match: Match): boolean {
