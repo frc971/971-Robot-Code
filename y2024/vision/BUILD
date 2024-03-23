@@ -167,3 +167,20 @@ cc_binary(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_binary(
+    name = "image_replay",
+    srcs = [
+        "image_replay.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2024:__subpackages__"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+    ],
+)
