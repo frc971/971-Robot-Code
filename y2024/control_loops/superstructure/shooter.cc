@@ -186,10 +186,10 @@ Shooter::Iterate(
       {.intake_pivot_position = intake_pivot_position,
        .turret_position = turret_.estimated_position(),
        .extend_position =
-           ((!robot_constants_->common()->disable_extend()) ? extend_position
-                                                            : 0.0)},
+           ((!robot_constants_->robot()->disable_extend()) ? extend_position
+                                                           : 0.0)},
       turret_goal->unsafe_goal(),
-      ((!robot_constants_->common()->disable_extend()) ? extend_goal : 0.0));
+      ((!robot_constants_->robot()->disable_extend()) ? extend_goal : 0.0));
 
   if (!CatapultRetracted()) {
     altitude_.set_min_position(

@@ -71,7 +71,9 @@
       ) %}
       "zeroing_constants": {{ extend_zero | tojson(indent=2)}},
       "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879  - 0.1577}}
-    }
+    },
+    "disable_extend": false,
+    "disable_climber": true
   },
   {% include 'y2024/constants/common.json' %}
 }
