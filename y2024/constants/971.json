@@ -43,7 +43,7 @@
           }
       ) %}
       "zeroing_constants": {{ catapult_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 9.41595277209342 }}
+      "potentiometer_offset": {{ 9.41595277209342 - 1.59041961316453 + 0.478015209219659 }}
     },
     "altitude_constants": {
       {% set _ = altitude_zero.update(

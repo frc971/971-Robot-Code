@@ -89,7 +89,7 @@
     "intake_pivot_stator_current_limit": 100,
     "intake_roller_supply_current_limit": 20,
     "intake_roller_stator_current_limit": 100,
-    "transfer_roller_supply_current_limit": 20,
+    "transfer_roller_supply_current_limit": 40,
     "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 50,
     "drivetrain_stator_current_limit": 200,
@@ -111,7 +111,7 @@
     "retention_roller_supply_current_limit": 10
   },
   "transfer_roller_voltages": {
-    "transfer_in": 9.0,
+    "transfer_in": 11.0,
     "transfer_out": -4.0,
     "extend_moving": 4.0
   },
