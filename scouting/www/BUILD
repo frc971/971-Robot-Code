@@ -42,12 +42,12 @@ ng_application(
 
 assemble_static_files(
     name = "static_files",
-    app_files = ":app",
-    pictures = [
-        "//third_party/y2024/field:pictures",
-        ":ngsw-worker.js",
+    srcs = [
         ":ngsw.json",
+        ":ngsw-worker.js",
+        "//third_party/y2024/field:pictures",
     ],
+    app_files = ":app",
     replace_prefixes = {
         "prod": "",
         "dev": "",

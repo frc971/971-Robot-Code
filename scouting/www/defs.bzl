@@ -10,7 +10,7 @@ def _assemble_static_files_impl(ctx):
         dst = out_dir,
         name = ctx.label.name,
         copy_to_directory_bin = copy_to_directory_bin,
-        files = ctx.files.pictures + ctx.attr.app_files.files.to_list(),
+        files = ctx.files.srcs + ctx.attr.app_files.files.to_list(),
         replace_prefixes = ctx.attr.replace_prefixes,
     )
 
@@ -25,7 +25,7 @@ assemble_static_files = rule(
         "app_files": attr.label(
             mandatory = True,
         ),
-        "pictures": attr.label_list(
+        "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
