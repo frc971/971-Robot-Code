@@ -104,6 +104,9 @@ class TargetMapper {
   // constraints
   void DisplayConstraintGraph();
 
+  // Create and display a visualization of the map solution (vs. the input map)
+  void DisplaySolvedVsInitial();
+
   // Returns true if the solve was successful.
   bool SolveOptimizationProblem(ceres::Problem *problem);
 
