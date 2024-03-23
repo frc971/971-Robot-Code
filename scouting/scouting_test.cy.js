@@ -106,7 +106,7 @@ function submitDataScouting(
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
-  cy.get('#review_data li').eq(1).should('have.text', 'Picked up Note');
+  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Note ');
   cy.get('#review_data li')
     .last()
     .should(

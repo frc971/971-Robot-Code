@@ -102,7 +102,7 @@
         <button
           class="btn btn-primary"
           [disabled]="!selectedValue"
-          (click)="changeSectionTo('Pickup'); addAction({type: 'startMatchAction', position: selectedValue});"
+          (click)="changeSectionTo('Pickup'); actionHelper.addStartMatchAction({position: selectedValue});"
         >
           Start Match
         </button>
@@ -111,7 +111,8 @@
   </div>
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
     <h6 class="text-muted">
-      Last Action: {{actionList[actionList.length - 1].type}}
+      Last Action: {{ActionType[actionList[actionList.length -
+      1].actionTakenType]}}
     </h6>
     <!--
       Decrease distance between buttons during auto to make space for auto balancing
@@ -123,20 +124,20 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
       >
         DEAD
       </button>
       <button
         class="btn btn-warning"
-        (click)="changeSectionTo('Place'); addAction({type: 'pickupNoteAction'});"
+        (click)="changeSectionTo('Place'); actionHelper.addPickupNoteAction({auto: autoPhase});"
       >
         NOTE
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
         class="btn btn-light"
-        (click)="addAction({type: 'mobilityAction', mobility: true});"
+        (click)="actionHelper.addMobilityAction({mobility: true});"
       >
         Mobility
       </button>
@@ -161,14 +162,14 @@
       <button
         *ngIf="autoPhase"
         class="btn btn-dark"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+        (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
       >
         Start Teleop
       </button>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Endgame'); addAction({type: 'endTeleopPhase'});"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
       >
         Endgame
       </button>
@@ -176,7 +177,8 @@
   </div>
   <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
     <h6 class="text-muted">
-      Last Action: {{actionList[actionList.length - 1].type}}
+      Last Action: {{ActionType[actionList[actionList.length -
+      1].actionTakenType]}}
     </h6>
     <!--
       Decrease distance between buttons during auto to make space for auto balancing
@@ -188,13 +190,13 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
       >
         DEAD
       </button>
       <button
         class="btn btn-info"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kDROPPED});"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kDROPPED});"
       >
         Dropped
       </button>
@@ -211,7 +213,7 @@
         >
           <button
             class="btn btn-success"
-            (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP});"
+            (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP});"
             style="width: 48%; height: 12vh; margin: 0px 10px 10px 0px"
           >
             AMP
@@ -219,21 +221,21 @@
 
           <button
             class="btn btn-warning"
-            (click)="changeSectionTo('Pickup');  addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP_AMPLIFIED});"
+            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP_AMPLIFIED});"
             style="width: 48%; height: 12vh; margin: 0px 0px 10px 0px"
           >
             AMP AMPLIFIED
           </button>
           <button
             class="btn btn-success"
-            (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER});"
+            (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER});"
             style="width: 48%; height: 12vh; margin: 0px 10px 0px 0px"
           >
             SPEAKER
           </button>
           <button
             class="btn btn-warning"
-            (click)="changeSectionTo('Pickup');  addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER_AMPLIFIED});"
+            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER_AMPLIFIED});"
             style="width: 48%; height: 12vh; margin: 0px 0px 0px 0px"
           >
             SPEAKER AMPLIFIED
@@ -244,21 +246,21 @@
       <button
         *ngIf="autoPhase"
         class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP});"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP});"
       >
         AMP
       </button>
       <button
         *ngIf="autoPhase"
         class="btn btn-warning"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER});"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER});"
       >
         SPEAKER
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
         class="btn btn-light"
-        (click)="addAction({type: 'mobilityAction', mobility: true});"
+        (click)="actionHelper.addMobilityAction({mobility: true});"
       >
         Mobility
       </button>
@@ -283,14 +285,14 @@
       <button
         class="btn btn-dark"
         *ngIf="autoPhase"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+        (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
       >
         Start Teleop
       </button>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Endgame'); addAction({type: 'endTeleopPhase'});"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
       >
         Endgame
       </button>
@@ -298,13 +300,14 @@
   </div>
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
     <h6 class="text-muted">
-      Last Action: {{actionList[actionList.length - 1].type}}
+      Last Action: {{ActionType[actionList[actionList.length -
+      1].actionTakenType]}}
     </h6>
     <div class="d-grid gap-2">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotDead: true});"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
       >
         DEAD
       </button>
@@ -382,7 +385,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match
       </button>
@@ -412,13 +415,13 @@
       </div>
       <button
         class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'robotDeathAction', robotDead: false}); "
+        (click)="changeSectionTo('Pickup'); actionHelper.addRobotDeathAction({robotDead: false}); "
       >
         Revive
       </button>
       <button
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match
       </button>
@@ -428,29 +431,40 @@
     <div class="row">
       <ul id="review_data">
         <li *ngFor="let action of actionList" style="display: flex">
-          <div [ngSwitch]="action.type" style="padding: 0px">
-            <span *ngSwitchCase="'startMatchAction'">
-              Started match at position {{$any(action).position}}
+          <div [ngSwitch]="action.actionTakenType" style="padding: 0px">
+            <span *ngSwitchCase="ActionType.StartMatchAction">
+              Started match at position {{(action.actionTaken | cast:
+              StartMatchActionT).position}}
             </span>
-            <span *ngSwitchCase="'pickupNoteAction'">Picked up Note</span>
-            <span *ngSwitchCase="'placeNoteAction'">
-              Placed at {{stringifyScoreType($any(action).scoreType)}}
+            <span *ngSwitchCase="ActionType.PickupNoteAction">
+              Picked up Note
             </span>
-            <span *ngSwitchCase="'endAutoPhase'">Ended auto phase</span>
-            <span *ngSwitchCase="'endMatchAction'">
-              Ended Match; stageType:
-              {{stringifyStageType($any(action).stageType)}}, trapNote:
-              {{$any(action).trapNote}}, spotlight: {{$any(action).spotlight}}
+            <span *ngSwitchCase="ActionType.PlaceNoteAction">
+              Placed at {{stringifyScoreType((action.actionTaken | cast:
+              PlaceNoteActionT).scoreType)}}
             </span>
-            <span *ngSwitchCase="'robotDeathAction'">
-              Robot dead: {{$any(action).robotDead}}
+            <span *ngSwitchCase="ActionType.EndAutoPhaseAction">
+              Ended auto phase
             </span>
-            <span *ngSwitchCase="'mobilityAction'">
-              Mobility: {{$any(action).mobility}}
+            <span *ngSwitchCase="ActionType.EndMatchAction">
+              Ended Match; stageType: {{stringifyStageType((action.actionTaken |
+              cast: EndMatchActionT).stageType)}}, trapNote:
+              {{(action.actionTaken | cast: EndMatchActionT).trapNote}},
+              spotlight: {{(action.actionTaken | cast:
+              EndMatchActionT).spotlight}}
             </span>
-            <span *ngSwitchDefault>{{action.type}}</span>
-            <span *ngSwitchCase="'penaltyAction'">
-              Penalties: {{$any(action).penalties}}
+            <span *ngSwitchCase="ActionType.RobotDeathAction">
+              Robot dead: {{(action.actionTaken | cast:
+              RobotDeathActionT).robotDead}}
+            </span>
+            <span *ngSwitchCase="ActionType.MobilityAction">
+              Mobility: {{(action.actionTaken | cast:
+              MobilityActionT).mobility}}
+            </span>
+            <span *ngSwitchDefault>{{action.actionTakenType}}</span>
+            <span *ngSwitchCase="ActionType.PenaltyAction">
+              Penalties: {{(action.actionTaken | cast:
+              PenaltyActionT).penalties}}
             </span>
           </div>
         </li>

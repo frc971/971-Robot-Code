@@ -46,13 +46,21 @@ table EndMatchAction {
     spotlight:bool (id:2);
 }
 
+table EndAutoPhaseAction {
+}
+
+table EndTeleopPhaseAction {
+}
+
 union ActionType {
     MobilityAction,
     StartMatchAction,
+    EndAutoPhaseAction,
     PickupNoteAction,
     PlaceNoteAction,
     PenaltyAction,
     RobotDeathAction,
+    EndTeleopPhaseAction,
     EndMatchAction
 }
 

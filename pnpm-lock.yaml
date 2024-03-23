@@ -123,6 +123,9 @@ importers:
       '@org_frc971/scouting/www/notes':
         specifier: workspace:*
         version: link:notes
+      '@org_frc971/scouting/www/pipes':
+        specifier: workspace:*
+        version: link:pipes
       '@org_frc971/scouting/www/pit_scouting':
         specifier: workspace:*
         version: link:pit_scouting
@@ -156,6 +159,9 @@ importers:
       '@org_frc971/scouting/webserver/requests/messages':
         specifier: workspace:*
         version: link:../../webserver/requests/messages
+      '@org_frc971/scouting/www/pipes':
+        specifier: workspace:*
+        version: link:../pipes
       '@org_frc971/scouting/www/rpc':
         specifier: workspace:*
         version: link:../rpc
@@ -189,6 +195,8 @@ importers:
       '@org_frc971/scouting/webserver/requests/messages':
         specifier: workspace:*
         version: link:../../webserver/requests/messages
+
+  scouting/www/pipes: {}
 
   scouting/www/pit_scouting:
     dependencies:

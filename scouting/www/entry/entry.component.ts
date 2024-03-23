@@ -12,20 +12,29 @@ import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {
   StartMatchAction,
+  StartMatchActionT,
   ScoreType,
   StageType,
   Submit2024Actions,
   MobilityAction,
+  MobilityActionT,
   PenaltyAction,
+  PenaltyActionT,
   PickupNoteAction,
+  PickupNoteActionT,
   PlaceNoteAction,
+  PlaceNoteActionT,
   RobotDeathAction,
+  RobotDeathActionT,
   EndMatchAction,
+  EndMatchActionT,
   ActionType,
   Action,
+  ActionT,
 } from '@org_frc971/scouting/webserver/requests/messages/submit_2024_actions_generated';
 import {Match} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
+import {ActionHelper, ConcreteAction} from './action_helper';
 import * as pako from 'pako';
 
 type Section =
@@ -59,57 +68,12 @@ const QR_CODE_PIECE_SIZES = [150, 300, 450, 600, 750, 900];
 // The default index into QR_CODE_PIECE_SIZES.
 const DEFAULT_QR_CODE_PIECE_SIZE_INDEX = QR_CODE_PIECE_SIZES.indexOf(750);
 
-type ActionT =
-  | {
-      type: 'startMatchAction';
-      timestamp?: number;
-      position: number;
-    }
-  | {
-      type: 'mobilityAction';
-      timestamp?: number;
-      mobility: boolean;
-    }
-  | {
-      type: 'pickupNoteAction';
-      timestamp?: number;
-      auto?: boolean;
-    }
-  | {
-      type: 'placeNoteAction';
-      timestamp?: number;
-      scoreType: ScoreType;
-      auto?: boolean;
-    }
-  | {
-      type: 'robotDeathAction';
-      timestamp?: number;
-      robotDead: boolean;
-    }
-  | {
-      type: 'penaltyAction';
-      timestamp?: number;
-      penalties: number;
-    }
-  | {
-      type: 'endMatchAction';
-      stageType: StageType;
-      trapNote: boolean;
-      spotlight: boolean;
-      timestamp?: number;
-    }
-  | {
-      // This is not a action that is submitted,
-      // It is used for undoing purposes.
-      type: 'endAutoPhase';
-      timestamp?: number;
-    }
-  | {
-      // This is not a action that is submitted,
-      // It is used for undoing purposes.
-      type: 'endTeleopPhase';
-      timestamp?: number;
-    };
+// The actions that are purely used for tracking state. They don't actually
+// have any permanent meaning and will not be saved in the database.
+const STATE_ACTIONS: ActionType[] = [
+  ActionType.EndAutoPhaseAction,
+  ActionType.EndTeleopPhaseAction,
+];
 
 @Component({
   selector: 'app-entry',
@@ -124,6 +88,15 @@ export class EntryComponent implements OnInit {
   readonly QR_CODE_PIECE_SIZES = QR_CODE_PIECE_SIZES;
   readonly ScoreType = ScoreType;
   readonly StageType = StageType;
+  readonly ActionT = ActionT;
+  readonly ActionType = ActionType;
+  readonly StartMatchActionT = StartMatchActionT;
+  readonly MobilityActionT = MobilityActionT;
+  readonly PickupNoteActionT = PickupNoteActionT;
+  readonly PlaceNoteActionT = PlaceNoteActionT;
+  readonly RobotDeathActionT = RobotDeathActionT;
+  readonly PenaltyActionT = PenaltyActionT;
+  readonly EndMatchActionT = EndMatchActionT;
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
@@ -136,6 +109,7 @@ export class EntryComponent implements OnInit {
 
   matchList: Match[] = [];
 
+  actionHelper: ActionHelper;
   actionList: ActionT[] = [];
   progressMessage: string = '';
   errorMessage: string = '';
@@ -168,6 +142,12 @@ export class EntryComponent implements OnInit {
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
 
   ngOnInit() {
+    this.actionHelper = new ActionHelper(
+      (actionType: ActionType, action: ConcreteAction) => {
+        this.addAction(actionType, action);
+      }
+    );
+
     // When the user navigated from the match list, we can skip the team
     // selection. I.e. we trust that the user clicked the correct button.
     this.section = this.skipTeamSelection ? 'Init' : 'Team Selection';
@@ -236,60 +216,58 @@ export class EntryComponent implements OnInit {
   }
 
   addPenalties(): void {
-    this.addAction({type: 'penaltyAction', penalties: this.penalties});
+    this.actionHelper.addPenaltyAction({penalties: this.penalties});
   }
 
-  addAction(action: ActionT): void {
-    if (action.type == 'startMatchAction') {
+  addAction(actionType: ActionType, action: ConcreteAction): void {
+    let timestamp: number = 0;
+
+    if (actionType == ActionType.StartMatchAction) {
       // Unix nanosecond timestamp.
       this.matchStartTimestamp = Date.now() * 1e6;
-      action.timestamp = 0;
     } else {
       // Unix nanosecond timestamp relative to match start.
-      action.timestamp = Date.now() * 1e6 - this.matchStartTimestamp;
+      timestamp = Date.now() * 1e6 - this.matchStartTimestamp;
     }
 
-    if (action.type == 'endMatchAction') {
+    if (actionType == ActionType.EndMatchAction) {
       // endMatchAction occurs at the same time as penaltyAction so add to its
       // timestamp to make it unique.
-      action.timestamp += 1;
+      timestamp += 1;
     }
 
-    if (action.type == 'mobilityAction') {
+    if (actionType == ActionType.MobilityAction) {
       this.mobilityCompleted = true;
     }
 
-    if (action.type == 'pickupNoteAction' || action.type == 'placeNoteAction') {
-      action.auto = this.autoPhase;
-    }
-    this.actionList.push(action);
+    this.actionList.push(new ActionT(BigInt(timestamp), actionType, action));
   }
 
   undoLastAction() {
     if (this.actionList.length > 0) {
       let lastAction = this.actionList.pop();
-      switch (lastAction?.type) {
-        case 'endAutoPhase':
+      switch (lastAction?.actionTakenType) {
+        case ActionType.EndAutoPhaseAction:
           this.autoPhase = true;
           this.section = 'Pickup';
-        case 'pickupNoteAction':
+        case ActionType.PickupNoteAction:
           this.section = 'Pickup';
           break;
-        case 'endTeleopPhase':
+        case ActionType.EndTeleopPhaseAction:
           this.section = 'Pickup';
           break;
-        case 'placeNoteAction':
+        case ActionType.PlaceNoteAction:
           this.section = 'Place';
           break;
-        case 'endMatchAction':
+        case ActionType.EndMatchAction:
           this.section = 'Endgame';
-        case 'mobilityAction':
+        case ActionType.MobilityAction:
           this.mobilityCompleted = false;
           break;
-        case 'startMatchAction':
+        case ActionType.StartMatchAction:
           this.section = 'Init';
           break;
-        case 'robotDeathAction':
+        case ActionType.RobotDeathAction:
           // TODO(FILIP): Return user to the screen they
           // clicked dead robot on. Pickup is fine for now but
           // might cause confusion.
@@ -331,111 +309,11 @@ export class EntryComponent implements OnInit {
     const actionOffsets: number[] = [];
 
     for (const action of this.actionList) {
-      let actionOffset: number | undefined;
-
-      switch (action.type) {
-        case 'startMatchAction':
-          const startMatchActionOffset =
-            StartMatchAction.createStartMatchAction(builder, action.position);
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.StartMatchAction,
-            startMatchActionOffset
-          );
-          break;
-        case 'mobilityAction':
-          const mobilityActionOffset = MobilityAction.createMobilityAction(
-            builder,
-            action.mobility
-          );
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.MobilityAction,
-            mobilityActionOffset
-          );
-          break;
-        case 'penaltyAction':
-          const penaltyActionOffset = PenaltyAction.createPenaltyAction(
-            builder,
-            action.penalties
-          );
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.PenaltyAction,
-            penaltyActionOffset
-          );
-          break;
-        case 'pickupNoteAction':
-          const pickupNoteActionOffset =
-            PickupNoteAction.createPickupNoteAction(
-              builder,
-              action.auto || false
-            );
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.PickupNoteAction,
-            pickupNoteActionOffset
-          );
-          break;
-        case 'placeNoteAction':
-          const placeNoteActionOffset = PlaceNoteAction.createPlaceNoteAction(
-            builder,
-            action.scoreType,
-            action.auto || false
-          );
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.PlaceNoteAction,
-            placeNoteActionOffset
-          );
-          break;
-
-        case 'robotDeathAction':
-          const robotDeathActionOffset =
-            RobotDeathAction.createRobotDeathAction(builder, action.robotDead);
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.RobotDeathAction,
-            robotDeathActionOffset
-          );
-          break;
-
-        case 'endMatchAction':
-          const endMatchActionOffset = EndMatchAction.createEndMatchAction(
-            builder,
-            action.stageType,
-            action.trapNote,
-            action.spotlight
-          );
-          actionOffset = Action.createAction(
-            builder,
-            BigInt(action.timestamp || 0),
-            ActionType.EndMatchAction,
-            endMatchActionOffset
-          );
-          break;
-
-        case 'endAutoPhase':
-          // Not important action.
-          break;
-
-        case 'endTeleopPhase':
-          // Not important action.
-          break;
-
-        default:
-          throw new Error(`Unknown action type`);
+      if (STATE_ACTIONS.includes(action.actionTakenType)) {
+        // Actions only used for undo purposes are not submitted.
+        continue;
       }
-
-      if (actionOffset !== undefined) {
-        actionOffsets.push(actionOffset);
-      }
+      actionOffsets.push(action.pack(builder));
     }
     const teamNumberFb = builder.createString(this.teamNumber);
     const compLevelFb = builder.createString(this.compLevel);

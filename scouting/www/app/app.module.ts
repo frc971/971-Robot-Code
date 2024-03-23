@@ -4,6 +4,7 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {ServiceWorkerModule} from '@angular/service-worker';
 
 import {App} from './app';
+import {PipeModule} from '@org_frc971/scouting/www/pipes';
 import {EntryModule} from '@org_frc971/scouting/www/entry';
 import {MatchListModule} from '@org_frc971/scouting/www/match_list';
 import {NotesModule} from '@org_frc971/scouting/www/notes';
@@ -27,6 +28,7 @@ import {ScanModule} from '@org_frc971/scouting/www/scan';
     EntryModule,
     NotesModule,
     MatchListModule,
+    PipeModule,
     ShiftScheduleModule,
     DriverRankingModule,
     ViewModule,
