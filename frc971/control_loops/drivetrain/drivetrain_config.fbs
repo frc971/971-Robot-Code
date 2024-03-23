@@ -98,6 +98,15 @@ table LineFollowConfig {
   max_controllable_offset:double = 0.1 (id: 2);
 }
 
+table SplineFollowerConfig {
+  // Q should be a 5x5 positive-definite matrix; it is used as the state cost
+  // of the LQR controller for the spline-following mode.
+  q:frc971.fbs.Matrix (id: 0);
+  // R should be a 2x2 positive-definite matrix; it is used as the input cost
+  // of the LQR controller for the spline-following mode.
+  r:frc971.fbs.Matrix (id: 1);
+}
+
 // These constants are all specified by the drivetrain python code, and
 // so are separated out for easy codegen.
 table DrivetrainLoopConfig {
@@ -135,6 +144,7 @@ table DrivetrainConfig {
   is_simulated:bool = false (id: 14);
   down_estimator_config:DownEstimatorConfig (id: 15);
   line_follow_config:LineFollowConfig (id: 16);
+  spline_follower_config:SplineFollowerConfig (id: 20);
   top_button_use:PistolTopButtonUse = kShift (id: 17);
   second_button_use:PistolSecondButtonUse = kShiftLow (id: 18);
   bottom_button_use:PistolBottomButtonUse = kSlowDown (id: 19);

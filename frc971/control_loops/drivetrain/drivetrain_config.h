@@ -50,6 +50,33 @@ struct LineFollowConfig {
   }
 };
 
+struct SplineFollowerConfig {
+  // The line-following uses an LQR controller with states of
+  // [longitudinal_position, lateral_positoin, theta, left_velocity,
+  // right_velocity] and inputs of [left_voltage, right_voltage]. These Q and R
+  // matrices are the costs for state and input respectively.
+  Eigen::Matrix<double, 5, 5> Q = Eigen::Matrix<double, 5, 5>(
+      (::Eigen::DiagonalMatrix<double, 5>().diagonal() << ::std::pow(60.0, 2.0),
+       ::std::pow(60.0, 2.0), ::std::pow(40.0, 2.0), ::std::pow(30.0, 2.0),
+       ::std::pow(30.0, 2.0))
+          .finished()
+          .asDiagonal());
+  Eigen::Matrix2d R = Eigen::Matrix2d(
+      (::Eigen::DiagonalMatrix<double, 2>().diagonal() << 5.0, 5.0)
+          .finished()
+          .asDiagonal());
+
+  static SplineFollowerConfig FromFlatbuffer(
+      const fbs::SplineFollowerConfig *fbs) {
+    if (fbs == nullptr) {
+      return {};
+    }
+    return SplineFollowerConfig{
+        .Q = ToEigenOrDie<5, 5>(*CHECK_NOTNULL(fbs->q())),
+        .R = ToEigenOrDie<2, 2>(*CHECK_NOTNULL(fbs->r()))};
+  }
+};
+
 template <typename Scalar = double>
 struct DrivetrainConfig {
   // Shifting method we are using.
@@ -124,6 +151,8 @@ struct DrivetrainConfig {
   PistolTopButtonUse top_button_use = PistolTopButtonUse::kShift;
   PistolSecondButtonUse second_button_use = PistolSecondButtonUse::kShiftLow;
   PistolBottomButtonUse bottom_button_use = PistolBottomButtonUse::kSlowDown;
+
+  SplineFollowerConfig spline_follower_config{};
 
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(
@@ -229,7 +258,9 @@ struct DrivetrainConfig {
           .line_follow_config =
               LineFollowConfig::FromFlatbuffer(fbs.line_follow_config()),
           ASSIGN(top_button_use), ASSIGN(second_button_use),
-          ASSIGN(bottom_button_use)
+          ASSIGN(bottom_button_use),
+          .spline_follower_config = SplineFollowerConfig::FromFlatbuffer(
+              fbs.spline_follower_config()),
 #undef ASSIGN
     };
   }

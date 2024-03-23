@@ -10,7 +10,7 @@
   "quickturn_wheel_multiplier": 1.2,
   "wheel_multiplier": 1.2,
   "pistol_grip_shift_enables_line_follow": false,
-  "imu_transform":{
+  "imu_transform": {
     "rows": 3,
     "cols": 3,
     "data": [1, 0, 0, 0, 1, 0, 0, 0, 1]
@@ -22,5 +22,21 @@
   },
   "top_button_use": "kNone",
   "second_button_use": "kTurn1",
-  "bottom_button_use": "kControlLoopDriving"
+  "bottom_button_use": "kControlLoopDriving",
+  "spline_follower_config": {
+    "q": {
+      "rows": 5,
+      "cols": 5,
+      "data": [3600, 0,    0,    0,  0,
+               0,    3600, 0,    0,  0,
+               0,    0,    1600, 0,  0,
+               0,    0,    0,    16, 0,
+               0,    0,    0,    0,  16]
+    },
+    "r": {
+      "rows": 2,
+      "cols": 2,
+      "data": [5, 0, 0, 5]
+    }
+  }
 }
