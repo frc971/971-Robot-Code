@@ -77,6 +77,8 @@ class IntrinsicsCalibration {
   const bool display_undistorted_;
   const std::string calibration_folder_;
   aos::ExitHandle *exit_handle_;
+
+  bool exit_collection_;
 };
 
 }  // namespace frc971::vision
