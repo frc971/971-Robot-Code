@@ -50,7 +50,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       extend_(
           robot_constants_->common()->extend(),
           robot_constants_->robot()->extend_constants()->zeroing_constants()),
-      extend_debouncer_(std::chrono::milliseconds(30),
+      extend_debouncer_(std::chrono::milliseconds(12),
                         std::chrono::milliseconds(8)),
       transfer_debouncer_(std::chrono::milliseconds(30),
                           std::chrono::milliseconds(8)) {
