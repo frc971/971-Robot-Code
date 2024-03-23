@@ -73,6 +73,9 @@ class Superstructure
 
   NoteGoal requested_note_goal_ = NoteGoal::NONE;
 
+  // True if the transfer beambreak has been triggered since last intake request
+  bool note_in_transfer_ = false;
+
   aos::monotonic_clock::time_point transfer_start_time_ =
       aos::monotonic_clock::time_point::min();
 
@@ -90,6 +93,8 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem extend_;
 
   Debouncer extend_debouncer_;
+
+  Debouncer transfer_debouncer_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
