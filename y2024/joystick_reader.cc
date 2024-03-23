@@ -51,6 +51,7 @@ const ButtonLocation kIntakeRollers(2, 5);
 const ButtonLocation kCatapultLoad(2, 1);
 const ButtonLocation kAmp(2, 4);
 const ButtonLocation kFire(2, 8);
+const ButtonLocation kDriverFire(1, 1);
 const ButtonLocation kTrap(2, 6);
 const ButtonLocation kAutoAim(1, 8);
 const ButtonLocation kAimSpeaker(2, 11);
@@ -159,7 +160,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                                    ->shooter_speaker_set_point()
                                                    ->turret_position());
     }
-    superstructure_goal_builder->set_fire(data.IsPressed(kFire));
+    superstructure_goal_builder->set_fire(data.IsPressed(kFire) ||
+                                          data.IsPressed(kDriverFire));
 
     if (data.IsPressed(kRetractClimber)) {
       superstructure_goal_builder->set_climber_goal(
