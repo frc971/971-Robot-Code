@@ -44,6 +44,13 @@ void Main() {
          "camera moves.";
   std::unique_ptr<aos::ExitHandle> exit_handle = event_loop.MakeExitHandle();
 
+  CHECK(aos::network::ParsePiOrOrin(hostname))
+      << "Failed to parse node type from " << hostname
+      << ".  Should be of form orin1-971-1";
+  CHECK(aos::network::ParsePiOrOrinNumber(hostname))
+      << "Failed to parse node number from " << hostname
+      << ".  Should be of form orin2-7971-1";
+
   std::string camera_name = absl::StrCat(
       "/", aos::network::ParsePiOrOrin(hostname).value(),
       std::to_string(aos::network::ParsePiOrOrinNumber(hostname).value()),
