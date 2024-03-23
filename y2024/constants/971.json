@@ -23,7 +23,7 @@
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
-          "measured_absolute_position" : 3.49222521810232
+          "measured_absolute_position" : 3.229
       }
     ) %}
     "intake_constants":  {{ intake_pivot_zero | tojson(indent=2)}},
@@ -48,7 +48,7 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.1877
+              "measured_absolute_position" : 0.2135
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
@@ -57,11 +57,11 @@
     "turret_constants": {
       {% set _ = turret_zero.update(
           {
-              "measured_absolute_position" : 0.961143535321169
+              "measured_absolute_position" : 0.2077
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 }}
+      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 }}
     },
     "extend_constants": {
       {% set _ = extend_zero.update(
