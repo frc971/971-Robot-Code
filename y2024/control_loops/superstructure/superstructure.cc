@@ -51,8 +51,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           robot_constants_->common()->extend(),
           robot_constants_->robot()->extend_constants()->zeroing_constants()),
       extend_debouncer_(std::chrono::milliseconds(30),
-                        std::chrono::milliseconds(8)) {
-  event_loop->SetRuntimeRealtimePriority(37);
+                        std::chrono::milliseconds(8)),
+      transfer_debouncer_(std::chrono::milliseconds(30),
+                          std::chrono::milliseconds(8)) {
+  event_loop->SetRuntimeRealtimePriority(30);
 }
 
 bool PositionNear(double position, double goal, double threshold) {
@@ -78,6 +80,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   extend_debouncer_.Update(position->extend_beambreak(), timestamp);
   const bool extend_beambreak = extend_debouncer_.state();
+
+  transfer_debouncer_.Update(position->transfer_beambreak(), timestamp);
+  const bool transfer_beambreak = transfer_debouncer_.state();
 
   // Handle Climber Goal separately from main superstructure state machine
   double climber_position =
@@ -221,6 +226,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           unsafe_goal->intake_goal() == IntakeGoal::INTAKE &&
           extend_at_retracted) {
         state_ = SuperstructureState::INTAKING;
+        note_in_transfer_ = false;
       }
 
       extend_goal_location = ExtendStatus::RETRACTED;
@@ -231,7 +237,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       if (extend_beambreak) {
         state_ = SuperstructureState::LOADED;
       }
-      intake_roller_state = IntakeRollerStatus::INTAKING;
+
+      if (transfer_beambreak) {
+        note_in_transfer_ = true;
+      }
+
+      // Once the note is in the transfer, stop the intake rollers
+      if (note_in_transfer_) {
+        intake_roller_state = IntakeRollerStatus::NONE;
+      } else {
+        intake_roller_state = IntakeRollerStatus::INTAKING;
+      }
+
       transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_EXTEND;
       extend_goal_location = ExtendStatus::RETRACTED;

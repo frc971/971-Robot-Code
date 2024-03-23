@@ -66,6 +66,7 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Output>("/superstructure")),
         extend_beambreak_(false),
         catapult_beambreak_(false),
+        transfer_beambreak_(false),
         intake_pivot_(
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
             PositionSensorSimulator(simulated_robot_constants->robot()
@@ -275,6 +276,7 @@ class SuperstructureSimulation {
 
     position_builder.add_extend_beambreak(extend_beambreak_);
     position_builder.add_catapult_beambreak(catapult_beambreak_);
+    position_builder.add_transfer_beambreak(transfer_beambreak_);
     position_builder.add_intake_pivot(intake_pivot_offset);
     position_builder.add_catapult(catapult_offset);
     position_builder.add_altitude(altitude_offset);
@@ -290,6 +292,10 @@ class SuperstructureSimulation {
 
   void set_catapult_beambreak(bool triggered) {
     catapult_beambreak_ = triggered;
+  }
+
+  void set_transfer_beambreak(bool triggered) {
+    transfer_beambreak_ = triggered;
   }
 
   AbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
@@ -312,6 +318,7 @@ class SuperstructureSimulation {
 
   bool extend_beambreak_;
   bool catapult_beambreak_;
+  bool transfer_beambreak_;
 
   AbsoluteEncoderSimulator intake_pivot_;
   PotAndAbsoluteEncoderSimulator climber_;
@@ -943,6 +950,58 @@ TEST_F(SuperstructureTest, IntakeGoal) {
             SuperstructureState::LOADED);
 
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+}
+
+// Make sure we stop intaking once transfer beambreak is triggered
+TEST_F(SuperstructureTest, TransferBeamBreakStopsIntake) {
+  SetEnabled(true);
+
+  WaitUntilZeroed();
+
+  superstructure_plant_.intake_pivot()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->intake_pivot()->range())
+          .middle());
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_intake_pivot(IntakePivotGoal::DOWN);
+    goal_builder.add_note_goal(NoteGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
+
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(),
+            simulated_robot_constants_->common()
+                ->intake_roller_voltages()
+                ->intaking());
+
+  superstructure_plant_.set_transfer_beambreak(true);
+
+  RunFor(chrono::seconds(2));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
+
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller(),
+            IntakeRollerStatus::NONE);
+
+  EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
 }
 
 // Tests the full range of activities we need to be doing from loading ->
