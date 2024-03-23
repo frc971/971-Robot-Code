@@ -11,7 +11,7 @@
 
 DEFINE_double(max_pose_error, 1e-5,
               "Throw out target poses with a higher pose error than this");
-DEFINE_double(max_distortion, 0.1, "");
+DEFINE_double(max_distortion, 1000.0, "");
 DEFINE_double(
     max_pose_error_ratio, 0.4,
     "Throw out target poses with a higher pose error ratio than this");
