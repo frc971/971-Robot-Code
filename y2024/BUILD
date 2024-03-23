@@ -152,7 +152,7 @@ aos_config(
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//frc971/wpilib:pdp_values_fbs",
-        #y2019 stuff shouldn't be here (e.g. target selector)
+        # y2019 stuff shouldn't be here (e.g. target selector)
         "//y2024/constants:constants_fbs",
         "//aos/network:timestamp_fbs",
         "//y2024/control_loops/superstructure:superstructure_goal_fbs",
@@ -277,6 +277,7 @@ cc_binary(
         "//third_party:phoenix6",
         "//third_party:wpilib",
         "//y2024/constants:constants_fbs",
+        "//y2024/control_loops/superstructure:led_indicator_lib",
         "//y2024/control_loops/superstructure:superstructure_can_position_fbs",
         "//y2024/control_loops/superstructure:superstructure_output_fbs",
         "//y2024/control_loops/superstructure:superstructure_position_fbs",
