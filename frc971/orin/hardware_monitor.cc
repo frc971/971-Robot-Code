@@ -10,6 +10,7 @@
 #include "frc971/orin/hardware_stats_generated.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
+DEFINE_bool(log_voltages, false, "If true, log voltages too.");
 
 namespace frc971::orin {
 namespace {
@@ -68,14 +69,19 @@ class HardwareMonitor {
     // Iterate through all thermal zones
     std::vector<flatbuffers::Offset<ThermalZone>> thermal_zones;
     for (int zone_id = 0; zone_id < 9; zone_id++) {
+      std::optional<std::string> zone_name = ReadFileFirstLine(absl::StrFormat(
+          "/sys/devices/virtual/thermal/thermal_zone%d/type", zone_id));
+      flatbuffers::Offset<flatbuffers::String> name_offset;
+      if (zone_name) {
+        name_offset = builder.fbb()->CreateString(*zone_name);
+      }
+
       ThermalZone::Builder thermal_zone_builder =
           builder.MakeBuilder<ThermalZone>();
       thermal_zone_builder.add_id(zone_id);
 
-      std::optional<std::string> zone_name = ReadFileFirstLine(absl::StrFormat(
-          "/sys/devices/virtual/thermal/thermal_zone%d/type", zone_id));
-      if (zone_name) {
-        thermal_zone_builder.add_name(builder.fbb()->CreateString(*zone_name));
+      if (!name_offset.IsNull()) {
+        thermal_zone_builder.add_name(name_offset);
       }
 
       std::optional<std::string> temperature_str =
@@ -93,54 +99,68 @@ class HardwareMonitor {
     std::optional<std::string> fan_speed_str = ReadFileFirstLine(
         absl::StrFormat("/sys/class/hwmon/%s/rpm", fan_hwmon_));
 
-    // Iterate through INA3221 electrical reading channels
-    std::vector<flatbuffers::Offset<ElectricalReading>> electrical_readings;
-    for (int channel = 1; channel <= 3; channel++) {
-      ElectricalReading::Builder electrical_reading_builder =
-          builder.MakeBuilder<ElectricalReading>();
-      electrical_reading_builder.add_channel(channel);
+    flatbuffers::Offset<
+        flatbuffers::Vector<flatbuffers::Offset<ElectricalReading>>>
+        electrical_readings_offset;
+    if (FLAGS_log_voltages) {
+      std::vector<flatbuffers::Offset<ElectricalReading>> electrical_readings;
+      // Iterate through INA3221 electrical reading channels
+      for (int channel = 1; channel <= 3; channel++) {
+        std::optional<std::string> label = ReadFileFirstLine(absl::StrFormat(
+            "/sys/class/hwmon/%s/in%d_label", electrical_hwmon_, channel));
 
-      std::optional<std::string> label = ReadFileFirstLine(absl::StrFormat(
-          "/sys/class/hwmon/%s/in%d_label", electrical_hwmon_, channel));
-      if (label) {
-        electrical_reading_builder.add_label(
-            builder.fbb()->CreateString(*label));
+        flatbuffers::Offset<flatbuffers::String> label_offset;
+        if (label) {
+          label_offset = builder.fbb()->CreateString(*label);
+        }
+
+        ElectricalReading::Builder electrical_reading_builder =
+            builder.MakeBuilder<ElectricalReading>();
+        electrical_reading_builder.add_channel(channel);
+
+        if (!label_offset.IsNull()) {
+          electrical_reading_builder.add_label(label_offset);
+        }
+
+        std::optional<std::string> voltage_str =
+            ReadFileFirstLine(absl::StrFormat("/sys/class/hwmon/%s/in%d_input",
+                                              electrical_hwmon_, channel));
+        uint64_t voltage = 0;
+        if (voltage_str && absl::SimpleAtoi(*voltage_str, &voltage)) {
+          electrical_reading_builder.add_voltage(voltage);
+        }
+
+        std::optional<std::string> current_str = ReadFileFirstLine(
+            absl::StrFormat("/sys/class/hwmon/%s/curr%d_input",
+                            electrical_hwmon_, channel));
+        uint64_t current = 0;
+        if (current_str && absl::SimpleAtoi(*current_str, &current)) {
+          electrical_reading_builder.add_current(current);
+        }
+
+        uint64_t power = voltage * current / 1000;
+        if (power != 0) {
+          electrical_reading_builder.add_power(power);
+        }
+
+        electrical_readings.emplace_back(electrical_reading_builder.Finish());
       }
-
-      std::optional<std::string> voltage_str =
-          ReadFileFirstLine(absl::StrFormat("/sys/class/hwmon/%s/in%d_input",
-                                            electrical_hwmon_, channel));
-      uint64_t voltage = 0;
-      if (voltage_str && absl::SimpleAtoi(*voltage_str, &voltage)) {
-        electrical_reading_builder.add_voltage(voltage);
-      }
-
-      std::optional<std::string> current_str =
-          ReadFileFirstLine(absl::StrFormat("/sys/class/hwmon/%s/curr%d_input",
-                                            electrical_hwmon_, channel));
-      uint64_t current = 0;
-      if (current_str && absl::SimpleAtoi(*current_str, &current)) {
-        electrical_reading_builder.add_current(current);
-      }
-
-      uint64_t power = voltage * current / 1000;
-      if (power != 0) {
-        electrical_reading_builder.add_power(power);
-      }
-
-      electrical_readings.emplace_back(electrical_reading_builder.Finish());
+      electrical_readings_offset =
+          builder.fbb()->CreateVector(electrical_readings);
     }
 
+    auto thermal_zone_offset = builder.fbb()->CreateVector(thermal_zones);
     HardwareStats::Builder hardware_stats_builder =
         builder.MakeBuilder<HardwareStats>();
-    hardware_stats_builder.add_thermal_zones(
-        builder.fbb()->CreateVector(thermal_zones));
+    hardware_stats_builder.add_thermal_zones(thermal_zone_offset);
     uint64_t fan_speed = 0;
     if (fan_speed_str && absl::SimpleAtoi(*fan_speed_str, &fan_speed)) {
       hardware_stats_builder.add_fan_speed(fan_speed);
     }
-    hardware_stats_builder.add_electrical_readings(
-        builder.fbb()->CreateVector(electrical_readings));
+    if (!electrical_readings_offset.IsNull()) {
+      hardware_stats_builder.add_electrical_readings(
+          electrical_readings_offset);
+    }
 
     builder.CheckOk(builder.Send(hardware_stats_builder.Finish()));
   }
