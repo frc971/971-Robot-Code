@@ -111,10 +111,10 @@ struct CameraNode {
 std::vector<CameraNode> CreateNodeList() {
   std::vector<CameraNode> list;
 
-  list.push_back({.node_name = "orin1", .camera_number = 0});
-  list.push_back({.node_name = "orin1", .camera_number = 1});
   list.push_back({.node_name = "imu", .camera_number = 0});
   list.push_back({.node_name = "imu", .camera_number = 1});
+  list.push_back({.node_name = "orin1", .camera_number = 1});
+  list.push_back({.node_name = "orin1", .camera_number = 0});
 
   return list;
 }
