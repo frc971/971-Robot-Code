@@ -226,8 +226,8 @@ class ArgusCamera {
 
     {
       auto range = i_sensor_mode->getFrameDurationRange();
-      LOG(INFO) << "Min: " << range.min() << ", " << range.max();
-      LOG(INFO) << "type " << i_sensor_mode->getSensorModeType().getName();
+      LOG(INFO) << "Frame duration min: " << range.min() << ", " << range.max()
+                << ", type " << i_sensor_mode->getSensorModeType().getName();
     }
 
     // Create the capture session using the first device and get the core
@@ -326,21 +326,22 @@ class ArgusCamera {
         Argus::interface_cast<Argus::IAutoControlSettings>(
             i_request->getAutoControlSettings());
     CHECK(i_auto_control_settings != nullptr);
-    i_auto_control_settings->setAwbMode(Argus::AWB_MODE_OFF);
+    CHECK_EQ(i_auto_control_settings->setAwbMode(Argus::AWB_MODE_OFF),
+             Argus::STATUS_OK);
 
     i_auto_control_settings->setAeLock(false);
     Argus::Range<float> isp_digital_gain_range;
     isp_digital_gain_range.min() = 1;
     isp_digital_gain_range.max() = 1;
-    i_auto_control_settings->setIspDigitalGainRange(isp_digital_gain_range);
+    CHECK_EQ(
+        i_auto_control_settings->setIspDigitalGainRange(isp_digital_gain_range),
+        Argus::STATUS_OK);
 
     Argus::IEdgeEnhanceSettings *i_ee_settings =
         Argus::interface_cast<Argus::IEdgeEnhanceSettings>(request_);
     CHECK(i_ee_settings != nullptr);
 
-    i_ee_settings->setEdgeEnhanceStrength(0);
-
-    i_request->enableOutputStream(output_stream_.get());
+    CHECK_EQ(i_ee_settings->setEdgeEnhanceStrength(0), Argus::STATUS_OK);
 
     Argus::ISourceSettings *i_source_settings =
         Argus::interface_cast<Argus::ISourceSettings>(
@@ -349,17 +350,22 @@ class ArgusCamera {
 
     i_source_settings->setFrameDurationRange(
         i_sensor_mode->getFrameDurationRange().min());
-    i_source_settings->setSensorMode(sensor_modes[FLAGS_mode]);
+    CHECK_EQ(i_source_settings->setSensorMode(sensor_modes[FLAGS_mode]),
+             Argus::STATUS_OK);
 
     Argus::Range<float> sensor_mode_analog_gain_range;
     sensor_mode_analog_gain_range.min() = FLAGS_gain;
     sensor_mode_analog_gain_range.max() = FLAGS_gain;
-    i_source_settings->setGainRange(sensor_mode_analog_gain_range);
+    CHECK_EQ(i_source_settings->setGainRange(sensor_mode_analog_gain_range),
+             Argus::STATUS_OK);
 
     Argus::Range<uint64_t> limit_exposure_time_range;
     limit_exposure_time_range.min() = FLAGS_exposure;
     limit_exposure_time_range.max() = FLAGS_exposure;
-    i_source_settings->setExposureTimeRange(limit_exposure_time_range);
+    CHECK_EQ(i_source_settings->setExposureTimeRange(limit_exposure_time_range),
+             Argus::STATUS_OK);
+
+    i_request->enableOutputStream(output_stream_.get());
   }
 
   void Start() {
