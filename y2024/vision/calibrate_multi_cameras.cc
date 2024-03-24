@@ -82,6 +82,11 @@ namespace calibration = frc971::vision::calibration;
 static constexpr double kImagePeriodMs =
     1.0 / 60.0 * 1000.0;  // Image capture period in ms
 
+std::vector<CameraNode> node_list(y2024::vision::CreateNodeList());
+
+std::map<std::string, int> ordering_map(
+    y2024::vision::CreateOrderingMap(node_list));
+
 // Change reference frame from camera to robot
 Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
                                        Eigen::Affine3d extrinsics) {
@@ -90,51 +95,19 @@ Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
   return H_robot_target;
 }
 
-struct TimestampedPiDetection {
+struct TimestampedCameraDetection {
   aos::distributed_clock::time_point time;
   // Pose of target relative to robot
   Eigen::Affine3d H_camera_target;
   // name of pi
-  std::string pi_name;
+  std::string camera_name;
   int board_id;
 };
 
-struct CameraNode {
-  std::string node_name;
-  int camera_number;
-
-  inline const std::string camera_name() const {
-    return "/" + node_name + "/camera" + std::to_string(camera_number);
-  }
-};
-
-std::vector<CameraNode> CreateNodeList() {
-  std::vector<CameraNode> list;
-
-  list.push_back({.node_name = "imu", .camera_number = 0});
-  list.push_back({.node_name = "imu", .camera_number = 1});
-  list.push_back({.node_name = "orin1", .camera_number = 1});
-  list.push_back({.node_name = "orin1", .camera_number = 0});
-
-  return list;
-}
-
-std::vector<CameraNode> node_list(CreateNodeList());
-std::map<std::string, int> CreateOrderingMap() {
-  std::map<std::string, int> map;
-
-  for (uint i = 0; i < node_list.size(); i++) {
-    map.insert({node_list.at(i).camera_name(), i});
-  }
-
-  return map;
-}
-std::map<std::string, int> ordering_map(CreateOrderingMap());
-
-TimestampedPiDetection last_observation;
-std::vector<std::pair<TimestampedPiDetection, TimestampedPiDetection>>
+TimestampedCameraDetection last_observation;
+std::vector<std::pair<TimestampedCameraDetection, TimestampedCameraDetection>>
     detection_list;
-std::vector<TimestampedPiDetection> two_board_extrinsics_list;
+std::vector<TimestampedCameraDetection> two_board_extrinsics_list;
 VisualizeRobot vis_robot_;
 
 // TODO<jim>: Implement variance calcs
@@ -164,7 +137,7 @@ Eigen::Affine3d ComputeAveragePose(
     *translation_variance = Eigen::Vector3d();
   }
   if (rotation_variance != nullptr) {
-    LOG(INFO) << *rotation_variance;
+    *rotation_variance = Eigen::Vector3d();
   }
 
   return return_pose;
@@ -189,13 +162,13 @@ Eigen::Affine3d ComputeAveragePose(
 }
 
 Eigen::Affine3d ComputeAveragePose(
-    std::vector<TimestampedPiDetection> &pose_list,
+    std::vector<TimestampedCameraDetection> &pose_list,
     Eigen::Vector3d *translation_variance = nullptr,
     Eigen::Vector3d *rotation_variance = nullptr) {
   std::vector<Eigen::Vector3d> translation_list;
   std::vector<Eigen::Vector4d> rotation_list;
 
-  for (TimestampedPiDetection pose : pose_list) {
+  for (TimestampedCameraDetection pose : pose_list) {
     translation_list.push_back(pose.H_camera_target.translation());
     Eigen::Quaterniond quat(pose.H_camera_target.rotation().matrix());
     rotation_list.push_back(
@@ -208,7 +181,7 @@ Eigen::Affine3d ComputeAveragePose(
 void HandlePoses(cv::Mat rgb_image,
                  std::vector<TargetMapper::TargetPose> target_poses,
                  aos::distributed_clock::time_point distributed_eof,
-                 std::string node_name) {
+                 std::string camera_name) {
   // This is used to transform points for visualization
   // Assumes targets are aligned with x->right, y->up, z->out of board
   Eigen::Affine3d H_world_board;
@@ -224,7 +197,7 @@ void HandlePoses(cv::Mat rgb_image,
       << "Can't handle more than two tags in field of view";
   if (target_poses.size() == 2) {
     draw_vis = true;
-    VLOG(1) << "Saw two boards in same view from " << node_name;
+    VLOG(1) << "Saw two boards in same view from " << camera_name;
     int from_index = 0;
     int to_index = 1;
     // Handle when we see two boards at once
@@ -242,13 +215,15 @@ void HandlePoses(cv::Mat rgb_image,
     Eigen::Affine3d H_boardA_boardB =
         H_camera_boardA.inverse() * H_camera_boardB;
 
-    TimestampedPiDetection boardA_boardB{
+    TimestampedCameraDetection boardA_boardB{
         .time = distributed_eof,
         .H_camera_target = H_boardA_boardB,
-        .pi_name = node_name,
+        .camera_name = camera_name,
         .board_id = target_poses[from_index].id};
 
-    VLOG(1) << "Map from board " << from_index << " to " << to_index << " is\n"
+    VLOG(1) << "Two boards seen by " << camera_name << ".  Map from board "
+            << target_poses[from_index].id << " to "
+            << target_poses[to_index].id << " is\n"
             << H_boardA_boardB.matrix();
     // Store this observation of the transform between two boards
     two_board_extrinsics_list.push_back(boardA_boardB);
@@ -256,41 +231,39 @@ void HandlePoses(cv::Mat rgb_image,
     if (FLAGS_visualize) {
       vis_robot_.DrawFrameAxes(
           H_world_board,
-          std::string("board ") + std::to_string(target_poses[from_index].id),
+          std::string("Board ") + std::to_string(target_poses[from_index].id),
           cv::Scalar(0, 255, 0));
       vis_robot_.DrawFrameAxes(
           H_world_board * boardA_boardB.H_camera_target,
-          std::string("board ") + std::to_string(target_poses[to_index].id),
+          std::string("Board ") + std::to_string(target_poses[to_index].id),
           cv::Scalar(255, 0, 0));
-      VLOG(2) << "Detection map from camera " << node_name << " to board "
-              << target_poses[from_index].id << " is\n"
-              << H_camera_boardA.matrix() << "\n and inverse is\n"
-              << H_camera_boardA.inverse().matrix()
-              << "\n and with world to board rotation is\n"
-              << H_world_board * H_camera_boardA.inverse().matrix();
       vis_robot_.DrawRobotOutline(H_world_board * H_camera_boardA.inverse(),
-                                  node_name, cv::Scalar(0, 0, 255));
+                                  camera_name, kOrinColors.at(camera_name));
     }
   } else if (target_poses.size() == 1) {
-    VLOG(1) << "Saw single board in camera " << node_name;
+    VLOG(1) << camera_name << " saw single board " << target_poses[0].id;
     Eigen::Affine3d H_camera2_board2 =
         PoseUtils::Pose3dToAffine3d(target_poses[0].pose);
-    TimestampedPiDetection new_observation{.time = distributed_eof,
-                                           .H_camera_target = H_camera2_board2,
-                                           .pi_name = node_name,
-                                           .board_id = target_poses[0].id};
+    TimestampedCameraDetection new_observation{
+        .time = distributed_eof,
+        .H_camera_target = H_camera2_board2,
+        .camera_name = camera_name,
+        .board_id = target_poses[0].id};
 
-    // Only take two observations if they're within half an image cycle of each
-    // other (i.e., as close in time as possible)
-    if (std::abs((distributed_eof - last_observation.time).count()) <
-        kImagePeriodMs / 2.0 * 1000000.0) {
-      // Sort by pi numbering, since this is how we will handle them
-      std::pair<TimestampedPiDetection, TimestampedPiDetection> new_pair;
-      if (ordering_map.at(last_observation.pi_name) <
-          ordering_map.at(new_observation.pi_name)) {
+    // Only take two observations if they're within half an image cycle of
+    // each other (i.e., as close in time as possible) And, if two consecutive
+    // observations are from the same camera, just replace with the newest one
+    if ((new_observation.camera_name != last_observation.camera_name) &&
+        (std::abs((distributed_eof - last_observation.time).count()) <
+         kImagePeriodMs / 2.0 * 1000000.0)) {
+      // Sort by camera numbering, since this is how we will handle them
+      std::pair<TimestampedCameraDetection, TimestampedCameraDetection>
+          new_pair;
+      if (ordering_map.at(last_observation.camera_name) <
+          ordering_map.at(new_observation.camera_name)) {
         new_pair = std::pair(last_observation, new_observation);
-      } else if (ordering_map.at(last_observation.pi_name) >
-                 ordering_map.at(new_observation.pi_name)) {
+      } else if (ordering_map.at(last_observation.camera_name) >
+                 ordering_map.at(new_observation.camera_name)) {
         new_pair = std::pair(new_observation, last_observation);
       }
 
@@ -301,52 +274,64 @@ void HandlePoses(cv::Mat rgb_image,
       // between the two cameras
       if (FLAGS_visualize && two_board_extrinsics_list.size() > 0) {
         draw_vis = true;
-        TimestampedPiDetection &last_two_board_ext =
-            two_board_extrinsics_list[two_board_extrinsics_list.size() - 1];
+        TimestampedCameraDetection &last_two_board_ext =
+            two_board_extrinsics_list.back();
         Eigen::Affine3d &H_boardA_boardB = last_two_board_ext.H_camera_target;
         int boardA_boardB_id = last_two_board_ext.board_id;
 
-        TimestampedPiDetection camera1_boardA = new_pair.first;
-        TimestampedPiDetection camera2_boardB = new_pair.second;
+        TimestampedCameraDetection camera1_boardA = new_pair.first;
+        TimestampedCameraDetection camera2_boardB = new_pair.second;
         // If camera1_boardA doesn't point to the first target, then swap
         // these two
         if (camera1_boardA.board_id != boardA_boardB_id) {
           camera1_boardA = new_pair.second;
           camera2_boardB = new_pair.first;
         }
-        VLOG(1) << "Camera " << camera1_boardA.pi_name << " seeing board "
+        VLOG(1) << "Camera " << camera1_boardA.camera_name << " seeing board "
                 << camera1_boardA.board_id << " and camera "
-                << camera2_boardB.pi_name << " seeing board "
+                << camera2_boardB.camera_name << " seeing board "
                 << camera2_boardB.board_id;
 
         vis_robot_.DrawRobotOutline(
             H_world_board * camera1_boardA.H_camera_target.inverse(),
-            camera1_boardA.pi_name, cv::Scalar(0, 0, 255));
+            camera1_boardA.camera_name,
+            kOrinColors.at(camera1_boardA.camera_name));
         vis_robot_.DrawRobotOutline(
             H_world_board * H_boardA_boardB *
                 camera2_boardB.H_camera_target.inverse(),
-            camera2_boardB.pi_name, cv::Scalar(128, 128, 0));
+            camera2_boardB.camera_name,
+            kOrinColors.at(camera2_boardB.camera_name));
         vis_robot_.DrawFrameAxes(
             H_world_board,
             std::string("Board ") + std::to_string(last_two_board_ext.board_id),
             cv::Scalar(0, 255, 0));
         vis_robot_.DrawFrameAxes(H_world_board * H_boardA_boardB, "Board B",
                                  cv::Scalar(255, 0, 0));
+        VLOG(1) << "Storing observation between " << new_pair.first.camera_name
+                << ", target " << new_pair.first.board_id << " and "
+                << new_pair.second.camera_name << ", target "
+                << new_pair.second.board_id;
+      } else if (two_board_extrinsics_list.size() == 0) {
+        VLOG(1) << "Not drawing observation yet, since we don't have a two "
+                   "board estimate";
       }
-      VLOG(1) << "Storing observation between " << new_pair.first.pi_name
-              << ", target " << new_pair.first.board_id << " and "
-              << new_pair.second.pi_name << ", target "
-              << new_pair.second.board_id;
     } else {
-      VLOG(2) << "Storing observation for " << node_name << " at time "
-              << distributed_eof;
+      if (new_observation.camera_name == last_observation.camera_name) {
+        VLOG(2) << "Updating repeated observation for " << camera_name;
+      } else {
+        VLOG(1) << "Storing observation for " << camera_name << " at time "
+                << distributed_eof << " since last observation was "
+                << std::abs((distributed_eof - last_observation.time).count()) /
+                       1000000.0
+                << "ms ago";
+      }
       last_observation = new_observation;
     }
   }
 
   if (FLAGS_visualize) {
     if (!rgb_image.empty()) {
-      std::string image_name = node_name + " Image";
+      std::string image_name = camera_name + " Image";
       cv::Mat rgb_small;
       cv::resize(rgb_image, rgb_small, cv::Size(), 0.5, 0.5);
       cv::imshow(image_name, rgb_small);
@@ -354,7 +339,7 @@ void HandlePoses(cv::Mat rgb_image,
     }
 
     if (draw_vis) {
-      cv::imshow("View", vis_robot_.image_);
+      cv::imshow("Overhead View", vis_robot_.image_);
       cv::waitKey(FLAGS_wait_key);
       vis_robot_.ClearImage();
     }
@@ -363,8 +348,8 @@ void HandlePoses(cv::Mat rgb_image,
 
 void HandleTargetMap(const TargetMap &map,
                      aos::distributed_clock::time_point distributed_eof,
-                     std::string node_name) {
-  VLOG(1) << "Got april tag map call from camera " << node_name;
+                     std::string camera_name) {
+  VLOG(1) << "Got april tag map call from camera " << camera_name;
   // Create empty RGB image in this case
   cv::Mat rgb_image;
   std::vector<TargetMapper::TargetPose> target_poses;
@@ -375,20 +360,22 @@ void HandleTargetMap(const TargetMap &map,
             FLAGS_min_target_id ||
         static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) >
             FLAGS_max_target_id) {
-      LOG(INFO) << "Skipping tag with invalid id of " << target_pose_fbs->id();
+      VLOG(1) << "Skipping tag from " << camera_name << " with invalid id of "
+              << target_pose_fbs->id();
       continue;
     }
 
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
-      LOG(INFO) << "Skipping tag " << target_pose_fbs->id()
-                << " due to pose error of " << target_pose_fbs->pose_error();
+      LOG(INFO) << "Skipping tag from " << camera_name << " with id "
+                << target_pose_fbs->id() << " due to pose error of "
+                << target_pose_fbs->pose_error();
       continue;
     }
     // Skip detections with high pose error ratios
     if (target_pose_fbs->pose_error_ratio() > FLAGS_max_pose_error_ratio) {
-      LOG(INFO) << "Skipping tag " << target_pose_fbs->id()
-                << " due to pose error ratio of "
+      LOG(INFO) << "Skipping tag from " << camera_name << " with id "
+                << target_pose_fbs->id() << " due to pose error ratio of "
                 << target_pose_fbs->pose_error_ratio();
       continue;
     }
@@ -400,18 +387,18 @@ void HandleTargetMap(const TargetMap &map,
 
     Eigen::Affine3d H_camera_target =
         PoseUtils::Pose3dToAffine3d(target_pose.pose);
-    VLOG(1) << node_name << " saw target " << target_pose.id
+    VLOG(1) << camera_name << " saw target " << target_pose.id
             << " from TargetMap at timestamp " << distributed_eof
             << " with pose = " << H_camera_target.matrix();
   }
-  HandlePoses(rgb_image, target_poses, distributed_eof, node_name);
+  HandlePoses(rgb_image, target_poses, distributed_eof, camera_name);
 }
 
 void HandleImage(aos::EventLoop *event_loop, cv::Mat rgb_image,
                  const aos::monotonic_clock::time_point eof,
                  aos::distributed_clock::time_point distributed_eof,
                  frc971::vision::CharucoExtractor &charuco_extractor,
-                 std::string node_name) {
+                 std::string camera_name) {
   std::vector<cv::Vec4i> charuco_ids;
   std::vector<std::vector<cv::Point2f>> charuco_corners;
   bool valid = false;
@@ -435,11 +422,11 @@ void HandleImage(aos::EventLoop *event_loop, cv::Mat rgb_image,
     target_poses.emplace_back(target_pose);
 
     Eigen::Affine3d H_camera_target = PoseUtils::Pose3dToAffine3d(pose);
-    VLOG(2) << node_name << " saw target " << target_pose.id
+    VLOG(2) << camera_name << " saw target " << target_pose.id
             << " from image at timestamp " << distributed_eof
             << " with pose = " << H_camera_target.matrix();
   }
-  HandlePoses(rgb_image, target_poses, distributed_eof, node_name);
+  HandlePoses(rgb_image, target_poses, distributed_eof, camera_name);
 }
 
 void ExtrinsicsMain(int argc, char *argv[]) {
@@ -479,12 +466,13 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   std::vector<Eigen::Affine3d> default_extrinsics;
 
   for (const CameraNode &camera_node : node_list) {
-    const aos::Node *pi = aos::configuration::GetNode(
+    const aos::Node *node = aos::configuration::GetNode(
         reader.configuration(), camera_node.node_name.c_str());
 
     detection_event_loops.emplace_back(
         reader.event_loop_factory()->MakeEventLoop(
-            (camera_node.camera_name() + "_detection").c_str(), pi));
+            (camera_node.camera_name() + "_detection").c_str(), node));
+
     aos::EventLoop *const event_loop = detection_event_loops.back().get();
     frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
         event_loop);
@@ -500,8 +488,8 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         frc971::vision::CameraExtrinsics(calibration).value();
     Eigen::Matrix4d extrinsics_matrix;
     cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
-    const auto ext_H_robot_pi = Eigen::Affine3d(extrinsics_matrix);
-    default_extrinsics.emplace_back(ext_H_robot_pi);
+    const auto ext_H_robot_camera = Eigen::Affine3d(extrinsics_matrix);
+    default_extrinsics.emplace_back(ext_H_robot_camera);
 
     VLOG(1) << "Got extrinsics for " << camera_node.camera_name() << " as\n"
             << default_extrinsics.back().matrix();
@@ -509,42 +497,42 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     event_loop->MakeWatcher(
         camera_node.camera_name(),
         [&reader, event_loop, camera_node](const TargetMap &map) {
-          aos::distributed_clock::time_point pi_distributed_time =
+          aos::distributed_clock::time_point camera_distributed_time =
               reader.event_loop_factory()
                   ->GetNodeEventLoopFactory(event_loop->node())
                   ->ToDistributedClock(aos::monotonic_clock::time_point(
                       aos::monotonic_clock::duration(
                           map.monotonic_timestamp_ns())));
 
-          HandleTargetMap(map, pi_distributed_time, camera_node.camera_name());
+          HandleTargetMap(map, camera_distributed_time,
+                          camera_node.camera_name());
         });
     VLOG(1) << "Created watcher for using the detection event loop for "
-            << camera_node.camera_name() << " and size "
-            << detection_event_loops.size();
+            << camera_node.camera_name();
   }
 
   reader.event_loop_factory()->Run();
 
-  // Do quick check to see what averaged two-board pose for each pi is
-  // individually
+  // Do quick check to see what averaged two-board pose for
+  // each camera is individually
   CHECK_GT(two_board_extrinsics_list.size(), 0u)
       << "Must have at least one view of both boards";
   int base_target_id = two_board_extrinsics_list[0].board_id;
   VLOG(1) << "Base id for two_board_extrinsics_list is " << base_target_id;
 
   for (auto camera_node : node_list) {
-    std::vector<TimestampedPiDetection> pose_list;
+    std::vector<TimestampedCameraDetection> pose_list;
     for (auto ext : two_board_extrinsics_list) {
       CHECK_EQ(base_target_id, ext.board_id)
           << " All boards should have same reference id";
-      if (ext.pi_name == camera_node.camera_name()) {
+      if (ext.camera_name == camera_node.camera_name()) {
         pose_list.push_back(ext);
       }
     }
-    Eigen::Affine3d avg_pose_from_pi = ComputeAveragePose(pose_list);
+    Eigen::Affine3d avg_pose_from_camera = ComputeAveragePose(pose_list);
     VLOG(1) << "Estimate from " << camera_node.camera_name() << " with "
             << pose_list.size() << " observations is:\n"
-            << avg_pose_from_pi.matrix();
+            << avg_pose_from_camera.matrix();
   }
   Eigen::Affine3d H_boardA_boardB_avg =
       ComputeAveragePose(two_board_extrinsics_list);
@@ -563,12 +551,12 @@ void ExtrinsicsMain(int argc, char *argv[]) {
             << " is " << default_extrinsics[0].matrix();
   for (uint i = 0; i < node_list.size() - 1; i++) {
     H_camera1_camera2_list.clear();
-    // Go through the list, and find successive pairs of cameras
-    // We'll be calculating and writing the second of the pair (the i+1'th
-    // camera)
+    // Go through the list, and find successive pairs of
+    // cameras We'll be calculating and writing the second
+    // of the pair (the i+1'th camera)
     for (auto [pose1, pose2] : detection_list) {
-      if ((pose1.pi_name == node_list.at(i).camera_name()) &&
-          (pose2.pi_name == node_list.at(i + 1).camera_name())) {
+      if ((pose1.camera_name == node_list.at(i).camera_name()) &&
+          (pose2.camera_name == node_list.at(i + 1).camera_name())) {
         Eigen::Affine3d H_camera1_boardA = pose1.H_camera_target;
         // If pose1 isn't referenced to base_target_id, correct that
         if (pose1.board_id != base_target_id) {
@@ -581,8 +569,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         // camera1, so we can compute the difference between the cameras with
         // both referenced to boardA)
         Eigen::Affine3d H_camera2_boardA = pose2.H_camera_target;
-        // If pose2 isn't referenced to boardA (base_target_id), correct
-        // that
+        // If pose2 isn't referenced to boardA (base_target_id), correct that
         if (pose2.board_id != base_target_id) {
           // pose2.H_camera_target references boardB, so map back to boardA
           H_camera2_boardA =
@@ -593,10 +580,10 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         Eigen::Affine3d H_camera1_camera2 =
             H_camera1_boardA * H_camera2_boardA.inverse();
         H_camera1_camera2_list.push_back(H_camera1_camera2);
-        VLOG(1) << "Map from camera " << pose1.pi_name << " and tag "
+        VLOG(1) << "Map from camera " << pose1.camera_name << " and tag "
                 << pose1.board_id << " with observation: \n"
                 << pose1.H_camera_target.matrix() << "\n to camera "
-                << pose2.pi_name << " and tag " << pose2.board_id
+                << pose2.camera_name << " and tag " << pose2.board_id
                 << " with observation: \n"
                 << pose2.H_camera_target.matrix() << "\ngot map as\n"
                 << H_camera1_camera2.matrix();
@@ -608,9 +595,9 @@ void ExtrinsicsMain(int argc, char *argv[]) {
           H_world_board = Eigen::Translation3d(0.0, 0.0, 3.0);
         }
 
-        VLOG(2) << "Camera1 " << pose1.pi_name << " in world frame is \n"
+        VLOG(2) << "Camera1 " << pose1.camera_name << " in world frame is \n"
                 << (H_world_board * H_camera1_boardA.inverse()).matrix();
-        VLOG(2) << "Camera2 " << pose2.pi_name << " in world frame is \n"
+        VLOG(2) << "Camera2 " << pose2.camera_name << " in world frame is \n"
                 << (H_world_board * H_camera2_boardA.inverse()).matrix();
       }
     }
@@ -653,7 +640,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
                 << node_list.at(i + 1).camera_name() << " is \n"
                 << next_extrinsic.matrix();
 
-      // Wirte out this extrinsic to a file
+      // Write out this extrinsic to a file
       flatbuffers::FlatBufferBuilder fbb;
       flatbuffers::Offset<flatbuffers::Vector<float>> data_offset =
           fbb.CreateVector(
@@ -698,7 +685,25 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       aos::util::WriteStringToFileOrDie(
           calibration_filename,
           aos::FlatbufferToJson(merged_calibration, {.multi_line = true}));
+
+      if (FLAGS_visualize) {
+        // Draw each of the updated extrinsic camera locations
+        vis_robot_.SetDefaultViewpoint(1000.0, 1500.0);
+        vis_robot_.DrawFrameAxes(
+            updated_extrinsics.back(), node_list.at(i + 1).camera_name(),
+            kOrinColors.at(node_list.at(i + 1).camera_name()));
+      }
     }
+  }
+  if (FLAGS_visualize) {
+    // And don't forget to draw the base camera location
+    vis_robot_.DrawFrameAxes(updated_extrinsics[0],
+                             node_list.at(0).camera_name(),
+                             kOrinColors.at(node_list.at(0).camera_name()));
+    cv::imshow("Extrinsic visualization", vis_robot_.image_);
+    // Add a bit extra time, so that we don't go right through the extrinsics
+    cv::waitKey(3000);
+    cv::waitKey(0);
   }
 
   // Cleanup
