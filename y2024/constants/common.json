@@ -24,6 +24,13 @@
           "shot_speed_over_ground": 16.0
       }
     },
+    {
+      "distance_from_goal": 2.404,
+      "shot_params": {
+          "shot_altitude_angle": 0.645,
+          "shot_speed_over_ground": 16.0
+      }
+    },
     // 2.2 -> high.
     {
       "distance_from_goal": 2.744,
