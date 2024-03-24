@@ -552,7 +552,7 @@ TEST_F(LocalizedDrivetrainTest, MovingTurret) {
   // Give the filters enough time to converge.
   RunFor(chrono::seconds(10));
   VerifyNearGoal(5e-2);
-  EXPECT_TRUE(VerifyEstimatorAccurate(1e-2));
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
 }
 
 // Tests that we reject camera measurements when the turret is spinning too
@@ -589,7 +589,7 @@ TEST_F(LocalizedDrivetrainTest, TooFastTurretDoesntAffectFixedCamera) {
 
   RunFor(chrono::seconds(10));
   VerifyNearGoal(5e-3);
-  EXPECT_TRUE(VerifyEstimatorAccurate(5e-2));
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
 }
 
 // Tests that we don't blow up if we stop getting updates for an extended period

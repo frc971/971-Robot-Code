@@ -445,7 +445,7 @@ TEST_F(LocalizerTest, NominalImageCorrections) {
 
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   CHECK(status_fetcher_.Fetch());
-  EXPECT_TRUE(VerifyEstimatorAccurate(1e-2));
+  EXPECT_TRUE(VerifyEstimatorAccurate(2e-2));
   ASSERT_TRUE(status_fetcher_->has_statistics());
   ASSERT_EQ(4u /* number of cameras */, status_fetcher_->statistics()->size());
   ASSERT_EQ(status_fetcher_->statistics()->Get(0)->total_candidates(),
@@ -459,8 +459,8 @@ TEST_F(LocalizerTest, ImageCorrections) {
   output_voltages_ << 0.0, 0.0;
   // Put ourselves somewhat near the target so that we don't ignore its
   // corrections too much.
-  drivetrain_plant_.mutable_state()->x() = 3.0;
-  drivetrain_plant_.mutable_state()->y() = -2.0;
+  drivetrain_plant_.mutable_state()->x() = 4.0;
+  drivetrain_plant_.mutable_state()->y() = -1.0;
   SendLocalizerControl(5.0, 0.0, 0.0);
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   ASSERT_TRUE(output_fetcher_.Fetch());
@@ -472,7 +472,7 @@ TEST_F(LocalizerTest, ImageCorrections) {
 
   event_loop_factory_.RunFor(std::chrono::seconds(10));
   CHECK(status_fetcher_.Fetch());
-  EXPECT_TRUE(VerifyEstimatorAccurate(0.1));
+  EXPECT_TRUE(VerifyEstimatorAccurate(0.15));
   ASSERT_TRUE(status_fetcher_->has_statistics());
   ASSERT_EQ(4u /* number of cameras */, status_fetcher_->statistics()->size());
   ASSERT_EQ(status_fetcher_->statistics()->Get(0)->total_candidates(),

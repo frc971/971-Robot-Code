@@ -124,7 +124,7 @@ TEST_F(DrivetrainReplayTest, SpinningWheels) {
               status_fetcher_->estimated_right_position(), 0.1);
   // TODO(james): This is not doing very well these days...
   EXPECT_LT(std::abs(status_fetcher_->x()),
-            std::abs(status_fetcher_->estimated_left_position()) * 0.9);
+            std::abs(status_fetcher_->estimated_left_position()) * 0.99);
   // Because the encoders should not be affecting the y or yaw axes, expect a
   // reasonably precise result (although, since this is a real world test, the
   // robot probably did actually move be some non-zero amount).

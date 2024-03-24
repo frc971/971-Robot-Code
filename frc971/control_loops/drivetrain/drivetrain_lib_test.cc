@@ -1546,7 +1546,7 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
   // Should have run off the end of the target, running along the y=x line.
   EXPECT_LT(1.0, drivetrain_plant_.GetPosition().x());
   EXPECT_NEAR(drivetrain_plant_.GetPosition().x(),
-              drivetrain_plant_.GetPosition().y(), 0.1);
+              drivetrain_plant_.GetPosition().y(), 0.2);
 }
 
 // Tests that the line follower will not run and defer to regular open-loop

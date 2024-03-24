@@ -914,8 +914,8 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   Q_continuous_(kTheta, kTheta) = 0.0001;
   Q_continuous_(kLeftEncoder, kLeftEncoder) = std::pow(0.15, 2.0);
   Q_continuous_(kRightEncoder, kRightEncoder) = std::pow(0.15, 2.0);
-  Q_continuous_(kLeftVelocity, kLeftVelocity) = std::pow(0.5, 2.0);
-  Q_continuous_(kRightVelocity, kRightVelocity) = std::pow(0.5, 2.0);
+  Q_continuous_(kLeftVelocity, kLeftVelocity) = std::pow(0.1, 2.0);
+  Q_continuous_(kRightVelocity, kRightVelocity) = std::pow(0.1, 2.0);
   Q_continuous_(kLeftVoltageError, kLeftVoltageError) = std::pow(10.0, 2.0);
   Q_continuous_(kRightVoltageError, kRightVoltageError) = std::pow(10.0, 2.0);
   Q_continuous_(kAngularError, kAngularError) = std::pow(2.0, 2.0);
@@ -930,8 +930,8 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // of determining that the velocity updates are bogus. This also interacts
   // with kVelocityOffsetTimeConstant.
   Q_continuous_(kLongitudinalVelocityOffset, kLongitudinalVelocityOffset) =
-      std::pow(1.1, 2.0);
-  Q_continuous_(kLateralVelocity, kLateralVelocity) = std::pow(0.1, 2.0);
+      std::pow(0.01, 2.0);
+  Q_continuous_(kLateralVelocity, kLateralVelocity) = std::pow(0.01, 2.0);
 
   {
     Eigen::Matrix<Scalar, kNOutputs, kNStates> H_encoders_and_gyro;
