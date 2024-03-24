@@ -4,6 +4,30 @@
 
 namespace y2024::vision {
 
+// Store a list of ordered cameras as you progress around the robot/box of orins
+std::vector<CameraNode> CreateNodeList() {
+  std::vector<CameraNode> list;
+
+  list.push_back({.node_name = "imu", .camera_number = 0});
+  list.push_back({.node_name = "imu", .camera_number = 1});
+  list.push_back({.node_name = "orin1", .camera_number = 1});
+  list.push_back({.node_name = "orin1", .camera_number = 0});
+
+  return list;
+}
+
+// From the node_list, create a numbering scheme from 0 to 3
+std::map<std::string, int> CreateOrderingMap(
+    std::vector<CameraNode> &node_list) {
+  std::map<std::string, int> map;
+
+  for (uint i = 0; i < node_list.size(); i++) {
+    map.insert({node_list.at(i).camera_name(), i});
+  }
+
+  return map;
+}
+
 const frc971::vision::calibration::CameraCalibration *FindCameraCalibration(
     const y2024::Constants &calibration_data, std::string_view node_name,
     int camera_number) {

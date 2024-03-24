@@ -19,6 +19,7 @@
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_mapper.h"
+#include "frc971/vision/vision_generated.h"
 #include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
 #include "y2024/constants/simulated_constants_sender.h"
@@ -48,7 +49,7 @@ DEFINE_double(pause_on_distance, 2.0,
               "Pause if two consecutive implied robot positions differ by more "
               "than this many meters");
 DEFINE_string(orin, "orin1",
-              "Orin name to generate mcap log for; defaults to pi1.");
+              "Orin name to generate mcap log for; defaults to orin1.");
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
@@ -86,8 +87,7 @@ class TargetMapperReplay {
 
  private:
   static constexpr int kImageWidth = 1280;
-  // Map from pi node name to color for drawing
-  static const std::map<std::string, cv::Scalar> kOrinColors;
+
   // Contains fixed target poses without solving, for use with visualization
   static const TargetMapper kFixedTargetMapper;
 
@@ -131,20 +131,16 @@ class TargetMapperReplay {
   double max_delta_T_world_robot_;
   double ignore_count_;
 
-  std::map<std::string, int> camera_numbering_map_;
-
   std::vector<std::unique_ptr<aos::EventLoop>> mapping_event_loops_;
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop_;
   std::unique_ptr<aos::McapLogger> relogger_;
 };
 
-const auto TargetMapperReplay::kOrinColors = std::map<std::string, cv::Scalar>{
-    {"/orin1/camera0", cv::Scalar(255, 0, 255)},
-    {"/orin1/camera1", cv::Scalar(255, 255, 0)},
-    {"/imu/camera0", cv::Scalar(0, 255, 255)},
-    {"/imu/camera1", cv::Scalar(255, 165, 0)},
-};
+std::vector<CameraNode> node_list(y2024::vision::CreateNodeList());
+
+std::map<std::string, int> camera_ordering_map(
+    y2024::vision::CreateOrderingMap(node_list));
 
 std::map<uint, std::string> TargetMapperReplay::kIdAllianceMap = {
     {1, "red"},  {2, "red"},   {3, "red"},   {4, "red"},
@@ -182,37 +178,49 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
   SendSimulationConstants(reader_->event_loop_factory(), FLAGS_team_number,
                           FLAGS_constants_path);
 
-  std::vector<std::string> node_list;
-  node_list.push_back("imu");
-  node_list.push_back("orin1");
+  if (FLAGS_visualize_solver) {
+    vis_robot_.ClearImage();
+    // Set focal length to zoomed in, to view extrinsics
+    const double kFocalLength = 1500.0;
+    vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
+  }
 
-  int camera_count = 0;
-  for (std::string node : node_list) {
-    const aos::Node *pi =
-        aos::configuration::GetNode(reader->configuration(), node);
+  for (const CameraNode &camera_node : node_list) {
+    const aos::Node *node = aos::configuration::GetNode(
+        reader_->configuration(), camera_node.node_name.c_str());
 
     mapping_event_loops_.emplace_back(
-        reader_->event_loop_factory()->MakeEventLoop(node + "_mapping_camera0",
-                                                     pi));
-    mapping_event_loops_.emplace_back(
-        reader_->event_loop_factory()->MakeEventLoop(node + "_mapping_camera1",
-                                                     pi));
+        reader_->event_loop_factory()->MakeEventLoop(
+            camera_node.node_name + "mapping", node));
+
     frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
         mapping_event_loops_[mapping_event_loops_.size() - 1].get());
     HandleNodeCaptures(
-        mapping_event_loops_[mapping_event_loops_.size() - 2].get(),
-        &constants_fetcher, 0);
-    HandleNodeCaptures(
         mapping_event_loops_[mapping_event_loops_.size() - 1].get(),
-        &constants_fetcher, 1);
-    std::string camera0_name = "/" + node + "/camera0";
-    camera_numbering_map_[camera0_name] = camera_count++;
-    std::string camera1_name = "/" + node + "/camera1";
-    camera_numbering_map_[camera1_name] = camera_count++;
+        &constants_fetcher, camera_node.camera_number);
+
+    if (FLAGS_visualize_solver) {
+      // Show the extrinsics calibration to start, for reference to confirm
+      const auto *calibration = FindCameraCalibration(
+          constants_fetcher.constants(),
+          mapping_event_loops_.back()->node()->name()->string_view(),
+          camera_node.camera_number);
+      cv::Mat extrinsics_cv =
+          frc971::vision::CameraExtrinsics(calibration).value();
+      Eigen::Matrix4d extrinsics_matrix;
+      cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
+      const auto extrinsics = Eigen::Affine3d(extrinsics_matrix);
+
+      vis_robot_.DrawRobotOutline(extrinsics, camera_node.camera_name(),
+                                  kOrinColors.at(camera_node.camera_name()));
+    }
   }
 
   if (FLAGS_visualize_solver) {
+    cv::imshow("Extrinsics", vis_robot_.image_);
+    cv::waitKey(0);
     vis_robot_.ClearImage();
+    // Reset focal length to more zoomed out view for field
     const double kFocalLength = 500.0;
     vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
   }
@@ -305,7 +313,7 @@ void TargetMapperReplay::HandleAprilTags(
                   << " since we've drawn it already";
           cv::imshow("View", vis_robot_.image_);
           // Pause if delta_T is too large, but only after first image (to make
-          // sure the delta's are correct
+          // sure the delta's are correct)
           if (max_delta_T_world_robot_ > FLAGS_pause_on_distance &&
               display_count_ > 1) {
             LOG(INFO) << "Pausing since the delta between robot estimates is "
@@ -333,9 +341,10 @@ void TargetMapperReplay::HandleAprilTags(
               << ", robot_pos (x,y,z) = "
               << H_world_robot.translation().transpose();
 
-      label << "id " << target_pose_fbs->id() << ": err (% of max): "
+      label << "id " << target_pose_fbs->id()
+            << ": err (% of max): " << target_pose_fbs->pose_error() << " ("
             << (target_pose_fbs->pose_error() / FLAGS_max_pose_error)
-            << " err_ratio: " << target_pose_fbs->pose_error_ratio() << " ";
+            << ") err_ratio: " << target_pose_fbs->pose_error_ratio() << " ";
 
       vis_robot_.DrawRobotOutline(H_world_robot, camera_name,
                                   kOrinColors.at(camera_name));
@@ -360,11 +369,10 @@ void TargetMapperReplay::HandleAprilTags(
     if (drew) {
       // Collect all the labels from a given camera, and add the text
       // TODO: Need to fix this one
-      int position_number = camera_numbering_map_[camera_name];
+      int position_number = camera_ordering_map[camera_name];
       cv::putText(vis_robot_.image_, label.str(),
-                  cv::Point(10, 10 + 20 * position_number),
+                  cv::Point(10, 30 + 20 * position_number),
                   cv::FONT_HERSHEY_PLAIN, 1.0, kOrinColors.at(camera_name));
-
       drawn_cameras_.emplace(camera_name);
     } else if (node_distributed_time - last_draw_time_ >
                    std::chrono::milliseconds(30) &&
@@ -379,7 +387,6 @@ void TargetMapperReplay::HandleAprilTags(
       VLOG(1) << "Displaying image due to time lapse";
       cv::imshow("View", vis_robot_.image_);
       cv::waitKey(FLAGS_wait_key);
-      vis_robot_.ClearImage();
       max_delta_T_world_robot_ = 0.0;
       drawn_cameras_.clear();
     }
@@ -391,9 +398,10 @@ void TargetMapperReplay::HandleNodeCaptures(
     frc971::constants::ConstantsFetcher<y2024::Constants> *constants_fetcher,
     int camera_number) {
   // Get the camera extrinsics
+  std::string node_name =
+      std::string(mapping_event_loop->node()->name()->string_view());
   const auto *calibration = FindCameraCalibration(
-      constants_fetcher->constants(),
-      mapping_event_loop->node()->name()->string_view(), camera_number);
+      constants_fetcher->constants(), node_name, camera_number);
   cv::Mat extrinsics_cv = frc971::vision::CameraExtrinsics(calibration).value();
   Eigen::Matrix4d extrinsics_matrix;
   cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
