@@ -35,16 +35,16 @@ class AutonomousSplines {
             "splines/five_note.4.json")),
         two_piece_steal_spline_1_(
             aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-                "splines/five_note.0.json")),
+                "splines/2_piece_steal.0.json")),
         two_piece_steal_spline_2_(
             aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-                "splines/five_note.1.json")),
+                "splines/2_piece_steal.1.json")),
         two_piece_steal_spline_3_(
             aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-                "splines/five_note.2.json")),
+                "splines/2_piece_steal.2.json")),
         two_piece_steal_spline_4_(
             aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-                "splines/five_note.3.json")) {}
+                "splines/2_piece_steal.3.json")) {}
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder,

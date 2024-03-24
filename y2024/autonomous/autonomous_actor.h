@@ -43,6 +43,7 @@ class AutonomousActor
   void TwoPieceStealAuto();
   void SendSuperstructureGoal();
 
+  void StopIntake();
   void Intake();
   void Aim();
   void Shoot();
