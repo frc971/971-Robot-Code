@@ -31,8 +31,8 @@ DEFINE_int32(colorformat, NVBUF_COLOR_FORMAT_NV16,
              "Mode to use.  Don't change unless you know what you are doing.");
 DEFINE_int32(camera, 0, "Camera number");
 DEFINE_int32(mode, 0, "Mode number to use.");
-DEFINE_int32(exposure, 100000, "Exposure number to use.");
-DEFINE_int32(gain, 8, "gain number to use.");
+DEFINE_int32(exposure, 100, "Exposure number to use.");
+DEFINE_int32(gain, 10, "gain number to use.");
 DEFINE_int32(width, 1456, "Image width");
 DEFINE_int32(height, 1088, "Image height");
 DEFINE_double(rgain, 1.0, "R gain");
@@ -360,8 +360,8 @@ class ArgusCamera {
              Argus::STATUS_OK);
 
     Argus::Range<uint64_t> limit_exposure_time_range;
-    limit_exposure_time_range.min() = FLAGS_exposure;
-    limit_exposure_time_range.max() = FLAGS_exposure;
+    limit_exposure_time_range.min() = FLAGS_exposure * 1000;
+    limit_exposure_time_range.max() = FLAGS_exposure * 1000;
     CHECK_EQ(i_source_settings->setExposureTimeRange(limit_exposure_time_range),
              Argus::STATUS_OK);
 
@@ -524,6 +524,8 @@ class ArgusCamera {
 };
 
 int Main() {
+  std::this_thread::sleep_for(std::chrono::seconds(FLAGS_camera + 1));
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
