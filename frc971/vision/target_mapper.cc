@@ -450,6 +450,21 @@ void TargetMapper::DisplayConstraintGraph() {
   cv::waitKey(0);
 }
 
+void TargetMapper::DisplaySolvedVsInitial() {
+  vis_robot_.ClearImage();
+  for (const auto &[id, solved_pose] : target_poses_) {
+    Eigen::Affine3d H_world_initial =
+        PoseUtils::Pose3dToAffine3d(ideal_target_poses_.at(id));
+    vis_robot_.DrawFrameAxes(H_world_initial, std::to_string(id),
+                             cv::Scalar(0, 0, 255));
+    Eigen::Affine3d H_world_solved = PoseUtils::Pose3dToAffine3d(solved_pose);
+    vis_robot_.DrawFrameAxes(H_world_solved, std::to_string(id) + "-est",
+                             cv::Scalar(255, 255, 255));
+  }
+  cv::imshow("Solved vs. Initial", vis_robot_.image_);
+  cv::waitKey(0);
+}
+
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
 bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   CHECK_NOTNULL(problem);
@@ -474,13 +489,13 @@ void TargetMapper::Solve(std::string_view field_name,
                                      &target_pose_problem_1);
   CHECK(SolveOptimizationProblem(&target_pose_problem_1))
       << "The target pose solve 1 was not successful, exiting.";
+  if (FLAGS_visualize_solver) {
+    LOG(INFO) << "Displaying constraint graph before removing outliers";
+    DisplayConstraintGraph();
+    DisplaySolvedVsInitial();
+  }
 
   RemoveOutlierConstraints();
-
-  if (FLAGS_visualize_solver) {
-    LOG(INFO) << "Displaying constraint graph after removing outliers";
-    DisplayConstraintGraph();
-  }
 
   // Solve again once we've thrown out bad constraints
   ceres::Problem target_pose_problem_2;
@@ -488,6 +503,11 @@ void TargetMapper::Solve(std::string_view field_name,
                                      &target_pose_problem_2);
   CHECK(SolveOptimizationProblem(&target_pose_problem_2))
       << "The target pose solve 2 was not successful, exiting.";
+  if (FLAGS_visualize_solver) {
+    LOG(INFO) << "Displaying constraint graph before removing outliers";
+    DisplayConstraintGraph();
+    DisplaySolvedVsInitial();
+  }
 
   if (FLAGS_do_map_fitting) {
     LOG(INFO) << "Solving the overall map's best alignment to the previous map";
