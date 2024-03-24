@@ -282,12 +282,12 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
       if (!converged) {
         VLOG(1) << "Rejecting detection because Undistort failed to coverge";
 
-        // Send rejected corner points to foxglove in red
+        // Send corner points rejected to to lack of convergence in orange
         std::vector<cv::Point2f> rejected_corner_points =
             MakeCornerVector(gpu_detection);
         foxglove_corners.push_back(frc971::vision::BuildPointsAnnotation(
             builder.fbb(), eof, rejected_corner_points,
-            std::vector<double>{1.0, 0.0, 0.0, 0.5}));
+            std::vector<double>{1.0, 0.65, 0.0, 0.5}));
         rejections_++;
         continue;
       }
