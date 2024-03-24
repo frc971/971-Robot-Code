@@ -15,7 +15,6 @@
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2024/control_loops/superstructure/altitude/altitude_plant.h"
 #include "y2024/control_loops/superstructure/catapult/catapult_plant.h"
-#include "y2024/control_loops/superstructure/climber/climber_plant.h"
 #include "y2024/control_loops/superstructure/extend/extend_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 #include "y2024/control_loops/superstructure/superstructure.h"
@@ -81,26 +80,6 @@ class SuperstructureSimulation {
                 ->intake_constants()
                 ->measured_absolute_position(),
             dt_),
-        climber_(new CappedTestPlant(climber::MakeClimberPlant()),
-                 PositionSensorSimulator(simulated_robot_constants->robot()
-                                             ->climber_constants()
-                                             ->zeroing_constants()
-                                             ->one_revolution_distance()),
-                 {.subsystem_params =
-                      {simulated_robot_constants->common()->climber(),
-                       simulated_robot_constants->robot()
-                           ->climber_constants()
-                           ->zeroing_constants()},
-                  .potentiometer_offset = simulated_robot_constants->robot()
-                                              ->climber_constants()
-                                              ->potentiometer_offset()},
-                 frc971::constants::Range::FromFlatbuffer(
-                     simulated_robot_constants->common()->climber()->range()),
-                 simulated_robot_constants->robot()
-                     ->climber_constants()
-                     ->zeroing_constants()
-                     ->measured_absolute_position(),
-                 dt_),
         catapult_(new CappedTestPlant(catapult::MakeCatapultPlant()),
                   PositionSensorSimulator(simulated_robot_constants->robot()
                                               ->catapult_constants()
@@ -185,10 +164,6 @@ class SuperstructureSimulation {
         frc971::constants::Range::FromFlatbuffer(
             simulated_robot_constants->common()->intake_pivot()->range())
             .middle());
-    climber_.InitializePosition(
-        frc971::constants::Range::FromFlatbuffer(
-            simulated_robot_constants->common()->climber()->range())
-            .middle());
     catapult_.InitializePosition(
         frc971::constants::Range::FromFlatbuffer(
             simulated_robot_constants->common()->catapult()->range())
@@ -213,8 +188,6 @@ class SuperstructureSimulation {
                 superstructure_output_fetcher_->intake_pivot_voltage(),
                 superstructure_status_fetcher_->intake_pivot());
 
-            climber_.Simulate(superstructure_output_fetcher_->climber_voltage(),
-                              superstructure_status_fetcher_->climber());
             catapult_.Simulate(
                 superstructure_output_fetcher_->catapult_voltage(),
                 superstructure_status_fetcher_->shooter()->catapult());
@@ -246,14 +219,8 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::AbsolutePosition> intake_pivot_offset =
         intake_pivot_.encoder()->GetSensorValues(&intake_pivot_builder);
 
-    frc971::PotAndAbsolutePosition::Builder climber_builder =
-        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
-
-    flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset =
-        climber_.encoder()->GetSensorValues(&climber_builder);
     frc971::PotAndAbsolutePosition::Builder catapult_builder =
         builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
-
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> catapult_offset =
         catapult_.encoder()->GetSensorValues(&catapult_builder);
 
@@ -281,7 +248,6 @@ class SuperstructureSimulation {
     position_builder.add_catapult(catapult_offset);
     position_builder.add_altitude(altitude_offset);
     position_builder.add_turret(turret_offset);
-    position_builder.add_climber(climber_offset);
     position_builder.add_extend(extend_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
@@ -302,7 +268,6 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator *catapult() { return &catapult_; }
   PotAndAbsoluteEncoderSimulator *altitude() { return &altitude_; }
   PotAndAbsoluteEncoderSimulator *turret() { return &turret_; }
-  PotAndAbsoluteEncoderSimulator *climber() { return &climber_; }
 
   PotAndAbsoluteEncoderSimulator *extend() { return &extend_; }
 
@@ -321,7 +286,6 @@ class SuperstructureSimulation {
   bool transfer_beambreak_;
 
   AbsoluteEncoderSimulator intake_pivot_;
-  PotAndAbsoluteEncoderSimulator climber_;
   PotAndAbsoluteEncoderSimulator catapult_;
   PotAndAbsoluteEncoderSimulator altitude_;
   PotAndAbsoluteEncoderSimulator turret_;
@@ -457,26 +421,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     if (superstructure_status_fetcher_->intake_roller() ==
         IntakeRollerStatus::NONE) {
       EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
-    }
-
-    if (superstructure_goal_fetcher_->has_climber_goal()) {
-      double set_point =
-          simulated_robot_constants_->common()->climber_set_points()->retract();
-
-      if (superstructure_goal_fetcher_->climber_goal() ==
-          ClimberGoal::FULL_EXTEND) {
-        set_point = simulated_robot_constants_->common()
-                        ->climber_set_points()
-                        ->full_extend();
-      }
-
-      if (superstructure_goal_fetcher_->climber_goal() == ClimberGoal::STOWED) {
-        set_point = simulated_robot_constants_->common()
-                        ->climber_set_points()
-                        ->stowed();
-      }
-      EXPECT_NEAR(set_point,
-                  superstructure_status_fetcher_->climber()->position(), 0.001);
     }
 
     if (superstructure_status_fetcher_->has_uncompleted_note_goal()) {
@@ -623,7 +567,6 @@ TEST_F(SuperstructureTest, DoesNothing) {
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
     goal_builder.add_shooter_goal(shooter_goal_offset);
     goal_builder.add_intake_goal(IntakeGoal::NONE);
     goal_builder.add_intake_pivot(IntakePivotGoal::UP);
@@ -675,7 +618,6 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_pivot(IntakePivotGoal::DOWN);
-    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
     goal_builder.add_shooter_goal(shooter_goal_offset);
     goal_builder.add_note_goal(NoteGoal::NONE);
 
@@ -726,7 +668,6 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_goal(IntakeGoal::INTAKE);
-    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
     goal_builder.add_shooter_goal(shooter_goal_offset);
     goal_builder.add_note_goal(NoteGoal::AMP);
 
@@ -772,7 +713,6 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_goal(IntakeGoal::NONE);
-    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
     goal_builder.add_shooter_goal(shooter_goal_offset);
     goal_builder.add_note_goal(NoteGoal::NONE);
 
@@ -796,9 +736,6 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
   EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.intake_pivot().state());
-
-  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
-            superstructure_.climber().state());
 
   EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.shooter().turret().state());
@@ -1661,8 +1598,6 @@ TEST_F(SuperstructureTest, Climbing) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_climber_goal(ClimberGoal::STOWED);
-
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -1675,8 +1610,6 @@ TEST_F(SuperstructureTest, Climbing) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
-
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -1688,8 +1621,6 @@ TEST_F(SuperstructureTest, Climbing) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
-    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

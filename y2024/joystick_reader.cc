@@ -58,8 +58,7 @@ const ButtonLocation kAimSpeaker(2, 11);
 const ButtonLocation kAimPodium(0, 0);
 const ButtonLocation kShoot(0, 0);
 const ButtonLocation kRaiseClimber(3, 2);
-const ButtonLocation kSlowClimber(3, 1);
-const ButtonLocation kRetractClimber(2, 3);
+const ButtonLocation kRaiseFastClimber(3, 1);
 const ButtonLocation kExtraButtonOne(0, 0);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
@@ -163,21 +162,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     superstructure_goal_builder->set_fire(data.IsPressed(kFire) ||
                                           data.IsPressed(kDriverFire));
 
-    if (data.IsPressed(kRetractClimber)) {
-      superstructure_goal_builder->set_climber_goal(
-          superstructure::ClimberGoal::RETRACT);
-    } else if (data.IsPressed(kRaiseClimber)) {
-      superstructure_goal_builder->set_climber_goal(
-          superstructure::ClimberGoal::FULL_EXTEND);
-    } else {
-      superstructure_goal_builder->set_climber_goal(
-          superstructure::ClimberGoal::STOWED);
-    }
-
-    if (data.IsPressed(kSlowClimber)) {
-      superstructure_goal_builder->set_slow_climber(true);
-    } else {
-      superstructure_goal_builder->set_slow_climber(false);
+    if (data.IsPressed(kRaiseClimber)) {
+      superstructure_goal_builder->set_climber_goal_voltage(4.0);
+    } else if (data.IsPressed(kRaiseFastClimber)) {
+      superstructure_goal_builder->set_climber_goal_voltage(6.0);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());

@@ -60,13 +60,23 @@ enum NoteGoal : ubyte {
 table Goal {
     intake_goal:IntakeGoal = NONE (id: 0);
     intake_pivot:IntakePivotGoal = UP (id: 5);
+
+    // Deprecated since climber no longer has an encoder
     climber_goal:ClimberGoal (id: 1);
+
+    // Voltage we want to give to climber
+    // Positive voltage is for climber up
+    // Negative voltage is for climber down
+    climber_goal_voltage:double = 0.0 (id: 8);
+
     shooter_goal:ShooterGoal (id: 2);
     note_goal:NoteGoal (id: 3);
     fire: bool (id: 4);
 
     // Tells the climber to go absurdly slow on FULL_EXTEND
-    slow_climber: bool = false (id: 6);
+    // Deprecated now because we take care of this through 
+    // climber_goal_voltage
+    slow_climber: bool = false (id: 6, deprecated);
 
     // Spit on the extend motors
     spit_extend: bool = false (id: 7);

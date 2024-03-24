@@ -28,11 +28,14 @@ table Position {
     // True means there is a game piece in the transfer.
     transfer_beambreak:bool (id: 4);
 
-    // Values of the encoder and potentiometer at the climber.
+    // Deprecated since climber no longer has an encoder
+    deprecated_climber:frc971.PotAndAbsolutePosition (id: 5, deprecated);
+
+    // Value of the potentiometer at the climber.
     // Zero is fully extended, with top of the highest slider aligned with the
     // caps on the tubes for the climber.
     // Positive is more extended.
-    climber:frc971.PotAndAbsolutePosition (id: 5);
+    climber:frc971.RelativePosition (id: 9);
 
     // True if there is a game piece in the catapult
     catapult_beambreak:bool (id: 6);

@@ -43,9 +43,6 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       intake_pivot_(robot_constants_->common()->intake_pivot(),
                     robot_constants_->robot()->intake_constants()),
-      climber_(
-          robot_constants_->common()->climber(),
-          robot_constants_->robot()->climber_constants()->zeroing_constants()),
       shooter_(event_loop, robot_constants_),
       extend_(
           robot_constants_->common()->extend(),
@@ -71,7 +68,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_pivot_.Reset();
-    climber_.Reset();
     shooter_.Reset();
     extend_.Reset();
   }
@@ -83,45 +79,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   transfer_debouncer_.Update(position->transfer_beambreak(), timestamp);
   const bool transfer_beambreak = transfer_debouncer_.state();
-
-  // Handle Climber Goal separately from main superstructure state machine
-  double climber_position =
-      robot_constants_->common()->climber_set_points()->retract();
-
-  double climber_velocity = robot_constants_->common()
-                                ->climber()
-                                ->default_profile_params()
-                                ->max_velocity();
-  const double climber_accel = robot_constants_->common()
-                                   ->climber()
-                                   ->default_profile_params()
-                                   ->max_acceleration();
-
-  if (unsafe_goal != nullptr) {
-    switch (unsafe_goal->climber_goal()) {
-      case ClimberGoal::FULL_EXTEND:
-        climber_position =
-            robot_constants_->common()->climber_set_points()->full_extend();
-        // The climber can go reasonably fast when extending out.
-        climber_velocity = 0.5;
-
-        if (unsafe_goal->slow_climber()) {
-          climber_velocity = 0.01;
-        }
-        break;
-      case ClimberGoal::RETRACT:
-        climber_position =
-            robot_constants_->common()->climber_set_points()->retract();
-        // Keep the climber slower while retracting.
-        climber_velocity = 0.1;
-        break;
-      case ClimberGoal::STOWED:
-        climber_position =
-            robot_constants_->common()->climber_set_points()->stowed();
-        // Keep the climber slower while retracting.
-        climber_velocity = 0.1;
-    }
-  }
 
   // If we started off preloaded, skip to the ready state.
   if (unsafe_goal != nullptr && unsafe_goal->shooter_goal() &&
@@ -554,31 +511,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                               : 0.0),
   });
 
-  aos::FlatbufferFixedAllocatorArray<
-      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
-      climber_goal_buffer;
-
-  {
-    flatbuffers::FlatBufferBuilder *climber_fbb = climber_goal_buffer.fbb();
-    flatbuffers::Offset<frc971::ProfileParameters> climber_profile =
-        frc971::CreateProfileParameters(*climber_fbb, climber_velocity,
-                                        climber_accel);
-
-    climber_goal_buffer.Finish(
-        frc971::control_loops::
-            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-                *climber_fbb, climber_position, climber_profile));
-  }
-
-  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *climber_goal = &climber_goal_buffer.message();
-
-  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      climber_status_offset = climber_.Iterate(
-          climber_goal, position->climber(),
-          output != nullptr ? &output_struct.climber_voltage : nullptr,
-          status->fbb());
-
   double max_intake_pivot_position = 0;
   double min_intake_pivot_position = 0;
   double max_extend_position = 0;
@@ -663,10 +595,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.extend_voltage = 0.0;
   }
 
-  // Zero out climber voltage if "disable_climber" is true
-  if (robot_constants_->robot()->disable_climber()) {
-    output_struct.climber_voltage = 0.0;
-  }
+  // Ignore climber voltage goal if "disable_climber" is true
+  output_struct.climber_voltage =
+      (!robot_constants_->robot()->disable_climber() && unsafe_goal != nullptr)
+          ? unsafe_goal->climber_goal_voltage()
+          : 0.0;
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
@@ -674,17 +607,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = intake_pivot_.zeroed() && climber_.zeroed() &&
-                      shooter_.zeroed() && extend_.zeroed();
-  const bool estopped = intake_pivot_.estopped() || climber_.estopped() ||
-                        shooter_.estopped() || extend_.estopped();
+  const bool zeroed =
+      intake_pivot_.zeroed() && shooter_.zeroed() && extend_.zeroed();
+  const bool estopped =
+      intake_pivot_.estopped() || shooter_.estopped() || extend_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
   status_builder.add_intake_roller(intake_roller_state);
   status_builder.add_intake_pivot(intake_pivot_status_offset);
   status_builder.add_transfer_roller(transfer_roller_status);
-  status_builder.add_climber(climber_status_offset);
   status_builder.add_shooter(shooter_status_offset);
   status_builder.add_collided(collided);
   status_builder.add_extend_roller(extend_roller_status);

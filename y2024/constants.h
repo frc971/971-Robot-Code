@@ -71,32 +71,16 @@ struct Values {
            kIntakePivotEncoderCountsPerRevolution();
   }
 
-  static constexpr double kClimberEncoderCountsPerRevolution() {
-    return 4096.0;
-  }
-
-  static constexpr double kClimberEncoderRatio() { return (16.0 / 60.0); }
-
   static constexpr double kClimberPotMetersPerRevolution() {
     return 16 * 0.25 * 0.0254;
-  }
-
-  static constexpr double kClimberEncoderMetersPerRadian() {
-    return kClimberEncoderRatio() * kClimberPotMetersPerRevolution() / 2.0 /
-           M_PI;
   }
 
   static constexpr double kClimberPotMetersPerVolt() {
     return kClimberPotMetersPerRevolution() * (10.0 /*turns*/ / 5.0 /*volts*/);
   }
 
-  static constexpr double kMaxClimberEncoderPulsesPerSecond() {
-    return control_loops::superstructure::climber::kFreeSpeed / (2.0 * M_PI) *
-           control_loops::superstructure::climber::kOutputRatio /
-           kClimberEncoderRatio() * kClimberEncoderCountsPerRevolution();
-  }
-
   static constexpr double kExtendEncoderCountsPerRevolution() { return 4096.0; }
+
   // TODO: (niko) add the gear ratios for the intake once we have them
   static constexpr double kCatapultEncoderCountsPerRevolution() {
     return 4096.0;
@@ -240,6 +224,13 @@ struct Values {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
         subsystem_params;
+  };
+
+  struct PotConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::RelativeEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
   };
 };
 

@@ -129,7 +129,9 @@ enum AutonomousMode : ubyte {
 
 table RobotConstants {
   intake_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
-  climber_constants:PotAndAbsEncoderConstants (id: 1);
+  // Deprecated since climber no longer has an encoder
+  climber_constants:PotAndAbsEncoderConstants (id: 1, deprecated);
+  climber_potentiometer_offset:double (id: 8);
   catapult_constants:PotAndAbsEncoderConstants (id: 2);
   altitude_constants:PotAndAbsEncoderConstants (id: 3);
   turret_constants:PotAndAbsEncoderConstants (id: 4);
@@ -178,8 +180,8 @@ table Common {
   drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
   current_limits:CurrentLimits (id: 6);
   transfer_roller_voltages:TransferRollerVoltages (id: 7);
-  climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 8);
-  climber_set_points:ClimberSetPoints (id: 9);
+  climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 8, deprecated);
+  climber_set_points:ClimberSetPoints (id: 9, deprecated);
   turret_loading_position: double (id: 10);
   catapult_return_position: double (id: 11);
   catapult:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);

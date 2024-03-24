@@ -105,13 +105,6 @@ export class FieldHandler {
   private intakePivotAbs: HTMLElement =
     (document.getElementById('intake_pivot_abs') as HTMLElement);
 
-  private climber: HTMLElement =
-    (document.getElementById('climber') as HTMLElement);
-  private climberAbs: HTMLElement =
-    (document.getElementById('climber_abs') as HTMLElement);
-  private climberPot: HTMLElement =
-    (document.getElementById('climber_pot') as HTMLElement);
-
   private extend: HTMLElement =
     (document.getElementById('extend') as HTMLElement);
   private extendAbs: HTMLElement =
@@ -568,22 +561,6 @@ export class FieldHandler {
 
       this.intakePivotAbs.innerHTML = this.superstructureStatus.intakePivot().estimatorState().absolutePosition().toString();
 
-      if (!this.superstructureStatus.climber() ||
-          !this.superstructureStatus.climber().zeroed()) {
-        this.setZeroing(this.climber);
-      } else if (this.superstructureStatus.climber().estopped()) {
-        this.setEstopped(this.climber);
-      } else {
-        this.setTargetValue(
-            this.climber,
-            this.superstructureStatus.climber().unprofiledGoalPosition(),
-            this.superstructureStatus.climber().estimatorState().position(),
-            1e-3);
-      }
-
-      this.climberAbs.innerHTML = this.superstructureStatus.climber().estimatorState().absolutePosition().toString();
-      this.climberPot.innerHTML = this.superstructureStatus.climber().estimatorState().potPosition().toString();
-
       if (!this.superstructureStatus.extend() ||
           !this.superstructureStatus.extend().zeroed()) {
         this.setZeroing(this.extend);
@@ -657,14 +634,6 @@ export class FieldHandler {
         zeroingErrors += ZeroingError[this.superstructureStatus.intakePivot()
                                           .estimatorState()
                                           .errors(i)] +
-            '<br/>';
-      }
-      zeroingErrors += '<br/>' +
-          'Climber Errors:' +
-          '<br/>';
-      for (let i = 0; i < this.superstructureStatus.climber().estimatorState().errorsLength();
-           i++) {
-        zeroingErrors += ZeroingError[this.superstructureStatus.climber().estimatorState().errors(i)] +
             '<br/>';
       }
       zeroingErrors += '<br/>' +

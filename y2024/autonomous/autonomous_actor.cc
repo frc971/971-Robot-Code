@@ -459,8 +459,6 @@ void AutonomousActor::SendSuperstructureGoal() {
   }
   goal_builder->set_note_goal(note_goal_);
   goal_builder->set_fire(fire_);
-  goal_builder->set_climber_goal(
-      control_loops::superstructure::ClimberGoal::STOWED);
 
   control_loops::superstructure::ShooterGoalStatic *shooter_goal =
       goal_builder->add_shooter_goal();
