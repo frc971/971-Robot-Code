@@ -142,10 +142,34 @@ td:first-child {
   width: 100%;
 }
 
-.true {
+#status_list > div {
+  display: table-row;
+  padding: 3px;
+}
+
+#status_list > div > div {
+  display: table-cell;
+  padding: 10px;
+  text-align: left;
+}
+
+
+.yellow {
+  background-color: yellow;
+}
+
+.yellowgreen {
+  background-color: yellowgreen;
+}
+
+.lightgreen {
   background-color: LightGreen;
 }
 
-.false {
+.lightcoral {
+  background-color: lightcoral;
+}
+
+.red {
   background-color: red;
 }

@@ -1,6 +1,7 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("config_validator_macro.bzl", "config_validator_test")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -368,6 +369,13 @@ cc_test(
 
 static_flatbuffer(
     name = "process_info_fbs",
+    srcs = ["process_info.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "process_info_ts_fbs",
     srcs = ["process_info.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

@@ -1,5 +1,6 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 exports_files(["roborio_irq_config.json"])
 
@@ -189,6 +190,14 @@ static_flatbuffer(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//aos/util:process_info_fbs"],
+)
+
+flatbuffer_ts_library(
+    name = "starter_ts_fbs",
+    srcs = ["starter.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = ["//aos/util:process_info_ts_fbs"],
 )
 
 static_flatbuffer(

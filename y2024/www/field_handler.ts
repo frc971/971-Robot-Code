@@ -479,12 +479,11 @@ export class FieldHandler {
 
   setBoolean(div: HTMLElement, triggered: boolean): void {
     div.innerHTML = ((triggered) ? "TRUE" : "FALSE")
+    div.className = '';
     if (triggered) {
-      div.classList.remove('false');
-      div.classList.add('true');
+      div.classList.add('lightgreen');
     } else {
-      div.classList.remove('true');
-      div.classList.add('false');
+      div.classList.add('lightcoral');
     }
   }
 
