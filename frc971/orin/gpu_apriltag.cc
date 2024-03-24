@@ -26,7 +26,7 @@ DEFINE_double(
     "1.0.");
 DEFINE_double(min_decision_margin, 50.0,
               "Minimum decision margin (confidence) for an apriltag detection");
-DEFINE_int32(pixel_border, 10,
+DEFINE_int32(pixel_border, 150,
              "Size of image border within which to reject detected corners");
 DEFINE_uint64(pose_estimation_iterations, 50,
               "Number of iterations for apriltag pose estimation.");
