@@ -105,6 +105,25 @@ void AutonomousActor::Replan() {
       starting_position_ = four_piece_splines_.value()[0].starting_position();
       CHECK(starting_position_);
       break;
+    case AutonomousMode::TWO_PIECE_STEAL:
+      AOS_LOG(INFO, "TWO_PIECE_STEAL replanning!");
+      two_piece_steal_splines_ = {
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceStealSpline1,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kForward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceStealSpline2,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kBackward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceStealSpline3,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kForward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceStealSpline4,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kForward)};
   }
 
   is_planned_ = true;
@@ -133,6 +152,9 @@ bool AutonomousActor::Run(
       break;
     case AutonomousMode::FOUR_PIECE:
       FourPieceAuto();
+      break;
+    case AutonomousMode::TWO_PIECE_STEAL:
+      TwoPieceStealAuto();
       break;
   }
   return true;
@@ -323,6 +345,99 @@ void AutonomousActor::FourPieceAuto() {
   Shoot();
 
   if (!WaitForNoteFired(initial_shot_count + 4, std::chrono::seconds(5)))
+    return;
+
+  AOS_LOG(
+      INFO, "Done %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+}
+
+void AutonomousActor::TwoPieceStealAuto() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(two_piece_steal_splines_);
+  auto &splines = *two_piece_steal_splines_;
+
+  uint32_t initial_shot_count = shot_count();
+
+  // Always be aiming & firing.
+  Aim();
+  if (!WaitForPreloaded()) return;
+
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+  Shoot();
+
+  AOS_LOG(
+      INFO, "Shooting Preloaded Note %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForNoteFired(initial_shot_count, std::chrono::seconds(2))) return;
+
+  AOS_LOG(
+      INFO, "Shot first note %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  Intake();
+  StopFiring();
+
+  AOS_LOG(
+      INFO, "Starting Spline 1 %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[0].WaitForPlan()) return;
+
+  splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.01)) return;
+
+  if (!splines[1].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting second spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  splines[1].Start();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.01)) return;
+
+  AOS_LOG(
+      INFO, "Finished second spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  std::this_thread::sleep_for(chrono::milliseconds(250));
+
+  Shoot();
+
+  if (!WaitForNoteFired(initial_shot_count + 1, std::chrono::seconds(2)))
+    return;
+
+  StopFiring();
+
+  AOS_LOG(
+      INFO, "Shot second note, starting drive %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[2].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting third spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+  splines[2].Start();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.01)) return;
+
+  if (!splines[3].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting fourth spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+  splines[3].Start();
+
+  if (!splines[3].WaitForSplineDistanceRemaining(0.01)) return;
+
+  Shoot();
+
+  if (!WaitForNoteFired(initial_shot_count + 2, std::chrono::seconds(2)))
     return;
 
   AOS_LOG(
