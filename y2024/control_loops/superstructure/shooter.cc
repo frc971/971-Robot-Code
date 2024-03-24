@@ -167,10 +167,12 @@ Shooter::Iterate(
 
   const bool turret_in_range =
       (std::abs(turret_.estimated_position() - turret_goal->unsafe_goal()) <
-       kCatapultActivationTurretThreshold);
+       kCatapultActivationTurretThreshold) &&
+      (std::abs(turret_.estimated_velocity()) < 0.2);
   const bool altitude_in_range =
       (std::abs(altitude_.estimated_position() - altitude_goal->unsafe_goal()) <
-       kCatapultActivationAltitudeThreshold);
+       kCatapultActivationAltitudeThreshold) &&
+      (std::abs(altitude_.estimated_velocity()) < 0.1);
   const bool altitude_above_min_angle =
       (altitude_.estimated_position() >
        robot_constants_->common()->min_altitude_shooting_angle());
