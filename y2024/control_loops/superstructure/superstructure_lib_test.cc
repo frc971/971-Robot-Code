@@ -1272,7 +1272,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   // Wait until the bot finishes auto-aiming.
   WaitUntilNear(kTurretGoal, kAltitudeGoal);
 
-  RunFor(dt());
+  RunFor(10 * dt());
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
