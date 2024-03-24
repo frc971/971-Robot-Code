@@ -57,11 +57,11 @@
     "turret_constants": {
       {% set _ = turret_zero.update(
           {
-              "measured_absolute_position" : 0.2077
+              "measured_absolute_position" : 1.3715
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 }}
+      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 - 0.05 }}
     },
     "extend_constants": {
       {% set _ = extend_zero.update(
