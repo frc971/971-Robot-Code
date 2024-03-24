@@ -226,7 +226,6 @@ void AutonomousActor::FourPieceAuto() {
   Aim();
   if (!WaitForPreloaded()) return;
 
-  std::this_thread::sleep_for(chrono::milliseconds(500));
   Shoot();
 
   AOS_LOG(
@@ -308,13 +307,13 @@ void AutonomousActor::FourPieceAuto() {
   if (!splines[4].WaitForPlan()) return;
   splines[4].Start();
 
-  if (!splines[4].WaitForSplineDistanceRemaining(0.05)) return;
+  if (!splines[4].WaitForSplineDistanceRemaining(0.01)) return;
 
   AOS_LOG(
       INFO, "Done with spline %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  std::this_thread::sleep_for(chrono::milliseconds(300));
+  std::this_thread::sleep_for(chrono::milliseconds(500));
 
   AOS_LOG(
       INFO, "Shooting last note! %lfs\n",
