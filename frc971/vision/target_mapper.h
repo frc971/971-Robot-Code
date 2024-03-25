@@ -61,6 +61,7 @@ class TargetMapper {
 
   void DumpConstraints(std::string_view path) const;
   void DumpStats(std::string_view path) const;
+  void PrintDiffs() const;
 
  private:
   // Error in an estimated pose

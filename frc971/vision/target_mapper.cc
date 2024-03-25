@@ -818,6 +818,26 @@ void TargetMapper::DumpConstraints(std::string_view path) const {
   fout.close();
 }
 
+void TargetMapper::PrintDiffs() const {
+  for (int id = FLAGS_min_target_id; id <= FLAGS_max_target_id; id++) {
+    Eigen::Affine3d H_world_ideal =
+        PoseUtils::Pose3dToAffine3d(ideal_target_poses_.at(id));
+    Eigen::Affine3d H_world_solved =
+        PoseUtils::Pose3dToAffine3d(target_poses_.at(id));
+    Eigen::Affine3d H_ideal_solved = H_world_ideal.inverse() * H_world_solved;
+    Eigen::Vector3d rpy = PoseUtils::RotationMatrixToEulerAngles(
+                              H_ideal_solved.rotation().matrix()) *
+                          180.0 / M_PI;
+    Eigen::Vector3d trans = H_ideal_solved.translation();
+
+    LOG(INFO) << "\nOffset from ideal to solved for target " << id
+              << " (in m, deg)"
+              << "\n  x: " << trans(0) << ", y: " << trans(1)
+              << ", z: " << trans(2) << ", \n  roll: " << rpy(0)
+              << ", pitch: " << rpy(1) << ", yaw: " << rpy(2) << "\n";
+  }
+}
+
 }  // namespace frc971::vision
 
 std::ostream &operator<<(std::ostream &os, ceres::examples::Pose3d pose) {

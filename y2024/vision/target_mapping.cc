@@ -454,6 +454,7 @@ void TargetMapperReplay::MaybeSolve() {
     if (!FLAGS_dump_stats_to.empty()) {
       mapper.DumpStats(FLAGS_dump_stats_to);
     }
+    mapper.PrintDiffs();
   }
 }
 
