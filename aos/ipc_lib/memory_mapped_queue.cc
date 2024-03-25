@@ -19,12 +19,11 @@ std::string ShmPath(std::string_view shm_base, const Channel *channel) {
   return ShmFolder(shm_base, channel) + channel->type()->str() + ".v6";
 }
 
-void PageFaultDataWrite(char *data, size_t size) {
+void PageFaultDataWrite(char *data, size_t size, const long page_size) {
   // This just has to divide the actual page size. Being smaller will make this
   // a bit slower than necessary, but not much. 1024 is a pretty conservative
   // choice (most pages are probably 4096).
-  static constexpr size_t kPageSize = 1024;
-  const size_t pages = (size + kPageSize - 1) / kPageSize;
+  const size_t pages = (size + page_size - 1) / page_size;
   for (size_t i = 0; i < pages; ++i) {
     char zero = 0;
     // We need to ensure there's a writable pagetable entry, but avoid modifying
@@ -39,20 +38,16 @@ void PageFaultDataWrite(char *data, size_t size) {
     //
     // This is the simplest operation I could think of which achieves that:
     // "store 0 if it's already 0".
-    __atomic_compare_exchange_n(&data[i * kPageSize], &zero, 0, true,
+    __atomic_compare_exchange_n(&data[i * page_size], &zero, 0, true,
                                 __ATOMIC_RELAXED, __ATOMIC_RELAXED);
   }
 }
 
-void PageFaultDataRead(const char *data, size_t size) {
-  // This just has to divide the actual page size. Being smaller will make this
-  // a bit slower than necessary, but not much. 1024 is a pretty conservative
-  // choice (most pages are probably 4096).
-  static constexpr size_t kPageSize = 1024;
-  const size_t pages = (size + kPageSize - 1) / kPageSize;
+void PageFaultDataRead(const char *data, size_t size, const long page_size) {
+  const size_t pages = (size + page_size - 1) / page_size;
   for (size_t i = 0; i < pages; ++i) {
     // We need to ensure there's a readable pagetable entry.
-    __atomic_load_n(&data[i * kPageSize], __ATOMIC_RELAXED);
+    __atomic_load_n(&data[i * page_size], __ATOMIC_RELAXED);
   }
 }
 
@@ -85,6 +80,7 @@ MemoryMappedQueue::MemoryMappedQueue(std::string_view shm_base,
                                      const Configuration *config,
                                      const Channel *channel)
     : config_(MakeQueueConfiguration(config, channel)) {
+  const long kSystemPageSize = sysconf(_SC_PAGESIZE);
   std::string path = ShmPath(shm_base, channel);
 
   size_ = ipc_lib::LocklessQueueMemorySize(config_);
@@ -128,8 +124,9 @@ MemoryMappedQueue::MemoryMappedQueue(std::string_view shm_base,
   const_data_ = mmap(NULL, size_, PROT_READ, MAP_SHARED, fd, 0);
   PCHECK(const_data_ != MAP_FAILED);
   PCHECK(close(fd) == 0);
-  PageFaultDataWrite(static_cast<char *>(data_), size_);
-  PageFaultDataRead(static_cast<const char *>(const_data_), size_);
+  PageFaultDataWrite(static_cast<char *>(data_), size_, kSystemPageSize);
+  PageFaultDataRead(static_cast<const char *>(const_data_), size_,
+                    kSystemPageSize);
 
   ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
 }
