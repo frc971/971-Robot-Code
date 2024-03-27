@@ -535,7 +535,7 @@ TEST_F(StarterdTest, StarterChainTest) {
       LOG(INFO) << "Waiting for starter to close.";
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    client.SetTimeoutHandler(stage3);
+    client.SetTimeoutHandler(std::ref(stage3));
     client.SetSuccessHandler([]() {
       LOG(INFO) << "stage3 success handler called.";
       FAIL() << ": Command should not have succeeded here.";
@@ -549,7 +549,7 @@ TEST_F(StarterdTest, StarterChainTest) {
     LOG(INFO) << "Begin stage1";
     client.SetTimeoutHandler(
         []() { FAIL() << ": Command should not have timed out."; });
-    client.SetSuccessHandler(stage2);
+    client.SetSuccessHandler(std::ref(stage2));
     client.SendCommands({{Command::STOP, "ping", {client_node}}},
                         std::chrono::seconds(5));
     LOG(INFO) << "End stage1";

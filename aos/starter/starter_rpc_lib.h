@@ -37,8 +37,11 @@ class StarterClient {
     timeout_handler_ = handler;
   }
 
+  // Sets the callback to be called on success.  Note: this isn't safe to call
+  // while the previous success handler is running unless you use std::ref to
+  // manage its lifetime some other way.
   void SetSuccessHandler(std::function<void()> handler) {
-    success_handler_ = handler;
+    success_handler_ = std::move(handler);
   }
 
  private:
