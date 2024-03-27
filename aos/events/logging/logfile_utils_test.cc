@@ -3070,6 +3070,10 @@ class InlinePackMessage : public ::testing::Test {
         aos::realtime_clock::epoch() +
         chrono::nanoseconds(time_distribution(random_number_generator_));
 
+    context.monotonic_remote_transmit_time =
+        aos::monotonic_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+
     context.queue_index = uint32_distribution(random_number_generator_);
     context.remote_queue_index = uint32_distribution(random_number_generator_);
     context.size = data_.size();
@@ -3108,6 +3112,9 @@ class InlinePackMessage : public ::testing::Test {
 
     builder.add_remote_queue_index(
         uint8_distribution(random_number_generator_));
+
+    builder.add_monotonic_remote_transmit_time(
+        time_distribution(random_number_generator_));
 
     fbb.FinishSizePrefixed(builder.Finish());
     return fbb.Release();
@@ -3282,11 +3289,18 @@ TEST_F(InlinePackMessage, Equivilent) {
           repacked_message.size(),
           PackMessageInline(repacked_message.data(), context, channel_index,
                             type, 0u, repacked_message.size()));
-      EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
+      for (size_t i = 0; i < fbb.GetBufferSpan().size(); ++i) {
+        ASSERT_EQ(absl::Span<uint8_t>(repacked_message)[i],
+                  absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
+                                      fbb.GetBufferSpan().size())[i])
+            << ": On index " << i;
+      }
+      ASSERT_EQ(absl::Span<uint8_t>(repacked_message),
                 absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
                                     fbb.GetBufferSpan().size()))
           << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
-                              fbb.GetBufferSpan());
+                              fbb.GetBufferSpan())
+          << " for log type " << static_cast<int>(type);
 
       // Ok, now we want to confirm that we can build up arbitrary pieces of
       // said flatbuffer.  Try all of them since it is cheap.

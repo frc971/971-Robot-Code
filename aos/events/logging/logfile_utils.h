@@ -441,6 +441,7 @@ class UnpackedMessageHeader {
       realtime_clock::time_point realtime_sent_time, uint32_t queue_index,
       std::optional<monotonic_clock::time_point> monotonic_remote_time,
       std::optional<realtime_clock::time_point> realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
       std::optional<uint32_t> remote_queue_index,
       monotonic_clock::time_point monotonic_timestamp_time,
       bool has_monotonic_timestamp_time, absl::Span<const uint8_t> span)
@@ -450,6 +451,7 @@ class UnpackedMessageHeader {
         queue_index(queue_index),
         monotonic_remote_time(monotonic_remote_time),
         realtime_remote_time(realtime_remote_time),
+        monotonic_remote_transmit_time(monotonic_remote_transmit_time),
         remote_queue_index(remote_queue_index),
         monotonic_timestamp_time(monotonic_timestamp_time),
         has_monotonic_timestamp_time(has_monotonic_timestamp_time),
@@ -469,6 +471,7 @@ class UnpackedMessageHeader {
   std::optional<aos::monotonic_clock::time_point> monotonic_remote_time;
 
   std::optional<realtime_clock::time_point> realtime_remote_time;
+  aos::monotonic_clock::time_point monotonic_remote_transmit_time;
   std::optional<uint32_t> remote_queue_index;
 
   // This field is defaulted in the flatbuffer, so we need to store both the
@@ -545,6 +548,8 @@ struct TimestampedMessage {
   BootQueueIndex remote_queue_index;
   BootTimestamp monotonic_remote_time;
   realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
+
+  BootTimestamp monotonic_remote_transmit_time;
 
   BootTimestamp monotonic_timestamp_time;
 

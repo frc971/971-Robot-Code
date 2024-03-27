@@ -2016,10 +2016,21 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
               CHECK_NOTNULL(filter);
               const Node *node = configuration()->nodes()->Get(node_index);
 
+              // The remote time could be from a reliable message long ago,
+              // whereas the transmit time is the latest timestamp we have on
+              // the far side.  Use that for recovering time when we have it.
+              // There are a ton of logs from before that timestamp was added.
+              // Fall back to the remote time in those.
+              const BootTimestamp monotonic_remote_time =
+                  msg->monotonic_remote_transmit_time.time !=
+                          monotonic_clock::min_time
+                      ? msg->monotonic_remote_transmit_time
+                      : msg->monotonic_remote_time;
+
               // Call the correct method depending on if we are the forward or
               // reverse direction here.
               filter->Sample(node, msg->monotonic_event_time,
-                             msg->monotonic_remote_time);
+                             monotonic_remote_time);
 
               if (!node_samples_.empty()) {
                 const size_t sending_node_index =
@@ -2029,8 +2040,8 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
                 // and monotonic_event_time was the time it was received.
                 node_samples_[node_index]
                     .nodes[sending_node_index]
-                    .messages.emplace(std::make_pair(
-                        msg->monotonic_event_time, msg->monotonic_remote_time));
+                    .messages.emplace(std::make_pair(msg->monotonic_event_time,
+                                                     monotonic_remote_time));
               }
 
               if (msg->monotonic_timestamp_time != BootTimestamp::min_time()) {
@@ -2044,7 +2055,7 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
                   const size_t sending_node_index =
                       source_node_index_[msg->channel_index];
                   // The timestamp then went back from node node_index to
-                  // sending_node_index.  monotonic_event_time is the time it
+                  // sending_node_index.  monotonic_transmit_time is the time it
                   // was sent, and monotonic_timestamp_time was the time it was
                   // received.
                   node_samples_[sending_node_index]

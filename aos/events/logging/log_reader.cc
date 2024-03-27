@@ -1521,7 +1521,8 @@ bool LogReader::State::Send(const TimestampedMessage &&timestamped_message) {
   const RawSender::Error err = sender->Send(
       SharedSpan(timestamped_message.data, &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
-      timestamped_message.realtime_remote_time, monotonic_clock::min_time,
+      timestamped_message.realtime_remote_time,
+      timestamped_message.monotonic_remote_transmit_time.time,
       remote_queue_index,
       (channel_source_state_[timestamped_message.channel_index] != nullptr
            ? CHECK_NOTNULL(multinode_filters_)
@@ -1614,6 +1615,10 @@ bool LogReader::State::Send(const TimestampedMessage &&timestamped_message) {
              source_state->boot_count());
     message_header_builder.add_monotonic_remote_time(
         timestamped_message.monotonic_remote_time.time.time_since_epoch()
+            .count());
+    message_header_builder.add_monotonic_remote_transmit_time(
+        timestamped_message.monotonic_remote_transmit_time.time
+            .time_since_epoch()
             .count());
     message_header_builder.add_realtime_remote_time(
         timestamped_message.realtime_remote_time.time_since_epoch().count());

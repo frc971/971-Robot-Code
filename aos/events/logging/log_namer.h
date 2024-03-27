@@ -70,6 +70,7 @@ class NewDataWriter {
   // message is from.
   void UpdateRemote(size_t remote_node_index, const UUID &remote_node_boot_uuid,
                     monotonic_clock::time_point monotonic_remote_time,
+                    monotonic_clock::time_point monotonic_remote_transmit_time,
                     monotonic_clock::time_point monotonic_event_time,
                     bool reliable,
                     monotonic_clock::time_point monotonic_timestamp_time =
@@ -146,6 +147,17 @@ class NewDataWriter {
     // back to the logger (logger_node_index_).
     monotonic_clock::time_point
         oldest_logger_local_unreliable_monotonic_timestamp =
+            monotonic_clock::max_time;
+
+    // Transmit timestamp on the remote monotonic clock of the oldest message
+    // sent to node_index_.
+    monotonic_clock::time_point
+        oldest_remote_reliable_monotonic_transmit_timestamp =
+            monotonic_clock::max_time;
+    // Timestamp on the local monotonic clock of the message in
+    // oldest_remote_reliable_monotonic_transmit_timestamp.
+    monotonic_clock::time_point
+        oldest_local_reliable_monotonic_transmit_timestamp =
             monotonic_clock::max_time;
   };
 

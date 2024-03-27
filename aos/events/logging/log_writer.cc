@@ -742,6 +742,7 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
     timestamp_writer->UpdateRemote(
         f.data_node_index, f.fetcher->context().source_boot_uuid,
         f.fetcher->context().monotonic_remote_time,
+        f.fetcher->context().monotonic_remote_transmit_time,
         f.fetcher->context().monotonic_event_time, f.reliable_forwarding);
 
     const auto start = event_loop_->monotonic_now();
@@ -795,6 +796,8 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
         node_index_, event_loop_->boot_uuid(),
         monotonic_clock::time_point(
             chrono::nanoseconds(msg->monotonic_remote_time())),
+        monotonic_clock::time_point(
+            chrono::nanoseconds(msg->monotonic_remote_transmit_time())),
         monotonic_clock::time_point(
             chrono::nanoseconds(msg->monotonic_sent_time())),
         reliable, monotonic_timestamp_time);
