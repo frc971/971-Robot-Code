@@ -3254,7 +3254,7 @@ TEST_F(InlinePackMessage, Equivilent) {
 
   for (const LogType type :
        {LogType::kLogMessage, LogType::kLogDeliveryTimeOnly,
-        LogType::kLogMessageAndDeliveryTime, LogType::kLogRemoteMessage}) {
+        LogType::kLogRemoteMessage}) {
     for (int i = 0; i < 100; ++i) {
       aos::Context context = RandomContext();
       const uint32_t channel_index =

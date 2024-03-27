@@ -37,10 +37,6 @@ enum class LogType : uint8_t {
   // The message originated on another node, but only the delivery times are
   // logged here.
   kLogDeliveryTimeOnly,
-  // The message originated on another node. Log it and the delivery times
-  // together.  The message_gateway is responsible for logging any messages
-  // which didn't get delivered.
-  kLogMessageAndDeliveryTime,
   // The message originated on the other node and should be logged on this node.
   kLogRemoteMessage
 };
