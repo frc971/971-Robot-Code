@@ -197,15 +197,17 @@ inline bool RawFetcher::FetchIf(std::function<bool(const Context &)> fn) {
 
 inline RawSender::Error RawSender::Send(size_t size) {
   return Send(size, monotonic_clock::min_time, realtime_clock::min_time,
-              0xffffffffu, event_loop_->boot_uuid());
+              monotonic_clock::min_time, 0xffffffffu, event_loop_->boot_uuid());
 }
 
 inline RawSender::Error RawSender::Send(
     size_t size, aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
+    aos::monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &uuid) {
-  const auto err = DoSend(size, monotonic_remote_time, realtime_remote_time,
-                          remote_queue_index, uuid);
+  const auto err =
+      DoSend(size, monotonic_remote_time, realtime_remote_time,
+             monotonic_remote_transmit_time, remote_queue_index, uuid);
   RecordSendResult(err, size);
   if (err == Error::kOk) {
     ftrace_.FormatMessage(
@@ -219,16 +221,18 @@ inline RawSender::Error RawSender::Send(
 
 inline RawSender::Error RawSender::Send(const void *data, size_t size) {
   return Send(data, size, monotonic_clock::min_time, realtime_clock::min_time,
-              0xffffffffu, event_loop_->boot_uuid());
+              monotonic_clock::min_time, 0xffffffffu, event_loop_->boot_uuid());
 }
 
 inline RawSender::Error RawSender::Send(
     const void *data, size_t size,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
+    aos::monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &uuid) {
-  const auto err = DoSend(data, size, monotonic_remote_time,
-                          realtime_remote_time, remote_queue_index, uuid);
+  const auto err =
+      DoSend(data, size, monotonic_remote_time, realtime_remote_time,
+             monotonic_remote_transmit_time, remote_queue_index, uuid);
   RecordSendResult(err, size);
   if (err == RawSender::Error::kOk) {
     ftrace_.FormatMessage(
@@ -242,17 +246,20 @@ inline RawSender::Error RawSender::Send(
 
 inline RawSender::Error RawSender::Send(const SharedSpan data) {
   return Send(std::move(data), monotonic_clock::min_time,
-              realtime_clock::min_time, 0xffffffffu, event_loop_->boot_uuid());
+              realtime_clock::min_time, monotonic_clock::min_time, 0xffffffffu,
+              event_loop_->boot_uuid());
 }
 
 inline RawSender::Error RawSender::Send(
     const SharedSpan data,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
+    aos::monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &uuid) {
   const size_t size = data->size();
-  const auto err = DoSend(std::move(data), monotonic_remote_time,
-                          realtime_remote_time, remote_queue_index, uuid);
+  const auto err =
+      DoSend(std::move(data), monotonic_remote_time, realtime_remote_time,
+             monotonic_remote_transmit_time, remote_queue_index, uuid);
   RecordSendResult(err, size);
   if (err == Error::kOk) {
     ftrace_.FormatMessage(

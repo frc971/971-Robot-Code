@@ -20,6 +20,12 @@ table RemoteData {
 
   // UUID for this boot.  This is 16 bytes long.
   boot_uuid:[uint8] (id: 5);
+
+  // Time that the message was handed to the kernel to be published over the
+  // network on the remote node.
+  //
+  // See MessageHeader fbs definition for more details.
+  monotonic_remote_transmit_time:int64 = -9223372036854775808(id: 6);
 }
 
 root_type RemoteData;

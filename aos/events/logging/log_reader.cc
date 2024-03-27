@@ -1521,7 +1521,8 @@ bool LogReader::State::Send(const TimestampedMessage &&timestamped_message) {
   const RawSender::Error err = sender->Send(
       SharedSpan(timestamped_message.data, &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
-      timestamped_message.realtime_remote_time, remote_queue_index,
+      timestamped_message.realtime_remote_time, monotonic_clock::min_time,
+      remote_queue_index,
       (channel_source_state_[timestamped_message.channel_index] != nullptr
            ? CHECK_NOTNULL(multinode_filters_)
                  ->boot_uuid(configuration::GetNodeIndex(

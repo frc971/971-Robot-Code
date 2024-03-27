@@ -344,6 +344,9 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
               chrono::nanoseconds(header.realtime_sent_time()));
           const aos::monotonic_clock::time_point header_monotonic_remote_time(
               chrono::nanoseconds(header.monotonic_remote_time()));
+          const aos::monotonic_clock::time_point
+              header_monotonic_remote_transmit_time(
+                  chrono::nanoseconds(header.monotonic_remote_transmit_time()));
           const aos::realtime_clock::time_point header_realtime_remote_time(
               chrono::nanoseconds(header.realtime_remote_time()));
 
@@ -396,12 +399,19 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
           EXPECT_EQ(pi2_context->monotonic_remote_time,
                     header_monotonic_remote_time);
 
+          EXPECT_LT(header_monotonic_remote_transmit_time,
+                    pi2_context->monotonic_event_time);
+          EXPECT_GT(header_monotonic_remote_transmit_time,
+                    pi2_context->monotonic_remote_time);
+
           // Confirm the forwarded message also matches the source message.
           EXPECT_EQ(pi1_context->queue_index, header.queue_index());
           EXPECT_EQ(pi1_context->monotonic_event_time,
                     header_monotonic_remote_time);
           EXPECT_EQ(pi1_context->realtime_event_time,
                     header_realtime_remote_time);
+          EXPECT_EQ(header_monotonic_remote_transmit_time,
+                    pi2_context->monotonic_remote_transmit_time);
         });
   }
 
@@ -860,6 +870,8 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
           &pi1_remote_timestamp_event_loop);
 
   {
+    const aos::monotonic_clock::time_point startup_time =
+        aos::monotonic_clock::now();
     // Now spin up a client for 2 seconds.
     MakePi2Client();
 
@@ -878,6 +890,10 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
               0u);
 
     EXPECT_TRUE(ping_fetcher.Fetch());
+    EXPECT_GT(ping_fetcher.context().monotonic_remote_transmit_time,
+              startup_time);
+    EXPECT_LT(ping_fetcher.context().monotonic_remote_transmit_time,
+              aos::monotonic_clock::now());
     EXPECT_FALSE(unreliable_ping_fetcher.Fetch());
     EXPECT_EQ(ping_timestamp_count, 1);
 
@@ -990,6 +1006,8 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
           &pi1_remote_timestamp_event_loop);
 
   {
+    const aos::monotonic_clock::time_point startup_time =
+        aos::monotonic_clock::now();
     // Now, spin up a server for 2 seconds.
     MakePi1Server();
 
@@ -1008,6 +1026,11 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
               0u);
 
     EXPECT_TRUE(ping_fetcher.Fetch());
+    EXPECT_GT(ping_fetcher.context().monotonic_remote_transmit_time,
+              startup_time);
+    EXPECT_LT(ping_fetcher.context().monotonic_remote_transmit_time,
+              aos::monotonic_clock::now());
+
     EXPECT_FALSE(unreliable_ping_fetcher.Fetch());
     EXPECT_EQ(ping_timestamp_count, 1);
     LOG(INFO) << "Shutting down first pi1 MessageBridgeServer";
@@ -1144,6 +1167,8 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentDuringClientReboot) {
   }
 
   {
+    const aos::monotonic_clock::time_point startup_time =
+        aos::monotonic_clock::now();
     // Now, spin up a client for 2 seconds.
     MakePi2Client();
 
@@ -1165,6 +1190,11 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentDuringClientReboot) {
     // We should have gotten precisely one more ping message--the latest one
     // sent should've made it, but no previous ones.
     EXPECT_TRUE(ping_fetcher.FetchNext());
+    EXPECT_GT(ping_fetcher.context().monotonic_remote_transmit_time,
+              startup_time);
+    EXPECT_LT(ping_fetcher.context().monotonic_remote_transmit_time,
+              aos::monotonic_clock::now());
+
     EXPECT_EQ(ping_index, ping_fetcher->value());
     EXPECT_FALSE(ping_fetcher.FetchNext());
 

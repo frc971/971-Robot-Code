@@ -25,6 +25,7 @@ struct RustContext {
 
   int64_t monotonic_remote_time;
   int64_t realtime_remote_time;
+  int64_t monotonic_remote_transmit_time;
 
   uint32_t queue_index;
   uint32_t remote_queue_index;
@@ -48,6 +49,8 @@ static_assert(offsetof(Context, monotonic_remote_time) ==
               offsetof(RustContext, monotonic_remote_time));
 static_assert(offsetof(Context, realtime_remote_time) ==
               offsetof(RustContext, realtime_remote_time));
+static_assert(offsetof(Context, monotonic_remote_transmit_time) ==
+              offsetof(RustContext, monotonic_remote_transmit_time));
 static_assert(offsetof(Context, queue_index) ==
               offsetof(RustContext, queue_index));
 static_assert(offsetof(Context, remote_queue_index) ==

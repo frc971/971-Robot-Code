@@ -16,7 +16,7 @@ std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
 
 std::string ShmPath(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v6";
+  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v7";
 }
 
 void PageFaultDataWrite(char *data, size_t size, const long page_size) {

@@ -95,6 +95,8 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
       context.realtime_event_time.time_since_epoch().count());
   remote_data_builder.add_data(data_offset);
   remote_data_builder.add_boot_uuid(boot_uuid_offset);
+  remote_data_builder.add_monotonic_remote_transmit_time(
+      monotonic_clock::now().time_since_epoch().count());
 
   // TODO(austin): Use an iovec to build it up in 3 parts to avoid the copy?
   // Only useful when not logging.
@@ -304,6 +306,8 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
         remote_message_builder.add_remote_queue_index(
             message_header->queue_index());
         remote_message_builder.add_boot_uuid(boot_uuid_offset);
+        remote_message_builder.add_monotonic_remote_transmit_time(
+            message_header->monotonic_remote_transmit_time());
 
         server_status->AddPartialDeliveries(peer.node_index,
                                             partial_deliveries);
@@ -418,7 +422,10 @@ MessageBridgeServer::MessageBridgeServer(
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
               event_loop->node()->port(), requested_authentication),
-      server_status_(event_loop, [this]() { timestamp_state_->SendData(); }),
+      server_status_(event_loop,
+                     [this](uint32_t, monotonic_clock::time_point) {
+                       timestamp_state_->SendData();
+                     }),
       config_sha256_(std::move(config_sha256)),
       allocator_(0),
       refresh_key_timer_(event_loop->AddTimer([this]() { RequestAuthKey(); })),

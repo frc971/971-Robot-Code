@@ -59,9 +59,9 @@ class SimulatedMessageBridge {
     void DisableStatistics(DestroySenders destroy_senders) {
       disable_statistics_ = true;
       destroy_senders_ = destroy_senders;
-      if (server_status) {
-        server_status->DisableStatistics(destroy_senders ==
-                                         DestroySenders::kYes);
+      if (server_status_) {
+        server_status_->DisableStatistics(destroy_senders ==
+                                          DestroySenders::kYes);
       }
       if (client_status) {
         client_status->DisableStatistics(destroy_senders ==
@@ -71,8 +71,8 @@ class SimulatedMessageBridge {
 
     void EnableStatistics() {
       disable_statistics_ = false;
-      if (server_status) {
-        server_status->EnableStatistics();
+      if (server_status_) {
+        server_status_->EnableStatistics();
       }
       if (client_status) {
         client_status->EnableStatistics();
@@ -86,121 +86,22 @@ class SimulatedMessageBridge {
       destination_delayers_.emplace_back(delayer);
     }
 
-    void MakeEventLoop() {
-      // Message bridge isn't the thing that should be catching sent-too-fast,
-      // and may need to be able to forward too-fast messages replayed from old
-      // logfiles.
-      SetEventLoop(node_factory_->MakeEventLoop(
-          "message_bridge", {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                             NodeEventLoopFactory::ExclusiveSenders::kNo,
-                             {}}));
-    }
+    void MakeEventLoop();
 
     void SetEventLoop(std::unique_ptr<aos::EventLoop> loop);
 
-    void SetSendData(std::function<void()> fn) {
-      CHECK(!fn_);
-      fn_ = std::move(fn);
-      if (server_status) {
-        server_status->set_send_data(fn_);
-      }
-    }
+    void SetSendData(
+        std::function<void(uint32_t, monotonic_clock::time_point)> fn);
 
     void AddDelayerWatcher(const Channel *channel, DelayersVector *v) {
       delayer_watchers_.emplace_back(channel, v);
     }
 
-    void SetBootUUID(size_t node_index, const UUID &boot_uuid) {
-      boot_uuids_[node_index] = boot_uuid;
-      const Node *node =
-          node_factory_->configuration()->nodes()->Get(node_index);
-      if (server_status) {
-        ServerConnection *connection =
-            server_status->FindServerConnection(node);
-        if (connection) {
-          if (boot_uuid == UUID::Zero()) {
-            server_status->Disconnect(node_index);
-            server_status->ResetFilter(node_index);
-          } else {
-            switch (server_state_[node_index]) {
-              case message_bridge::State::DISCONNECTED:
-                server_status->Disconnect(node_index);
-                break;
-              case message_bridge::State::CONNECTED:
-                server_status->Connect(node_index, event_loop->monotonic_now());
-                break;
-            }
-            server_status->ResetFilter(node_index);
-            server_status->SetBootUUID(node_index, boot_uuid);
-          }
-        }
-      }
-      if (client_status) {
-        const int client_index =
-            client_status->FindClientIndex(node->name()->string_view());
-        client_status->SampleReset(client_index);
-        if (boot_uuid == UUID::Zero()) {
-          client_status->Disconnect(client_index);
-        } else {
-          switch (client_state_[node_index]) {
-            case message_bridge::State::CONNECTED:
-              client_status->Connect(client_index);
-              break;
-            case message_bridge::State::DISCONNECTED:
-              client_status->Disconnect(client_index);
-              break;
-          }
-        }
-      }
-    }
+    void SetBootUUID(size_t node_index, const UUID &boot_uuid);
 
-    void SetServerState(const Node *destination, message_bridge::State state) {
-      const size_t node_index = configuration::GetNodeIndex(
-          node_factory_->configuration(), destination);
-      server_state_[node_index] = state;
-      if (server_status) {
-        ServerConnection *connection =
-            server_status->FindServerConnection(destination);
-        if (connection == nullptr) return;
+    void SetServerState(const Node *destination, message_bridge::State state);
 
-        if (state == connection->state()) {
-          return;
-        }
-        switch (state) {
-          case message_bridge::State::DISCONNECTED:
-            server_status->Disconnect(node_index);
-            break;
-          case message_bridge::State::CONNECTED:
-            server_status->Connect(node_index, event_loop->monotonic_now());
-            break;
-        }
-      }
-    }
-
-    void SetClientState(const Node *source, message_bridge::State state) {
-      const size_t node_index =
-          configuration::GetNodeIndex(node_factory_->configuration(), source);
-      client_state_[node_index] = state;
-      if (client_status) {
-        const int client_index =
-            client_status->FindClientIndex(source->name()->string_view());
-        ClientConnection *connection =
-            client_status->GetClientConnection(source);
-
-        // TODO(austin): Are there cases where we want to dedup 2 CONNECTED
-        // calls?
-        if (connection->state() != state) {
-          switch (state) {
-            case message_bridge::State::CONNECTED:
-              client_status->Connect(client_index);
-              break;
-            case message_bridge::State::DISCONNECTED:
-              client_status->Disconnect(client_index);
-              break;
-          }
-        }
-      }
-    }
+    void SetClientState(const Node *source, message_bridge::State state);
 
     std::vector<UUID> boot_uuids_;
     std::vector<message_bridge::State> client_state_;
@@ -208,12 +109,12 @@ class SimulatedMessageBridge {
 
     std::vector<std::pair<const Channel *, DelayersVector *>> delayer_watchers_;
 
-    std::function<void()> fn_;
+    std::function<void(uint32_t, monotonic_clock::time_point)> fn_;
 
     NodeEventLoopFactory *node_factory_;
     std::unique_ptr<aos::EventLoop> event_loop;
     ChannelTimestampSender timestamp_loggers;
-    std::unique_ptr<MessageBridgeServerStatus> server_status;
+    std::unique_ptr<MessageBridgeServerStatus> server_status_;
     std::unique_ptr<MessageBridgeClientStatus> client_status;
 
     // List of delayers to update whenever this node starts or stops.

@@ -356,18 +356,21 @@ class SimulatedSender : public RawSender {
 
   Error DoSend(size_t length, monotonic_clock::time_point monotonic_remote_time,
                realtime_clock::time_point realtime_remote_time,
+               monotonic_clock::time_point monotonic_remote_transmit_time,
                uint32_t remote_queue_index,
                const UUID &source_boot_uuid) override;
 
   Error DoSend(const void *msg, size_t size,
                monotonic_clock::time_point monotonic_remote_time,
                realtime_clock::time_point realtime_remote_time,
+               monotonic_clock::time_point monotonic_remote_transmit_time,
                uint32_t remote_queue_index,
                const UUID &source_boot_uuid) override;
 
   Error DoSend(const SharedSpan data,
                aos::monotonic_clock::time_point monotonic_remote_time,
                aos::realtime_clock::time_point realtime_remote_time,
+               monotonic_clock::time_point monotonic_remote_transmit_time,
                uint32_t remote_queue_index,
                const UUID &source_boot_uuid) override;
 
@@ -857,8 +860,13 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
              ->emplace(SimpleChannel(channel),
                        std::unique_ptr<SimulatedChannel>(new SimulatedChannel(
                            channel,
+                           // There are a lot of tests which assume that 100 hz
+                           // messages can actually be sent out at 100 hz and
+                           // forwarded.  The jitter in wakeups causes small
+                           // variation in timing.  Ignore that.
                            configuration::ChannelStorageDuration(
-                               configuration(), channel),
+                               configuration(), channel) -
+                               send_delay(),
                            scheduler_)))
              .first;
   }
@@ -1038,7 +1046,7 @@ std::optional<uint32_t> SimulatedChannel::Send(
   // Remove times that are greater than or equal to a channel_storage_duration_
   // ago
   while (!last_times_.empty() &&
-         (now - last_times_.front() >= channel_storage_duration_)) {
+         (now >= channel_storage_duration_ + last_times_.front())) {
     last_times_.pop();
   }
 
@@ -1101,6 +1109,7 @@ SimulatedSender::~SimulatedSender() {
 RawSender::Error SimulatedSender::DoSend(
     size_t length, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   // The allocations in here are due to infrastructure and don't count in the
   // no mallocs in RT code.
@@ -1120,6 +1129,8 @@ RawSender::Error SimulatedSender::DoSend(
   message_->context.realtime_event_time = simulated_event_loop_->realtime_now();
   message_->context.realtime_remote_time = realtime_remote_time;
   message_->context.source_boot_uuid = source_boot_uuid;
+  message_->context.monotonic_remote_transmit_time =
+      monotonic_remote_transmit_time;
   CHECK_LE(length, message_->context.size);
   message_->context.size = length;
 
@@ -1131,19 +1142,14 @@ RawSender::Error SimulatedSender::DoSend(
     VLOG(1) << simulated_event_loop_->distributed_now() << " "
             << NodeName(simulated_event_loop_->node())
             << simulated_event_loop_->monotonic_now() << " "
-            << simulated_event_loop_->name()
-            << "\nMessages were sent too fast:\n"
-            << "For channel: "
-            << configuration::CleanedChannelToString(
-                   simulated_channel_->channel())
-            << '\n'
-            << "Tried to send more than " << simulated_channel_->queue_size()
+            << simulated_event_loop_->name() << "   -> SentTooFast "
+            << configuration::StrippedChannelToString(channel())
+            << ", Tried to send more than " << simulated_channel_->queue_size()
             << " (queue size) messages in the last "
             << std::chrono::duration<double>(
                    simulated_channel_->channel_storage_duration())
                    .count()
-            << " seconds (channel storage duration)"
-            << "\n\n";
+            << " seconds (channel storage duration)";
     return Error::kMessagesSentTooFast;
   }
 
@@ -1162,6 +1168,7 @@ RawSender::Error SimulatedSender::DoSend(
     const void *msg, size_t size,
     monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   CHECK_LE(size, this->size())
       << ": Attempting to send too big a message on "
@@ -1176,12 +1183,14 @@ RawSender::Error SimulatedSender::DoSend(
   memcpy(mutable_span.data(), msg, size);
 
   return DoSend(size, monotonic_remote_time, realtime_remote_time,
-                remote_queue_index, source_boot_uuid);
+                monotonic_remote_transmit_time, remote_queue_index,
+                source_boot_uuid);
 }
 
 RawSender::Error SimulatedSender::DoSend(
     const SharedSpan data, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   CHECK_LE(data->size(), this->size())
       << ": Attempting to send too big a message on "
@@ -1192,7 +1201,8 @@ RawSender::Error SimulatedSender::DoSend(
   message_ = SimulatedMessage::Make(simulated_channel_, data);
 
   return DoSend(data->size(), monotonic_remote_time, realtime_remote_time,
-                remote_queue_index, source_boot_uuid);
+                monotonic_remote_transmit_time, remote_queue_index,
+                source_boot_uuid);
 }
 
 SimulatedTimerHandler::SimulatedTimerHandler(
@@ -1603,6 +1613,8 @@ void NodeEventLoopFactory::DisableStatistics() {
   if (skip_timing_report_) {
     result->SkipTimingReport();
   }
+
+  // TODO(austin): You shouldn't be able to make an event loop before t=0...
 
   VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
           << monotonic_now() << " MakeEventLoop(\"" << result->name() << "\")";

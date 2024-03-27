@@ -237,6 +237,7 @@ class SimpleShmFetcher {
     ipc_lib::LocklessQueueReader::Result read_result = reader_.Read(
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
+        &context_.monotonic_remote_transmit_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
         &context_.source_boot_uuid, &context_.size, copy_buffer, std::move(fn));
 
@@ -457,6 +458,7 @@ class ShmSender : public RawSender {
   Error DoSend(size_t length,
                aos::monotonic_clock::time_point monotonic_remote_time,
                aos::realtime_clock::time_point realtime_remote_time,
+               aos::monotonic_clock::time_point monotonic_remote_transmit_time,
                uint32_t remote_queue_index,
                const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
@@ -464,9 +466,9 @@ class ShmSender : public RawSender {
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
     const auto result = lockless_queue_sender_.Send(
-        length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
-        source_boot_uuid, &monotonic_sent_time_, &realtime_sent_time_,
-        &sent_queue_index_);
+        length, monotonic_remote_time, realtime_remote_time,
+        monotonic_remote_transmit_time, remote_queue_index, source_boot_uuid,
+        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_);
     CHECK_NE(result, ipc_lib::LocklessQueueSender::Result::INVALID_REDZONE)
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
@@ -480,6 +482,7 @@ class ShmSender : public RawSender {
   Error DoSend(const void *msg, size_t length,
                aos::monotonic_clock::time_point monotonic_remote_time,
                aos::realtime_clock::time_point realtime_remote_time,
+               aos::monotonic_clock::time_point monotonic_remote_transmit_time,
                uint32_t remote_queue_index,
                const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
@@ -488,8 +491,9 @@ class ShmSender : public RawSender {
         << configuration::CleanedChannelToString(channel());
     const auto result = lockless_queue_sender_.Send(
         reinterpret_cast<const char *>(msg), length, monotonic_remote_time,
-        realtime_remote_time, remote_queue_index, source_boot_uuid,
-        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_);
+        realtime_remote_time, monotonic_remote_transmit_time,
+        remote_queue_index, source_boot_uuid, &monotonic_sent_time_,
+        &realtime_sent_time_, &sent_queue_index_);
 
     CHECK_NE(result, ipc_lib::LocklessQueueSender::Result::INVALID_REDZONE)
         << ": Somebody wrote outside the buffer of their message on "

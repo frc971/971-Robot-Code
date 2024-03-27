@@ -140,12 +140,14 @@ class RawSender {
   // size() bytes into the data backed by data().  They then call Send to send.
   // Returns Error::kOk on a successful send, or
   // Error::kMessagesSentTooFast if messages were sent too fast. If provided,
-  // monotonic_remote_time, realtime_remote_time, and remote_queue_index are
-  // attached to the message and are available in the context on the read side.
-  // If they are not populated, the read side will get the sent times instead.
+  // monotonic_remote_time, realtime_remote_time,
+  // monotonic_remote_transmit_time, and remote_queue_index are attached to the
+  // message and are available in the context on the read side. If they are not
+  // populated, the read side will get the sent times instead.
   Error Send(size_t size);
   Error Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
              realtime_clock::time_point realtime_remote_time,
+             monotonic_clock::time_point monotonic_remote_transmit_time,
              uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   // Sends a single block of data by copying it.
@@ -155,6 +157,7 @@ class RawSender {
   Error Send(const void *data, size_t size,
              monotonic_clock::time_point monotonic_remote_time,
              realtime_clock::time_point realtime_remote_time,
+             monotonic_clock::time_point monotonic_remote_transmit_time,
              uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   // CHECKs that no sending Error occurred and logs the channel_ data if
@@ -168,6 +171,7 @@ class RawSender {
   Error Send(const SharedSpan data,
              monotonic_clock::time_point monotonic_remote_time,
              realtime_clock::time_point realtime_remote_time,
+             monotonic_clock::time_point monotonic_remote_transmit_time,
              uint32_t remote_queue_index, const UUID &remote_boot_uuid);
   const Channel *channel() const { return channel_; }
 
@@ -216,21 +220,22 @@ class RawSender {
  private:
   friend class EventLoop;
 
-  virtual Error DoSend(const void *data, size_t size,
-                       monotonic_clock::time_point monotonic_remote_time,
-                       realtime_clock::time_point realtime_remote_time,
-                       uint32_t remote_queue_index,
-                       const UUID &source_boot_uuid) = 0;
-  virtual Error DoSend(size_t size,
-                       monotonic_clock::time_point monotonic_remote_time,
-                       realtime_clock::time_point realtime_remote_time,
-                       uint32_t remote_queue_index,
-                       const UUID &source_boot_uuid) = 0;
-  virtual Error DoSend(const SharedSpan data,
-                       monotonic_clock::time_point monotonic_remote_time,
-                       realtime_clock::time_point realtime_remote_time,
-                       uint32_t remote_queue_index,
-                       const UUID &source_boot_uuid);
+  virtual Error DoSend(
+      const void *data, size_t size,
+      monotonic_clock::time_point monotonic_remote_time,
+      realtime_clock::time_point realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
+      uint32_t remote_queue_index, const UUID &source_boot_uuid) = 0;
+  virtual Error DoSend(
+      size_t size, monotonic_clock::time_point monotonic_remote_time,
+      realtime_clock::time_point realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
+      uint32_t remote_queue_index, const UUID &source_boot_uuid) = 0;
+  virtual Error DoSend(
+      const SharedSpan data, monotonic_clock::time_point monotonic_remote_time,
+      realtime_clock::time_point realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
+      uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   void RecordSendResult(const Error error, size_t message_size);
 

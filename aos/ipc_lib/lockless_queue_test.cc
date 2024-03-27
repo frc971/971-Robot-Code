@@ -251,8 +251,8 @@ TEST_F(LocklessQueueTest, Send) {
     char data[100];
     size_t s = snprintf(data, sizeof(data), "foobar%d", i);
     ASSERT_EQ(sender.Send(data, s, monotonic_clock::min_time,
-                          realtime_clock::min_time, 0xffffffffu, UUID::Zero(),
-                          nullptr, nullptr, nullptr),
+                          realtime_clock::min_time, monotonic_clock::min_time,
+                          0xffffffffu, UUID::Zero(), nullptr, nullptr, nullptr),
               LocklessQueueSender::Result::GOOD);
 
     // Confirm that the queue index still makes sense.  This is easier since the
@@ -263,6 +263,7 @@ TEST_F(LocklessQueueTest, Send) {
     monotonic_clock::time_point monotonic_sent_time;
     realtime_clock::time_point realtime_sent_time;
     monotonic_clock::time_point monotonic_remote_time;
+    monotonic_clock::time_point monotonic_remote_transmit_time;
     realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
     UUID source_boot_uuid;
@@ -277,8 +278,9 @@ TEST_F(LocklessQueueTest, Send) {
     }
     LocklessQueueReader::Result read_result = reader.Read(
         index.index(), &monotonic_sent_time, &realtime_sent_time,
-        &monotonic_remote_time, &realtime_remote_time, &remote_queue_index,
-        &source_boot_uuid, &length, &(read_data[0]), std::ref(should_read));
+        &monotonic_remote_time, &monotonic_remote_transmit_time,
+        &realtime_remote_time, &remote_queue_index, &source_boot_uuid, &length,
+        &(read_data[0]), std::ref(should_read));
 
     // This should either return GOOD, or TOO_OLD if it is before the start of
     // the queue.
@@ -450,6 +452,7 @@ int VerifyMessages(LocklessQueue *queue, LocklessQueueMemory *memory) {
     monotonic_clock::time_point monotonic_sent_time;
     realtime_clock::time_point realtime_sent_time;
     monotonic_clock::time_point monotonic_remote_time;
+    monotonic_clock::time_point monotonic_remote_transmit_time;
     realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
     UUID source_boot_uuid;
@@ -458,8 +461,9 @@ int VerifyMessages(LocklessQueue *queue, LocklessQueueMemory *memory) {
 
     LocklessQueueReader::Result read_result = reader.Read(
         i, &monotonic_sent_time, &realtime_sent_time, &monotonic_remote_time,
-        &realtime_remote_time, &remote_queue_index, &source_boot_uuid, &length,
-        &(read_data[0]), should_read_callback);
+        &monotonic_remote_transmit_time, &realtime_remote_time,
+        &remote_queue_index, &source_boot_uuid, &length, &(read_data[0]),
+        should_read_callback);
 
     if (read_result != LocklessQueueReader::Result::GOOD) {
       if (read_result == LocklessQueueReader::Result::TOO_OLD) {
@@ -526,10 +530,11 @@ TEST_F(LocklessQueueTest, FetchEqFetchNext) {
         for (int i = 0; i < 5; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
-          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
-                                realtime_clock::min_time, 0xffffffffl,
-                                UUID::Zero(), nullptr, nullptr, nullptr),
-                    LocklessQueueSender::Result::GOOD);
+          ASSERT_EQ(
+              sender.Send(data, s + 1, monotonic_clock::min_time,
+                          realtime_clock::min_time, monotonic_clock::min_time,
+                          0xffffffffl, UUID::Zero(), nullptr, nullptr, nullptr),
+              LocklessQueueSender::Result::GOOD);
         }
       },
       [config, &tid](void *raw_memory) {
@@ -549,10 +554,11 @@ TEST_F(LocklessQueueTest, FetchEqFetchNext) {
         {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
-          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
-                                realtime_clock::min_time, 0xffffffffl,
-                                UUID::Zero(), nullptr, nullptr, nullptr),
-                    LocklessQueueSender::Result::GOOD);
+          ASSERT_EQ(
+              sender.Send(data, s + 1, monotonic_clock::min_time,
+                          realtime_clock::min_time, monotonic_clock::min_time,
+                          0xffffffffl, UUID::Zero(), nullptr, nullptr, nullptr),
+              LocklessQueueSender::Result::GOOD);
         }
 
         // Now, make sure we can send 1 message and receive it to confirm we

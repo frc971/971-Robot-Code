@@ -90,7 +90,8 @@ ServerConnection *FindServerConnection(ServerStatistics *statistics,
 }  // namespace
 
 MessageBridgeServerStatus::MessageBridgeServerStatus(
-    aos::EventLoop *event_loop, std::function<void()> send_data)
+    aos::EventLoop *event_loop,
+    std::function<void(uint32_t, monotonic_clock::time_point)> send_data)
     : event_loop_(event_loop),
       sender_(event_loop_->MakeSender<ServerStatistics>("/aos")),
       statistics_(MakeServerStatistics(
@@ -100,7 +101,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       client_statistics_fetcher_(
           event_loop_->MakeFetcher<ClientStatistics>("/aos")),
       timestamp_sender_(event_loop_->MakeSender<Timestamp>("/aos")),
-      send_data_(send_data) {
+      send_data_(std::move(send_data)) {
   server_connection_offsets_.reserve(
       statistics_.message().connections()->size());
   client_offsets_.reserve(statistics_.message().connections()->size());
@@ -484,7 +485,8 @@ void MessageBridgeServerStatus::Tick() {
     // Since we are building up the timestamp to send here, we need to trigger
     // the SendData call ourselves.
     if (send_data_) {
-      send_data_();
+      send_data_(timestamp_sender_.sent_queue_index(),
+                 timestamp_sender_.monotonic_sent_time());
     }
   }
 }
