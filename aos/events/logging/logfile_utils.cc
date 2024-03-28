@@ -2020,6 +2020,7 @@ void SplitTimestampBootMerger::QueueTimestamps(
       queue_timestamps_ran_ = true;
       return;
     }
+    CHECK_LT(msg->channel_index, source_node.size());
     if (source_node[msg->channel_index] != static_cast<size_t>(node())) {
       timestamp_messages_.emplace_back(TimestampedMessage{
           .channel_index = msg->channel_index,
@@ -2200,6 +2201,9 @@ TimestampMapper::TimestampMapper(
       source_node_.emplace_back(configuration::GetNodeIndex(
           config, channel->source_node()->string_view()));
     }
+  } else {
+    // The node index for single-node logs is always 0.
+    source_node_.resize(config->channels()->size(), 0);
   }
 }
 
