@@ -7,7 +7,9 @@ import {
   RequestAllMatchesResponse,
 } from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 import {db, MatchListData} from './db';
+
 const MATCH_TYPE_ORDERING = ['qm', 'ef', 'qf', 'sf', 'f'];
+
 @Injectable({providedIn: 'root'})
 export class MatchListRequestor {
   async fetchMatchList(): Promise<Match[]> {

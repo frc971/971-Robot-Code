@@ -922,6 +922,7 @@ npm_translate_lock(
         "@//scouting/www/rpc:package.json",
         "@//scouting/www/scan:package.json",
         "@//scouting/www/shift_schedule:package.json",
+        "@//scouting/www/test/authorize:package.json",
         "@//scouting/www/view:package.json",
     ],
 
@@ -1033,6 +1034,20 @@ visibility = ["//visibility:public"],
     strip_prefix = "chrome-linux",
     urls = [
         "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F" + CHROME_REVISION_LINUX + "%2Fchrome-linux.zip?alt=media",
+    ],
+)
+
+http_archive(
+    name = "chromedriver_linux",
+    build_file_content = """
+filegroup(
+    name = "chromedriver",
+    srcs = ["chromedriver-linux64/chromedriver"],
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "527b81f8aaf94344af4103c1166ce5e65037e7ad071c773fe354c215d547ef73",
+    urls = [
+        "https://storage.googleapis.com/chrome-for-testing-public/124.0.6367.8/linux64/chromedriver-linux64.zip",
     ],
 )
 

@@ -1,0 +1,9 @@
+{
+    "name": "@org_frc971/scouting/www/test/authorize",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@org_frc971/scouting/www/rpc": "workspace:*",
+        "selenium-webdriver": "^4.5.0"
+    }
+}

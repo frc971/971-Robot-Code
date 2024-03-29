@@ -33,7 +33,10 @@ import {
   ActionT,
 } from '@org_frc971/scouting/webserver/requests/messages/submit_2024_actions_generated';
 import {Match} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
-import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
+import {
+  MatchListRequestor,
+  ActionsSubmitter,
+} from '@org_frc971/scouting/www/rpc';
 import {ActionHelper, ConcreteAction} from './action_helper';
 import * as pako from 'pako';
 
@@ -139,7 +142,10 @@ export class EntryComponent implements OnInit {
   qrCodeValuePieces: string[] = [];
   qrCodeValueIndex: number = 0;
 
-  constructor(private readonly matchListRequestor: MatchListRequestor) {}
+  constructor(
+    private readonly matchListRequestor: MatchListRequestor,
+    private readonly actionsSubmitter: ActionsSubmitter
+  ) {}
 
   ngOnInit() {
     this.actionHelper = new ActionHelper(
@@ -366,10 +372,7 @@ export class EntryComponent implements OnInit {
   }
 
   async submit2024Actions() {
-    const res = await fetch('/requests/submit/submit_2024_actions', {
-      method: 'POST',
-      body: this.createActionsBuffer(),
-    });
+    const res = await this.actionsSubmitter.submit(this.createActionsBuffer());
 
     if (res.ok) {
       // We successfully submitted the data. Report success.

@@ -1,5 +1,6 @@
 import {Component, NgZone, OnInit, ViewChild, ElementRef} from '@angular/core';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {ActionsSubmitter} from '@org_frc971/scouting/www/rpc';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import * as pako from 'pako';
 
@@ -32,7 +33,10 @@ export class ScanComponent implements OnInit {
   scanStream: MediaStream | null = null;
   scanTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private ngZone: NgZone) {}
+  constructor(
+    private ngZone: NgZone,
+    private actionsSubmitter: ActionsSubmitter
+  ) {}
 
   ngOnInit() {
     // If the user switched away from this tab, then the onRuntimeInitialized
@@ -179,10 +183,7 @@ export class ScanComponent implements OnInit {
     );
     const actionBuffer = pako.inflate(deflatedData);
 
-    const res = await fetch('/requests/submit/submit_2024_actions', {
-      method: 'POST',
-      body: actionBuffer,
-    });
+    const res = await this.actionsSubmitter.submit(actionBuffer);
 
     if (res.ok) {
       // We successfully submitted the data. Report success.

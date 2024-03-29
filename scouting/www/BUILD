@@ -7,6 +7,10 @@ load(":defs.bzl", "assemble_service_worker_files", "assemble_static_files")
 
 npm_link_all_packages(name = "node_modules")
 
+exports_files([
+    "_static_files/authorize/index.html",
+])
+
 assemble_service_worker_files(
     name = "service_worker_files",
     outs = [
@@ -43,12 +47,14 @@ ng_application(
 assemble_static_files(
     name = "static_files",
     srcs = [
+        "_static_files/authorize/index.html",
         ":ngsw.json",
         ":ngsw-worker.js",
         "//third_party/y2024/field:pictures",
     ],
     app_files = ":app",
     replace_prefixes = {
+        "_static_files": "",
         "prod": "",
         "dev": "",
         "third_party/y2024": "pictures",
