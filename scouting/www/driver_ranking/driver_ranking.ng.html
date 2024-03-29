@@ -14,13 +14,24 @@
     />
     <br />
     <br />
-    <label>Team Numbers</label>
-    <input
-      *ngFor="let x of [1,2,3]; let i = index;"
-      [(ngModel)]="team_ranking[i]"
-      type="text"
-      id="team_input_{{i}}"
-    />
+    <div *ngIf="team_ranking.length==3">
+      <label>Team Numbers</label>
+      <input
+        *ngFor="let x of [1,2,3]; let i = index;"
+        [(ngModel)]="team_ranking[i]"
+        type="text"
+        id="team_input_{{i}}"
+      />
+    </div>
+    <div *ngIf="team_ranking.length==6">
+      <label>Team Numbers</label>
+      <input
+        *ngFor="let x of [1,2,3,4,5,6]; let i = index;"
+        [(ngModel)]="team_ranking[i]"
+        type="text"
+        id="team_input_{{i}}"
+      />
+    </div>
     <button
       class="btn btn-primary"
       (click)="setTeamNumbers()"
@@ -29,6 +40,24 @@
       Select
     </button>
   </div>
+
+  <div *ngSwitchCase="'TeamSelectionAdd'">
+    <label>Team Numbers</label>
+    <input
+      *ngFor="let x of [1,2,3]; let i = index;"
+      [(ngModel)]="added_teams[i]"
+      type="text"
+      id="team_input_{{i}}"
+    />
+    <button
+      class="btn btn-primary"
+      (click)="addTeamNumbers()"
+      id="select_button"
+    >
+      Add
+    </button>
+  </div>
+
   <div *ngSwitchCase="'Data'">
     <h4 id="match_number_heading">Match #{{match_number}}</h4>
     <div *ngFor="let team_key of team_ranking; let i = index">
@@ -63,6 +92,15 @@
       <div>
         <button class="btn btn-secondary" (click)="editTeams()">
           Edit Teams
+        </button>
+      </div>
+      <div *ngIf="team_ranking.length != 6">
+        <button
+          id="add-team-button"
+          class="btn btn-primary"
+          (click)="addTeams()"
+        >
+          Add Teams
         </button>
       </div>
       <div>

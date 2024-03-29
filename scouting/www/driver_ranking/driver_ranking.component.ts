@@ -7,7 +7,7 @@ import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/er
 // teams to rank and the match number.
 // Data: Display the ranking interface where
 // the scout can reorder teams and submit data.
-type Section = 'TeamSelection' | 'Data';
+type Section = 'TeamSelection' | 'TeamSelectionAdd' | 'Data';
 
 @Component({
   selector: 'app-driver-ranking',
@@ -19,12 +19,22 @@ export class DriverRankingComponent {
 
   // Stores the team keys and rank (order of the array).
   team_ranking: string[] = ['971', '972', '973'];
+  added_teams: string[] = ['974', '975', '976'];
 
   match_number: number = 1;
 
   errorMessage = '';
 
   setTeamNumbers() {
+    this.section = 'Data';
+  }
+
+  addTeamNumbers() {
+    for (let i = 0; i < this.added_teams.length; i++) {
+      this.team_ranking.push(this.added_teams[i]);
+    }
+    this.added_teams.splice(0, this.added_teams.length);
+    this.added_teams = ['974', '975', '976'];
     this.section = 'Data';
   }
 
@@ -35,8 +45,14 @@ export class DriverRankingComponent {
   }
 
   rankDown(index: number) {
-    if (index < 2) {
-      this.changeRank(index, index + 1);
+    if (this.team_ranking.length == 6) {
+      if (index < 5) {
+        this.changeRank(index, index + 1);
+      }
+    } else {
+      if (index < 2) {
+        this.changeRank(index, index + 1);
+      }
     }
   }
 
@@ -56,20 +72,71 @@ export class DriverRankingComponent {
     this.section = 'TeamSelection';
   }
 
+  addTeams() {
+    this.section = 'TeamSelectionAdd';
+  }
+
   async submitData() {
     const builder = new Builder();
-    const teamRanking1 = builder.createString(this.team_ranking[0]);
-    const teamRanking2 = builder.createString(this.team_ranking[1]);
-    const teamRanking3 = builder.createString(this.team_ranking[2]);
-    builder.finish(
-      SubmitDriverRanking.createSubmitDriverRanking(
-        builder,
-        this.match_number,
-        teamRanking1,
-        teamRanking2,
-        teamRanking3
-      )
-    );
+    if (this.team_ranking.length == 3) {
+      const teamRanking1 = builder.createString(this.team_ranking[0]);
+      const teamRanking2 = builder.createString(this.team_ranking[1]);
+      const teamRanking3 = builder.createString(this.team_ranking[2]);
+      builder.finish(
+        SubmitDriverRanking.createSubmitDriverRanking(
+          builder,
+          this.match_number,
+          teamRanking1,
+          teamRanking2,
+          teamRanking3
+        )
+      );
+    } else {
+      const teamRanking1 = builder.createString(this.team_ranking[0]);
+      const teamRanking2 = builder.createString(this.team_ranking[1]);
+      const teamRanking3 = builder.createString(this.team_ranking[2]);
+      const teamRanking4 = builder.createString(this.team_ranking[3]);
+      const teamRanking5 = builder.createString(this.team_ranking[4]);
+      const teamRanking6 = builder.createString(this.team_ranking[5]);
+      // Submits the ranking 4 times to prevent data loss
+      // since driver ranking compares three teams at a time.
+      builder.finish(
+        SubmitDriverRanking.createSubmitDriverRanking(
+          builder,
+          this.match_number,
+          teamRanking1,
+          teamRanking2,
+          teamRanking3
+        )
+      );
+      builder.finish(
+        SubmitDriverRanking.createSubmitDriverRanking(
+          builder,
+          this.match_number,
+          teamRanking4,
+          teamRanking5,
+          teamRanking6
+        )
+      );
+      builder.finish(
+        SubmitDriverRanking.createSubmitDriverRanking(
+          builder,
+          this.match_number,
+          teamRanking3,
+          teamRanking4,
+          teamRanking5
+        )
+      );
+      builder.finish(
+        SubmitDriverRanking.createSubmitDriverRanking(
+          builder,
+          this.match_number,
+          teamRanking1,
+          teamRanking2,
+          teamRanking6
+        )
+      );
+    }
     const buffer = builder.asUint8Array();
     const res = await fetch('/requests/submit/submit_driver_ranking', {
       method: 'POST',
