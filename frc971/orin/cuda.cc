@@ -11,6 +11,10 @@ namespace frc971::apriltag {
 
 size_t overall_memory = 0;
 
+void CudaStream::Wait(CudaEvent *event) {
+  CHECK_CUDA(cudaStreamWaitEvent(stream_, event->get(), 0));
+}
+
 void CheckAndSynchronize(std::string_view message) {
   CHECK_CUDA(cudaDeviceSynchronize()) << message;
   CHECK_CUDA(cudaGetLastError()) << message;

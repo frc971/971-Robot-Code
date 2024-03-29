@@ -217,7 +217,7 @@ class ErrorCalculator {
 
   // Calculates the line fit error centered on the provided blob index in the
   // current extent.
-  __host__ __device__ double CalculateError(ssize_t blob_index,
+  __device__ double CalculateError(ssize_t blob_index,
                                             bool print = false) const {
     // Index into the blob list for the current key.
     const size_t i0 = (blob_index + 2 * count_ - ksz_) % count_;
@@ -939,7 +939,7 @@ class QuadFitCalculator {
         line_fit_points_device_, selected_extent_.count, index0, index1);
   }
 
-  __host__ __device__ void ComputeM0M1Fit() {
+  __device__ void ComputeM0M1Fit() {
     if (extents_.count < 4) {
       return;
     }
@@ -979,7 +979,7 @@ class QuadFitCalculator {
 
   __host__ __device__ int blob_index() const { return extents_.blob_index; }
 
-  __host__ __device__ double FitLines(uint m0, uint m1, uint m2,
+  __device__ double FitLines(uint m0, uint m1, uint m2,
                                       uint m3) const {
     const bool print =
 #ifdef DEBUG_BLOB_NUMBER

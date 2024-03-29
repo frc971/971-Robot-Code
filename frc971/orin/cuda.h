@@ -1,8 +1,15 @@
 #ifndef FRC971_ORIN_CUDA_H_
 #define FRC971_ORIN_CUDA_H_
 
+#ifndef __host__
+#define __host__
+#endif
+#ifndef __device__
+#define __device__
+#endif
+
 #include <chrono>
-#include <span>
+#include <gpu_apriltag/span.hpp>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -12,7 +19,7 @@
 
 // CHECKs that a cuda method returned success.
 // TODO(austin): This will not handle if and else statements quite right, fix if
-// we care.
+// we care (wrap in a do {} while(0) block).
 #define CHECK_CUDA(condition)                                             \
   if (auto c = condition)                                                 \
   LOG(FATAL) << "Check failed: " #condition " (" << cudaGetErrorString(c) \
@@ -22,17 +29,23 @@ namespace frc971::apriltag {
 
 // Class to manage the lifetime of a Cuda stream.  This is used to provide
 // relative ordering between kernels on the same stream.
+class CudaEvent;
 class CudaStream {
  public:
   CudaStream() { CHECK_CUDA(cudaStreamCreate(&stream_)); }
 
   CudaStream(const CudaStream &) = delete;
   CudaStream &operator=(const CudaStream &) = delete;
+  CudaStream(const CudaStream &&) noexcept = delete;
+  CudaStream &operator=(const CudaStream &&) noexcept = delete;
 
   virtual ~CudaStream() { CHECK_CUDA(cudaStreamDestroy(stream_)); }
 
   // Returns the stream.
   cudaStream_t get() { return stream_; }
+
+  // Make this stream wait until the selected event has been triggered
+  void Wait(CudaEvent *event);
 
  private:
   cudaStream_t stream_;
@@ -46,8 +59,12 @@ class CudaEvent {
 
   CudaEvent(const CudaEvent &) = delete;
   CudaEvent &operator=(const CudaEvent &) = delete;
+  CudaEvent(const CudaEvent &&) noexcept = delete;
+  CudaEvent &operator=(const CudaEvent &&) noexcept = delete;
 
   virtual ~CudaEvent() { CHECK_CUDA(cudaEventDestroy(event_)); }
+
+  cudaEvent_t get() { return event_; }
 
   // Queues up an event to be timestamped on the stream when it is executed.
   void Record(CudaStream *stream) {
@@ -79,10 +96,12 @@ class HostMemory {
   HostMemory(size_t size) {
     T *memory;
     CHECK_CUDA(cudaMallocHost((void **)(&memory), size * sizeof(T)));
-    span_ = std::span<T>(memory, size);
+    span_ = tcb::span<T>(memory, size);
   }
   HostMemory(const HostMemory &) = delete;
   HostMemory &operator=(const HostMemory &) = delete;
+  HostMemory(const HostMemory &&) noexcept = delete;
+  HostMemory &operator=(const HostMemory &&) noexcept = delete;
 
   virtual ~HostMemory() { CHECK_CUDA(cudaFreeHost(span_.data())); }
 
@@ -97,13 +116,17 @@ class HostMemory {
   void MemcpyFrom(const T *other) {
     memcpy(span_.data(), other, sizeof(T) * size());
   }
+  void MemcpyFrom(const T *other, const size_t size) {
+    memcpy(span_.data(), other, sizeof(T) * size);
+  }
+
   // Copies data to other (host memory) from this's memory.
   void MemcpyTo(const T *other) {
     memcpy(other, span_.data(), sizeof(T) * size());
   }
 
  private:
-  std::span<T> span_;
+  tcb::span<T> span_;
 };
 
 // Class to manage the lifetime of device memory.
@@ -114,11 +137,38 @@ class GpuMemory {
   // device memory.
   GpuMemory(size_t size) : size_(size) {
     CHECK_CUDA(cudaMalloc((void **)(&memory_), size * sizeof(T)));
+    // Since we could be allocating extra rows to pad to a given alignment,
+    // make sure the padding is a known value.
+    CHECK_CUDA(cudaMemset(memory_, 0, size * sizeof(T)));
   }
   GpuMemory(const GpuMemory &) = delete;
-  GpuMemory &operator=(const GpuMemory &) = delete;
 
-  virtual ~GpuMemory() { CHECK_CUDA(cudaFree(memory_)); }
+  // Create an alias to an already allocated GPU memory block.
+  // This is useful for cases where operations on memory are a no-op
+  //   for certain input types - for example, for mono input imnages,
+  //   the GPU "color" image is the same as the one converted to grayscale.
+  GpuMemory &operator=(const GpuMemory &other) {
+    // If we currently own our memory, free it.
+    if (owns_memory_) {
+      CHECK_CUDA(cudaFree(memory_));
+    }
+
+    // Copy the memory pointer and size, making
+    // this an alias to the input GpuMemory object's data.
+    memory_ = other.memory_;
+    size_ = other.size_;
+    owns_memory_ = false;
+
+    return *this;
+  }
+  GpuMemory(const GpuMemory &&) noexcept = delete;
+  GpuMemory &operator=(const GpuMemory &&) noexcept = delete;
+
+  virtual ~GpuMemory() {
+    if (owns_memory_) {
+      CHECK_CUDA(cudaFree(memory_));
+    }
+  }
 
   // Returns the device pointer to the memory.
   T *get() { return memory_; }
@@ -133,8 +183,17 @@ class GpuMemory {
     CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * size_,
                                cudaMemcpyHostToDevice, stream->get()));
   }
+  void MemcpyAsyncFrom(const T *host_memory, const size_t size, CudaStream *stream) {
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * std::min(size, size_),
+                               cudaMemcpyHostToDevice, stream->get()));
+  }
   void MemcpyAsyncFrom(const HostMemory<T> *host_memory, CudaStream *stream) {
-    MemcpyAsyncFrom(host_memory->get(), stream);
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * host_memory->size(),
+                               cudaMemcpyHostToDevice, stream->get()));
+  }
+  void MemcpyAsyncFrom(const HostMemory<T> *host_memory, const size_t size, CudaStream *stream) {
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * std::min(size, size_),
+                               cudaMemcpyHostToDevice, stream->get()));
   }
 
   // Copies data to host memory from this memory asynchronously on the provided
@@ -142,7 +201,7 @@ class GpuMemory {
   void MemcpyAsyncTo(T *host_memory, size_t size, CudaStream *stream) const {
     CHECK_CUDA(cudaMemcpyAsync(reinterpret_cast<void *>(host_memory),
                                reinterpret_cast<void *>(memory_),
-                               sizeof(T) * size, cudaMemcpyDeviceToHost,
+                               sizeof(T) * std::min(size, size_), cudaMemcpyDeviceToHost,
                                stream->get()));
   }
   void MemcpyAsyncTo(T *host_memory, CudaStream *stream) const {
@@ -194,7 +253,8 @@ class GpuMemory {
 
  private:
   T *memory_;
-  const size_t size_;
+  size_t size_;
+  bool owns_memory_{true};
 };
 
 // Synchronizes and CHECKs for success the last CUDA operation.

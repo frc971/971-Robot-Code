@@ -1,3 +1,15 @@
+// Allow static analysis tools to better handle CUDA code
+// (not perfect but better than nothing)
+#ifndef __global__
+#define __global__
+#endif
+#ifndef __device__
+#define __device__
+#endif
+#ifndef __forceinline__
+#define __forceinline__
+#endif
+
 #include "frc971/orin/threshold.h"
 
 #include <stdint.h>
@@ -13,31 +25,80 @@ namespace {
 // 1456 -> 2 * 8 * 7 * 13
 // 1088 -> 2 * 32 * 17
 
-// Writes out the grayscale image and decimated image.
-__global__ void InternalCudaToGreyscaleAndDecimateHalide(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    size_t width, size_t height) {
-  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+// Convert from input format to grayscale.
+template <InputFormat INPUT_FORMAT>
+__global__ void InternalCudaToGreyscale(const uint8_t *color_image,
+                                        uint8_t *gray_image, uint32_t width,
+                                        uint32_t height) {
+  uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
   while (i < width * height) {
-    uint8_t pixel = gray_image[i] = color_image[i * 2];
 
-    const size_t row = i / width;
-    const size_t col = i - width * row;
-
-    // Copy over every other pixel.
-    if (row % 2 == 0 && col % 2 == 0) {
-      size_t decimated_row = row / 2;
-      size_t decimated_col = col / 2;
-      decimated_image[decimated_row * width / 2 + decimated_col] = pixel;
+    if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+      gray_image[i] = color_image[i];  // Grayscale input is already aliased to color device image 
+    } else if constexpr (INPUT_FORMAT == InputFormat::Mono16) {
+      gray_image[i] = color_image[i * 2 + 1];  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
+    } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
+      gray_image[i] = color_image[i * 2];  // YUY input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
+      gray_image[i] = 0.114f * static_cast<float>(color_image[i * 3]) +
+                      0.587f * static_cast<float>(color_image[i * 3 + 1]) +
+                      0.299f * static_cast<float>(color_image[i * 3 + 2]);  // BGR input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGRA8) {
+      gray_image[i] = 0.114f * static_cast<float>(color_image[i * 4]) +
+                      0.587f * static_cast<float>(color_image[i * 4 + 1]) +
+                      0.299f * static_cast<float>(color_image[i * 4 + 2]);  // BGRA input, skip alpha channel
     }
+
     i += blockDim.x * gridDim.x;
   }
+}
 
+// Writes out the grayscale image and decimated image.
+template <InputFormat INPUT_FORMAT>
+__global__ void InternalCudaToGreyscaleAndDecimateHalide(
+    const uint8_t *color_image, uint8_t *decimated_image,
+    const uint32_t in_width, const uint32_t in_height) {
+  const uint32_t out_height = in_height / 2;
+  const uint32_t out_width = in_width / 2;
+  uint32_t out_i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  while (out_i < out_width * out_height) {
+    uint8_t pixel;
+    const uint32_t out_row = out_i / out_width;
+    const uint32_t out_col = out_i - out_width * out_row;
+
+    const u_int32_t in_row = out_row * 2;
+    const u_int32_t in_col = out_col * 2;
+
+    const uint32_t in_i = in_row * in_width + in_col;
+
+    if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+      pixel = color_image[in_i];
+    } else if constexpr (INPUT_FORMAT == InputFormat::Mono16) {
+      pixel = color_image[in_i * 2 + 1] ;  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
+    } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
+      pixel = color_image[in_i * 2];  // YUY input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
+      pixel = 0.114f * static_cast<float>(color_image[in_i * 3]) +
+              0.587f * static_cast<float>(color_image[in_i * 3 + 1]) +
+              0.299f * static_cast<float>(color_image[in_i * 3 + 2]);  // BGR input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGRA8) {
+      pixel = 0.114f * static_cast<float>(color_image[in_i * 4]) +
+              0.587f * static_cast<float>(color_image[in_i * 4 + 1]) +
+              0.299f * static_cast<float>(color_image[in_i * 4 + 2]);  // BGRA input, skip alpha channel
+    }
+
+    decimated_image[out_row * out_width + out_col] = pixel;
+    out_i += blockDim.x * gridDim.x;
+  }
   // TODO(austin): Figure out how to load contiguous memory reasonably
   // efficiently and max/min over it.
 
   // TODO(austin): Can we do the threshold here too?  That would be less memory
   // bandwidth consumed...
+  //   could do it by merging this code with InernalBlockMinMax, altering
+  //   the input indexing so it grabs from the undecimated input image.  Add
+  //   the grayscale converion code in there as well?
 }
 
 // Returns the min and max for a row of 4 pixels.
@@ -53,17 +114,17 @@ __forceinline__ __device__ uchar2 minmax(uchar2 val0, uchar2 val1) {
 }
 
 // Returns the pixel index of a pixel at the provided x and y location.
-__forceinline__ __device__ size_t XYToIndex(size_t width, size_t x, size_t y) {
+__forceinline__ __device__ uint32_t XYToIndex(uint32_t width, uint32_t x, uint32_t y) {
   return width * y + x;
 }
 
 // Computes the min and max pixel value for each block of 4 pixels.
 __global__ void InternalBlockMinMax(const uint8_t *decimated_image,
                                     uchar2 *unfiltered_minmax_image,
-                                    size_t width, size_t height) {
+                                    const uint32_t width, const uint32_t height) {
   uchar2 vals[4];
-  const size_t x = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+  const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
+  const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (x >= width || y >= height) {
     return;
@@ -83,12 +144,12 @@ __global__ void InternalBlockMinMax(const uint8_t *decimated_image,
 // Filters the min/max for the surrounding block of 9 pixels centered on our
 // location using min/max and writes the result back out.
 __global__ void InternalBlockFilter(const uchar2 *unfiltered_minmax_image,
-                                    uchar2 *minmax_image, size_t width,
-                                    size_t height) {
+                                    uchar2 *minmax_image, const uint32_t width,
+                                    const uint32_t height) {
   uchar2 result = make_uchar2(255, 0);
 
-  const size_t x = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+  const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
+  const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (x >= width || y >= height) {
     return;
@@ -97,16 +158,16 @@ __global__ void InternalBlockFilter(const uchar2 *unfiltered_minmax_image,
   // Iterate through the 3x3 set of points centered on the point this image is
   // responsible for, and compute the overall min/max.
 #pragma unroll
-  for (int i = -1; i <= 1; ++i) {
+  for (int32_t i = -1; i <= 1; ++i) {
 #pragma unroll
-    for (int j = -1; j <= 1; ++j) {
-      const ssize_t read_x = x + i;
-      const ssize_t read_y = y + j;
+    for (int32_t j = -1; j <= 1; ++j) {
+      const int32_t read_x = x + i;
+      const int32_t read_y = y + j;
 
-      if (read_x < 0 || read_x >= static_cast<ssize_t>(width)) {
+      if (read_x < 0 || read_x >= static_cast<int32_t>(width)) {
         continue;
       }
-      if (read_y < 0 || read_y >= static_cast<ssize_t>(height)) {
+      if (read_y < 0 || read_y >= static_cast<int32_t>(height)) {
         continue;
       }
 
@@ -121,12 +182,12 @@ __global__ void InternalBlockFilter(const uchar2 *unfiltered_minmax_image,
 // Thresholds the image based on the filtered thresholds.
 __global__ void InternalThreshold(const uint8_t *decimated_image,
                                   const uchar2 *minmax_image,
-                                  uint8_t *thresholded_image, size_t width,
-                                  size_t height, size_t min_white_black_diff) {
-  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+                                  uint8_t *thresholded_image, const uint32_t width,
+                                  const uint32_t height, const uint32_t min_white_black_diff) {
+  uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
   while (i < width * height) {
-    const size_t x = i % width;
-    const size_t y = i / width;
+    const uint32_t x = i % width;
+    const uint32_t y = i / width;
 
     const uchar2 minmax_val = minmax_image[x / 4 + (y / 4) * width / 4];
 
@@ -149,31 +210,49 @@ __global__ void InternalThreshold(const uint8_t *decimated_image,
 
 }  // namespace
 
-void CudaToGreyscaleAndDecimateHalide(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, size_t width, size_t height,
-    size_t min_white_black_diff, CudaStream *stream) {
-  CHECK((width % 8) == 0);
-  CHECK((height % 8) == 0);
+template <InputFormat INPUT_FORMAT>
+void Threshold<INPUT_FORMAT>::CudaToGreyscale(const uint8_t *color_image,
+                                              uint8_t *gray_image,
+                                              uint32_t width, uint32_t height,
+                                              CudaStream *stream) {
   constexpr size_t kThreads = 256;
   {
     // Step one, convert to gray and decimate.
     size_t kBlocks = (width * height + kThreads - 1) / kThreads / 4;
-    InternalCudaToGreyscaleAndDecimateHalide<<<kBlocks, kThreads, 0,
+    InternalCudaToGreyscale<INPUT_FORMAT><<<kBlocks, kThreads, 0,
                                                stream->get()>>>(
-        color_image, gray_image, decimated_image, width, height);
+        color_image, gray_image, width, height);
+    MaybeCheckAndSynchronize();
+  }
+}
+
+template <InputFormat INPUT_FORMAT>
+void Threshold<INPUT_FORMAT>::CudaToGreyscaleAndDecimateHalide(
+    const uint8_t *color_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, uint32_t width, uint32_t height,
+    uint32_t min_white_black_diff, CudaStream *stream) {
+  CHECK((width % 8) == 0);
+  CHECK((height % 8) == 0);
+  constexpr size_t kThreads = 256;
+  const uint32_t decimated_width = width / 2;
+  const uint32_t decimated_height = height / 2;
+
+  {
+    // Step one, convert to gray and decimate.
+    const size_t kBlocks = (decimated_width * decimated_height + kThreads - 1) / kThreads / 4;
+    // GpuMemory<uint8_t> decimated_image_device_2(decimated_width * decimated_height);  // temp debug
+    InternalCudaToGreyscaleAndDecimateHalide<INPUT_FORMAT><<<kBlocks, kThreads, 0,
+                                               stream->get()>>>(
+        color_image, decimated_image, width, height);
     MaybeCheckAndSynchronize();
   }
 
-  size_t decimated_width = width / 2;
-  size_t decimated_height = height / 2;
-
   {
     // Step 2, compute a min/max for each block of 4x4 (16) pixels.
-    dim3 threads(16, 16, 1);
-    dim3 blocks((decimated_width / 4 + 15) / 16,
-                (decimated_height / 4 + 15) / 16, 1);
+    const dim3 threads(16, 16, 1);
+    const dim3 blocks((decimated_width / 4 + 15) / 16,
+                      (decimated_height / 4 + 15) / 16, 1);
 
     InternalBlockMinMax<<<blocks, threads, 0, stream->get()>>>(
         decimated_image, reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
@@ -192,7 +271,7 @@ void CudaToGreyscaleAndDecimateHalide(
   {
     // Now, write out 127 if the min/max are too close to each other, or 0/255
     // if the pixels are above or below the average of the min/max.
-    size_t kBlocks = (width * height / 4 + kThreads - 1) / kThreads / 4;
+    const uint32_t kBlocks = (width * height / 4 + kThreads - 1) / kThreads / 4;
     InternalThreshold<<<kBlocks, kThreads, 0, stream->get()>>>(
         decimated_image, reinterpret_cast<uchar2 *>(minmax_image),
         thresholded_image, decimated_width, decimated_height,
@@ -201,4 +280,10 @@ void CudaToGreyscaleAndDecimateHalide(
   }
 }
 
-}  // namespace frc971::apriltag
+template class Threshold<InputFormat::Mono8>;
+template class Threshold<InputFormat::Mono16>;
+template class Threshold<InputFormat::YCbCr422>;
+template class Threshold<InputFormat::BGR8>;
+template class Threshold<InputFormat::BGRA8>;
+
+} // namespace frc971::apriltag

@@ -397,7 +397,7 @@ __global__ void FinalLabeling(GpuImage<uint32_t> labels,
 
   if ((foreground_info & 0xf) != 0u) {
     // We've got foreground!
-    size_t count = 0;
+    uint32_t count = 0;
     if (HasBit(foreground_info, Info::a)) {
       ++count;
     }
@@ -423,7 +423,7 @@ __global__ void FinalLabeling(GpuImage<uint32_t> labels,
       (background_right_info & 0xf) != 0u &&
       background_left_label == background_right_label) {
     // They are all populated and match, go for it.
-    size_t count = 0;
+    uint32_t count = 0;
     if (HasBit(background_left_info, Info::a)) {
       ++count;
     }
@@ -442,7 +442,7 @@ __global__ void FinalLabeling(GpuImage<uint32_t> labels,
   }
 
   if ((background_left_info & 0xf) != 0u) {
-    size_t count = 0;
+    uint32_t count = 0;
     if (HasBit(background_left_info, Info::a)) {
       ++count;
     }
@@ -453,7 +453,7 @@ __global__ void FinalLabeling(GpuImage<uint32_t> labels,
   }
 
   if ((background_right_info & 0xf) != 0u) {
-    size_t count = 0;
+    uint32_t count = 0;
     if (HasBit(background_right_info, Info::b)) {
       ++count;
     }

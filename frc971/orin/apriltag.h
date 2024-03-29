@@ -7,10 +7,13 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "frc971/orin/apriltag_input_format.h"
 #include "frc971/orin/cuda.h"
+#include "frc971/orin/cuda_event_timing.h"
 #include "frc971/orin/gpu_image.h"
 #include "frc971/orin/line_fit_filter.h"
 #include "frc971/orin/points.h"
+#include "frc971/orin/threshold.h"
 
 namespace frc971::apriltag {
 
@@ -18,22 +21,22 @@ namespace frc971::apriltag {
 class BlobExtentsIndexFinder {
  public:
   BlobExtentsIndexFinder(const MinMaxExtents *extents_device,
-                         size_t num_extents)
+                         uint32_t num_extents)
       : extents_device_(extents_device), num_extents_(num_extents) {}
 
-  __host__ __device__ size_t FindBlobIndex(size_t point_index) const {
+  __host__ __device__ uint32_t FindBlobIndex(uint32_t point_index) const {
     // Do a binary search for the blob which has the point in it's
     // starting_offset range.
-    size_t min = 0;
-    size_t max = num_extents_;
+    uint32_t min = 0;
+    uint32_t max = num_extents_;
     while (true) {
       if (min + 1 == max) {
         return min;
       }
 
-      size_t average = min + (max - min) / 2;
+      uint32_t average = min + (max - min) / 2;
       if (average < num_extents_ && extents_device_[average].starting_offset <=
-                                        static_cast<size_t>(point_index)) {
+                                        point_index) {
         min = average;
       } else {
         max = average;
@@ -42,13 +45,13 @@ class BlobExtentsIndexFinder {
   }
 
   // Returns the extents for a blob index.
-  __host__ __device__ MinMaxExtents Get(size_t index) const {
+  __host__ __device__ MinMaxExtents Get(uint32_t index) const {
     return extents_device_[index];
   }
 
  private:
   const MinMaxExtents *extents_device_;
-  size_t num_extents_;
+  uint32_t num_extents_;
 
   // TODO(austin): Cache the last one?
 };
@@ -88,7 +91,8 @@ class GpuDetector {
   // Constructs a detector, reserving space for detecting tags of the provided
   // with and height, using the provided detector options.
   GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector,
-              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients);
+              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients,
+              InputFormat input_format);
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
@@ -204,6 +208,8 @@ class GpuDetector {
 
   // Undistort pixels based on our camera model, using iterative algorithm
   // Returns false if we fail to converge
+  // Make this a free function rather than a static member function to make
+  // remove the need for callers to know the template arg from GpuDetector
   static bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
                         const DistCoeffs *distortion_coefficients);
 
@@ -241,12 +247,19 @@ class GpuDetector {
   // Size of the image.
   const size_t width_;
   const size_t height_;
+  const size_t original_height_;
+  const size_t input_size_;
 
   // Detector parameters.
   apriltag_detector_t *tag_detector_;
 
   // Stream to operate on.
   CudaStream stream_;
+
+  // Separate stream for the d2h copy of grayscale output
+  // This way it can run in parallel with GPU compute
+  CudaStream greyscale_stream_;
+  CudaStream memset_stream_;
 
   // Events for each of the steps for timing.
   CudaEvent start_;
@@ -259,6 +272,7 @@ class GpuDetector {
   CudaEvent after_compact_;
   CudaEvent after_sort_;
   CudaEvent after_bounds_;
+  CudaEvent after_num_quads_memcpy_;
   CudaEvent after_transform_extents_;
   CudaEvent after_filter_;
   CudaEvent after_filtered_sort_;
@@ -272,9 +286,14 @@ class GpuDetector {
   CudaEvent after_quad_fit_;
   CudaEvent after_quad_fit_memcpy_;
 
-  // TODO(austin): Remove this...
-  HostMemory<uint8_t> color_image_host_;
   HostMemory<uint8_t> gray_image_host_;
+  const uint8_t      *gray_image_host_ptr_;
+  HostMemory<int>     num_compressed_union_marker_pair_host_;
+  HostMemory<size_t>  num_quads_host_;
+  HostMemory<int>     num_selected_blobs_host_;
+  HostMemory<int>     num_compressed_peaks_host_;
+  HostMemory<int>     num_quad_peaked_quads_host_;
+
 
   // Starting color image.
   GpuMemory<uint8_t> color_image_device_;
@@ -348,6 +367,11 @@ class GpuDetector {
   GpuMemory<uint8_t> temp_storage_compressed_filtered_blobs_device_;
   GpuMemory<uint8_t> temp_storage_selected_extents_scan_device_;
   GpuMemory<uint8_t> temp_storage_line_fit_scan_device_;
+
+  Timings event_timings_;
+
+  InputFormat input_format_;
+  std::unique_ptr<BaseThreshold> threshold_;
 
   // Cumulative duration of april tag detection.
   std::chrono::nanoseconds execution_duration_{0};
