@@ -608,7 +608,11 @@ struct TransformLineFitPoint {
     result.blob_index = p.blob_index();
     return result;
   }
-
+  TransformLineFitPoint(const uint8_t *decimated_image_device, int decimated_width_param,
+                        int decimated_height_param)
+      : decimated_image_device_(decimated_image_device),
+        decimated_width(decimated_width_param),
+        decimated_height(decimated_height_param) {}
   const uint8_t *decimated_image_device_;
   int decimated_width;
   int decimated_height;

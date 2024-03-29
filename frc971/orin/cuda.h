@@ -2,7 +2,7 @@
 #define FRC971_ORIN_CUDA_H_
 
 #include <chrono>
-#include <span>
+#include <gpu_apriltag/span.hpp>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -79,7 +79,7 @@ class HostMemory {
   HostMemory(size_t size) {
     T *memory;
     CHECK_CUDA(cudaMallocHost((void **)(&memory), size * sizeof(T)));
-    span_ = std::span<T>(memory, size);
+    span_ = tcb::span<T>(memory, size);
   }
   HostMemory(const HostMemory &) = delete;
   HostMemory &operator=(const HostMemory &) = delete;
@@ -103,7 +103,7 @@ class HostMemory {
   }
 
  private:
-  std::span<T> span_;
+  tcb::span<T> span_;
 };
 
 // Class to manage the lifetime of device memory.
