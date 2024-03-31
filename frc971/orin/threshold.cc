@@ -19,7 +19,9 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
     size_t width, size_t height) {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   while (i < width * height) {
-    uint8_t pixel = gray_image[i] = color_image[i * 2];
+//    uint8_t pixel = gray_image[i] = color_image[i * 2]; // Y CbCr input
+    // BGR input
+    const uint8_t pixel = gray_image[i] = 0.114 * color_image[i * 3] + 0.587 * color_image[i * 3 + 1] + 0.299 * color_image[i * 3 + 2];
 
     const size_t row = i / width;
     const size_t col = i - width * row;
