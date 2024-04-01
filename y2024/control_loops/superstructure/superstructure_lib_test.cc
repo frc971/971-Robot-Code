@@ -375,7 +375,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         superstructure_status_fetcher_->uncompleted_note_goal() !=
             NoteStatus::TRAP) {
       if (superstructure_goal_fetcher_->shooter_goal()->has_turret_position() &&
-          !superstructure_goal_fetcher_->shooter_goal()->auto_aim()) {
+          (superstructure_goal_fetcher_->shooter_goal()->auto_aim() ==
+           AutoAimMode::NONE)) {
         EXPECT_NEAR(
             superstructure_goal_fetcher_->shooter_goal()
                 ->turret_position()
@@ -388,7 +389,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     if (superstructure_goal_fetcher_->has_shooter_goal()) {
       if (superstructure_goal_fetcher_->shooter_goal()
               ->has_altitude_position() &&
-          !superstructure_goal_fetcher_->shooter_goal()->auto_aim() &&
+          (superstructure_goal_fetcher_->shooter_goal()->auto_aim() ==
+           AutoAimMode::NONE) &&
           (superstructure_status_fetcher_->uncompleted_note_goal() !=
                NoteStatus::AMP &&
            superstructure_status_fetcher_->uncompleted_note_goal() !=
@@ -561,7 +563,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     shooter_goal_builder.add_turret_position(turret_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -610,7 +612,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     shooter_goal_builder.add_turret_position(turret_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
     shooter_goal_builder.add_preloaded(true);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
@@ -661,7 +663,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     shooter_goal_builder.add_turret_position(turret_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -706,7 +708,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     shooter_goal_builder.add_turret_position(turret_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -961,7 +963,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1002,7 +1004,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1041,7 +1043,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1109,7 +1111,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1188,7 +1190,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
     shooter_goal_builder.add_catapult_goal(catapult_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
     shooter_goal_builder.add_turret_position(turret_offset);
@@ -1232,7 +1234,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(false);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::NONE);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1357,7 +1359,7 @@ TEST_F(SuperstructureTest, AutoAim) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
     shooter_goal_builder.add_preloaded(true);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
@@ -1409,7 +1411,7 @@ TEST_F(SuperstructureTest, AutoAim) {
     ShooterGoal::Builder shooter_goal_builder =
         builder.MakeBuilder<ShooterGoal>();
 
-    shooter_goal_builder.add_auto_aim(true);
+    shooter_goal_builder.add_auto_aim(AutoAimMode::SPEAKER);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();

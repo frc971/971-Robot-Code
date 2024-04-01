@@ -220,6 +220,7 @@ cc_library(
         "aiming.h",
     ],
     deps = [
+        ":superstructure_goal_fbs",
         ":superstructure_status_fbs",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/control_loops/aiming",

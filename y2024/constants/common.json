@@ -2,6 +2,15 @@
 
 "common": {
   "target_map": {% include 'y2024/vision/maps/target_map.json' %},
+  "shooter_shuttle_interpolation_table": [
+    {
+      "distance_from_goal": 0.0,
+      "shot_params": {
+          "shot_altitude_angle": 0.5,
+          "shot_speed_over_ground": 16.0
+      }
+    },
+  ],
   "shooter_interpolation_table": [
     {
         "distance_from_goal": 0.7,
@@ -223,6 +232,32 @@
             // The data field contains the x, y and z
             // coordinates of the speaker on the blue alliance
             "data": [-8.209, 1.4435, 2.0705]
+        },
+        "theta": 0.0
+    }
+  },
+  "shooter_shuttle_targets": {
+    "red_alliance": {
+        "pos": {
+            "rows": 3,
+            "cols": 1,
+            "storage_order": "ColMajor",
+            //TODO(Filip): Update positions
+            // The data field contains the x, y and z
+            // coordinates of the shuttle target, amp area on the red alliance
+            "data": [5.968526, 2.654766, 0.006045]
+        },
+        "theta": 0.0
+    },
+    "blue_alliance": {
+        "pos": {
+            "rows": 3,
+            "cols": 1,
+            "storage_order": "ColMajor",
+            //TODO(Filip): Update positions
+            // The data field contains the x, y and z
+            // coordinates of the shuttle target, amp area on the blue alliance
+            "data": [-5.968526, 2.655, 0.006]
         },
         "theta": 0.0
     }

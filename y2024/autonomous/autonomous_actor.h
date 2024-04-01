@@ -28,7 +28,9 @@ class AutonomousActor
   void set_note_goal(control_loops::superstructure::NoteGoal note_goal) {
     note_goal_ = note_goal;
   }
-  void set_auto_aim(bool auto_aim) { auto_aim_ = auto_aim; }
+  void set_auto_aim(control_loops::superstructure::AutoAimMode auto_aim) {
+    auto_aim_ = auto_aim;
+  }
   void set_fire(bool fire) { fire_ = fire; }
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
 
@@ -80,7 +82,8 @@ class AutonomousActor
   control_loops::superstructure::NoteGoal note_goal_ =
       control_loops::superstructure::NoteGoal::CATAPULT;
 
-  bool auto_aim_ = false;
+  control_loops::superstructure::AutoAimMode auto_aim_ =
+      control_loops::superstructure::AutoAimMode::NONE;
   bool fire_ = false;
   bool preloaded_ = false;
 };

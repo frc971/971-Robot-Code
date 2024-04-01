@@ -151,6 +151,10 @@ class Shooter {
       y2024::constants::Values::ShotParams>
       interpolation_table_;
 
+  frc971::shooter_interpolation::InterpolationTable<
+      y2024::constants::Values::ShotParams>
+      interpolation_table_shuttle_;
+
   Debouncer debouncer_;
 
   uint32_t shot_count_ = 0;

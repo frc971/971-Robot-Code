@@ -31,6 +31,10 @@ Shooter::Shooter(aos::EventLoop *event_loop, const Constants *robot_constants)
       interpolation_table_(
           y2024::constants::Values::InterpolationTableFromFlatbuffer(
               robot_constants_->common()->shooter_interpolation_table())),
+      interpolation_table_shuttle_(
+          y2024::constants::Values::InterpolationTableFromFlatbuffer(
+              robot_constants_->common()
+                  ->shooter_shuttle_interpolation_table())),
       debouncer_(std::chrono::milliseconds(100), std::chrono::milliseconds(8)) {
 }
 
@@ -116,7 +120,8 @@ Shooter::Iterate(
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         altitude_goal_builder.get(),
         robot_constants_->common()->altitude_avoid_extend_collision_position());
-  } else if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
+  } else if (shooter_goal == nullptr ||
+             (shooter_goal->auto_aim() == AutoAimMode::NONE) ||
              (!piece_loaded && state_ == CatapultState::READY)) {
     // We don't have the note so we should be ready to intake it.
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -137,13 +142,21 @@ Shooter::Iterate(
   aimer_.Update(
       drivetrain_status_fetcher_.get(),
       frc971::control_loops::aiming::ShotMode::kShootOnTheFly,
-      aiming ? turret_goal_builder.get() : auto_aim_goal_builder.get());
+      aiming ? turret_goal_builder.get() : auto_aim_goal_builder.get(),
+      shooter_goal != nullptr ? shooter_goal->auto_aim() : AutoAimMode::NONE);
 
   // We have a game piece and are being asked to aim.
   constants::Values::ShotParams shot_params;
+  frc971::shooter_interpolation::InterpolationTable<
+      y2024::constants::Values::ShotParams> *interpolation_table =
+      (shooter_goal != nullptr &&
+       shooter_goal->auto_aim() == AutoAimMode::SHUTTLE)
+          ? &interpolation_table_shuttle_
+          : &interpolation_table_;
   if ((piece_loaded || state_ == CatapultState::FIRING) &&
-      shooter_goal != nullptr && shooter_goal->auto_aim() &&
-      interpolation_table_.GetInRange(distance_to_goal, &shot_params)) {
+      shooter_goal != nullptr &&
+      (shooter_goal->auto_aim() != AutoAimMode::NONE) &&
+      interpolation_table->GetInRange(distance_to_goal, &shot_params)) {
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         altitude_goal_builder.get(), shot_params.shot_altitude_angle);
   }
@@ -153,14 +166,16 @@ Shooter::Iterate(
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal =
-          (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
+          (shooter_goal != nullptr &&
+           (shooter_goal->auto_aim() == AutoAimMode::NONE) &&
            (piece_loaded || state_ == CatapultState::FIRING || climbing) &&
            shooter_goal->has_turret_position())
               ? shooter_goal->turret_position()
               : &turret_goal_builder->AsFlatbuffer();
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *altitude_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
+      *altitude_goal = (shooter_goal != nullptr &&
+                        (shooter_goal->auto_aim() == AutoAimMode::NONE) &&
                         (piece_loaded || state_ == CatapultState::FIRING) &&
                         shooter_goal->has_altitude_position())
                            ? shooter_goal->altitude_position()

@@ -187,7 +187,7 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
 void AutonomousActor::Reset() {
   set_intake_goal(control_loops::superstructure::IntakeGoal::NONE);
   set_note_goal(control_loops::superstructure::NoteGoal::NONE);
-  set_auto_aim(false);
+  set_auto_aim(control_loops::superstructure::AutoAimMode::NONE);
   set_fire(false);
   set_preloaded(false);
   SendSuperstructureGoal();
@@ -494,7 +494,7 @@ void AutonomousActor::Intake() {
 }
 
 void AutonomousActor::Aim() {
-  set_auto_aim(true);
+  set_auto_aim(control_loops::superstructure::AutoAimMode::SPEAKER);
   SendSuperstructureGoal();
 }
 

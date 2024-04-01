@@ -18,6 +18,10 @@ Aimer::Aimer(aos::EventLoop *event_loop,
       interpolation_table_(
           y2024::constants::Values::InterpolationTableFromFlatbuffer(
               robot_constants_->common()->shooter_interpolation_table())),
+      interpolation_table_shuttle_(
+          y2024::constants::Values::InterpolationTableFromFlatbuffer(
+              robot_constants_->common()
+                  ->shooter_shuttle_interpolation_table())),
       joystick_state_fetcher_(
           event_loop_->MakeFetcher<aos::JoystickState>("/aos")) {}
 
@@ -25,7 +29,12 @@ void Aimer::Update(
     const frc971::control_loops::drivetrain::Status *status,
     frc971::control_loops::aiming::ShotMode shot_mode,
     frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic
-        *turret_goal) {
+        *turret_goal,
+    AutoAimMode auto_aim_mode) {
+  // Default to aiming at the speaker in the absence of any other targets.
+  if (auto_aim_mode == AutoAimMode::NONE) {
+    auto_aim_mode = AutoAimMode::SPEAKER;
+  }
   if (status == nullptr) {
     return;
   }
@@ -41,22 +50,13 @@ void Aimer::Update(
     alliance = joystick_state_fetcher_->alliance();
   }
 
-  const frc971::control_loops::Pose red_alliance_goal(
-      frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
-                                      ->shooter_targets()
-                                      ->red_alliance()
-                                      ->pos()),
-      robot_constants_->common()->shooter_targets()->red_alliance()->theta());
-
-  const frc971::control_loops::Pose blue_alliance_goal(
-      frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
-                                      ->shooter_targets()
-                                      ->blue_alliance()
-                                      ->pos()),
-      robot_constants_->common()->shooter_targets()->blue_alliance()->theta());
+  frc971::shooter_interpolation::InterpolationTable<
+      y2024::constants::Values::ShotParams> *current_interpolation_table =
+      interpolation_tables_.at(auto_aim_mode);
 
   const frc971::control_loops::Pose goal =
-      alliance == aos::Alliance::kRed ? red_alliance_goal : blue_alliance_goal;
+      alliance == aos::Alliance::kRed ? red_alliance_goals_.at(auto_aim_mode)
+                                      : blue_alliance_goals_.at(auto_aim_mode);
 
   const Eigen::Vector2d linear_angular =
       drivetrain_config_.Tlr_to_la() *
@@ -71,7 +71,7 @@ void Aimer::Update(
       ShotConfig{goal, shot_mode,
                  frc971::constants::Range::FromFlatbuffer(
                      robot_constants_->common()->turret()->range()),
-                 interpolation_table_.Get(current_goal_.target_distance)
+                 current_interpolation_table->Get(current_goal_.target_distance)
                      .shot_speed_over_ground,
                  /*wrap_mode=*/0.15, M_PI - kTurretZeroOffset},
       RobotState{

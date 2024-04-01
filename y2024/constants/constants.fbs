@@ -174,6 +174,7 @@ table IgnoreTargets {
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
   shooter_interpolation_table: [InterpolationTablePoint] (id: 1);
+  shooter_shuttle_interpolation_table: [InterpolationTablePoint] (id: 30);
   intake_roller_voltages:IntakeRollerVoltages (id : 2);
   intake_pivot_set_points:IntakePivotSetPoints (id: 3);
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
@@ -190,6 +191,7 @@ table Common {
   extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
   extend_roller_voltages:ExtendRollerVoltages (id: 16);
   shooter_targets:ShooterTargets (id: 17);
+  shooter_shuttle_targets:ShooterTargets (id: 29);
   altitude_loading_position: double (id: 18);
   retention_roller_voltages:RetentionRollerVoltages (id: 19);
   min_altitude_shooting_angle: double (id: 20);

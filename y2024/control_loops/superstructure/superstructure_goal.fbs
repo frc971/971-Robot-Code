@@ -26,11 +26,16 @@ enum ClimberGoal : ubyte {
     STOWED = 2,
 }
 
+enum AutoAimMode: ubyte {
+    NONE = 0, // No auto aim.
+    SPEAKER = 1, // Auto aim for the speaker shot.
+    SHUTTLE = 2, // Auto aim for the shuttle shot.
+}
+
 table ShooterGoal {
     catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 0);
 
-    // If true we ignore the other provided positions
-    auto_aim: bool (id: 1);
+    auto_aim: AutoAimMode (id: 1);
 
     // Position for the turret when we aren't auto aiming
     turret_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);

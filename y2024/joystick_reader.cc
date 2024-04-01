@@ -59,7 +59,7 @@ const ButtonLocation kAimPodium(0, 0);
 const ButtonLocation kShoot(0, 0);
 const ButtonLocation kRaiseClimber(3, 2);
 const ButtonLocation kRaiseFastClimber(3, 1);
-const ButtonLocation kExtraButtonOne(0, 0);
+const ButtonLocation kAimShuttle(2, 10);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
 const ButtonLocation kExtraButtonFour(0, 0);
@@ -134,7 +134,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           superstructure::NoteGoal::NONE);
     }
     auto shooter_goal = superstructure_goal_builder->add_shooter_goal();
-    shooter_goal->set_auto_aim(data.IsPressed(kAutoAim));
+    if (data.IsPressed(kAutoAim)) {
+      shooter_goal->set_auto_aim(
+          control_loops::superstructure::AutoAimMode::SPEAKER);
+    } else if (data.IsPressed(kAimShuttle)) {
+      shooter_goal->set_auto_aim(
+          control_loops::superstructure::AutoAimMode::SHUTTLE);
+    }
 
     // Updating aiming for shooter goal, only one type of aim should be possible
     // at a time, auto-aiming is preferred over the setpoints.
