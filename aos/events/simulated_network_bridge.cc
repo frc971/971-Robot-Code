@@ -184,23 +184,14 @@ class RawMessageDelayer {
         << " sent from " << fetcher_->channel()->source_node()->string_view()
         << " at " << fetch_node_factory_->monotonic_now();
 
-    if (timer_) {
-      if (!timer_scheduled_) {
-        server_status_->AddSentPacket(server_index_, channel_);
-        timer_->Schedule(monotonic_delivered_time);
-        timer_scheduled_ = true;
+    if (!timer_scheduled_) {
+      server_status_->AddSentPacket(server_index_, channel_);
+      timer_->Schedule(monotonic_delivered_time);
+      timer_scheduled_ = true;
 
-        QueueTransmitTimestamp(fetcher_->context().queue_index,
-                               fetcher_->context().monotonic_event_time,
-                               fetch_event_loop_->monotonic_now());
-      }
-    } else {
-      // TODO(austin): When do we hit this?  Can we add a test to make sure this
-      // is right?
-      server_status_->AddDroppedPacket(server_index_, channel_);
-      sent_ = true;
-      reliable_scheduled_ = false;
-      published_ = false;
+      QueueTransmitTimestamp(fetcher_->context().queue_index,
+                             fetcher_->context().monotonic_event_time,
+                             fetch_event_loop_->monotonic_now());
     }
   }
 
@@ -295,17 +286,10 @@ class RawMessageDelayer {
         << " sent from " << fetcher_->channel()->source_node()->string_view()
         << " at " << fetch_node_factory_->monotonic_now();
 
-    if (timer_) {
-      server_status_->AddSentPacket(server_index_, channel_);
-      timer_->Schedule(monotonic_delivered_time);
-      timer_scheduled_ = true;
-    } else {
-      server_status_->AddDroppedPacket(server_index_, channel_);
-      sent_ = true;
-      reliable_scheduled_ = false;
-      published_ = false;
-      Schedule();
-    }
+    CHECK(timer_);
+    server_status_->AddSentPacket(server_index_, channel_);
+    timer_->Schedule(monotonic_delivered_time);
+    timer_scheduled_ = true;
   }
 
  private:
