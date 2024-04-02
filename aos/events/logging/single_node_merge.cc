@@ -74,7 +74,8 @@ int Main(int argc, char **argv) {
     if (m == nullptr) {
       break;
     }
-    std::cout << config->nodes()
+    std::cout << "on " << FLAGS_node << " from "
+              << config->nodes()
                      ->Get(configuration::GetNodeIndex(
                          config, config->channels()
                                      ->Get(m->channel_index)

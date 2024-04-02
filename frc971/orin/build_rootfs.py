@@ -1170,6 +1170,7 @@ def main():
             'libgstnvdsseimeta1.0.0',
             'media-ctl',
             'libgstapp-1.0-0',
+            'v4l-utils',
         ]
 
         install_packages([
