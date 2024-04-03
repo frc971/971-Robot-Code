@@ -17,9 +17,11 @@ def _jinja2_template_impl(ctx):
     args.add(json.encode(parameters))
     args.add(out)
     args.add_all(include_dirs, before_each = "--include_dir")
+    if ctx.file.parameters_file:
+        args.add("--replacements_file", ctx.file.parameters_file)
 
     ctx.actions.run(
-        inputs = ctx.files.src + ctx.files.includes,
+        inputs = ctx.files.src + ctx.files.includes + ctx.files.parameters_file,
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
@@ -49,6 +51,10 @@ jinja2_template_rule = rule(
             mandatory = False,
             default = {},
             doc = """The string list parameters to supply to Jinja2.""",
+        ),
+        "parameters_file": attr.label(
+            allow_single_file = True,
+            doc = """A JSON file whose contents are supplied as parameters to Jinja2.""",
         ),
         "includes": attr.label_list(
             allow_files = True,

@@ -18,6 +18,13 @@ def main():
                         type=Path,
                         help="File to use for template.")
     parser.add_argument(
+        "--replacements_file",
+        type=Path,
+        help=("File containing a dictionary of parameters to replace "
+              "in the template. The behaviour is undefined if keys are "
+              "duplicated between this file and the `replacements` argument."),
+    )
+    parser.add_argument(
         "replacements",
         type=json.loads,
         help="Dictionary of parameters to replace in the template.")
@@ -34,7 +41,12 @@ def main():
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(args.include_dir))
     template = env.from_string(args.template.read_text())
 
-    args.output.write_text(template.render(args.replacements))
+    replacements = args.replacements.copy()
+    if args.replacements_file:
+        with args.replacements_file.open() as file:
+            replacements.update(json.load(file))
+
+    args.output.write_text(template.render(replacements))
 
 
 if __name__ == '__main__':
