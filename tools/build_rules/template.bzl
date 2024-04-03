@@ -19,9 +19,10 @@ def _jinja2_template_impl(ctx):
     args.add_all(include_dirs, before_each = "--include_dir")
     if ctx.file.parameters_file:
         args.add("--replacements_file", ctx.file.parameters_file)
+    args.add_all(ctx.files.filter_srcs, before_each = "--filter_file")
 
     ctx.actions.run(
-        inputs = ctx.files.src + ctx.files.includes + ctx.files.parameters_file,
+        inputs = ctx.files.src + ctx.files.includes + ctx.files.parameters_file + ctx.files.filter_srcs,
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
@@ -59,6 +60,11 @@ jinja2_template_rule = rule(
         "includes": attr.label_list(
             allow_files = True,
             doc = """Files which are included by the template.""",
+        ),
+        "filter_srcs": attr.label_list(
+            allow_files = [".py"],
+            doc = """Files that are sourced for filters.
+Needs to have a register_filters function defined.""",
         ),
         "_jinja2": attr.label(
             default = "//tools/build_rules:jinja2_generator",
