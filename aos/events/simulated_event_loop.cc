@@ -411,7 +411,8 @@ class SimulatedFetcher : public RawFetcher {
 
     CHECK(!fell_behind_) << ": Got behind on "
                          << configuration::StrippedChannelToString(
-                                simulated_channel_->channel());
+                                simulated_channel_->channel())
+                         << " on " << NodeName(event_loop()->node());
 
     if (fn) {
       Context context = msgs_.front()->context;

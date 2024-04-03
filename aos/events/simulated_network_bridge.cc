@@ -13,8 +13,10 @@ namespace aos::message_bridge {
 // This class delays messages forwarded between two factories.
 //
 // The basic design is that we need to use the distributed_clock to convert
-// monotonic times from the source to the destination node.  We also use a
-// fetcher to manage the queue of data, and a timer to schedule the sends.
+// monotonic times from the source to the destination node.  We use a list of
+// timestamps added each time a message is delivered to the server side to drive
+// the client side publishing.  This pulls the data from the fetcher to match
+// with the timestamps queued.
 class RawMessageDelayer {
  public:
   RawMessageDelayer(const Channel *channel, const Connection *connection,
@@ -42,9 +44,8 @@ class RawMessageDelayer {
   void SetFetchEventLoop(aos::EventLoop *fetch_event_loop,
                          MessageBridgeServerStatus *server_status,
                          ChannelTimestampSender *timestamp_loggers) {
-    sent_ = false;
-    reliable_scheduled_ = false;
-    published_ = false;
+    // Clear out state when the source node restarts.
+    last_sent_ = TransmitTime();
     fetch_event_loop_ = fetch_event_loop;
     if (fetch_event_loop_) {
       fetcher_ = fetch_event_loop_->MakeRawFetcher(channel_);
@@ -123,12 +124,15 @@ class RawMessageDelayer {
 
   const Channel *channel() const { return channel_; }
 
-  uint32_t time_to_live() {
+  // Returns true if the connection is reliable.
+  bool reliable() const { return time_to_live() == 0; }
+
+  uint32_t time_to_live() const {
     return configuration::ConnectionToNode(channel_, send_node_factory_->node())
         ->time_to_live();
   }
 
-  std::string Name() {
+  std::string Name() const {
     std::string result;
     result +=
         (fetch_event_loop_ ? fetch_event_loop_->node()->name()->string_view()
@@ -142,42 +146,52 @@ class RawMessageDelayer {
     return result;
   }
 
+  // Schedules forwarding any reliable messages when a node boots.
   void ScheduleReliable() {
     if (forwarding_disabled()) {
       return;
     }
 
+    // There is no sending side awake, don't do work.
     if (!fetcher_) {
       return;
     }
-    if (fetcher_->context().data == nullptr || sent_) {
-      fetcher_->Fetch();
-      sent_ = fetcher_->context().data == nullptr;
-      published_ = sent_;
-      reliable_scheduled_ = true;
+
+    // The network connection is disconnected, forget about this message.  If
+    // this is a reliable message, it will get picked up in Connect() so we
+    // don't need to follow it here.
+    if (server_connection_->state() != State::CONNECTED) {
+      return;
     }
 
+    // If there is no receiving side, bail.
     if (!timer_) {
       return;
     }
 
-    if (server_connection_->state() != State::CONNECTED) {
-      reliable_scheduled_ = false;
-      sent_ = true;
+    // We only want the newest message, grab it and see if there's anything to
+    // do.
+    fetcher_->Fetch();
+
+    // No data, bail.
+    if (fetcher_->context().data == nullptr) {
       return;
     }
 
-    FetchNext();
-    if (fetcher_->context().data == nullptr || sent_) {
-      return;
-    }
+    // Now, we know we've got a message we need to deliver, mark it down.
+    QueueMessage(fetcher_->context().queue_index,
+                 fetcher_->context().monotonic_event_time,
+                 fetch_event_loop_->monotonic_now());
 
     // Send at startup.  It is the best we can do.
-    const monotonic_clock::time_point monotonic_delivered_time =
-        send_node_factory_->monotonic_now() +
-        send_node_factory_->network_delay();
+    const logger::BootTimestamp monotonic_delivery_time =
+        DeliveredTime(monotonic_remote_transmit_times_.front().transmit_time);
 
-    CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
+    // This can only happen if a node reboots in under 100 uS.  That's crazy,
+    // CHECK for now and handle it if someone actually has a good need.
+    CHECK_EQ(monotonic_delivery_time.boot, send_node_factory_->boot_count());
+
+    CHECK_GE(monotonic_delivery_time.time, send_node_factory_->monotonic_now())
         << ": Trying to deliver message in the past on channel "
         << configuration::StrippedChannelToString(fetcher_->channel())
         << " to node " << send_event_loop_->node()->name()->string_view()
@@ -186,42 +200,40 @@ class RawMessageDelayer {
 
     if (!timer_scheduled_) {
       server_status_->AddSentPacket(server_index_, channel_);
-      timer_->Schedule(monotonic_delivered_time);
+      timer_->Schedule(monotonic_delivery_time.time);
       timer_scheduled_ = true;
-
-      QueueTransmitTimestamp(fetcher_->context().queue_index,
-                             fetcher_->context().monotonic_event_time,
-                             fetch_event_loop_->monotonic_now());
     }
   }
 
-  bool timer_scheduled_ = false;
-
+  // Handles a message begin delivered to message_bridge_server, and either
+  // drops it or queues it up.
   void MessageWatcherCallback(uint32_t sent_queue_index,
                               monotonic_clock::time_point monotonic_sent_time,
                               monotonic_clock::time_point transmit_time) {
-    if (!reliable_scheduled_) {
-      QueueTransmitTimestamp(sent_queue_index, monotonic_sent_time,
-                             transmit_time);
-    } else {
-      reliable_scheduled_ = false;
+    if (server_connection_->state() != State::CONNECTED) {
+      server_status_->AddDroppedPacket(server_index_, channel_);
+      return;
     }
+
+    QueueMessage(sent_queue_index, monotonic_sent_time, transmit_time);
     Schedule();
   }
 
-  void QueueTransmitTimestamp(uint32_t sent_queue_index,
-                              monotonic_clock::time_point monotonic_sent_time,
-                              monotonic_clock::time_point transmit_time) {
-    if (forwarding_disabled()) return;
+  void QueueMessage(uint32_t sent_queue_index,
+                    monotonic_clock::time_point monotonic_sent_time,
+                    monotonic_clock::time_point transmit_time) {
+    CHECK(!forwarding_disabled());
 
+    // When a reliable message gets queued, we can both receive the wakeup from
+    // the watcher, and from ScheduleReliable.  In that case, detect that it is
+    // already in the queue and deduplicate with it.
     if (monotonic_remote_transmit_times_.size() > 0u) {
-      // FetchNext can discover messages before we do in the same nanosecond. In
-      // that case, make sure the contents match and don't add it a second time.
-      auto back = monotonic_remote_transmit_times_
+      const TransmitTime back = monotonic_remote_transmit_times_
           [monotonic_remote_transmit_times_.size() - 1];
       if (back.sent_queue_index == sent_queue_index) {
         CHECK_EQ(back.monotonic_sent_time, monotonic_sent_time) << this;
-        CHECK_EQ(back.transmit_time, transmit_time) << this;
+        CHECK(reliable());
+        CHECK_LE(back.transmit_time, transmit_time) << this;
         return;
       }
     }
@@ -235,24 +247,41 @@ class RawMessageDelayer {
     });
   }
 
+  // Handles this node connecting to the network.
   void Connect() {
-    if (time_to_live() == 0 && published_ == false) {
-      if (forwarding_disabled()) {
-        return;
-      }
-      CHECK(fetcher_);
+    CHECK(fetcher_);
 
-      fetcher_->Fetch();
-      sent_ = fetcher_->context().data == nullptr;
-      reliable_scheduled_ = true;
+    // We only send the last message.  Point the fetcher to the latest to handle
+    // getting too far behind.
+    fetcher_->Fetch();
 
-      QueueTransmitTimestamp(fetcher_->context().queue_index,
-                             fetcher_->context().monotonic_event_time,
-                             fetch_event_loop_->monotonic_now());
-      Schedule();
+    // Unreliable messages aren't resent on reconnect.
+    if (!reliable()) {
+      return;
     }
+
+    if (forwarding_disabled()) {
+      return;
+    }
+
+    // Ignore it if there is no data.
+    if (fetcher_->context().data == nullptr) {
+      return;
+    }
+
+    // See if the newest message got sent already.  If it hasn't, queue it up to
+    // be sent.
+    if (fetcher_->context().queue_index != last_sent_.sent_queue_index) {
+      QueueMessage(fetcher_->context().queue_index,
+                   fetcher_->context().monotonic_event_time,
+                   fetch_event_loop_->monotonic_now());
+    }
+
+    Schedule();
   }
 
+  // Returns true if we know that this connection sends to the destination node.
+  // Returns false if the destination hasn't been constructed.
   bool SendingTo(const Node *destination) {
     return send_event_loop_ && send_event_loop_->node() == destination;
   }
@@ -260,27 +289,40 @@ class RawMessageDelayer {
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
     CHECK(!forwarding_disabled());
+    // Can't receive, bail.
     if (!fetcher_) {
       return;
     }
+
+    // Already scheduled, nothing to see here.
     if (timer_scheduled_) {
       return;
     }
-    FetchNext();
-    if (fetcher_->context().data == nullptr || sent_) {
+
+    // We've finally caught up, nothing to do.
+    if (monotonic_remote_transmit_times_.empty()) {
       return;
     }
 
-    CHECK_GT(monotonic_remote_transmit_times_.size(), 0u) << this;
     const monotonic_clock::time_point transmit_time =
         monotonic_remote_transmit_times_[0].transmit_time;
 
     // Compute the time to publish this message.
-    const monotonic_clock::time_point monotonic_delivered_time =
+    const logger::BootTimestamp monotonic_delivery_time =
         DeliveredTime(transmit_time);
 
-    CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
-        << ": Trying to deliver message in the past on channel "
+    // This should be published after the reboot.  Forget about it.
+    if (monotonic_delivery_time.boot != send_node_factory_->boot_count()) {
+      CHECK_GT(monotonic_delivery_time.boot, send_node_factory_->boot_count());
+
+      monotonic_remote_transmit_times_.erase(
+          monotonic_remote_transmit_times_.begin());
+      CHECK(monotonic_remote_transmit_times_.empty());
+      return;
+    }
+
+    CHECK_GE(monotonic_delivery_time.time, send_node_factory_->monotonic_now())
+        << ": " << this << " Trying to deliver message in the past on channel "
         << configuration::StrippedChannelToString(fetcher_->channel())
         << " to node " << send_event_loop_->node()->name()->string_view()
         << " sent from " << fetcher_->channel()->source_node()->string_view()
@@ -288,96 +330,40 @@ class RawMessageDelayer {
 
     CHECK(timer_);
     server_status_->AddSentPacket(server_index_, channel_);
-    timer_->Schedule(monotonic_delivered_time);
+    timer_->Schedule(monotonic_delivery_time.time);
     timer_scheduled_ = true;
   }
 
  private:
-  void FetchNext() {
-    CHECK(server_connection_);
-    // Keep pulling messages out of the fetcher until we find one in the future.
-    while (true) {
-      if (fetcher_->context().data == nullptr || sent_) {
-        sent_ = !fetcher_->FetchNext();
-        if (!sent_) {
-          published_ = false;
-        }
-        if (!sent_) {
-          if (monotonic_remote_transmit_times_.size() == 0u) {
-            QueueTransmitTimestamp(fetcher_->context().queue_index,
-                                   fetcher_->context().monotonic_event_time,
-                                   fetch_event_loop_->monotonic_now());
-          }
-        }
-      }
-      if (sent_) {
-        break;
-      }
-
-      if (server_connection_->state() != State::CONNECTED) {
-        CHECK_GT(monotonic_remote_transmit_times_.size(), 0u) << this;
-        CHECK_EQ(monotonic_remote_transmit_times_[0].monotonic_sent_time,
-                 fetcher_->context().monotonic_event_time)
-            << this << " " << Name();
-        CHECK_EQ(monotonic_remote_transmit_times_[0].sent_queue_index,
-                 fetcher_->context().queue_index)
-            << this << " " << Name();
-
-        monotonic_remote_transmit_times_.erase(
-            monotonic_remote_transmit_times_.begin());
-        sent_ = true;
-        reliable_scheduled_ = false;
-        published_ = false;
-        server_status_->AddDroppedPacket(server_index_, channel_);
-        continue;
-      }
-
-      if (fetcher_->context().monotonic_event_time +
-                  send_node_factory_->network_delay() +
-                  send_node_factory_->send_delay() >=
-              fetch_node_factory_->monotonic_now() ||
-          time_to_live() == 0) {
-        break;
-      }
-
-      // TODO(austin): Not cool.  We want to actually forward these.  This means
-      // we need a more sophisticated concept of what is running.
-      LOG(WARNING) << "Not forwarding message on "
-                   << configuration::CleanedChannelToString(fetcher_->channel())
-                   << " because we aren't running.  Sent at "
-                   << fetcher_->context().monotonic_event_time << " now is "
-                   << fetch_node_factory_->monotonic_now();
-      sent_ = true;
-      reliable_scheduled_ = false;
-      published_ = false;
-      server_status_->AddDroppedPacket(server_index_, channel_);
-    }
-  }
-
   // Actually sends the message, and reschedules.
   void Send() {
     timer_scheduled_ = false;
+
     CHECK(sender_);
     CHECK(client_status_);
+    CHECK(fetcher_);
+
+    CHECK(!monotonic_remote_transmit_times_.empty());
+    while (fetcher_->context().queue_index !=
+           monotonic_remote_transmit_times_.front().sent_queue_index) {
+      if (!fetcher_->FetchNext()) {
+        break;
+      }
+    }
 
     // Confirm that the first element in the times list is ours, and pull the
     // transmit time out of it.
-    CHECK(!monotonic_remote_transmit_times_.empty());
     CHECK_EQ(monotonic_remote_transmit_times_[0].monotonic_sent_time,
              fetcher_->context().monotonic_event_time);
     CHECK_EQ(monotonic_remote_transmit_times_[0].sent_queue_index,
              fetcher_->context().queue_index);
 
-    const monotonic_clock::time_point monotonic_remote_transmit_time =
-        monotonic_remote_transmit_times_[0].transmit_time;
+    const TransmitTime timestamp = monotonic_remote_transmit_times_[0];
 
     monotonic_remote_transmit_times_.erase(
         monotonic_remote_transmit_times_.begin());
 
     if (server_connection_->state() != State::CONNECTED) {
-      sent_ = true;
-      reliable_scheduled_ = false;
-      published_ = false;
       Schedule();
       return;
     }
@@ -386,11 +372,14 @@ class RawMessageDelayer {
     sender_->CheckOk(sender_->Send(
         fetcher_->context().data, fetcher_->context().size,
         fetcher_->context().monotonic_event_time,
-        fetcher_->context().realtime_event_time, monotonic_remote_transmit_time,
+        fetcher_->context().realtime_event_time, timestamp.transmit_time,
         fetcher_->context().queue_index, fetcher_->context().source_boot_uuid));
 
+    // Record that this got sent.
+    last_sent_ = timestamp;
+
     // And simulate message_bridge's offset recovery.
-    client_status_->SampleFilter(client_index_, monotonic_remote_transmit_time,
+    client_status_->SampleFilter(client_index_, timestamp.transmit_time,
                                  sender_->monotonic_sent_time(),
                                  fetcher_->context().source_boot_uuid);
 
@@ -426,7 +415,7 @@ class RawMessageDelayer {
       message_header_builder.add_remote_queue_index(
           fetcher_->context().queue_index);
       message_header_builder.add_monotonic_remote_transmit_time(
-          monotonic_remote_transmit_time.time_since_epoch().count());
+          timestamp.transmit_time.time_since_epoch().count());
       message_header_builder.add_monotonic_sent_time(
           sender_->monotonic_sent_time().time_since_epoch().count());
       message_header_builder.add_realtime_sent_time(
@@ -443,9 +432,6 @@ class RawMessageDelayer {
       ScheduleTimestamp();
     }
 
-    sent_ = true;
-    reliable_scheduled_ = false;
-    published_ = true;
     Schedule();
   }
 
@@ -488,15 +474,14 @@ class RawMessageDelayer {
   }
 
   // Converts from time on the sending node to time on the receiving node.
-  monotonic_clock::time_point DeliveredTime(
+  logger::BootTimestamp DeliveredTime(
       const monotonic_clock::time_point transmit_time) const {
     const distributed_clock::time_point distributed_sent_time =
         fetch_node_factory_->ToDistributedClock(transmit_time);
 
     const logger::BootTimestamp t = send_node_factory_->FromDistributedClock(
         distributed_sent_time + send_node_factory_->network_delay());
-    CHECK_EQ(t.boot, send_node_factory_->boot_count());
-    return t.time;
+    return t;
   }
 
   const Channel *channel_;
@@ -512,6 +497,7 @@ class RawMessageDelayer {
   aos::EventLoop *send_event_loop_ = nullptr;
   // Timer used to send.
   aos::TimerHandler *timer_ = nullptr;
+  bool timer_scheduled_ = false;
   // Timer used to send timestamps out.
   aos::TimerHandler *timestamp_timer_ = nullptr;
   // Time that the timer is scheduled for.  Used to track if it needs to be
@@ -525,10 +511,6 @@ class RawMessageDelayer {
 
   MessageBridgeServerStatus *server_status_ = nullptr;
   const size_t destination_node_index_;
-  // True if we have sent the message in the fetcher.
-  bool sent_ = false;
-  bool published_ = false;
-  bool reliable_scheduled_ = false;
 
   ServerConnection *server_connection_ = nullptr;
   int server_index_ = -1;
@@ -540,14 +522,18 @@ class RawMessageDelayer {
   aos::Sender<RemoteMessage> *timestamp_logger_ = nullptr;
 
   struct TransmitTime {
-    monotonic_clock::time_point monotonic_sent_time;
-    uint32_t sent_queue_index;
-    monotonic_clock::time_point transmit_time;
+    monotonic_clock::time_point monotonic_sent_time = monotonic_clock::min_time;
+    uint32_t sent_queue_index = 0xffffffff;
+    monotonic_clock::time_point transmit_time = monotonic_clock::min_time;
   };
 
-  // Stores tthe time the message was handed to the kernel to be published on
+  // Stores the time the message was handed to the kernel to be published on
   // the remote node over the network for all forwarded relevant messages.
   std::vector<TransmitTime> monotonic_remote_transmit_times_;
+
+  // Stores the last message which was published.  This is used to know if we
+  // need to re-transmit something on reconnect or not.
+  TransmitTime last_sent_;
 
   struct Timestamp {
     Timestamp(FlatbufferDetachedBuffer<RemoteMessage> new_remote_message,
@@ -665,10 +651,9 @@ SimulatedMessageBridge::SimulatedMessageBridge(
               monotonic_clock::time_point monotonic_sent_time) {
             for (std::unique_ptr<RawMessageDelayer> &delayer :
                  captured_delayers->v) {
-              delayer->QueueTransmitTimestamp(
+              delayer->MessageWatcherCallback(
                   sent_queue_index, monotonic_sent_time,
                   source_event_loop->second.event_loop->monotonic_now());
-              delayer->Schedule();
             }
           });
     } else {
@@ -898,7 +883,7 @@ void SimulatedMessageBridge::State::SetEventLoop(
   }
   event_loop->OnRun([this]() {
     for (RawMessageDelayer *destination_delayer : destination_delayers_) {
-      if (destination_delayer->time_to_live() == 0) {
+      if (destination_delayer->reliable()) {
         destination_delayer->ScheduleReliable();
       }
     }
@@ -917,7 +902,7 @@ void SimulatedMessageBridge::State::SetEventLoop(
     // the message, then that would trigger the watchers in the delayers.
     // However, we so far have continued to support Sending while stopped....
     for (RawMessageDelayer *source_delayer : source_delayers_) {
-      if (source_delayer->time_to_live() == 0) {
+      if (source_delayer->reliable()) {
         source_delayer->ScheduleReliable();
       }
     }

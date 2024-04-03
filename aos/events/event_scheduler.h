@@ -210,6 +210,10 @@ class EventScheduler {
   void MaybeRunOnStartup();
   void MaybeRunOnRun();
 
+  constexpr monotonic_clock::time_point kInvalidCachedTime() {
+    return monotonic_clock::max_time;
+  }
+
   // Current execution time.
   monotonic_clock::time_point monotonic_now_ = monotonic_clock::epoch();
 
@@ -237,7 +241,7 @@ class EventScheduler {
   bool called_started_ = false;
   std::optional<distributed_clock::time_point> cached_epoch_;
   monotonic_clock::time_point cached_event_list_monotonic_time_ =
-      monotonic_clock::max_time;
+      kInvalidCachedTime();
   distributed_clock::time_point cached_event_list_time_ =
       distributed_clock::max_time;
 
