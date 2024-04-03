@@ -3,13 +3,28 @@ def _jinja2_template_impl(ctx):
     parameters = dict(ctx.attr.parameters)
     parameters.update(ctx.attr.list_parameters)
 
-    ctx.actions.run_shell(
+    # For now we don't really want the user to worry about which configuration
+    # to pull the file from. We don't yet have a use case for pulling the same
+    # file from multiple configurations. We point Jinja at all the configuration
+    # roots.
+    include_dirs = depset([
+        file.root.path or "."
+        for file in ctx.files.includes
+    ]).to_list()
+
+    args = ctx.actions.args()
+    args.add(ctx.file.src)
+    args.add(json.encode(parameters))
+    args.add(out)
+    args.add_all(include_dirs, before_each = "--include_dir")
+
+    ctx.actions.run(
         inputs = ctx.files.src + ctx.files.includes,
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
-        # TODO(james): Is the genfiles_dir the correct thing?
-        command = ctx.executable._jinja2.path + " " + ctx.files.src[0].path + " '" + str(parameters) + "' " + out.path + " " + ctx.genfiles_dir.path,
+        executable = ctx.executable._jinja2,
+        arguments = [args],
     )
 
     return [DefaultInfo(files = depset([out])), OutputGroupInfo(out = depset([out]))]
@@ -54,4 +69,11 @@ def jinja2_template(name, src, parameters = {}, list_parameters = {}, **kwargs):
     # differ from `out`, name the rule as the `name` plus a suffix
     rule_name = name + "_rule"
 
-    jinja2_template_rule(name = rule_name, out = name, src = src, parameters = parameters, list_parameters = list_parameters, **kwargs)
+    jinja2_template_rule(
+        name = rule_name,
+        out = name,
+        src = src,
+        parameters = parameters,
+        list_parameters = list_parameters,
+        **kwargs
+    )

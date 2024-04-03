@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 
 import jinja2
 
@@ -13,25 +14,27 @@ def main():
     # a template.
     parser = argparse.ArgumentParser(
         description="Generates the raspberry pi configs from a template.")
-    parser.add_argument("template", type=str, help="File to use for template.")
+    parser.add_argument("template",
+                        type=Path,
+                        help="File to use for template.")
     parser.add_argument(
         "replacements",
         type=json.loads,
         help="Dictionary of parameters to replace in the template.")
-    parser.add_argument("output", type=str, help="Output file to create.")
     parser.add_argument(
-        "genfiles_dir",
-        type=str,
-        help="Directory where generated JSON files will be available.")
+        "--include_dir",
+        action="append",
+        type=Path,
+        default=[],
+        help="One or more search directories for {% include %} blocks.",
+    )
+    parser.add_argument("output", type=Path, help="Output file to create.")
     args = parser.parse_args(sys.argv[1:])
 
-    with open(args.template, 'r') as input_file:
-        template = jinja2.Environment(loader=jinja2.FileSystemLoader(
-            [".", args.genfiles_dir])).from_string(input_file.read())
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(args.include_dir))
+    template = env.from_string(args.template.read_text())
 
-    output = template.render(args.replacements)
-    with open(args.output, 'w') as config_file:
-        config_file.write(output)
+    args.output.write_text(template.render(args.replacements))
 
 
 if __name__ == '__main__':
