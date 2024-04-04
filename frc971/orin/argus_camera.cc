@@ -575,13 +575,6 @@ int Main() {
       ArgusCamera::MappedBuffer buffer = camera.NextImageBlocking();
 
       if (buffer.nvbuf_surf() == nullptr) {
-        // TODO(austin): Control-C isn't working for some reason, debug it...
-        // We're restarting nvargus-daemon here because if we exit like this its
-        // likely that nvargus-daemon has run into an error that it can't
-        // recover from. Which means even if this program restarts it can't get
-        // new camera images.
-        CHECK_EQ(std::system("sudo systemctl restart nvargus-daemon.service"),
-                 0);
         event_loop.Exit();
         return;
       }

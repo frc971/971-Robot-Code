@@ -56,6 +56,7 @@ robot_downloader(
         "//aos/util:foxglove_websocket",
         "//frc971/image_streamer:image_streamer",
         "//frc971/orin:hardware_monitor",
+        "//frc971/orin:argus_monitor",
         "//frc971/vision:intrinsics_calibration",
         "//aos/util:filesystem_monitor",
         "//y2024/vision:viewer",

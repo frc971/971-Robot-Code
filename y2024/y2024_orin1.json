@@ -27,7 +27,7 @@
       "source_node": "orin1",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2000
+      "max_size": 3000
     },
     {
       "name": "/orin1/aos",
@@ -365,6 +365,20 @@
     {
       "name": "constants_sender",
       "autorestart": false,
+      "user": "pi",
+      "nodes": [
+        "orin1"
+      ]
+    },
+    {
+      "name": "argus_monitor_orin1",
+      "executable_name": "argus_monitor",
+      "args": [
+        "/orin1/camera0",
+        "frc971.vision.TargetMap",
+        "/orin1/camera1",
+        "frc971.vision.TargetMap",
+      ],
       "user": "pi",
       "nodes": [
         "orin1"

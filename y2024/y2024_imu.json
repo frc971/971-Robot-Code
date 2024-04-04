@@ -503,6 +503,20 @@
       ]
     },
     {
+      "name": "argus_monitor_imu",
+      "executable_name": "argus_monitor",
+      "args": [
+        "/imu/camera0",
+        "frc971.vision.TargetMap",
+        "/imu/camera1",
+        "frc971.vision.TargetMap",
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
       "name": "argus_camera0",
       "executable_name": "argus_camera",
       "args": [

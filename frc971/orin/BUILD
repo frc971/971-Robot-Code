@@ -176,3 +176,17 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_binary(
+    name = "argus_monitor",
+    srcs = [
+        "argus_monitor.cc",
+    ],
+    target_compatible_with = ["@platforms//cpu:arm64"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:aos_cli_utils",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
