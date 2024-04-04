@@ -40,10 +40,6 @@ class Superstructure
     return intake_pivot_;
   }
 
-  inline const PotAndAbsoluteEncoderSubsystem &climber() const {
-    return climber_;
-  }
-
   inline const Shooter &shooter() const { return shooter_; }
   inline const PotAndAbsoluteEncoderSubsystem &extend() const {
     return extend_;
@@ -86,7 +82,6 @@ class Superstructure
       aos::monotonic_clock::time_point::min();
 
   AbsoluteEncoderSubsystem intake_pivot_;
-  PotAndAbsoluteEncoderSubsystem climber_;
 
   Shooter shooter_;
 

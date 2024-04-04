@@ -27,15 +27,7 @@
       }
     ) %}
     "intake_constants":  {{ intake_pivot_zero | tojson(indent=2)}},
-    "climber_constants": {
-      {% set _ = climber_zero.update(
-          {
-              "measured_absolute_position" : 0.0
-          }
-      ) %}
-      "zeroing_constants": {{ climber_zero | tojson(indent=2)}},
-      "potentiometer_offset": 0.0
-    },
+    "climber_potentiometer_offset": 0.0,
     "catapult_constants": {
       {% set _ = catapult_zero.update(
           {

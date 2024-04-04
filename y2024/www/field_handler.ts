@@ -6,6 +6,7 @@ import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
 import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
 import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
+import {Position as SuperstructurePosition} from  '../control_loops/superstructure/superstructure_position_generated'
 import {SuperstructureState, IntakeRollerStatus, CatapultState, TransferRollerStatus, ExtendRollerStatus, ExtendStatus, NoteStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
@@ -32,6 +33,7 @@ export class FieldHandler {
   private drivetrainPosition: DrivetrainPosition|null = null;
   private drivetrainCANPosition: DrivetrainCANPosition|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
+  private superstructurePosition: SuperstructurePosition|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
@@ -105,10 +107,6 @@ export class FieldHandler {
   private intakePivotAbs: HTMLElement =
     (document.getElementById('intake_pivot_abs') as HTMLElement);
 
-  private climber: HTMLElement =
-    (document.getElementById('climber') as HTMLElement);
-  private climberAbs: HTMLElement =
-    (document.getElementById('climber_abs') as HTMLElement);
   private climberPot: HTMLElement =
     (document.getElementById('climber_pot') as HTMLElement);
 
@@ -266,6 +264,11 @@ export class FieldHandler {
           this.handleSuperstructureStatus(data)
           });
       this.connection.addHandler(
+        '/superstructure', "y2024.control_loops.superstructure.Positon",
+        (data) => {
+          this.handleSuperstructurePosition(data)
+          });
+      this.connection.addHandler(
         '/aos', 'aos.message_bridge.ServerStatistics',
         (data) => {this.handleServerStatistics(data)});
       this.connection.addHandler(
@@ -326,6 +329,11 @@ export class FieldHandler {
   private handleSuperstructureStatus(data: Uint8Array): void {
 	  const fbBuffer = new ByteBuffer(data);
 	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
+  }
+
+  private handleSuperstructurePosition(data: Uint8Array): void {
+	  const fbBuffer = new ByteBuffer(data);
+	  this.superstructurePosition = SuperstructurePosition.getRootAsPosition(fbBuffer);
   }
 
   private populateNodeConnections(nodeName: string): void {
@@ -533,6 +541,10 @@ export class FieldHandler {
 
       this.setBoolean(this.altitude_above_min_angle, this.superstructureStatus.shooter().altitudeAboveMinAngle())
 
+      if (this.superstructurePosition) {
+        this.climberPot.innerHTML = this.superstructurePosition.climber().encoder().toString();
+      }
+
       if (this.superstructureStatus.shooter() &&
           this.superstructureStatus.shooter().aimer()) {
         this.turret_position.innerHTML = this.superstructureStatus.shooter()
@@ -567,22 +579,6 @@ export class FieldHandler {
       }
 
       this.intakePivotAbs.innerHTML = this.superstructureStatus.intakePivot().estimatorState().absolutePosition().toString();
-
-      if (!this.superstructureStatus.climber() ||
-          !this.superstructureStatus.climber().zeroed()) {
-        this.setZeroing(this.climber);
-      } else if (this.superstructureStatus.climber().estopped()) {
-        this.setEstopped(this.climber);
-      } else {
-        this.setTargetValue(
-            this.climber,
-            this.superstructureStatus.climber().unprofiledGoalPosition(),
-            this.superstructureStatus.climber().estimatorState().position(),
-            1e-3);
-      }
-
-      this.climberAbs.innerHTML = this.superstructureStatus.climber().estimatorState().absolutePosition().toString();
-      this.climberPot.innerHTML = this.superstructureStatus.climber().estimatorState().potPosition().toString();
 
       if (!this.superstructureStatus.extend() ||
           !this.superstructureStatus.extend().zeroed()) {
@@ -657,14 +653,6 @@ export class FieldHandler {
         zeroingErrors += ZeroingError[this.superstructureStatus.intakePivot()
                                           .estimatorState()
                                           .errors(i)] +
-            '<br/>';
-      }
-      zeroingErrors += '<br/>' +
-          'Climber Errors:' +
-          '<br/>';
-      for (let i = 0; i < this.superstructureStatus.climber().estimatorState().errorsLength();
-           i++) {
-        zeroingErrors += ZeroingError[this.superstructureStatus.climber().estimatorState().errors(i)] +
             '<br/>';
       }
       zeroingErrors += '<br/>' +

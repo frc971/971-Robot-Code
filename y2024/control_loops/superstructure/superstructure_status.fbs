@@ -140,7 +140,9 @@ table Status {
   transfer_roller:TransferRollerStatus (id: 5);
 
   // Estimated angle and angular velocitiy of the climber.
-  climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6);
+  // Deprecated now because climber no longer has an encoder 
+  // and climber status is not used
+  climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6, deprecated);
 
   // Status of the subsytems involved in the shooter
   shooter:ShooterStatus (id: 7);

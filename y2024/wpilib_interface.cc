@@ -79,7 +79,7 @@ namespace {
 constexpr double kMaxBringupPower = 12.0;
 
 double climber_pot_translate(double voltage) {
-  return -1 * voltage * Values::kClimberPotMetersPerVolt();
+  return voltage * Values::kClimberPotMetersPerVolt();
 }
 
 double extend_pot_translate(double voltage) {
@@ -108,7 +108,6 @@ double drivetrain_velocity_translate(double in) {
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxDrivetrainEncoderPulsesPerSecond(),
     Values::kMaxIntakePivotEncoderPulsesPerSecond(),
-    Values::kMaxClimberEncoderPulsesPerSecond(),
     Values::kMaxExtendEncoderPulsesPerSecond(),
     Values::kMaxCatapultEncoderPulsesPerSecond(),
 });
@@ -167,13 +166,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    Values::kIntakePivotEncoderCountsPerRevolution(),
                    Values::kIntakePivotEncoderRatio(), /* reversed: */ false);
 
-      CopyPosition(climber_encoder_, builder->add_climber(),
-                   Values::kClimberEncoderCountsPerRevolution(),
-                   Values::kClimberEncoderMetersPerRadian(),
+      CopyPosition(*climber_potentiometer_, builder->add_climber(),
                    climber_pot_translate, false,
-                   robot_constants_->robot()
-                       ->climber_constants()
-                       ->potentiometer_offset());
+                   robot_constants_->robot()->climber_potentiometer_offset());
 
       CopyPosition(extend_encoder_, builder->add_extend(),
                    Values::kExtendEncoderCountsPerRevolution(),
@@ -266,6 +261,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
+  void set_climber_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    climber_potentiometer_ = ::std::move(potentiometer);
+  }
+
   void set_intake_pivot(::std::unique_ptr<frc::Encoder> encoder,
                         ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(encoder.get());
@@ -283,15 +283,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void set_catapult_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
     catapult_beam_break_ = ::std::move(sensor);
-  }
-
-  void set_climber(::std::unique_ptr<frc::Encoder> encoder,
-                   ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
-                   ::std::unique_ptr<frc::AnalogInput> potentiometer) {
-    fast_encoder_filter_.Add(encoder.get());
-    climber_encoder_.set_encoder(::std::move(encoder));
-    climber_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
-    climber_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   void set_extend(::std::unique_ptr<frc::Encoder> encoder,
@@ -344,9 +335,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_,
       extend_beam_break_, catapult_beam_break_;
 
+  std::unique_ptr<frc::AnalogInput> climber_potentiometer_;
+
   frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
-  frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_,
-      catapult_encoder_, extend_encoder_;
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer catapult_encoder_,
+      extend_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 
@@ -437,10 +430,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
       sensor_reader.set_extend_beambreak(make_unique<frc::DigitalInput>(24));
       sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(22));
-
-      sensor_reader.set_climber(make_encoder(4),
-                                make_unique<frc::DigitalInput>(4),
-                                make_unique<frc::AnalogInput>(4));
+      sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(4));
       sensor_reader.set_extend(make_encoder(5),
                                make_unique<frc::DigitalInput>(5),
                                make_unique<frc::AnalogInput>(5));
