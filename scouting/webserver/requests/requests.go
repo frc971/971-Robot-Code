@@ -102,7 +102,7 @@ type Database interface {
 	ReturnStats2023() ([]db.Stats2023, error)
 	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error)
 	ReturnStats2024() ([]db.Stats2024, error)
-	ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2024, error)
+	ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2024, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
@@ -200,7 +200,7 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 
 func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
 	stats, err := handler.db.ReturnStats2024ForTeam(
-		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, false)
+		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, "Regular")
 	if err != nil {
 		return false, err
 	}
@@ -453,7 +453,8 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 	picked_up := false
 	lastPlacedTime := int64(0)
 	stat := db.Stats2024{
-		PreScouting: submit2024Actions.PreScouting(), TeamNumber: string(submit2024Actions.TeamNumber()), MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
+		CompType: string(submit2024Actions.CompType()), TeamNumber: string(submit2024Actions.TeamNumber()),
+		MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
 		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 0, NotesDropped: 0, Shuttled: 0, OutOfField: 0, Penalties: 0,
 		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "",
@@ -479,7 +480,6 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 			if mobilityAction.Mobility() {
 				stat.MobilityAuto = true
 			}
-
 		} else if action_type == submit_2024_actions.ActionTypePenaltyAction {
 			var penaltyAction submit_2024_actions.PenaltyAction
 			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
@@ -613,6 +613,7 @@ func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			Harmony:          stat.Harmony,
 			RobotDied:        stat.RobotDied,
 			CollectedBy:      stat.CollectedBy,
+			CompType:         stat.CompType,
 		})
 	}
 
@@ -1152,7 +1153,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		request.ActionsList(&action, i)
 
 		dbAction := db.Action{
-			PreScouting: request.PreScouting(),
+			CompType:    string(request.CompType()),
 			TeamNumber:  string(request.TeamNumber()),
 			MatchNumber: request.MatchNumber(),
 			SetNumber:   request.SetNumber(),
@@ -1193,77 +1194,6 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&Submit2024ActionsResponseT{}).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-type submitActionsHandler struct {
-	db Database
-}
-
-func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// Get the username of the person submitting the data.
-	username := parseUsername(req)
-
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest(w, requestBytes, "SubmitActions", submit_actions.GetRootAsSubmitActions)
-	if !success {
-		return
-	}
-
-	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "from", username)
-
-	for i := 0; i < request.ActionsListLength(); i++ {
-
-		var action Action
-		request.ActionsList(&action, i)
-
-		dbAction := db.Action{
-			PreScouting: request.PreScouting(),
-			TeamNumber:  string(request.TeamNumber()),
-			MatchNumber: request.MatchNumber(),
-			SetNumber:   request.SetNumber(),
-			CompLevel:   string(request.CompLevel()),
-			//TODO: Serialize CompletedAction
-			CompletedAction: []byte{},
-			Timestamp:       action.Timestamp(),
-			CollectedBy:     username,
-		}
-
-		// Do some error checking.
-		if action.Timestamp() < 0 {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprint(
-				"Invalid timestamp field value of ", action.Timestamp()))
-			return
-		}
-
-		err = handler.db.AddAction(dbAction)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
-			return
-		}
-	}
-
-	stats, err := ConvertActionsToStat(request)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
-		return
-	}
-
-	stats.CollectedBy = username
-
-	err = handler.db.AddToStats2023(stats)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats: ", stats, ": ", err))
-		return
-	}
-
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&SubmitActionsResponseT{}).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
 
@@ -1370,7 +1300,6 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
-	scoutingServer.Handle("/requests/submit/submit_actions", submitActionsHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_2024_actions", submit2024ActionsHandler{db})
 	scoutingServer.Handle("/requests/delete/delete_2023_data_scouting", Delete2023DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/delete/delete_2024_data_scouting", Delete2024DataScoutingHandler{db})

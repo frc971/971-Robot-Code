@@ -56,7 +56,6 @@ go_test(
     deps = [
         "//scouting/db",
         "//scouting/webserver/requests/debug",
-        "//scouting/webserver/requests/messages:delete_2023_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:delete_2024_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",

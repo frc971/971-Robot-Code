@@ -144,7 +144,7 @@ func TestAddToStats2024DB(t *testing.T) {
 
 	correct := []Stats2024{
 		Stats2024{
-			PreScouting: false, TeamNumber: "894",
+			CompType: "Regular", TeamNumber: "894",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 1,
@@ -152,7 +152,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "emma",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "942",
+			CompType: "Regular", TeamNumber: "942",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 0,
@@ -160,7 +160,15 @@ func TestAddToStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "harry",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "432",
+			CompType: "Practice", TeamNumber: "942",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 2, Amp: 1, SpeakerAmplified: 3,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "kaleb",
+		},
+		Stats2024{
+			CompType: "Regular", TeamNumber: "432",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 2, Amp: 1, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 2,
@@ -168,7 +176,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "henry",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "52A",
+			CompType: "Regular", TeamNumber: "52A",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 2, Shuttled: 0, OutOfField: 0,
@@ -176,7 +184,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "jordan",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "745",
+			CompType: "Regular", TeamNumber: "745",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 5, Amp: 0, SpeakerAmplified: 2, Shuttled: 0, OutOfField: 0,
@@ -184,7 +192,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "taylor",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "934",
+			CompType: "Regular", TeamNumber: "934",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 1, AmpAuto: 3, NotesDroppedAuto: 0, MobilityAuto: true,
 			Speaker: 0, Amp: 3, SpeakerAmplified: 2, Shuttled: 0, OutOfField: 0,
@@ -231,7 +239,7 @@ func TestInsertPreScoutedStats2024(t *testing.T) {
 	defer fixture.TearDown()
 
 	stats := Stats2024{
-		PreScouting: false, TeamNumber: "6344",
+		CompType: "Regular", TeamNumber: "6344",
 		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 		SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 		Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 1,
@@ -249,7 +257,35 @@ func TestInsertPreScoutedStats2024(t *testing.T) {
 	}
 
 	// Mark the data as pre-scouting data. It should now succeed.
-	stats.PreScouting = true
+	stats.CompType = "Prescouting"
+	err = fixture.db.AddToStats2024(stats)
+	check(t, err, "Failed to add prescouted stats to DB")
+}
+
+func TestInsertPracticeMatchStats2024(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := Stats2024{
+		CompType: "Regular", TeamNumber: "6344",
+		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+		SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+		Speaker: 0, Amp: 5, SpeakerAmplified: 1,
+		NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
+		Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "emma",
+	}
+
+	// Attempt to insert the non-practice match data and make sure it fails.
+	err := fixture.db.AddToStats2024(stats)
+	if err == nil {
+		t.Fatal("Expected error from inserting the stats.")
+	}
+	if err.Error() != "Failed to find team 6344 in match 3 in the schedule." {
+		t.Fatal("Got:", err.Error())
+	}
+
+	// Mark the data as practice match data. It should now succeed.
+	stats.CompType = "Practice"
 	err = fixture.db.AddToStats2024(stats)
 	check(t, err, "Failed to add prescouted stats to DB")
 }
@@ -260,7 +296,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 
 	stats := []Stats2024{
 		Stats2024{
-			PreScouting: false, TeamNumber: "328A",
+			CompType: "Regular", TeamNumber: "328A",
 			MatchNumber: 7, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 2, OutOfField: 0,
@@ -268,7 +304,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "emma",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "978",
+			CompType: "Regular", TeamNumber: "978",
 			MatchNumber: 2, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 4,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 0,
@@ -276,7 +312,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "emma",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "328A",
+			CompType: "Regular", TeamNumber: "328A",
 			MatchNumber: 4, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 1,
@@ -306,7 +342,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 
 	// Validate that requesting status for a single team gets us the
 	// expected data.
-	statsFor328A, err := fixture.db.ReturnStats2024ForTeam("328A", 7, 1, "qm", false)
+	statsFor328A, err := fixture.db.ReturnStats2024ForTeam("328A", 7, 1, "qm", "Regular")
 	check(t, err, "Failed ReturnStats2024()")
 
 	if !reflect.DeepEqual([]Stats2024{stats[0]}, statsFor328A) {
@@ -314,7 +350,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 	}
 	// Validate that requesting team data for a non-existent match returns
 	// nothing.
-	statsForMissing, err := fixture.db.ReturnStats2024ForTeam("6344", 9, 1, "qm", false)
+	statsForMissing, err := fixture.db.ReturnStats2024ForTeam("6344", 9, 1, "qm", "Regular")
 	check(t, err, "Failed ReturnStats2024()")
 
 	if !reflect.DeepEqual([]Stats2024{}, statsForMissing) {
@@ -695,7 +731,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 
 	startingStats := []Stats2024{
 		Stats2024{
-			PreScouting: false, TeamNumber: "345",
+			CompType: "Regular", TeamNumber: "345",
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 1, Amp: 3, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 3,
@@ -703,7 +739,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "bailey",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "645",
+			CompType: "Practice", TeamNumber: "645",
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 0,
@@ -711,7 +747,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "kate",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "323",
+			CompType: "Regular", TeamNumber: "323",
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 			Speaker: 0, Amp: 0, SpeakerAmplified: 2, Shuttled: 0, OutOfField: 2,
@@ -719,7 +755,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "tyler",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "542",
+			CompType: "Regular", TeamNumber: "542",
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 2, Shuttled: 2, OutOfField: 2,
@@ -730,7 +766,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 
 	correct := []Stats2024{
 		Stats2024{
-			PreScouting: false, TeamNumber: "345",
+			CompType: "Regular", TeamNumber: "345",
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 1, Amp: 3, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 3,
@@ -1149,7 +1185,7 @@ func TestReturnStats2024DB(t *testing.T) {
 
 	correct := []Stats2024{
 		Stats2024{
-			PreScouting: false, TeamNumber: "894",
+			CompType: "Practice", TeamNumber: "894",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 0,
@@ -1157,7 +1193,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "emma",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "942",
+			CompType: "Regular", TeamNumber: "942",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 0,
@@ -1165,7 +1201,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "harry",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "432",
+			CompType: "Practice", TeamNumber: "432",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 2, Amp: 1, SpeakerAmplified: 3, Shuttled: 5, OutOfField: 1,
@@ -1173,7 +1209,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "henry",
 		},
 		Stats2024{
-			PreScouting: false, TeamNumber: "52A",
+			CompType: "Regular", TeamNumber: "52A",
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 2, Shuttled: 0, OutOfField: 0,

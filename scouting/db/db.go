@@ -69,15 +69,11 @@ type Stats2023 struct {
 }
 
 type Stats2024 struct {
-	// This is set to `true` for "pre-scouted" matches. This means that the
-	// match information is unlikely to correspond with an entry in the
-	// `TeamMatch` table.
-	PreScouting bool `gorm:"primaryKey"`
-
 	TeamNumber                                  string `gorm:"primaryKey"`
 	MatchNumber                                 int32  `gorm:"primaryKey"`
 	SetNumber                                   int32  `gorm:"primaryKey"`
 	CompLevel                                   string `gorm:"primaryKey"`
+	CompType                                    string `gorm:"primaryKey"`
 	StartingQuadrant                            int32
 	SpeakerAuto, AmpAuto                        int32
 	NotesDroppedAuto                            int32
@@ -97,11 +93,11 @@ type Stats2024 struct {
 }
 
 type Action struct {
-	PreScouting bool   `gorm:"primaryKey"`
 	TeamNumber  string `gorm:"primaryKey"`
 	MatchNumber int32  `gorm:"primaryKey"`
 	SetNumber   int32  `gorm:"primaryKey"`
 	CompLevel   string `gorm:"primaryKey"`
+	CompType    string `gorm:"primaryKey"`
 	// This contains a serialized scouting.webserver.requests.ActionType flatbuffer.
 	CompletedAction []byte
 	Timestamp       int64 `gorm:"primaryKey"`
@@ -243,7 +239,7 @@ func (database *Database) AddToStats2023(s Stats2023) error {
 }
 
 func (database *Database) AddToStats2024(s Stats2024) error {
-	if !s.PreScouting {
+	if s.CompType == "Regular" {
 		matches, err := database.QueryMatchesString(s.TeamNumber)
 		if err != nil {
 			return err
@@ -360,11 +356,11 @@ func (database *Database) ReturnStats2023ForTeam(teamNumber string, matchNumber 
 	return stats2023, result.Error
 }
 
-func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]Stats2024, error) {
+func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]Stats2024, error) {
 	var stats2024 []Stats2024
 	result := database.
-		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND pre_scouting = ?",
-			teamNumber, matchNumber, setNumber, compLevel, preScouting).
+		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND comp_type = ?",
+			teamNumber, matchNumber, setNumber, compLevel, compType).
 		Find(&stats2024)
 	return stats2024, result.Error
 }

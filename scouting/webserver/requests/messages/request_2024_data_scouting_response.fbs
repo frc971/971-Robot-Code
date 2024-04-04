@@ -30,8 +30,9 @@ table Stats2024 {
   spotlight: bool (id:22);
   robot_died: bool (id:23);
 
-  pre_scouting:bool (id:20);
+  pre_scouting:bool (id:20, deprecated);
   collected_by:string (id:21);
+  comp_type:string (id:26);
 }
 
 table Request2024DataScoutingResponse {

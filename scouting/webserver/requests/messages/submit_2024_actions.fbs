@@ -77,8 +77,6 @@ table Submit2024Actions {
     comp_level:string (id: 3);
     actions_list:[Action] (id:4);
 
-    // If this is for pre-scouting, then the server should accept this
-    // submission. I.e. checking that the match information exists in the match
-    // list should be skipped.
-    pre_scouting:bool (id: 5);
+    pre_scouting:bool (id: 5, deprecated);
+    comp_type:string (id: 6);
 }

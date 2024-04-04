@@ -187,6 +187,21 @@ describe('Scouting app tests', () => {
     headerShouldBe('1 Init ');
   });
 
+  it('should: allow users to scout practice matches.', () => {
+    switchToTab('Entry');
+    headerShouldBe(' Team Selection ');
+    setInputTo('#team_number', '1');
+
+    // The default team information should be invalid.
+    cy.contains('button', 'Next').should('be.disabled');
+
+    // Click the checkmark to designate this as pre-scouting.
+    // We should now be able to continue scouting.
+    cy.get('#practice_match').click();
+    clickButton('Next');
+    headerShouldBe('1 Init ');
+  });
+
   it('should: allow users to submit pit images.', () => {
     switchToTab('Pit');
     headerShouldBe('Pit Scouting');

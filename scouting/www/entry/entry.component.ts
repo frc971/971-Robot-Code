@@ -51,6 +51,8 @@ type Section =
   | 'QR Code'
   | 'Success';
 
+type CompType = 'PreScouting' | 'Practice' | 'Regular';
+
 // TODO(phil): Deduplicate with match_list.component.ts.
 const COMP_LEVELS = ['qm', 'ef', 'qf', 'sf', 'f'] as const;
 export type CompLevel = typeof COMP_LEVELS[number];
@@ -106,6 +108,7 @@ export class EntryComponent implements OnInit {
   @Input() teamNumber: string = '1';
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
+  @Input() compType: CompType = 'Regular';
   @Input() skipTeamSelection = false;
 
   @ViewChild('header') header: ElementRef;
@@ -126,7 +129,6 @@ export class EntryComponent implements OnInit {
 
   nextTeamNumber = '';
 
-  preScouting: boolean = false;
   matchStartTimestamp: number = 0;
   penalties: number = 0;
 
@@ -181,9 +183,10 @@ export class EntryComponent implements OnInit {
 
   // This gets called when the user changes something on the Init screen.
   // It makes sure that the user can't click "Next" until the information is
-  // valid, or this is for pre-scouting.
+  // valid, or this is for pre-scouting or practice matches.
   updateTeamSelectionValidity(): void {
-    this.teamSelectionIsValid = this.preScouting || this.matchIsInMatchList();
+    this.teamSelectionIsValid =
+      this.compType != 'Regular' || this.matchIsInMatchList();
   }
 
   matchIsInMatchList(): boolean {
@@ -323,6 +326,7 @@ export class EntryComponent implements OnInit {
     }
     const teamNumberFb = builder.createString(this.teamNumber);
     const compLevelFb = builder.createString(this.compLevel);
+    const compTypeFb = builder.createString(this.compType);
 
     const actionsVector = Submit2024Actions.createActionsListVector(
       builder,
@@ -334,7 +338,7 @@ export class EntryComponent implements OnInit {
     Submit2024Actions.addSetNumber(builder, this.setNumber);
     Submit2024Actions.addCompLevel(builder, compLevelFb);
     Submit2024Actions.addActionsList(builder, actionsVector);
-    Submit2024Actions.addPreScouting(builder, this.preScouting);
+    Submit2024Actions.addCompType(builder, compTypeFb);
     builder.finish(Submit2024Actions.endSubmit2024Actions(builder));
 
     return builder.asUint8Array();
@@ -442,7 +446,7 @@ export class EntryComponent implements OnInit {
       this.autoPhase = true;
       this.actionList = [];
       this.mobilityCompleted = false;
-      this.preScouting = false;
+      this.compType = 'Regular';
       this.matchStartTimestamp = 0;
       this.selectedValue = 0;
     } else {

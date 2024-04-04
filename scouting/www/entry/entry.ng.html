@@ -58,11 +58,26 @@
       <label>
         <input
           id="pre_scouting"
-          type="checkbox"
-          [(ngModel)]="preScouting"
+          name="comp_type"
+          type="radio"
+          [(ngModel)]="compType"
+          value="Prescouting"
           (ngModelChange)="updateTeamSelectionValidity()"
         />
         Pre-scouting
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        <input
+          id="practice_match"
+          name="comp_type"
+          type="radio"
+          [(ngModel)]="compType"
+          value="Practice"
+          (ngModelChange)="updateTeamSelectionValidity()"
+        />
+        Practice Match
       </label>
     </div>
     <div class="buttons">
@@ -429,6 +444,7 @@
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
     <div class="row">
       <ul id="review_data">
+        <div *ngIf="compType!='Regular'">This is a {{this.compType}} match</div>
         <li *ngFor="let action of actionList" style="display: flex">
           <div [ngSwitch]="action.actionTakenType" style="padding: 0px">
             <span *ngSwitchCase="ActionType.StartMatchAction">
