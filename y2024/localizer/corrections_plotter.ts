@@ -151,6 +151,18 @@ export function plotVision(conn: Connection, element: Element): void {
       .setDrawLine(false)
       .setColor(BLUE);
 
+  const correctionThetaPlot = aosPlotter.addPlot(element);
+  correctionThetaPlot.plot.getAxisLabels().setTitle('Theta Corrections');
+  correctionThetaPlot.plot.getAxisLabels().setXLabel(TIME);
+  correctionThetaPlot.plot.getAxisLabels().setYLabel('[rad]');
+
+  for (let ii = 0; ii < targets.length; ++ii) {
+    correctionThetaPlot.addMessageLine(targets[ii], ['correction_theta'])
+        .setDrawLine(false)
+        .setColor(PI_COLORS[ii])
+        .setLabel(targetLabels[ii]);
+  }
+
   const aprilTagPlot = aosPlotter.addPlot(element);
   aprilTagPlot.plot.getAxisLabels().setTitle('April Tag IDs');
   aprilTagPlot.plot.getAxisLabels().setXLabel(TIME);

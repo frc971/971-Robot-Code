@@ -631,7 +631,7 @@ Localizer::PopulateState(const State &X_hat,
   frc971::control_loops::drivetrain::LocalizerState::Builder builder(*fbb);
   builder.add_x(X_hat(StateIdx::kX));
   builder.add_y(X_hat(StateIdx::kY));
-  builder.add_theta(X_hat(StateIdx::kTheta));
+  builder.add_theta(aos::math::NormalizeAngle(X_hat(StateIdx::kTheta)));
   builder.add_left_velocity(X_hat(StateIdx::kLeftVelocity));
   builder.add_right_velocity(X_hat(StateIdx::kRightVelocity));
   builder.add_left_encoder(X_hat(StateIdx::kLeftEncoder));
