@@ -85,6 +85,7 @@ type Stats2024 struct {
 	AvgCycle                                    int64
 	RobotDied                                   bool
 	Park, OnStage, Harmony, TrapNote, Spotlight bool
+	NoShow                                      bool
 
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.

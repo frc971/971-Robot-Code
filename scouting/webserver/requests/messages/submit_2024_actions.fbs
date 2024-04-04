@@ -13,6 +13,8 @@ enum ScoreType: short {
     kSHUTTLED,
 }
 
+table NoShowAction {}
+
 table MobilityAction {
     mobility:bool (id:0);
 }
@@ -55,6 +57,7 @@ table EndTeleopPhaseAction {
 
 union ActionType {
     MobilityAction,
+    NoShowAction,
     StartMatchAction,
     EndAutoPhaseAction,
     PickupNoteAction,

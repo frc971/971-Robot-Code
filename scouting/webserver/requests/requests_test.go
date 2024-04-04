@@ -137,7 +137,7 @@ func TestRequestAllMatches(t *testing.T) {
 				SpeakerAuto: 2, AmpAuto: 4, NotesDroppedAuto: 1, MobilityAuto: true,
 				Speaker: 0, Amp: 1, SpeakerAmplified: 2, Shuttled: 1, OutOfField: 2,
 				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 233,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "alex",
+				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
 			},
 			{
 				CompType: "Regular", TeamNumber: "973",
@@ -145,7 +145,7 @@ func TestRequestAllMatches(t *testing.T) {
 				SpeakerAuto: 0, AmpAuto: 2, NotesDroppedAuto: 0, MobilityAuto: false,
 				Speaker: 0, Amp: 4, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
 				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 120,
-				Park: true, OnStage: false, Harmony: false, RobotDied: true, CollectedBy: "bob",
+				Park: true, OnStage: false, Harmony: false, RobotDied: true, NoShow: false, CollectedBy: "bob",
 			},
 		},
 	}
@@ -214,7 +214,15 @@ func TestRequest2024DataScouting(t *testing.T) {
 				SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
 				Speaker: 4, Amp: 2, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
 				NotesDropped: 2, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
-				Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "alex",
+				Park: true, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
+			},
+			{
+				CompType: "Regular", TeamNumber: "132",
+				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+				Speaker: 0, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 1,
+				NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
+				Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: true, CollectedBy: "jeff",
 			},
 			{
 				CompType: "Regular", TeamNumber: "982",
@@ -222,7 +230,7 @@ func TestRequest2024DataScouting(t *testing.T) {
 				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 				Speaker: 0, Amp: 2, SpeakerAmplified: 3, Shuttled: 1, OutOfField: 0,
 				NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "george",
+				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "george",
 			},
 		},
 	}
@@ -247,7 +255,15 @@ func TestRequest2024DataScouting(t *testing.T) {
 				SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
 				Speaker: 4, Amp: 2, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
 				NotesDropped: 2, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
-				Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "alex",
+				Park: true, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
+			},
+			{
+				CompType: "Regular", TeamNumber: "132",
+				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+				Speaker: 0, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 1,
+				NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
+				Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: true, CollectedBy: "jeff",
 			},
 			{
 				CompType: "Regular", TeamNumber: "982",
@@ -255,7 +271,7 @@ func TestRequest2024DataScouting(t *testing.T) {
 				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 				Speaker: 0, Amp: 2, SpeakerAmplified: 3, Shuttled: 1, OutOfField: 0,
 				NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "george",
+				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "george",
 			},
 		},
 	}
@@ -367,6 +383,13 @@ func TestConvertActionsToStat2024(t *testing.T) {
 					},
 				},
 				Timestamp: 0,
+			},
+			{
+				ActionTaken: &submit_2024_actions.ActionTypeT{
+					Type:  submit_2024_actions.ActionTypeNoShowAction,
+					Value: &submit_2024_actions.NoShowActionT{},
+				},
+				Timestamp: 200,
 			},
 			{
 				ActionTaken: &submit_2024_actions.ActionTypeT{
@@ -508,7 +531,7 @@ func TestConvertActionsToStat2024(t *testing.T) {
 		SpeakerAuto: 0, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 1, Shuttled: 1, OutOfField: 0,
 		NotesDropped: 1, Penalties: 5, TrapNote: false, Spotlight: false, AvgCycle: 950,
-		Park: false, OnStage: false, Harmony: true, RobotDied: true, CollectedBy: "",
+		Park: false, OnStage: false, Harmony: true, RobotDied: true, NoShow: true, CollectedBy: "",
 	}
 
 	if expected != response {
@@ -1105,7 +1128,7 @@ func TestAddingActions2024(t *testing.T) {
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 0,
 			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
-			Park: false, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "debug_cli",
+			Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "debug_cli",
 		},
 	}
 
@@ -1127,7 +1150,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 				SpeakerAuto: 0, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 				Speaker: 0, Amp: 1, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
 				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 233,
-				Park: false, OnStage: false, Harmony: true, RobotDied: false, CollectedBy: "alek",
+				Park: false, OnStage: false, Harmony: true, RobotDied: false, NoShow: false, CollectedBy: "alek",
 			},
 			{
 				CompType: "Regular", TeamNumber: "244",
@@ -1135,7 +1158,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 				Speaker: 0, Amp: 0, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
 				NotesDropped: 0, Penalties: 1, TrapNote: false, Spotlight: false, AvgCycle: 120,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "kacey",
+				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "kacey",
 			},
 		},
 		actions: []db.Action{
@@ -1199,7 +1222,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 0, Amp: 0, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
 			NotesDropped: 0, Penalties: 1, TrapNote: false, Spotlight: false, AvgCycle: 120,
-			Park: false, OnStage: true, Harmony: false, RobotDied: false, CollectedBy: "kacey",
+			Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "kacey",
 		},
 	}
 

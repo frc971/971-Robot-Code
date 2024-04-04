@@ -457,7 +457,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 		MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
 		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 0, NotesDropped: 0, Shuttled: 0, OutOfField: 0, Penalties: 0,
-		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "",
+		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "",
 	}
 	// Loop over all actions.
 	for i := 0; i < submit2024Actions.ActionsListLength(); i++ {
@@ -489,6 +489,11 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 			var robotDeathAction submit_2024_actions.RobotDeathAction
 			robotDeathAction.Init(actionTable.Bytes, actionTable.Pos)
 			stat.RobotDied = true
+
+		} else if action_type == submit_2024_actions.ActionTypeNoShowAction {
+			var NoShowAction submit_2024_actions.NoShowAction
+			NoShowAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.NoShow = true
 
 		} else if action_type == submit_2024_actions.ActionTypePickupNoteAction {
 			var pick_up_action submit_2024_actions.PickupNoteAction
@@ -612,6 +617,7 @@ func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			OnStage:          stat.OnStage,
 			Harmony:          stat.Harmony,
 			RobotDied:        stat.RobotDied,
+			NoShow:           stat.NoShow,
 			CollectedBy:      stat.CollectedBy,
 			CompType:         stat.CompType,
 		})

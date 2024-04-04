@@ -24,6 +24,7 @@ jinja2_template(
         # nice not to have a duplicate list here when they're already known in
         # the .fbs file.
         "ACTIONS": [
+            "NoShowAction",
             "EndMatchAction",
             "MobilityAction",
             "PenaltyAction",

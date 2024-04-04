@@ -29,6 +29,7 @@ table Stats2024 {
   harmony: bool (id:17);
   spotlight: bool (id:22);
   robot_died: bool (id:23);
+  no_show: bool (id:27);
 
   pre_scouting:bool (id:20, deprecated);
   collected_by:string (id:21);

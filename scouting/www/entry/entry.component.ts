@@ -13,6 +13,8 @@ import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/er
 import {
   StartMatchAction,
   StartMatchActionT,
+  NoShowActionT,
+  NoShowAction,
   ScoreType,
   StageType,
   Submit2024Actions,
@@ -95,6 +97,7 @@ export class EntryComponent implements OnInit {
   readonly StageType = StageType;
   readonly ActionT = ActionT;
   readonly ActionType = ActionType;
+  readonly NoShowActionT = NoShowActionT;
   readonly StartMatchActionT = StartMatchActionT;
   readonly MobilityActionT = MobilityActionT;
   readonly PickupNoteActionT = PickupNoteActionT;
@@ -259,6 +262,10 @@ export class EntryComponent implements OnInit {
         case ActionType.EndAutoPhaseAction:
           this.autoPhase = true;
           this.section = 'Pickup';
+        case ActionType.NoShowAction:
+          this.autoPhase = true;
+          this.section = 'Init';
+          break;
         case ActionType.PickupNoteAction:
           this.section = 'Pickup';
           break;
