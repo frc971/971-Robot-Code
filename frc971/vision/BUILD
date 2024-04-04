@@ -238,6 +238,7 @@ cc_library(
         ":target_map_fbs",
         "//aos/events:simulated_event_loop",
         "//frc971/control_loops:control_loop",
+        "//frc971/vision:vision_util_lib",
         "//frc971/vision:visualize_robot",
         "//frc971/vision/ceres:pose_graph_3d_lib",
         "//third_party:opencv",
@@ -437,11 +438,16 @@ cc_library(
     hdrs = ["vision_util_lib.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/util:math",
+        "//frc971/control_loops:quaternion_utils",
         "//frc971/vision:calibration_fbs",
+        "//frc971/vision/ceres:pose_graph_3d_lib",
         "//third_party:opencv",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

@@ -266,7 +266,7 @@ void TargetMapperReplay::HandleAprilTags(
     }
 
     const TargetMapper::TargetPose target_pose =
-        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
+        TargetMapper::TargetPoseFromFbs(*target_pose_fbs);
 
     Eigen::Affine3d H_camera_target =
         Eigen::Translation3d(target_pose.pose.p) * target_pose.pose.q;

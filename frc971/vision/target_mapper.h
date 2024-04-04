@@ -9,7 +9,10 @@
 #include "aos/events/simulated_event_loop.h"
 #include "frc971/vision/ceres/types.h"
 #include "frc971/vision/target_map_generated.h"
+#include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
+
+ABSL_DECLARE_FLAG(double, outlier_std_devs);
 
 namespace frc971::vision {
 
@@ -45,6 +48,15 @@ class TargetMapper {
 
   // Prints target poses into a TargetMap flatbuffer json
   std::string MapToJson(std::string_view field_name) const;
+
+  // Builds a TargetPoseFbs from a TargetPose
+  static flatbuffers::Offset<TargetPoseFbs> TargetPoseToFbs(
+      const TargetMapper::TargetPose &target_pose,
+      flatbuffers::FlatBufferBuilder *fbb);
+
+  // Converts a TargetPoseFbs to a TargetPose
+  static TargetMapper::TargetPose TargetPoseFromFbs(
+      const TargetPoseFbs &target_pose_fbs);
 
   static std::optional<TargetPose> GetTargetPoseById(
       std::vector<TargetPose> target_poses, TargetId target_id);
@@ -132,43 +144,6 @@ class TargetMapper {
   mutable VisualizeRobot vis_robot_;
 
   Stats stats_with_outliers_;
-};
-
-// Utility functions for dealing with ceres::examples::Pose3d structs
-class PoseUtils {
- public:
-  // Embeds a 3d pose into an affine transformation
-  static Eigen::Affine3d Pose3dToAffine3d(
-      const ceres::examples::Pose3d &pose3d);
-  // Inverse of above function
-  static ceres::examples::Pose3d Affine3dToPose3d(const Eigen::Affine3d &H);
-
-  // Computes pose_2 relative to pose_1. This is equivalent to (pose_1^-1 *
-  // pose_2)
-  static ceres::examples::Pose3d ComputeRelativePose(
-      const ceres::examples::Pose3d &pose_1,
-      const ceres::examples::Pose3d &pose_2);
-
-  // Computes pose_2 given a pose_1 and pose_2 relative to pose_1. This is
-  // equivalent to (pose_1 * pose_2_relative)
-  static ceres::examples::Pose3d ComputeOffsetPose(
-      const ceres::examples::Pose3d &pose_1,
-      const ceres::examples::Pose3d &pose_2_relative);
-
-  // Converts a rotation with roll, pitch, and yaw into a quaternion
-  static Eigen::Quaterniond EulerAnglesToQuaternion(const Eigen::Vector3d &rpy);
-  // Inverse of above function
-  static Eigen::Vector3d QuaternionToEulerAngles(const Eigen::Quaterniond &q);
-  // Converts a 3d rotation matrix into a rotation with roll, pitch, and yaw
-  static Eigen::Vector3d RotationMatrixToEulerAngles(const Eigen::Matrix3d &R);
-
-  // Builds a TargetPoseFbs from a TargetPose
-  static flatbuffers::Offset<TargetPoseFbs> TargetPoseToFbs(
-      const TargetMapper::TargetPose &target_pose,
-      flatbuffers::FlatBufferBuilder *fbb);
-  // Converts a TargetPoseFbs to a TargetPose
-  static TargetMapper::TargetPose TargetPoseFromFbs(
-      const TargetPoseFbs &target_pose_fbs);
 };
 
 // Transforms robot position and target detection data into target constraints

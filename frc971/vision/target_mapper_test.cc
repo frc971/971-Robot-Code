@@ -12,11 +12,13 @@
 #include "aos/testing/path.h"
 #include "aos/testing/random_seed.h"
 #include "aos/util/math.h"
+#include "vision_util_lib.h"
 
 ABSL_DECLARE_FLAG(int32_t, min_target_id);
 ABSL_DECLARE_FLAG(int32_t, max_target_id);
 
 namespace frc971::vision {
+using frc971::vision::PoseUtils;
 
 namespace {
 constexpr double kToleranceMeters = 0.05;
@@ -150,44 +152,6 @@ aos::distributed_clock::time_point TimeInMs(size_t ms) {
 }
 
 }  // namespace
-
-TEST(PoseUtilsTest, EulerAnglesAndQuaternionConversions) {
-  // Make sure that the conversions are consistent back and forth.
-  // These angles shouldn't get changed to a different, equivalent roll pitch
-  // yaw.
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, M_PI);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, -M_PI);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, M_PI_2);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, -M_PI_2);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, 0.0);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, M_PI_4, 0.0);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, -M_PI_4, 0.0);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, -M_PI_4, M_PI_4);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(M_PI_4, -M_PI_4, M_PI_4);
-  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(-M_PI_2, -M_PI_4, M_PI_4);
-
-  // Now, do a sweep of roll, pitch, and yaws in the normalized
-  // range.
-  // - roll: (-pi/2, pi/2)
-  // - pitch: (-pi/2, pi/2)
-  // - yaw: [-pi, pi)
-  constexpr double kThetaMaxRoll = M_PI_2 - kToleranceRadians;
-  constexpr double kThetaMaxPitch = M_PI_2 - kToleranceRadians;
-  constexpr double kThetaMaxYaw = M_PI;
-  constexpr double kDeltaTheta = M_PI / 16;
-
-  for (double roll = -kThetaMaxRoll; roll < kThetaMaxRoll;
-       roll += kDeltaTheta) {
-    for (double pitch = -kThetaMaxPitch; pitch < kThetaMaxPitch;
-         pitch += kDeltaTheta) {
-      for (double yaw = -kThetaMaxYaw; yaw < kThetaMaxYaw; yaw += kDeltaTheta) {
-        SCOPED_TRACE(
-            absl::StrFormat("roll: %f, pitch: %f, yaw: %f", roll, pitch, yaw));
-        EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(roll, pitch, yaw);
-      }
-    }
-  }
-}
 
 TEST(DataAdapterTest, ComputeConfidence) {
   // Check the confidence matrices. Don't check the actual values
@@ -500,7 +464,7 @@ TEST_F(ChargedUpTargetMapperTest, DISABLED_FieldCircleMotion) {
   ceres::examples::MapOfPoses target_poses;
   for (const auto *target_pose_fbs : *target_map_fbs.message().target_poses()) {
     const TargetMapper::TargetPose target_pose =
-        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
+        TargetMapper::TargetPoseFromFbs(*target_pose_fbs);
     actual_target_poses.emplace_back(target_pose);
     target_poses[target_pose.id] = target_pose.pose;
   }

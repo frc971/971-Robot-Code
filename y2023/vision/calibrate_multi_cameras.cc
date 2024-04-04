@@ -13,6 +13,7 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/extrinsics_calibration.h"
 #include "frc971/vision/target_mapper.h"
+#include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
 // clang-format off
 // OpenCV eigen files must be included after Eigen includes
@@ -362,7 +363,7 @@ void HandleTargetMap(const TargetMap &map,
     }
 
     const TargetMapper::TargetPose target_pose =
-        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
+        TargetMapper::TargetPoseFromFbs(*target_pose_fbs);
 
     target_poses.emplace_back(target_pose);
 

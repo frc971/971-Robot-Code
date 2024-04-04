@@ -15,6 +15,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/target_mapper.h"
+#include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
 #include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/vision/aprilrobotics.h"
@@ -239,7 +240,7 @@ void TargetMapperReplay::HandleAprilTags(
     }
 
     const TargetMapper::TargetPose target_pose =
-        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
+        TargetMapper::TargetPoseFromFbs(*target_pose_fbs);
 
     Eigen::Affine3d H_camera_target =
         Eigen::Translation3d(target_pose.pose.p) * target_pose.pose.q;

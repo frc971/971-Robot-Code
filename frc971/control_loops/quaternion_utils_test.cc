@@ -17,6 +17,7 @@ namespace frc971::controls::testing {
 // return the original quaternion.
 TEST(DownEstimatorTest, QuaternionMean) {
   Eigen::Matrix<double, 4, 7> vectors;
+  std::vector<Eigen::Vector4d> quaternion_list;
   vectors.col(0) << 0, 0, 0, 1;
   for (int i = 0; i < 3; ++i) {
     Eigen::Matrix<double, 4, 1> perturbation;
@@ -29,12 +30,22 @@ TEST(DownEstimatorTest, QuaternionMean) {
 
   for (int i = 0; i < 7; ++i) {
     vectors.col(i).normalize();
+    quaternion_list.push_back(Eigen::Vector4d(vectors.col(i)));
   }
 
   Eigen::Matrix<double, 4, 1> mean = QuaternionMean(vectors);
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_NEAR(mean(i, 0), vectors(i, 0), 0.001) << ": Failed on index " << i;
+  }
+
+  // Test version of code that passes in a vector of quaternions
+  mean = QuaternionMean(quaternion_list);
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_NEAR(mean(i, 0), quaternion_list[0](i, 0), 0.001)
+        << ": Failed on index " << i << " with mean = " << mean
+        << " and quat_list = " << quaternion_list[0];
   }
 }
 

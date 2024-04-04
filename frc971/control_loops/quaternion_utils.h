@@ -8,19 +8,17 @@
 
 namespace frc971::controls {
 
-// Function to compute the quaternion average of a bunch of quaternions. Each
-// column in the input matrix is a quaternion (optionally scaled by it's
-// weight).
-template <int SM>
-inline Eigen::Matrix<double, 4, 1> QuaternionMean(
-    Eigen::Matrix<double, 4, SM> input) {
+// Helper function to extract mean quaternion from A*A^T of quaternion list
+// This allows us to support multiple formats of the input quaternion list
+inline Eigen::Matrix<double, 4, 1> ExtractQuaternionMean(
+    Eigen::Matrix<double, 4, 4> input) {
   // Algorithm to compute the average of a bunch of quaternions:
-  // http://www.acsu.buffalo.edu/~johnc/ave_quat07.pdf
-
-  Eigen::Matrix<double, 4, 4> m = input * input.transpose();
+  //  http://www.acsu.buffalo.edu/~johnc/ave_quat07.pdf
+  // See also:
+  //  https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
 
   Eigen::EigenSolver<Eigen::Matrix<double, 4, 4>> solver;
-  solver.compute(m);
+  solver.compute(input);
 
   Eigen::EigenSolver<Eigen::Matrix<double, 4, 4>>::EigenvectorsType
       eigenvectors = solver.eigenvectors();
@@ -45,6 +43,37 @@ inline Eigen::Matrix<double, 4, 1> QuaternionMean(
         << eigenvectors(i, max_index);
   }
   return eigenvectors.col(max_index).real().normalized();
+}
+
+// Function to compute the quaternion average of a bunch of quaternions. Each
+// column in the 4xN input Matrix is a quaternion (optionally scaled by it's
+// weight).
+template <int N>
+inline Eigen::Matrix<double, 4, 1> QuaternionMean(
+    Eigen::Matrix<double, 4, N> quaternions) {
+  Eigen::Matrix<double, 4, 4> m = quaternions * quaternions.transpose();
+
+  return ExtractQuaternionMean(m);
+}
+
+// Function to compute the quaternion average of a bunch of quaternions.
+// This allows for passing in a variable size list (vector) of quaternions
+
+// For reference (since I've been bitten by it):
+// Eigen::Quaternion stores and prints coefficients as [x, y, z, w]
+// and initializes using a Vector4d in this order, BUT
+// initializes with scalars as Eigen::Quaternion{w, x, y, z}
+inline Eigen::Vector4d QuaternionMean(
+    std::vector<Eigen::Vector4d> quaternion_list) {
+  CHECK(quaternion_list.size() != 0)
+      << "Must have at least one quaternion to compute an average!";
+
+  Eigen::Matrix<double, 4, 4> m = Eigen::Matrix4d::Zero();
+  for (Eigen::Vector4d quaternion : quaternion_list) {
+    m += quaternion * quaternion.transpose();
+  }
+
+  return Eigen::Vector4d(ExtractQuaternionMean(m));
 }
 
 // Converts from a quaternion to a rotation vector, where the rotation vector's
@@ -74,7 +103,7 @@ Eigen::Matrix<double, 4, 1> ToQuaternionFromRotationVector(
 inline Eigen::Vector4d QuaternionDerivative(Eigen::Vector3d omega,
                                             const Eigen::Vector4d &q_matrix) {
   // See https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/ for
-  // another resource on quaternion integration and derivitives.
+  // another resource on quaternion integration and derivatives.
   Eigen::Quaternion<double> q(q_matrix);
 
   Eigen::Quaternion<double> omega_q;

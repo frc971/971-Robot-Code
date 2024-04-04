@@ -5,6 +5,7 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/vision/ceres/pose_graph_3d_error_term.h"
 #include "frc971/vision/geometry.h"
+#include "frc971/vision/vision_util_lib.h"
 
 ABSL_FLAG(uint64_t, max_num_iterations, 100,
           "Maximum number of iterations for the ceres solver");
@@ -28,89 +29,6 @@ ABSL_FLAG(bool, do_map_fitting, false,
           "Whether to do a final fit of the solved map to the original map");
 
 namespace frc971::vision {
-Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
-    const ceres::examples::Pose3d &pose3d) {
-  Eigen::Affine3d H_world_pose =
-      Eigen::Translation3d(pose3d.p(0), pose3d.p(1), pose3d.p(2)) * pose3d.q;
-  return H_world_pose;
-}
-
-ceres::examples::Pose3d PoseUtils::Affine3dToPose3d(const Eigen::Affine3d &H) {
-  return ceres::examples::Pose3d{.p = H.translation(),
-                                 .q = Eigen::Quaterniond(H.rotation())};
-}
-
-ceres::examples::Pose3d PoseUtils::ComputeRelativePose(
-    const ceres::examples::Pose3d &pose_1,
-    const ceres::examples::Pose3d &pose_2) {
-  Eigen::Affine3d H_world_1 = Pose3dToAffine3d(pose_1);
-  Eigen::Affine3d H_world_2 = Pose3dToAffine3d(pose_2);
-
-  // Get the location of 2 in the 1 frame
-  Eigen::Affine3d H_1_2 = H_world_1.inverse() * H_world_2;
-  return Affine3dToPose3d(H_1_2);
-}
-
-ceres::examples::Pose3d PoseUtils::ComputeOffsetPose(
-    const ceres::examples::Pose3d &pose_1,
-    const ceres::examples::Pose3d &pose_2_relative) {
-  auto H_world_1 = Pose3dToAffine3d(pose_1);
-  auto H_1_2 = Pose3dToAffine3d(pose_2_relative);
-  auto H_world_2 = H_world_1 * H_1_2;
-
-  return Affine3dToPose3d(H_world_2);
-}
-
-Eigen::Quaterniond PoseUtils::EulerAnglesToQuaternion(
-    const Eigen::Vector3d &rpy) {
-  Eigen::AngleAxisd roll_angle(rpy.x(), Eigen::Vector3d::UnitX());
-  Eigen::AngleAxisd pitch_angle(rpy.y(), Eigen::Vector3d::UnitY());
-  Eigen::AngleAxisd yaw_angle(rpy.z(), Eigen::Vector3d::UnitZ());
-
-  return yaw_angle * pitch_angle * roll_angle;
-}
-
-Eigen::Vector3d PoseUtils::QuaternionToEulerAngles(
-    const Eigen::Quaterniond &q) {
-  return RotationMatrixToEulerAngles(q.toRotationMatrix());
-}
-
-Eigen::Vector3d PoseUtils::RotationMatrixToEulerAngles(
-    const Eigen::Matrix3d &R) {
-  double roll = aos::math::NormalizeAngle(std::atan2(R(2, 1), R(2, 2)));
-  double pitch = aos::math::NormalizeAngle(-std::asin(R(2, 0)));
-  double yaw = aos::math::NormalizeAngle(std::atan2(R(1, 0), R(0, 0)));
-
-  return Eigen::Vector3d(roll, pitch, yaw);
-}
-
-flatbuffers::Offset<TargetPoseFbs> PoseUtils::TargetPoseToFbs(
-    const TargetMapper::TargetPose &target_pose,
-    flatbuffers::FlatBufferBuilder *fbb) {
-  const auto position_offset =
-      CreatePosition(*fbb, target_pose.pose.p(0), target_pose.pose.p(1),
-                     target_pose.pose.p(2));
-  const auto orientation_offset =
-      CreateQuaternion(*fbb, target_pose.pose.q.w(), target_pose.pose.q.x(),
-                       target_pose.pose.q.y(), target_pose.pose.q.z());
-  return CreateTargetPoseFbs(*fbb, target_pose.id, position_offset,
-                             orientation_offset);
-}
-
-TargetMapper::TargetPose PoseUtils::TargetPoseFromFbs(
-    const TargetPoseFbs &target_pose_fbs) {
-  return {.id = static_cast<TargetMapper::TargetId>(target_pose_fbs.id()),
-          .pose = ceres::examples::Pose3d{
-              Eigen::Vector3d(target_pose_fbs.position()->x(),
-                              target_pose_fbs.position()->y(),
-                              target_pose_fbs.position()->z()),
-              Eigen::Quaterniond(target_pose_fbs.orientation()->w(),
-                                 target_pose_fbs.orientation()->x(),
-                                 target_pose_fbs.orientation()->y(),
-                                 target_pose_fbs.orientation()->z())
-                  .normalized()}};
-}
-
 ceres::examples::VectorOfConstraints DataAdapter::MatchTargetDetections(
     const std::vector<DataAdapter::TimestampedDetection>
         &timestamped_target_detections,
@@ -245,7 +163,7 @@ TargetMapper::TargetMapper(
       aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
   for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
     ideal_target_poses_[target_pose_fbs->id()] =
-        PoseUtils::TargetPoseFromFbs(*target_pose_fbs).pose;
+        TargetPoseFromFbs(*target_pose_fbs).pose;
   }
   target_poses_ = ideal_target_poses_;
   CountConstraints();
@@ -261,6 +179,33 @@ TargetMapper::TargetMapper(
       R_frozen_actual_(Eigen::Quaterniond::Identity()),
       vis_robot_(cv::Size(kImageWidth_, kImageHeight_)) {
   CountConstraints();
+}
+
+flatbuffers::Offset<TargetPoseFbs> TargetMapper::TargetPoseToFbs(
+    const TargetMapper::TargetPose &target_pose,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  const auto position_offset =
+      CreatePosition(*fbb, target_pose.pose.p(0), target_pose.pose.p(1),
+                     target_pose.pose.p(2));
+  const auto orientation_offset =
+      CreateQuaternion(*fbb, target_pose.pose.q.w(), target_pose.pose.q.x(),
+                       target_pose.pose.q.y(), target_pose.pose.q.z());
+  return CreateTargetPoseFbs(*fbb, target_pose.id, position_offset,
+                             orientation_offset);
+}
+
+TargetMapper::TargetPose TargetMapper::TargetPoseFromFbs(
+    const TargetPoseFbs &target_pose_fbs) {
+  return {.id = static_cast<TargetMapper::TargetId>(target_pose_fbs.id()),
+          .pose = ceres::examples::Pose3d{
+              Eigen::Vector3d(target_pose_fbs.position()->x(),
+                              target_pose_fbs.position()->y(),
+                              target_pose_fbs.position()->z()),
+              Eigen::Quaterniond(target_pose_fbs.orientation()->w(),
+                                 target_pose_fbs.orientation()->x(),
+                                 target_pose_fbs.orientation()->y(),
+                                 target_pose_fbs.orientation()->z())
+                  .normalized()}};
 }
 
 namespace {
@@ -580,7 +525,7 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
   std::vector<flatbuffers::Offset<TargetPoseFbs>> target_poses_fbs;
   for (const auto &[id, pose] : target_poses_) {
     target_poses_fbs.emplace_back(
-        PoseUtils::TargetPoseToFbs(TargetPose{.id = id, .pose = pose}, &fbb));
+        TargetPoseToFbs(TargetPose{.id = id, .pose = pose}, &fbb));
   }
 
   const auto field_name_offset = fbb.CreateString(field_name);
