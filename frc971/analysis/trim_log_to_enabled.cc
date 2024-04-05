@@ -10,6 +10,7 @@
 DEFINE_string(output_folder, "/tmp/trimmed/",
               "Name of the folder to write the trimmed log to.");
 DEFINE_string(node, "roborio", "");
+DEFINE_bool(auto, false, "If set, trim the log to just the auto mode.");
 DEFINE_double(pre_enable_time_sec, 10.0,
               "Amount of time to leave in the new log before the first enable "
               "signal happens.");
@@ -53,7 +54,7 @@ int main(int argc, char *argv[]) {
             printed_match = true;
           }
 
-          if (msg.enabled()) {
+          if (msg.enabled() && (!FLAGS_auto || msg.autonomous())) {
             // Note that time is monotonic, so we don't need to e.g. do min's or
             // max's on the start/end time.
             if (!start_time.has_value()) {
