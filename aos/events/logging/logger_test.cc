@@ -77,11 +77,10 @@ TEST_F(LoggerTest, Starts) {
   LOG(INFO) << "Logging data to " << logfile;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
@@ -141,11 +140,10 @@ TEST_F(LoggerTest, MutateCallback) {
   LOG(INFO) << "Logging data to " << logfile;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
@@ -202,11 +200,10 @@ TEST_F(LoggerDeathTest, ExtraStart) {
   LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun([base_name1, base_name2, &logger_event_loop,
@@ -277,11 +274,10 @@ TEST_F(LoggerDeathTest, ExtraStop) {
   LOG(INFO) << "Logging data to " << logfile;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
@@ -316,11 +312,10 @@ TEST_F(LoggerTest, StartsTwice) {
   LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
@@ -385,11 +380,10 @@ TEST_F(LoggerTest, RotatedLogFile) {
   LOG(INFO) << "Logging data to " << logfile0 << " and " << logfile1;
 
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));

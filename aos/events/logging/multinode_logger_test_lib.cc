@@ -29,7 +29,8 @@ LoggerState MakeLoggerState(NodeEventLoopFactory *node,
           configuration::GetNode(configuration, node->node()),
           nullptr,
           params,
-          file_strategy};
+          file_strategy,
+          nullptr};
 }
 
 std::unique_ptr<MultiNodeFilesLogNamer> LoggerState::MakeLogNamer(
@@ -56,12 +57,17 @@ void LoggerState::StartLogger(std::string logfile_base) {
       absl::StrCat("logger_sha1_", event_loop->node()->name()->str()));
   logger->set_logger_version(
       absl::StrCat("logger_version_", event_loop->node()->name()->str()));
-  event_loop->OnRun([this, logfile_base]() {
+  CHECK(start_timer == nullptr)
+      << ": Test fixture doesn't yet supporting starting a logger twice.";
+
+  // Use a timer for starting since OnRun can only happen at the actual startup.
+  start_timer = event_loop->AddTimer([this, logfile_base]() {
     std::unique_ptr<MultiNodeFilesLogNamer> namer = MakeLogNamer(logfile_base);
     log_namer = namer.get();
 
     logger->StartLogging(std::move(namer));
   });
+  start_timer->Schedule(event_loop->monotonic_now());
 }
 
 void LoggerState::AppendAllFilenames(std::vector<std::string> *filenames) {

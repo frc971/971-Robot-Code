@@ -2635,8 +2635,6 @@ TEST_F(SimulatedEventLoopDisconnectTest, ReliableMessageSendsOnConnect) {
   pi1->Disconnect(pi2->node());
   pi2->Disconnect(pi1->node());
 
-  std::unique_ptr<aos::EventLoop> pi1_event_loop = pi1->MakeEventLoop("sender");
-
   std::unique_ptr<aos::EventLoop> pi2_event_loop =
       pi2->MakeEventLoop("fetcher");
   aos::Fetcher<examples::Ping> pi2_reliable_fetcher =
@@ -2645,6 +2643,8 @@ TEST_F(SimulatedEventLoopDisconnectTest, ReliableMessageSendsOnConnect) {
   factory.RunFor(chrono::milliseconds(100));
 
   {
+    std::unique_ptr<aos::EventLoop> pi1_event_loop =
+        pi1->MakeEventLoop("sender");
     aos::Sender<examples::Ping> pi1_reliable_sender =
         pi1_event_loop->MakeSender<examples::Ping>("/reliable");
     FunctionScheduler run_at(pi1_event_loop.get());

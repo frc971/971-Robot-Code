@@ -69,6 +69,7 @@ struct LoggerState {
   MultiNodeFilesLogNamer *log_namer;
   CompressionParams params;
   FileStrategy file_strategy;
+  aos::TimerHandler *start_timer;
 
   void AppendAllFilenames(std::vector<std::string> *filenames);
 
