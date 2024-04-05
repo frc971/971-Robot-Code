@@ -241,10 +241,11 @@ TEST_F(MutexLockerDeathTest, OwnerDied) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
-  thread.join();
   EXPECT_DEATH(
       {
+        std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
+        thread.join();
+
         logging::SetImplementation(
             std::make_shared<util::DeathTestLogImplementation>());
         MutexLocker locker(mutex);
