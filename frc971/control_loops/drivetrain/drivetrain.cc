@@ -579,9 +579,7 @@ void DrivetrainLoop::RunIteration(
 
   // If the filters aren't ready/valid, then disable all outputs (currently,
   // this only happens if the IMU is faulted or has not zeroed).
-  // TODO(james): Add exceptions so that during competitive play the driver
-  // can retain minimal control of the robot.
-  if (!filters_.Ready()) {
+  if (dt_config_.require_imu_for_output && !filters_.Ready()) {
     output_struct.left_voltage = 0.0;
     output_struct.right_voltage = 0.0;
   }

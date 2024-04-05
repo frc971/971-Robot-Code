@@ -148,4 +148,5 @@ table DrivetrainConfig {
   top_button_use:PistolTopButtonUse = kShift (id: 17);
   second_button_use:PistolSecondButtonUse = kShiftLow (id: 18);
   bottom_button_use:PistolBottomButtonUse = kSlowDown (id: 19);
+  require_imu_for_output:bool = true (id: 21);
 }

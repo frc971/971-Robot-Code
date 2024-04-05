@@ -154,6 +154,9 @@ struct DrivetrainConfig {
 
   SplineFollowerConfig spline_follower_config{};
 
+  // If set, then the IMU must be zeroed before we will send any outputs.
+  bool require_imu_for_output = true;
+
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(
       const Eigen::Matrix<Scalar, 7, 1> &left_right) {
@@ -261,6 +264,7 @@ struct DrivetrainConfig {
           ASSIGN(bottom_button_use),
           .spline_follower_config = SplineFollowerConfig::FromFlatbuffer(
               fbs.spline_follower_config()),
+          ASSIGN(require_imu_for_output),
 #undef ASSIGN
     };
   }
