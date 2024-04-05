@@ -513,6 +513,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",
+        ":function_scheduler",
         ":message_counter",
         ":ping_lib",
         ":pong_lib",
@@ -742,6 +743,17 @@ cc_binary(
         "//aos:init",
         "//aos/events/logging:log_reader",
     ],
+)
+
+cc_library(
+    name = "function_scheduler",
+    srcs = [
+        "function_scheduler.cc",
+    ],
+    hdrs = [
+        "function_scheduler.h",
+    ],
+    deps = [":event_loop"],
 )
 
 cc_binary(

@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/events/function_scheduler.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
@@ -2494,48 +2495,6 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
     VerifyChannels(statistics_channels, disconnect_disable_time, {pi2->node()});
   }
 }
-
-// Simple class to call a function at a time with a timer.
-class FunctionScheduler {
- public:
-  FunctionScheduler(aos::EventLoop *event_loop)
-      : event_loop_(event_loop), timer_(event_loop_->AddTimer([this]() {
-          IncrementTestTimer(event_loop_->context().monotonic_event_time);
-        })) {
-    timer_->set_name("function_timer");
-    event_loop_->OnRun([this]() {
-      IncrementTestTimer(event_loop_->context().monotonic_event_time);
-    });
-  }
-
-  // Schedules the function to be run at the provided time.
-  void ScheduleAt(std::function<void()> &&function,
-                  aos::monotonic_clock::time_point time) {
-    functions_.insert(std::make_pair(time, std::move(function)));
-    timer_->Schedule(functions_.begin()->first);
-  }
-
- private:
-  void IncrementTestTimer(aos::monotonic_clock::time_point now) {
-    while (true) {
-      if (functions_.empty()) return;
-      if (functions_.begin()->first > now) {
-        break;
-      }
-      CHECK_EQ(functions_.begin()->first, now);
-
-      functions_.begin()->second();
-      functions_.erase(functions_.begin());
-    }
-    timer_->Schedule(functions_.begin()->first);
-  }
-
-  aos::EventLoop *event_loop_;
-  aos::TimerHandler *timer_;
-
-  std::multimap<aos::monotonic_clock::time_point, std::function<void()>>
-      functions_;
-};
 
 // Struct to capture the expected time a message should be received (and it's
 // value).  This is from the perspective of the node receiving the message.
