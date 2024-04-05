@@ -1141,6 +1141,44 @@ std::string NoncausalTimestampFilter::DebugOffsetError(
                          rise, run, std::get<1>(points.first).count());
 }
 
+std::string NoncausalTimestampFilter::DebugOffsetErrorPoints(
+    const NoncausalTimestampFilter *other, Pointer pointer,
+    BootTimestamp ta_base, double ta, BootTimestamp tb_base, double tb) const {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  const BootFilter *f = maybe_filter(pointer, ta_base.boot, tb_base.boot);
+  if (f == nullptr || f->filter.timestamps_size() == 0u) {
+    return "0";
+  }
+
+  if (f->filter.IsOutsideSamples(ta_base.time, ta)) {
+    auto reference_timestamp =
+        f->filter.GetReferenceTimestamp(ta_base.time, ta);
+
+    return std::string("Extrapolating using ") +
+           TimeString(reference_timestamp.second);
+  }
+
+  // FindTimestamps expects nullptr if we don't have the other direction.  But,
+  // any of the indirections to go get it might also be nullptr.  So keep
+  // checking if it's safe to continue, or give up and return nullptr.
+  const BootFilter *other_boot_filter =
+      other == nullptr ? nullptr : maybe_filter(tb_base.boot, ta_base.boot);
+  const SingleFilter *other_filter =
+      other_boot_filter == nullptr ? nullptr : &other_boot_filter->filter;
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points =
+          f->filter
+              .FindTimestamps(other_filter, true, pointer, ta_base.time, ta)
+              .second;
+
+  return std::string("Interpolating using ") + TimeString(points.first) + " " +
+         TimeString(points.second);
+}
+
 std::string NoncausalTimestampFilter::NodeNames() const {
   return absl::StrCat(node_a_->name()->string_view(), " -> ",
                       node_b_->name()->string_view());

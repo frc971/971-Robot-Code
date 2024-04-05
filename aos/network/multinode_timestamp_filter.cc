@@ -399,7 +399,11 @@ Problem::Derivatives TimestampProblem::ComputeDerivatives(
             << a_solution_index << ") -> "
             << filter.filter->node_b()->name()->string_view() << "("
             << b_solution_index << "): " << std::setprecision(12)
-            << error.first.count() << " + " << error.second;
+            << error.first.count() << " + " << error.second << " "
+            << filter.filter->DebugOffsetErrorPoints(
+                   filter.b_filter, filter.pointer, base_clock_[i],
+                   time_offsets(a_solution_index), base_clock_[filter.b_index],
+                   time_offsets(b_solution_index));
       }
 
       // Reminder, our cost function has the following form.
