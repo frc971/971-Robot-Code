@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import apt_pkg
+import sys
 import collections
 import contextlib
 import datetime
@@ -33,7 +34,7 @@ def scoped_loopback(image):
                             check=True,
                             stdout=subprocess.PIPE)
     device = result.stdout.decode('utf-8').strip()
-    print("Mounted", image, "to", repr(device))
+    print("Mounted", image, "to", repr(device), file=sys.stderr)
     try:
         yield device
     finally:
@@ -81,14 +82,14 @@ def check_required_deps(deps):
             missing_deps.append(dep)
 
     if len(missing_deps) > 0:
-        print("Missing dependencies, please install:")
-        print("sudo apt-get install", " ".join(missing_deps))
+        print("Missing dependencies, please install:", file=sys.stderr)
+        print("sudo apt-get install", " ".join(missing_deps), file=sys.stderr)
         exit()
 
 
 def make_image(image):
     """Makes an image and creates an xfs filesystem on it."""
-    print("--> Creating NEW image ", f"{image}")
+    print("--> Creating NEW image ", f"{image}", file=sys.stderr)
     result = subprocess.run([
         "dd", "if=/dev/zero", f"of={image}", "bs=1", "count=0",
         "seek=8589934592"
@@ -133,7 +134,7 @@ def pi_target(cmd):
 
 def copyfile(owner, permissions, file):
     """Copies a file from contents/{file} with the provided owner and permissions."""
-    print("copyfile", owner, permissions, file)
+    print("copyfile", owner, permissions, file, file=sys.stderr)
     subprocess.run(["sudo", "cp", f"contents/{file}", f"{PARTITION}/{file}"],
                    check=True)
     subprocess.run(["sudo", "chmod", permissions, f"{PARTITION}/{file}"],
@@ -143,7 +144,7 @@ def copyfile(owner, permissions, file):
 
 def target_mkdir(owner_group, permissions, folder):
     """Creates a directory recursively with the provided permissions and ownership."""
-    print("target_mkdir", owner_group, permissions, folder)
+    print("target_mkdir", owner_group, permissions, folder, file=sys.stderr)
     owner, group = owner_group.split(':')
     target(
         ["install", "-d", "-m", permissions, "-o", owner, "-g", group, folder])
@@ -200,7 +201,9 @@ def install_packages(new_packages, existing_packages):
         for package in new_packages:
             if package.name in existing_packages and existing_packages[
                     package.name] == package.version:
-                print('Skipping', package)
+                print('Skipping existing package: ',
+                      package.name,
+                      file=sys.stderr)
                 continue
 
             subprocess.run([
@@ -277,6 +280,10 @@ class NameVersion:
             return False
 
         if other.operator is None:
+            return True
+
+        # libz1 is special and doesn't have a version...  Don't stress it for now until we learn why.
+        if self.operator is None and self.name == 'libz1':
             return True
 
         vc = apt_pkg.version_compare(self.version, other.version)
@@ -389,8 +396,6 @@ class Package:
                     break
                 elif ext == '.so':
                     found_so = True
-                else:
-                    found_so = False
 
             if found_so:
                 result.append(file)
@@ -412,6 +417,7 @@ class PkgConfig:
         self.package = package
         self.libs = []
         self.cflags = []
+        self.requires = []
         for line in contents.split('\n'):
             line = line.strip()
             # Parse everything so we learn if a new field shows up we don't
@@ -439,9 +445,20 @@ class PkgConfig:
             elif line.startswith('Cflags.private:'):
                 pass
             elif line.startswith('Requires:'):
-                pass
+                # Parse a Requires line of the form:
+                # Requires: glib-2.0 >= 2.56.0, gobject-2.0
+                self.requires += [
+                    f.split()[0] for f in self.expand(
+                        line.removeprefix('Requires:').strip()).split(',') if f
+                ]
             elif line.startswith('Requires.private:'):
-                pass
+                # Parse a Requires.private line of the form:
+                # Requires.private: gmodule-2.0
+                self.requires += [
+                    f.split()[0] for f in self.expand(
+                        line.removeprefix('Requires.private:').strip()).split(
+                            ',') if f
+                ]
             elif line.startswith('Libs.private:'):
                 pass
             elif line.startswith('Conflicts:'):
@@ -533,7 +550,7 @@ class Filesystem:
                     self.directories.add(file)
             except PermissionError:
                 # Assume it is a file...
-                print("Failed to read", file)
+                print("Failed to read", file, file=sys.stderr)
                 pass
 
             # Directories are all the things before the last /
@@ -554,8 +571,13 @@ class Filesystem:
                     continue
 
                 if f in self.files:
-                    print("Duplicate file", repr(f), ' current', package,
-                          ' already', self.files[f])
+                    print("Duplicate file",
+                          repr(f),
+                          ' current',
+                          package,
+                          ' already',
+                          self.files[f],
+                          file=sys.stderr)
                     if not f.startswith('/usr/share'):
                         assert (f not in self.files)
                 self.files[f] = package
@@ -695,15 +717,25 @@ def generate_build_file(partition):
     filesystem = Filesystem(partition)
 
     packages_to_eval = [
+        filesystem.packages['libglib2.0-dev'],
         filesystem.packages['libopencv-dev'],
         filesystem.packages['libc6-dev'],
         filesystem.packages['libstdc++-12-dev'],
         filesystem.packages['libnpp-11-8-dev'],
+        filesystem.packages['gstreamer1.0-dev'],
+        filesystem.packages['orc-dev'],
+        filesystem.packages['libgstrtp-1.0-0'],
+        filesystem.packages['gstreamer1.0-plugins-bad-dev'],
     ]
+
+    # Now, we want to figure out what the dependencies of each of the packages are.
+    # Generate the dependency tree starting from an initial list of packages.
+    # Then, figure out how to link the .so's in.
 
     # Recursively walk the tree using dijkstra's algorithm to generate targets
     # for each set of headers.
-    print('Walking tree for', [p.name.name for p in packages_to_eval])
+    print('Walking tree for', [p.name.name for p in packages_to_eval],
+          file=sys.stderr)
 
     rules = []
     objs_to_eval = []
@@ -778,11 +810,11 @@ def generate_build_file(partition):
         resolved_deps.sort()
         rule_name = obj[1:].replace('/', '_')
         rule_deps = ''.join([
-            '        ":{}",\n'.format(d[1:].replace('/', '_'))
+            '        ":{}-lib",\n'.format(d[1:].replace('/', '_'))
             for d in resolved_deps if d not in skip_set
         ])
         rules.append(
-            f'cc_library(\n    name = "{rule_name}",\n    srcs = ["{obj[1:]}"],\n    deps = [\n{rule_deps}    ],\n)'
+            f'cc_library(\n    name = "{rule_name}-lib",\n    srcs = ["{obj[1:]}"],\n    deps = [\n{rule_deps}    ],\n)'
         )
 
     standard_includes = set()
@@ -797,9 +829,6 @@ def generate_build_file(partition):
                 for f in contents.libs if f.startswith('-l')
             ]
 
-            if contents.package not in packages_visited_set:
-                continue
-
             includes = []
             for flag in contents.cflags:
                 if flag.startswith('-I/') and flag.removeprefix(
@@ -808,9 +837,10 @@ def generate_build_file(partition):
 
             rule_deps = ''.join(
                 sorted([
-                    '        ":' + l[1:].replace('/', '_') + '",\n'
+                    '        ":' + l[1:].replace('/', '_') + '-lib",\n'
                     for l in resolved_libraries
-                ] + [f'        ":{contents.package.name.name}-headers",\n']))
+                ] + [f'        ":{contents.package.name.name}-headers",\n'] +
+                       [f'        ":{dep}",\n' for dep in contents.requires]))
             includes.sort()
             if len(includes) > 0:
                 includes_string = '    includes = ["' + '", "'.join(
@@ -818,19 +848,14 @@ def generate_build_file(partition):
             else:
                 includes_string = ''
             rules.append(
-                f'cc_library(\n    name = "{pkg}",\n{includes_string}    visibility = ["//visibility:public"],\n    deps = [\n{rule_deps}    ],\n)'
+                f'# pkgconf -> {pkg}\ncc_library(\n    name = "{pkg}",\n{includes_string}    visibility = ["//visibility:public"],\n    deps = [\n{rule_deps}    ],\n)'
             )
             # Look up which package this is from to include the headers
             # Depend on all the libraries
             # Parse -I -> includes
         except FileNotFoundError:
-            print('Failed to instantiate package', repr(pkg))
+            print('Failed to instantiate package', repr(pkg), file=sys.stderr)
             pass
-
-    # Now, we want to figure out what the dependencies of opencv-dev are.
-    # Generate the dependency tree starting from an initial list of packages.
-
-    # Then, figure out how to link the .so's in.  Sometimes, multiple libraries exist per .deb, one target for all?
 
     with open("orin_debian_rootfs.BUILD.template", "r") as file:
         template = jinja2.Template(file.read())
@@ -862,7 +887,7 @@ def generate_build_file(partition):
 def do_package(partition):
     tarball = datetime.date.today().strftime(
         f"{os.getcwd()}/%Y-%m-%d-bookworm-arm64-nvidia-rootfs.tar")
-    print(tarball)
+    print(tarball, file=sys.stderr)
 
     subprocess.run([
         "sudo",
@@ -947,14 +972,16 @@ def main():
     check_required_deps(REQUIRED_DEPS)
 
     if not os.path.exists(YOCTO):
-        print("ERROR: Must have YOCTO directory properly specified to run")
-        print("See https://github.com/frc971/meta-frc971/tree/main for info")
+        print("ERROR: Must have YOCTO directory properly specified to run",
+              file=sys.stderr)
+        print("See https://github.com/frc971/meta-frc971/tree/main for info",
+              file=sys.stderr)
         exit()
 
     if not check_buildifier():
         print(
-            "ERROR: Need to have buildifier in the path.  Please resolve this."
-        )
+            "ERROR: Need to have buildifier in the path.  Please resolve this.",
+            file=sys.stderr)
         exit()
 
     new_image = not os.path.exists(IMAGE)
@@ -1037,7 +1064,8 @@ def main():
             "trace-cmd", "clinfo", "jq", "strace", "sysstat", "lm-sensors",
             "can-utils", "xfsprogs", "bridge-utils", "net-tools", "apt-file",
             "parted", "xxd", "file", "pkexec", "libxkbfile1", "gdb", "autossh",
-            "smartmontools", "nvme-cli", "libgtk-3.0"
+            "smartmontools", "nvme-cli", "libgtk-3.0", "eog", "psmisc",
+            "libsrtp2-1"
         ])
         target(["apt-get", "clean"])
 
@@ -1047,12 +1075,15 @@ def main():
         target(["usermod", "-a", "-G", "dialout", "pi"])
 
         virtual_packages = [
+            'glib-2.0-dev',
             'libglib-2.0-0',
             'libglvnd',
             'libgtk-3-0',
+            'libxcb-dev',
             'libxcb-glx',
-            'wayland',
             'libz1',
+            'wayland',
+            'wayland-dev',
         ]
 
         install_virtual_packages(virtual_packages)
@@ -1084,11 +1115,12 @@ def main():
                 if not already_installed:
                     packages_to_remove.append(key)
 
-        print("Removing", packages_to_remove)
+        print("Removing", packages_to_remove, file=sys.stderr)
         if len(packages_to_remove) > 0:
             target(['dpkg', '--purge'] + packages_to_remove)
         print("Installing",
-              [package.name for package in yocto_packages_to_install])
+              [package.name for package in yocto_packages_to_install],
+              file=sys.stderr)
 
         install_packages(yocto_packages_to_install, packages)
 
@@ -1121,22 +1153,45 @@ def main():
             'libcurand-11-8',
             'libcurand-11-8-dev',
             'libcurand-11-8-stubs',
-            'cuda-nvcc-11-8',
             'tegra-cmake-overrides',
             'cuda-target-environment',
             'libnpp-11-8',
             'libnpp-11-8-stubs',
             'libnpp-11-8-dev',
             'cuda-cccl-11-8',
-            'cuda-nvcc-11-8',
+            'cuda-nvcc-11-8',  # This one isn't in our yocto packages, but we need it
             'cuda-nvcc-headers-11-8',
             'nsight-systems-cli',
             'nsight-systems-cli-qdstrmimporter',
             'tegra-tools-jetson-clocks',
+            # Added to support gstreamer1.0-dev, etc, for image_streamer
+            'libgstfft-1.0-0',
+            'libgstgl-1.0-0',
+            'libgstrtsp-1.0-0',
+            'libgstsdp-1.0-0',
+            'libgstadaptivedemux-1.0-0',
+            'libgstbadaudio-1.0-0',
+            'libgstbasecamerabinsrc-1.0-0',
+            'libgstcodecs-1.0-0',
+            'libgstinsertbin-1.0-0',
+            'libgstisoff-1.0-0',
+            'libgstmpegts-1.0-0',
+            'libgstphotography-1.0-0',
+            'libgstplay-1.0-0',
+            'libgstplayer-1.0-0',
+            'libgstsctp-1.0-0',
+            'libgsttranscoder-1.0-0',
+            'libgsturidownloader-1.0-0',
+            'libgstvulkan-1.0-0',
+            'libgstwayland-1.0-0',
+            'libgstwebrtc-1.0-0',
             'gstreamer1.0',
             'gstreamer1.0-plugins-base',
+            'gstreamer1.0-plugins-bad',
+            'gstreamer1.0-dev',
+            'gstreamer1.0-plugins-base-dev',
+            'gstreamer1.0-plugins-bad-dev',
             'libgstallocators-1.0-0',
-            'liborc',
             'libgstvideo-1.0-0',
             'libnvdsbufferpool1.0.0',
             'gstreamer1.0-plugins-nvarguscamerasrc',
@@ -1157,11 +1212,28 @@ def main():
             'libgstcodecparsers-1.0-0',
             'libgstriff-1.0-0',
             'liborc-0.4-0',
+            'liborc-test-0.4-0',
+            'orc-dev',
+            'orc',
             'libgstaudio-1.0-0',
             'libgsttag-1.0-0',
             'gstreamer1.0-plugins-good-rtp',
             'libgstrtp-1.0-0',
             'gstreamer1.0-plugins-good-udp',
+            'gstreamer1.0-plugins-bad-srtp',
+            'gstreamer1.0-plugins-base-app',
+            'gstreamer1.0-plugins-base-videoconvert',
+            'gstreamer1.0-plugins-bad-dtls',
+            'gstreamer1.0-plugins-good-video4linux2',
+            'libcrypto3',
+            'libssl3',
+            'gstreamer1.0-plugins-ugly-x264',
+            'gstreamer1.0-plugins-bad-webrtc',
+            'libgstwebrtc-1.0-0',
+            'libx264-163',
+            'libnice',
+            'gstreamer1.0-plugins-good-rtpmanager',
+            'gstreamer1.0-plugins-ugly-asf',
             # Yocto's doesn't work with gstreamer, and we don't actually care
             # hugely.  opencv seems to work.
             'libv4l',
@@ -1172,6 +1244,17 @@ def main():
             'libgstapp-1.0-0',
             'v4l-utils',
         ]
+
+        for desired_package in yocto_package_names:
+            found_package = False
+            for yocto_package in yocto_packages:
+                if desired_package == yocto_package.name:
+                    found_package = True
+            if not found_package:
+                print("Couldn't find package",
+                      desired_package,
+                      " for installation",
+                      file=sys.stderr)
 
         install_packages([
             package for package in yocto_packages
@@ -1204,6 +1287,7 @@ def main():
             "libopencv-flann406",
             "libopencv-highgui406",
             "libopencv-imgcodecs406",
+            "gstreamer1.0-nice",
             "libopencv-imgproc406",
             "libopencv-ml406",
             "libopencv-objdetect406",
@@ -1254,6 +1338,7 @@ def main():
         copyfile("root:root", "644", "etc/systemd/network/80-canc.network")
         copyfile("root:root", "644", "etc/udev/rules.d/nvidia.rules")
         copyfile("root:root", "644", "etc/udev/rules.d/can.rules")
+        copyfile("root:root", "644", "etc/udev/rules.d/camera.rules")
         copyfile("root:root", "644",
                  "lib/systemd/system/nvargus-daemon.service")
         target(["/root/bin/change_hostname.sh", "orin-971-1"])
@@ -1266,6 +1351,12 @@ def main():
 
         # Set up HW clock to use /dev/rtc0 and install hwclock service
         target(["ln", "-sf", "/dev/rtc0", "/dev/rtc"])
+        target(["rm", "/usr/lib/gstreamer-1.0/libgstnice.so"])
+        target([
+            "ln", "-s",
+            "/usr/lib/aarch64-linux-gnu/gstreamer-1.0/libgstnice.so",
+            "/usr/lib/gstreamer-1.0/"
+        ])
         target_unescaped(
             "sed -i s/ATTR{hctosys}==\\\"1\\\"/ATTR{hctosys}==\\\"0\\\"/ /lib/udev/rules.d/50-udev-default.rules"
         )

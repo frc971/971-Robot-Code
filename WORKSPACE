@@ -165,10 +165,6 @@ load(
     gstreamer_amd64_debs = "files",
 )
 load(
-    "//debian:gstreamer_arm64.bzl",
-    gstreamer_arm64_debs = "files",
-)
-load(
     "//debian:m4.bzl",
     m4_debs = "files",
 )
@@ -221,11 +217,6 @@ generate_repositories_for_debs(opencv_amd64_debs)
 generate_repositories_for_debs(
     gstreamer_amd64_debs,
     base_url = "https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_amd64_deps",
-)
-
-generate_repositories_for_debs(
-    gstreamer_arm64_debs,
-    base_url = "https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps",
 )
 
 generate_repositories_for_debs(m4_debs)
@@ -459,8 +450,8 @@ http_archive(
 http_archive(
     name = "arm64_debian_sysroot",
     build_file = "@//:compilers/orin_debian_rootfs.BUILD",
-    sha256 = "b775e1256ab9921a27eef9a738a6f38d900873e07332ad2149dc97eb04ecbdf5",
-    url = "https://software.frc971.org/Build-Dependencies/2024-01-01-bookworm-arm64-nvidia-rootfs.tar.xz",
+    sha256 = "9fefccc1877a7b5986e7ad29ac49a4217bfbb0fbea1bcc0314beff5d03a430cd",
+    url = "https://software.frc971.org/Build-Dependencies/2024-04-06-bookworm-arm64-nvidia-rootfs.tar.zst",
 )
 
 # Sysroot generated using //frc971/amd64/build_rootfs.py
@@ -1265,13 +1256,6 @@ http_archive(
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "09765cb1dd8abc643cb1dd91d536aef3e6604ff05f5f92898d508ed857455d0b",
     url = "https://software.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64_v2.tar.gz",
-)
-
-http_archive(
-    name = "gstreamer_arm64",
-    build_file = "@//debian:gstreamer.BUILD",
-    sha256 = "42b414c565ffdbae3d2d7796a66da9de42a650de757fa6554fd624f0cc3aaa9b",
-    url = "https://software.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_arm64.tar.gz",
 )
 
 # //debian:lzma_amd64
