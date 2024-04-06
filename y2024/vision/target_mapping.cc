@@ -170,9 +170,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
   reader_->RemapLoggedChannel("/orin1/constants", "y2024.Constants");
   reader_->RemapLoggedChannel("/imu/constants", "y2024.Constants");
   // If it's Box of Orins, don't remap roborio constants
-  if (FLAGS_team_number == 7971) {
-    reader_->RemapLoggedChannel("/roborio/constants", "y2024.Constants");
-  }
+  reader_->MaybeRemapLoggedChannel<Constants>("/roborio/constants");
   reader_->Register();
 
   SendSimulationConstants(reader_->event_loop_factory(), FLAGS_team_number,
