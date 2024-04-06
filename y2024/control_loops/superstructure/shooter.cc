@@ -46,7 +46,7 @@ Shooter::Iterate(
     double *min_extend_position, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
     NoteGoal requested_note_goal, flatbuffers::FlatBufferBuilder *fbb,
-    aos::monotonic_clock::time_point monotonic_now) {
+    aos::monotonic_clock::time_point monotonic_now, bool climbing) {
   drivetrain_status_fetcher_.Fetch();
 
   // If our current is over the minimum current and our velocity is under our
@@ -152,11 +152,12 @@ Shooter::Iterate(
   // it if we have no goal, or no subsystem goal, or if we are auto-aiming.
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *turret_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
-                      (piece_loaded || state_ == CatapultState::FIRING) &&
-                      shooter_goal->has_turret_position())
-                         ? shooter_goal->turret_position()
-                         : &turret_goal_builder->AsFlatbuffer();
+      *turret_goal =
+          (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
+           (piece_loaded || state_ == CatapultState::FIRING || climbing) &&
+           shooter_goal->has_turret_position())
+              ? shooter_goal->turret_position()
+              : &turret_goal_builder->AsFlatbuffer();
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *altitude_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&

@@ -544,6 +544,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *extend_goal = &extend_goal_buffer.message();
 
+  // Ignore climber voltage goal if "disable_climber" is true
+  output_struct.climber_voltage =
+      (!robot_constants_->robot()->disable_climber() && unsafe_goal != nullptr)
+          ? unsafe_goal->climber_goal_voltage()
+          : 0.0;
+
+  if (output) {
+    if (output_struct.climber_voltage != 0.0) {
+      ++climbing_;
+    }
+  }
+
   // TODO(max): Change how we handle the collision with the turret and
   // intake to be clearer
   const flatbuffers::Offset<ShooterStatus> shooter_status_offset =
@@ -563,7 +575,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           &max_extend_position, &min_extend_position,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
           &min_intake_pivot_position, requested_note_goal_, status->fbb(),
-          timestamp);
+          timestamp, climbing_ > 50);
 
   intake_pivot_.set_min_position(min_intake_pivot_position);
   intake_pivot_.set_max_position(max_intake_pivot_position);
@@ -594,12 +606,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (robot_constants_->robot()->disable_extend()) {
     output_struct.extend_voltage = 0.0;
   }
-
-  // Ignore climber voltage goal if "disable_climber" is true
-  output_struct.climber_voltage =
-      (!robot_constants_->robot()->disable_climber() && unsafe_goal != nullptr)
-          ? unsafe_goal->climber_goal_voltage()
-          : 0.0;
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));

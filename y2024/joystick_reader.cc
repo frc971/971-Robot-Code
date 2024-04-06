@@ -94,7 +94,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();
 
-    if (data.IsPressed(kIntake)) {
+    if (data.IsPressed(kIntake) || climbed_count_ > 25) {
       // Intake is pressed
       superstructure_goal_builder->set_intake_pivot(
           superstructure::IntakePivotGoal::DOWN);
@@ -163,9 +163,16 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                           data.IsPressed(kDriverFire));
 
     if (data.IsPressed(kRaiseClimber)) {
+      ++climbed_count_;
       superstructure_goal_builder->set_climber_goal_voltage(4.0);
     } else if (data.IsPressed(kRaiseFastClimber)) {
-      superstructure_goal_builder->set_climber_goal_voltage(6.0);
+      ++climbed_count_;
+      superstructure_goal_builder->set_climber_goal_voltage(12.0);
+    }
+
+    if (climbed_count_ > 25) {
+      PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          shooter_goal->add_turret_position(), 0.0);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
@@ -177,6 +184,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::aos::Fetcher<control_loops::superstructure::Status>
       superstructure_status_fetcher_;
   const y2024::Constants *robot_constants_;
+
+  int climbed_count_ = 0;
 };
 
 }  // namespace y2024::input::joysticks

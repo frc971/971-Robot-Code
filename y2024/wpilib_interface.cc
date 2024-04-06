@@ -581,7 +581,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->turret_stator_current_limit(),
         current_limits->turret_supply_current_limit());
     std::shared_ptr<TalonFX> climber = std::make_shared<TalonFX>(
-        7, true, "rio", &rio_signal_registry,
+        7, false, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
     std::shared_ptr<TalonFX> extend =

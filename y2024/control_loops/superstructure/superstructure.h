@@ -69,6 +69,8 @@ class Superstructure
 
   NoteGoal requested_note_goal_ = NoteGoal::NONE;
 
+  int climbing_ = 0;
+
   // True if the transfer beambreak has been triggered since last intake request
   bool note_in_transfer_ = false;
 

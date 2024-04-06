@@ -107,7 +107,7 @@ class Shooter {
       double *min_extend_position, const double intake_pivot_position,
       double *max_turret_intake_position, double *min_intake_pivot_position,
       NoteGoal requested_note_goal, flatbuffers::FlatBufferBuilder *fbb,
-      aos::monotonic_clock::time_point monotonic_now);
+      aos::monotonic_clock::time_point monotonic_now, bool climbing);
 
   bool loaded() const { return state_ == CatapultState::LOADED; }
 

@@ -100,8 +100,8 @@
     "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 50,
     "drivetrain_stator_current_limit": 200,
-    "climber_supply_current_limit": 30,
-    "climber_stator_current_limit": 100,
+    "climber_supply_current_limit": 40,
+    "climber_stator_current_limit": 150,
     "extend_supply_current_limit": 30,
     "extend_stator_current_limit": 180,
     "extend_roller_supply_current_limit": 50,
@@ -248,7 +248,7 @@
     "shot_velocity": 0.0
   },
   "extend_set_points": {
-    "trap": 0.40,
+    "trap": 0.46,
     "amp": 0.35,
     "catapult": 0.017,
     "retracted": 0.017
