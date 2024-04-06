@@ -18,9 +18,7 @@
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_map_generated.h"
-#include "frc971/vision/target_mapper.h"
 #include "frc971/vision/vision_generated.h"
-#include "frc971/vision/visualize_robot.h"
 
 namespace frc971 {
 namespace apriltag {

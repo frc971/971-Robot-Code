@@ -147,7 +147,7 @@ cc_library(
         "//frc971/constants:constants_sender_lib",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
-        "//frc971/vision:target_mapper",
+        "//frc971/vision:target_map_fbs",
         "//frc971/vision:vision_util_lib",
         "//third_party:opencv",
     ],
