@@ -21,7 +21,7 @@ Eigen::Vector2d GetVoltage(T &fetcher, aos::monotonic_clock::time_point now) {
   // Determine if the robot is likely to be disabled currently.
   const bool disabled =
       (fetcher.get() == nullptr) ||
-      (fetcher.context().monotonic_event_time + std::chrono::milliseconds(10) <
+      (fetcher.context().monotonic_event_time + std::chrono::milliseconds(500) <
        now);
   return disabled ? Eigen::Vector2d::Zero()
                   : Eigen::Vector2d{fetcher->left_voltage(),
