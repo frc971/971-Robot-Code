@@ -640,7 +640,7 @@ INSTANTIATE_TEST_SUITE_P(
             /*noisify=*/false,
             /*disturb=*/false,
             /*estimate_tolerance=*/1e-2,
-            /*goal_tolerance=*/0.3,
+            /*goal_tolerance=*/0.6,
         }),
         // Add disturbances while we are driving:
         LocalizerTestParams({

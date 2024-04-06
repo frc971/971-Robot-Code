@@ -206,6 +206,10 @@ void SplineDrivetrain::SetOutput(
   }
   output->left_voltage = next_U_(0);
   output->right_voltage = next_U_(1);
+  if (IsAtEnd()) {
+    output->left_voltage = 0.0;
+    output->right_voltage = 0.0;
+  }
 }
 
 void SplineDrivetrain::PopulateStatus(
