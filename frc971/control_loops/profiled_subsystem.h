@@ -186,7 +186,7 @@ class SingleDOFProfiledSubsystem
   // this goal.
   void set_unprofiled_goal(double unprofiled_goal,
                            double unprofiled_goal_velocity = 0.0,
-                           bool print = true);
+                           bool print = false);
   // Limits our profiles to a max velocity and acceleration for proper motion.
   void AdjustProfile(const ::frc971::ProfileParameters *profile_parameters);
   void AdjustProfile(double max_angular_velocity,
@@ -217,7 +217,7 @@ class SingleDOFProfiledSubsystem
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.
   virtual void CapGoal(const char *name, Eigen::Matrix<double, 3, 1> *goal,
-                       bool print = true);
+                       bool print = false);
 
  private:
   void UpdateOffset(double offset);
