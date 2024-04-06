@@ -573,7 +573,8 @@ void Localizer::HandleTarget(
     debug_builder->set_accepted(true);
     debug_builder->set_expected_robot_x(ekf_.X_hat()(StateIdx::kX));
     debug_builder->set_expected_robot_y(ekf_.X_hat()(StateIdx::kY));
-    debug_builder->set_expected_robot_theta(ekf_.X_hat()(StateIdx::kTheta));
+    debug_builder->set_expected_robot_theta(
+        aos::math::NormalizeAngle(ekf_.X_hat()(StateIdx::kTheta)));
   }
 }
 

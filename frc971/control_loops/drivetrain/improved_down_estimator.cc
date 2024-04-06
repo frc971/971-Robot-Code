@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 
+#include "aos/util/math.h"
 #include "frc971/control_loops/quaternion_utils.h"
 
 namespace frc971::control_loops::drivetrain {
@@ -270,7 +271,7 @@ flatbuffers::Offset<DownEstimatorState> DrivetrainUkf::PopulateStatus(
   builder.add_quaternion_z(X_hat().z());
   builder.add_quaternion_w(X_hat().w());
 
-  builder.add_yaw(yaw());
+  builder.add_yaw(aos::math::NormalizeAngle(yaw()));
 
   // Calculate the current pitch numbers to provide a more human-readable
   // debugging output.
