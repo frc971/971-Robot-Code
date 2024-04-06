@@ -107,7 +107,7 @@
     "extend_roller_supply_current_limit": 50,
     "extend_roller_stator_current_limit": 180,
     "turret_supply_current_limit": 30,
-    "turret_stator_current_limit": 80,
+    "turret_stator_current_limit": 100,
     "altitude_supply_current_limit": 30,
     "altitude_stator_current_limit": 150,
     "catapult_supply_current_limit": 60,
@@ -174,7 +174,7 @@
     },
     "default_profile_params":{
       "max_velocity": 12.0,
-      "max_acceleration": 30.0
+      "max_acceleration": 55.0
     },
     "range": {
         "lower_hard": -4.8,

@@ -25,11 +25,11 @@ kAltitude = angular_system.AngularSystemParams(
     G=(16.0 / 60.0) * (16.0 / 162.0),
     # 4340 in^ lb
     J=1.2,
-    q_pos=0.60,
+    q_pos=0.40,
     q_vel=8.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=2.0,
+    kalman_q_voltage=3.0,
     kalman_r_position=0.05,
     radius=10.5 * 0.0254,
     dt=0.005)

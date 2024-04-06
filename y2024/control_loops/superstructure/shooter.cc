@@ -166,14 +166,18 @@ Shooter::Iterate(
                            ? shooter_goal->altitude_position()
                            : &altitude_goal_builder->AsFlatbuffer();
 
+  // TODO(austin): goal limit...
   const bool turret_in_range =
       (std::abs(turret_.estimated_position() - turret_goal->unsafe_goal()) <
        kCatapultActivationTurretThreshold) &&
-      (std::abs(turret_.estimated_velocity()) < 0.2);
+      (std::abs(turret_goal->goal_velocity()) < 0.2) &&
+      (std::abs(turret_.estimated_velocity()) < 1.0);
   const bool altitude_in_range =
       (std::abs(altitude_.estimated_position() - altitude_goal->unsafe_goal()) <
-       kCatapultActivationAltitudeThreshold) &&
-      (std::abs(altitude_.estimated_velocity()) < 0.1);
+       (altitude_goal->unsafe_goal() > 0.75
+            ? (5 * kCatapultActivationAltitudeThreshold)
+            : kCatapultActivationAltitudeThreshold)) &&
+      (std::abs(altitude_.estimated_velocity()) < 0.4);
   const bool altitude_above_min_angle =
       (altitude_.estimated_position() >
        robot_constants_->common()->min_altitude_shooting_angle());
