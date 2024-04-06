@@ -3,13 +3,44 @@
 "common": {
   "target_map": {% include 'y2024/vision/maps/target_map.json' %},
   "shooter_shuttle_interpolation_table": [
+    // Deliberately add a bit of extra shot table on either side of the
+    // actual upper bounds to allow slightly more dubious shots to still be shot.
+    // Note: Speed over ground is untuned
     {
-      "distance_from_goal": 0.0,
+      "distance_from_goal": 4.0,
       "shot_params": {
-          "shot_altitude_angle": 0.5,
-          "shot_speed_over_ground": 16.0
+          "shot_altitude_angle": 1.15,
+          "shot_speed_over_ground": 1.0
       }
     },
+    {
+      "distance_from_goal": 6.5,
+      "shot_params": {
+          "shot_altitude_angle": 1.15,
+          "shot_speed_over_ground": 1.0
+      }
+    },
+    {
+      "distance_from_goal": 8.5,
+      "shot_params": {
+          "shot_altitude_angle": 0.85,
+          "shot_speed_over_ground": 1.0
+      }
+    },
+    {
+      "distance_from_goal": 10.0,
+      "shot_params": {
+          "shot_altitude_angle": 0.8,
+          "shot_speed_over_ground": 1.0
+      }
+    },
+    {
+      "distance_from_goal": 15.0,
+      "shot_params": {
+          "shot_altitude_angle": 0.75,
+          "shot_speed_over_ground": 1.0
+      }
+    }
   ],
   "shooter_interpolation_table": [
     {
@@ -266,7 +297,7 @@
   "turret_loading_position": 0.58,
   "catapult_return_position": 0.0,
   "min_altitude_shooting_angle": 0.4,
-  "max_altitude_shooting_angle": 0.89,
+  "max_altitude_shooting_angle": 1.15,
   "retention_roller_voltages": {
     "retaining": 1.5,
     "spitting": 6.0
