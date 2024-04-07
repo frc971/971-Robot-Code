@@ -27,7 +27,7 @@
       "source_node": "orin1",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 3000
+      "max_size": 4096
     },
     {
       "name": "/orin1/aos",
@@ -389,7 +389,7 @@
       "executable_name": "argus_camera",
       "args": [
           "--camera=0",
-          "--channel=/camera0",
+          "--channel=/camera0"
       ],
       "user": "pi",
       "nodes": [
@@ -401,7 +401,7 @@
       "executable_name": "argus_camera",
       "args": [
           "--camera=1",
-          "--channel=/camera1",
+          "--channel=/camera1"
       ],
       "user": "pi",
       "nodes": [
@@ -412,7 +412,7 @@
       "name": "apriltag_detector0",
       "executable_name": "apriltag_detector",
       "args": [
-          "--channel=/camera0",
+          "--channel=/camera0"
       ],
       "user": "pi",
       "nodes": [
@@ -423,7 +423,26 @@
       "name": "apriltag_detector1",
       "executable_name": "apriltag_detector",
       "args": [
-          "--channel=/camera1",
+          "--channel=/camera1"
+      ],
+      "user": "pi",
+      "nodes": [
+        "orin1"
+      ]
+    },
+    {
+      "name": "image_streamer",
+      "executable_name": "image_streamer",
+      "args": [
+        "--device=/dev/uvcvideo",
+        "--height=480",
+        "--width=640",
+        "--nopublish_images",
+        "--exposure=0",
+        "--framerate=30",
+        "--streaming_port=1181",
+        "--bitrate=2000000",
+        "--data_dir=/home/pi/bin/image_streamer_www"
       ],
       "user": "pi",
       "nodes": [

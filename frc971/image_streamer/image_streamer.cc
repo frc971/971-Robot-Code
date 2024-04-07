@@ -30,30 +30,14 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-extern "C" {
-GST_PLUGIN_STATIC_DECLARE(app);
-GST_PLUGIN_STATIC_DECLARE(coreelements);
-GST_PLUGIN_STATIC_DECLARE(dtls);
-GST_PLUGIN_STATIC_DECLARE(nice);
-GST_PLUGIN_STATIC_DECLARE(rtp);
-GST_PLUGIN_STATIC_DECLARE(rtpmanager);
-GST_PLUGIN_STATIC_DECLARE(srtp);
-GST_PLUGIN_STATIC_DECLARE(webrtc);
-GST_PLUGIN_STATIC_DECLARE(video4linux2);
-GST_PLUGIN_STATIC_DECLARE(videoconvert);
-GST_PLUGIN_STATIC_DECLARE(videoparsersbad);
-GST_PLUGIN_STATIC_DECLARE(videorate);
-GST_PLUGIN_STATIC_DECLARE(videoscale);
-GST_PLUGIN_STATIC_DECLARE(videotestsrc);
-GST_PLUGIN_STATIC_DECLARE(x264);
-}
-
 DEFINE_string(config, "aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_string(device, "/dev/video0",
               "Camera fd. Ignored if reading from channel");
 DEFINE_string(data_dir, "image_streamer_www",
               "Directory to serve data files from");
+DEFINE_bool(publish_images, true,
+            "If true, publish images read from v4l2 to /camera.");
 DEFINE_int32(width, 400, "Image width");
 DEFINE_int32(height, 300, "Image height");
 DEFINE_int32(framerate, 25, "Framerate (FPS)");
@@ -102,17 +86,22 @@ class V4L2Source : public GstSampleSource {
     // from x264enc this doesn't seem to work. For now, just reencode for each
     // client since we don't expect more than 1 or 2.
 
+    std::string exposure;
+    if (FLAGS_exposure > 0) {
+      exposure = absl::StrFormat(",auto_exposure=1,exposure_time_absolute=%d",
+                                 FLAGS_exposure);
+    }
+
     pipeline_ = gst_parse_launch(
         absl::StrFormat("v4l2src device=%s do-timestamp=true "
-                        "extra-controls=\"c,brightness=%d,auto_exposure=1,"
-                        "exposure_time_absolute=%d\" ! "
+                        "extra-controls=\"c,brightness=%d%s\" ! "
                         "video/x-raw,width=%d,height=%d,framerate=%d/"
                         "1,format=YUY2 ! appsink "
                         "name=appsink "
                         "emit-signals=true sync=false async=false "
                         "caps=video/x-raw,format=YUY2",
-                        FLAGS_device, FLAGS_brightness, FLAGS_exposure,
-                        FLAGS_width, FLAGS_height, FLAGS_framerate)
+                        FLAGS_device, FLAGS_brightness, exposure, FLAGS_width,
+                        FLAGS_height, FLAGS_framerate)
             .c_str(),
         &error);
 
@@ -288,7 +277,9 @@ WebsocketHandler::WebsocketHandler(aos::ShmEventLoop *event_loop,
                                    ::seasocks::Server *server)
     : server_(server) {
   if (FLAGS_listen_on.empty()) {
-    sender_ = event_loop->MakeSender<frc971::vision::CameraImage>("/camera");
+    if (FLAGS_publish_images) {
+      sender_ = event_loop->MakeSender<frc971::vision::CameraImage>("/camera");
+    }
     source_ =
         std::make_unique<V4L2Source>([this](auto sample) { OnSample(sample); });
   } else {
@@ -522,11 +513,15 @@ void Connection::OnIceCandidate(guint mline_index, gchar *candidate) {
 
   flatbuffers::FlatBufferBuilder fbb(512);
 
+  flatbuffers::Offset<flatbuffers::String> sdp_mid_offset =
+      fbb.CreateString("video0");
+  flatbuffers::Offset<flatbuffers::String> candidate_offset =
+      fbb.CreateString(static_cast<char *>(candidate));
+
   auto ice_fb_builder = WebSocketIce::Builder(fbb);
   ice_fb_builder.add_sdp_m_line_index(mline_index);
-  ice_fb_builder.add_sdp_mid(fbb.CreateString("video0"));
-  ice_fb_builder.add_candidate(
-      fbb.CreateString(static_cast<char *>(candidate)));
+  ice_fb_builder.add_sdp_mid(sdp_mid_offset);
+  ice_fb_builder.add_candidate(candidate_offset);
   flatbuffers::Offset<WebSocketIce> ice_fb = ice_fb_builder.Finish();
 
   flatbuffers::Offset<WebSocketMessage> ice_message =
@@ -608,24 +603,6 @@ void Connection::HandleWebSocketData(const uint8_t *data, size_t /* size*/) {
   }
 }
 
-void RegisterPlugins() {
-  GST_PLUGIN_STATIC_REGISTER(app);
-  GST_PLUGIN_STATIC_REGISTER(coreelements);
-  GST_PLUGIN_STATIC_REGISTER(dtls);
-  GST_PLUGIN_STATIC_REGISTER(nice);
-  GST_PLUGIN_STATIC_REGISTER(rtp);
-  GST_PLUGIN_STATIC_REGISTER(rtpmanager);
-  GST_PLUGIN_STATIC_REGISTER(srtp);
-  GST_PLUGIN_STATIC_REGISTER(webrtc);
-  GST_PLUGIN_STATIC_REGISTER(video4linux2);
-  GST_PLUGIN_STATIC_REGISTER(videoconvert);
-  GST_PLUGIN_STATIC_REGISTER(videoparsersbad);
-  GST_PLUGIN_STATIC_REGISTER(videorate);
-  GST_PLUGIN_STATIC_REGISTER(videoscale);
-  GST_PLUGIN_STATIC_REGISTER(videotestsrc);
-  GST_PLUGIN_STATIC_REGISTER(x264);
-}
-
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
@@ -634,10 +611,7 @@ int main(int argc, char **argv) {
   std::string openssl_env = "OPENSSL_CONF=\"\"";
   putenv(const_cast<char *>(openssl_env.c_str()));
 
-  putenv(const_cast<char *>("GST_REGISTRY_DISABLE=yes"));
-
   gst_init(&argc, &argv);
-  RegisterPlugins();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
