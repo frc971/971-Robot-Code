@@ -122,7 +122,7 @@ enum AutonomousMode : ubyte {
   // Simple drive-and-shoot to pick up at most one game piece.
   MOBILITY_AND_SHOOT = 2,
   // Auto to pick up four game pieces.
-  FOUR_PIECE = 3,
+  FIVE_PIECE = 3,
   // Auto which picks up two game pieces from the center
   TWO_PIECE_STEAL = 4,
 }

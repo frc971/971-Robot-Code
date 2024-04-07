@@ -15,7 +15,8 @@
     "cols": 3,
     "data": [1, 0, 0, 0, 1, 0, 0, 0, 1]
   },
-  "is_simulated": true,
+  "is_simulated": false,
+  "require_imu_for_output": false,
   "down_estimator_config": {
     "gravity_threshold": 0.015,
     "do_accel_corrections": 1000

@@ -78,8 +78,8 @@ void AutonomousActor::Replan() {
           mobility_and_shoot_splines_.value()[0].starting_position();
       CHECK(starting_position_);
       break;
-    case AutonomousMode::FOUR_PIECE:
-      AOS_LOG(INFO, "FOUR_PIECE replanning!");
+    case AutonomousMode::FIVE_PIECE:
+      AOS_LOG(INFO, "FIVE_PIECE replanning!");
       four_piece_splines_ = {
           PlanSpline(
               std::bind(&AutonomousSplines::FourPieceSpline1, &auto_splines_,
@@ -123,7 +123,12 @@ void AutonomousActor::Replan() {
           PlanSpline(
               std::bind(&AutonomousSplines::TwoPieceStealSpline4,
                         &auto_splines_, std::placeholders::_1, alliance_),
-              SplineDirection::kForward)};
+              SplineDirection::kBackward)};
+
+      starting_position_ =
+          two_piece_steal_splines_.value()[0].starting_position();
+      CHECK(starting_position_);
+      break;
   }
 
   is_planned_ = true;
@@ -150,7 +155,7 @@ bool AutonomousActor::Run(
     case AutonomousMode::MOBILITY_AND_SHOOT:
       MobilityAndShoot();
       break;
-    case AutonomousMode::FOUR_PIECE:
+    case AutonomousMode::FIVE_PIECE:
       FourPieceAuto();
       break;
     case AutonomousMode::TWO_PIECE_STEAL:
@@ -287,7 +292,7 @@ void AutonomousActor::FourPieceAuto() {
       INFO, "Finished second spline %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  std::this_thread::sleep_for(chrono::milliseconds(250));
+  std::this_thread::sleep_for(chrono::milliseconds(200));
 
   Shoot();
 
@@ -335,7 +340,7 @@ void AutonomousActor::FourPieceAuto() {
       INFO, "Done with spline %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  std::this_thread::sleep_for(chrono::milliseconds(500));
+  std::this_thread::sleep_for(chrono::milliseconds(250));
 
   AOS_LOG(
       INFO, "Shooting last note! %lfs\n",
@@ -363,7 +368,6 @@ void AutonomousActor::TwoPieceStealAuto() {
   Aim();
   if (!WaitForPreloaded()) return;
 
-  std::this_thread::sleep_for(chrono::milliseconds(500));
   Shoot();
 
   AOS_LOG(
@@ -376,7 +380,6 @@ void AutonomousActor::TwoPieceStealAuto() {
       INFO, "Shot first note %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  Intake();
   StopFiring();
 
   AOS_LOG(
@@ -386,6 +389,9 @@ void AutonomousActor::TwoPieceStealAuto() {
   if (!splines[0].WaitForPlan()) return;
 
   splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(2.0)) return;
+  Intake();
 
   if (!splines[0].WaitForSplineDistanceRemaining(0.01)) return;
 
@@ -403,9 +409,10 @@ void AutonomousActor::TwoPieceStealAuto() {
       INFO, "Finished second spline %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  std::this_thread::sleep_for(chrono::milliseconds(250));
+  std::this_thread::sleep_for(chrono::milliseconds(200));
 
   Shoot();
+  StopIntake();
 
   if (!WaitForNoteFired(initial_shot_count + 1, std::chrono::seconds(2)))
     return;
@@ -423,6 +430,10 @@ void AutonomousActor::TwoPieceStealAuto() {
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
   splines[2].Start();
 
+  if (!splines[2].WaitForSplineDistanceRemaining(2.0)) return;
+
+  Intake();
+
   if (!splines[2].WaitForSplineDistanceRemaining(0.01)) return;
 
   if (!splines[3].WaitForPlan()) return;
@@ -435,6 +446,8 @@ void AutonomousActor::TwoPieceStealAuto() {
   if (!splines[3].WaitForSplineDistanceRemaining(0.01)) return;
 
   Shoot();
+
+  std::this_thread::sleep_for(chrono::milliseconds(400));
 
   if (!WaitForNoteFired(initial_shot_count + 2, std::chrono::seconds(2)))
     return;
@@ -466,6 +479,12 @@ void AutonomousActor::SendSuperstructureGoal() {
   shooter_goal->set_preloaded(preloaded_);
 
   goal_builder.CheckOk(goal_builder.Send());
+}
+
+void AutonomousActor::StopIntake() {
+  set_intake_goal(control_loops::superstructure::IntakeGoal::NONE);
+  set_note_goal(control_loops::superstructure::NoteGoal::CATAPULT);
+  SendSuperstructureGoal();
 }
 
 void AutonomousActor::Intake() {
