@@ -40,11 +40,11 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.171384385546753
+              "measured_absolute_position" : 0.156725048053565
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.16416323147786 + 0.0111742298989474 + 0.0288009597941421 + 0.030747789533187 }}
+      "potentiometer_offset": {{ -0.16416323147786 + 0.0111742298989474 + 0.0288009597941421 + 0.030747789533187 - 0.014014144034337 }}
     },
     "turret_constants": {
       {% set _ = turret_zero.update(
