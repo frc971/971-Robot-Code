@@ -32,7 +32,7 @@ DEFINE_int32(colorformat, NVBUF_COLOR_FORMAT_NV16,
 DEFINE_int32(camera, 0, "Camera number");
 DEFINE_int32(mode, 0, "Mode number to use.");
 DEFINE_int32(exposure, 100, "Exposure number to use.");
-DEFINE_int32(gain, 10, "gain number to use.");
+DEFINE_int32(gain, 5, "gain number to use.");
 DEFINE_int32(width, 1456, "Image width");
 DEFINE_int32(height, 1088, "Image height");
 DEFINE_double(rgain, 1.0, "R gain");
