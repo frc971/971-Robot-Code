@@ -74,20 +74,21 @@ type Stats2024 struct {
 	// `TeamMatch` table.
 	PreScouting bool `gorm:"primaryKey"`
 
-	TeamNumber                                   string `gorm:"primaryKey"`
-	MatchNumber                                  int32  `gorm:"primaryKey"`
-	SetNumber                                    int32  `gorm:"primaryKey"`
-	CompLevel                                    string `gorm:"primaryKey"`
-	StartingQuadrant                             int32
-	SpeakerAuto, AmpAuto                         int32
-	NotesDroppedAuto                             int32
-	MobilityAuto                                 bool
-	Speaker, Amp, SpeakerAmplified, AmpAmplified int32
-	NotesDropped                                 int32
-	Penalties                                    int32
-	AvgCycle                                     int64
-	RobotDied                                    bool
-	Park, OnStage, Harmony, TrapNote, Spotlight  bool
+	TeamNumber                                  string `gorm:"primaryKey"`
+	MatchNumber                                 int32  `gorm:"primaryKey"`
+	SetNumber                                   int32  `gorm:"primaryKey"`
+	CompLevel                                   string `gorm:"primaryKey"`
+	StartingQuadrant                            int32
+	SpeakerAuto, AmpAuto                        int32
+	NotesDroppedAuto                            int32
+	MobilityAuto                                bool
+	Speaker, Amp, SpeakerAmplified              int32
+	NotesDropped                                int32
+	Shuttled, OutOfField                        int32
+	Penalties                                   int32
+	AvgCycle                                    int64
+	RobotDied                                   bool
+	Park, OnStage, Harmony, TrapNote, Spotlight bool
 
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.

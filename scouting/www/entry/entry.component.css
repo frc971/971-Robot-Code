@@ -68,3 +68,18 @@ input label {
 .qrcode {
   padding: 0px;
 }
+
+.half-button {
+  width: 46%;
+  height: 10vh;
+  margin: 0px 10px 10px 0px;
+}
+
+.half-button-container {
+  display: flex-wrap;
+  padding: 0;
+  justify-content: center;
+  text-align: center;
+  align-content: center;
+  margin: 0;
+}

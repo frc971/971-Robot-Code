@@ -64,7 +64,7 @@ function prepareDataScouting(options) {
   // Pick and Place Cube in Teleop.
   clickButton('Start Teleop');
   clickButton('NOTE');
-  clickButton('AMP AMPLIFIED');
+  clickButton('SPEAKER AMPLIFIED');
 
   // Generate some extra actions so that we are guaranteed to have at least 2
   // QR codes.

@@ -91,7 +91,7 @@ function submitDataScouting(
   // Pick and Place Cube in Teleop.
   clickButton('Start Teleop');
   clickButton('NOTE');
-  clickButton('AMP AMPLIFIED');
+  clickButton('SPEAKER AMPLIFIED');
 
   // Robot dead and revive.
   clickButton('DEAD');

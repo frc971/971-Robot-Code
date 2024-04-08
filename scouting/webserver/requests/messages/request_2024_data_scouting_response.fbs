@@ -15,8 +15,10 @@ table Stats2024 {
   speaker:int (id:7);
   amp:int (id:8);
   speaker_amplified:int (id:9);
-  amp_amplified:int (id:10);
+  amp_amplified:int (id:10, deprecated);
   notes_dropped:int (id:11);
+  shuttled:int (id:24);
+  out_of_field:int (id:25);
 
   penalties:int (id:12);
   trap_note:bool (id:13);
