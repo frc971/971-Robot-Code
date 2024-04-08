@@ -93,9 +93,11 @@ Shooter::Iterate(
   // Always retain the game piece if we are enabled.
   if (retention_roller_output != nullptr) {
     *retention_roller_output =
-        robot_constants_->common()->retention_roller_voltages()->retaining();
+        robot_constants_->common()->retention_roller_voltages()->intaking();
 
     if (piece_loaded) {
+      *retention_roller_output =
+          robot_constants_->common()->retention_roller_voltages()->retaining();
       *retention_roller_stator_current_limit =
           robot_constants_->common()
               ->current_limits()
@@ -283,9 +285,11 @@ Shooter::Iterate(
       case CatapultState::READY:
         [[fallthrough]];
       case CatapultState::LOADED: {
+        aimer_.latch_note_current(false);
         if (piece_loaded) {
           state_ = CatapultState::LOADED;
         } else {
+          aimer_.IndicateReady();
           state_ = CatapultState::READY;
         }
 
@@ -311,6 +315,7 @@ Shooter::Iterate(
         [[fallthrough]];
       }
       case CatapultState::FIRING:
+        aimer_.latch_note_current(true);
         *retention_roller_output =
             robot_constants_->common()->retention_roller_voltages()->spitting();
         *retention_roller_stator_current_limit =
@@ -336,6 +341,7 @@ Shooter::Iterate(
         }
         [[fallthrough]];
       case CatapultState::RETRACTING:
+        aimer_.latch_note_current(false);
         catapult_.set_controller_index(0);
         catapult_.mutable_profile()->set_maximum_acceleration(
             kLoadingAcceleration);

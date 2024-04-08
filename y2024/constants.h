@@ -161,6 +161,23 @@ struct Values {
   // 20 -> 28 reduction to a 0.5" radius roller
   static constexpr double kExtendRollerOutputRatio = (20.0 / 28.0) * 0.0127;
 
+  struct NoteParams {
+    // Measured in radians
+    double turret_offset = 0.0;
+
+    static NoteParams BlendY(double coefficient, NoteParams a1, NoteParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return NoteParams{.turret_offset = Blend(coefficient, a1.turret_offset,
+                                               a2.turret_offset)};
+    }
+
+    static NoteParams FromFlatbuffer(const y2024::NoteParams *note_params) {
+      return NoteParams{
+          .turret_offset = note_params->turret_offset(),
+      };
+    }
+  };
+
   struct ShotParams {
     // Measured in radians
     double shot_altitude_angle = 0.0;
@@ -196,6 +213,21 @@ struct Values {
           .shot_speed_over_ground = shot_params->shot_speed_over_ground()};
     }
   };
+
+  static frc971::shooter_interpolation::InterpolationTable<NoteParams>
+  NoteInterpolationTableFromFlatbuffer(
+      const flatbuffers::Vector<
+          flatbuffers::Offset<y2024::NoteInterpolationTablePoint>> *table) {
+    std::vector<std::pair<double, NoteParams>> interpolation_table;
+
+    for (const NoteInterpolationTablePoint *point : *table) {
+      interpolation_table.emplace_back(
+          point->amperage(), NoteParams::FromFlatbuffer(point->note_params()));
+    }
+
+    return frc971::shooter_interpolation::InterpolationTable<NoteParams>(
+        interpolation_table);
+  }
 
   static frc971::shooter_interpolation::InterpolationTable<ShotParams>
   InterpolationTableFromFlatbuffer(

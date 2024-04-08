@@ -101,6 +101,20 @@
       }
     }
   ],
+  "note_interpolation_table": [
+    {
+        "amperage": 6.0,
+        "note_params": {
+            "turret_offset": 0.09
+        }
+    },
+    {
+        "amperage": 10.0,
+        "note_params": {
+            "turret_offset": 0.09
+        }
+    }
+  ],
   "intake_roller_voltages": {
     "spitting": -6.0,
     "intaking": 9.0
@@ -299,7 +313,8 @@
   "min_altitude_shooting_angle": 0.4,
   "max_altitude_shooting_angle": 1.15,
   "retention_roller_voltages": {
-    "retaining": 1.5,
+    "intaking": 1.5,
+    "retaining": 0.6,
     "spitting": 6.0
   },
   // TODO(Filip): Update the speaker and amp shooter setpoints

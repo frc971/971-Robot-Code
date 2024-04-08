@@ -52,6 +52,10 @@ table AimerStatus {
   // The current "shot distance." When shooting on the fly, this may be
   // different from the static distance to the target.
   shot_distance:double (id: 3);
+  // Estimate of the retention roller current.
+  note_current:double (id: 4);
+  // Turret offset applied due to retention roller current.
+  current_turret_offset:double (id: 5);
 }
 
 // Enum representing where the superstructure
@@ -140,7 +144,7 @@ table Status {
   transfer_roller:TransferRollerStatus (id: 5);
 
   // Estimated angle and angular velocitiy of the climber.
-  // Deprecated now because climber no longer has an encoder 
+  // Deprecated now because climber no longer has an encoder
   // and climber status is not used
   climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6, deprecated);
 
