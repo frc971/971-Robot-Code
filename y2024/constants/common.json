@@ -10,35 +10,35 @@
       "distance_from_goal": 4.0,
       "shot_params": {
           "shot_altitude_angle": 1.15,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 6.5,
       "shot_params": {
           "shot_altitude_angle": 1.15,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 8.5,
       "shot_params": {
           "shot_altitude_angle": 0.85,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 10.0,
       "shot_params": {
           "shot_altitude_angle": 0.8,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 15.0,
       "shot_params": {
           "shot_altitude_angle": 0.75,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     }
   ],
