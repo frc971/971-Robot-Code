@@ -152,7 +152,7 @@ Shooter::Iterate(
   frc971::shooter_interpolation::InterpolationTable<
       y2024::constants::Values::ShotParams> *interpolation_table =
       (shooter_goal != nullptr &&
-       shooter_goal->auto_aim() == AutoAimMode::SHUTTLE)
+       shooter_goal->auto_aim() != AutoAimMode::SPEAKER)
           ? &interpolation_table_shuttle_
           : &interpolation_table_;
   if ((piece_loaded || state_ == CatapultState::FIRING) &&

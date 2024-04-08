@@ -52,8 +52,6 @@ void Aimer::Update(
   if (status == nullptr) {
     return;
   }
-  const frc971::control_loops::Pose robot_pose({status->x(), status->y(), 0},
-                                               status->theta());
   aos::Alliance alliance = aos::Alliance::kRed;
   if (!joystick_state_fetcher_.Fetch() && !received_joystick_state_) {
     received_joystick_state_ = false;
@@ -63,6 +61,15 @@ void Aimer::Update(
     CHECK_NOTNULL(joystick_state_fetcher_.get());
     alliance = joystick_state_fetcher_->alliance();
   }
+
+  const bool ignore_localizer_pos =
+      auto_aim_mode == AutoAimMode::TURRET_SHUTTLE;
+  const Eigen::Vector3d ignore_localizer_position{
+      0.0 * (alliance == aos::Alliance::kRed ? 1.0 : -1.0), -1.0, 0.0};
+  const frc971::control_loops::Pose robot_pose(
+      ignore_localizer_pos ? ignore_localizer_position
+                           : Eigen::Vector3d{status->x(), status->y(), 0},
+      status->theta());
 
   frc971::shooter_interpolation::InterpolationTable<
       y2024::constants::Values::ShotParams> *current_interpolation_table =

@@ -67,7 +67,8 @@ class Aimer {
                             y2024::constants::Values::ShotParams> *>
       interpolation_tables_ = {
           {AutoAimMode::SPEAKER, &interpolation_table_},
-          {AutoAimMode::SHUTTLE, &interpolation_table_shuttle_}};
+          {AutoAimMode::SHUTTLE, &interpolation_table_shuttle_},
+          {AutoAimMode::TURRET_SHUTTLE, &interpolation_table_shuttle_}};
 
   std::map<AutoAimMode, frc971::control_loops::Pose> red_alliance_goals_ = {
       {AutoAimMode::SPEAKER,
@@ -82,6 +83,18 @@ class Aimer {
                ->theta())},
       {
           AutoAimMode::SHUTTLE,
+          frc971::control_loops::Pose(
+              frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
+                                              ->shooter_shuttle_targets()
+                                              ->red_alliance()
+                                              ->pos()),
+              robot_constants_->common()
+                  ->shooter_shuttle_targets()
+                  ->red_alliance()
+                  ->theta()),
+      },
+      {
+          AutoAimMode::TURRET_SHUTTLE,
           frc971::control_loops::Pose(
               frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
                                               ->shooter_shuttle_targets()
@@ -106,6 +119,18 @@ class Aimer {
                ->theta())},
       {
           AutoAimMode::SHUTTLE,
+          frc971::control_loops::Pose(
+              frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
+                                              ->shooter_shuttle_targets()
+                                              ->blue_alliance()
+                                              ->pos()),
+              robot_constants_->common()
+                  ->shooter_shuttle_targets()
+                  ->blue_alliance()
+                  ->theta()),
+      },
+      {
+          AutoAimMode::TURRET_SHUTTLE,
           frc971::control_loops::Pose(
               frc971::ToEigenOrDie<3, 1>(*robot_constants_->common()
                                               ->shooter_shuttle_targets()

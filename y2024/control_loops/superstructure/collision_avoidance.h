@@ -47,7 +47,7 @@ class CollisionAvoidance {
   // Tolerances for the subsystems
   static constexpr double kEpsTurret = 0.05;
   static constexpr double kEpsIntake = 0.05;
-  static constexpr double kEpsExtend = 0.01;
+  static constexpr double kEpsExtend = 0.005;
 
   CollisionAvoidance();
 

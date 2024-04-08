@@ -63,6 +63,7 @@ const ButtonLocation kShoot(0, 0);
 const ButtonLocation kRaiseClimber(3, 2);
 const ButtonLocation kRaiseFastClimber(3, 1);
 const ButtonLocation kAimShuttle(2, 10);
+const ButtonLocation kTurretShuttle(1, 10);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
 const ButtonLocation kExtraButtonFour(0, 0);
@@ -145,6 +146,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     } else if (data.IsPressed(kAimShuttle)) {
       shooter_goal->set_auto_aim(
           control_loops::superstructure::AutoAimMode::SHUTTLE);
+    } else if (data.IsPressed(kTurretShuttle)) {
+      shooter_goal->set_auto_aim(
+          control_loops::superstructure::AutoAimMode::TURRET_SHUTTLE);
     }
 
     // Updating aiming for shooter goal, only one type of aim should be possible
