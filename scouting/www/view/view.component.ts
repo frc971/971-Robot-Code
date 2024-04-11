@@ -80,9 +80,7 @@ export class ViewComponent {
     if (!this.ascendingSort) {
       this.driverRankingList.sort((a, b) => b.matchNumber() - a.matchNumber());
       this.noteList.sort(function (a, b) {
-        return b[0]
-          .team()
-          .localeCompare(a[0].team(), undefined, {numeric: true});
+        return b.team().localeCompare(a.team(), undefined, {numeric: true});
       });
       this.pitImageList.sort(function (a, b) {
         return b[0]
@@ -93,9 +91,7 @@ export class ViewComponent {
     } else {
       this.driverRankingList.sort((a, b) => a.matchNumber() - b.matchNumber());
       this.noteList.sort(function (a, b) {
-        return b[0]
-          .team()
-          .localeCompare(a[0].team(), undefined, {numeric: true});
+        return a.team().localeCompare(b.team(), undefined, {numeric: true});
       });
       this.pitImageList.sort(function (a, b) {
         return a[0]
@@ -310,6 +306,9 @@ export class ViewComponent {
     }
     if (entry.badDriving()) {
       parsedKeywords += 'Bad Driving ';
+    }
+    if (entry.noShow()) {
+      parsedKeywords += 'No Show ';
     }
     if (entry.solidPlacing()) {
       parsedKeywords += 'Solid Placing ';

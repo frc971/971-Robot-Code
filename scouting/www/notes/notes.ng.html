@@ -4,15 +4,41 @@
 
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
-    <label id="team_number_label" class="label" for="team_number_notes">
-      Team Number
-    </label>
-    <input
-      [(ngModel)]="teamNumberSelection"
-      type="text"
-      id="team_number_notes"
-    />
-    <button class="btn btn-primary" (click)="setTeamNumber()">Select</button>
+    <div class="row">
+      <label id="team_number_label" class="label" for="team_number_notes">
+        Team Number
+      </label>
+      <input [(ngModel)]="teamNumber" type="text" id="team_number_notes" />
+    </div>
+    <div class="row">
+      <label for="match_number_notes">Match Number</label>
+      <input
+        [(ngModel)]="matchNumber"
+        type="number"
+        id="match_number_notes"
+        min="1"
+        max="999"
+      />
+    </div>
+    <div class="row">
+      <label for="set_number_notes">Set Number</label>
+      <input
+        [(ngModel)]="setNumber"
+        type="number"
+        id="set_number_notes"
+        min="1"
+        max="10"
+      />
+    </div>
+    <div class="row">
+      <label for="comp_level_notes">Comp Level</label>
+      <select [(ngModel)]="compLevel" type="number" id="comp_level_notes">
+        <option *ngFor="let level of COMP_LEVELS" [ngValue]="level">
+          {{COMP_LEVEL_LABELS[level]}}
+        </option>
+      </select>
+    </div>
+    <button class="btn btn-primary" (click)="setTeamData()">Select</button>
   </div>
 
   <div *ngSwitchCase="'Data'">
@@ -74,7 +100,7 @@
         <!--Row 2 (Prevent Overflow on mobile by splitting checkboxes into 2 rows)-->
         <div class="d-flex flex-row justify-content-around">
           <div
-            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:3:(Object.keys(KEYWORD_CHECKBOX_LABELS).length); let k = index"
+            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:4:(Object.keys(KEYWORD_CHECKBOX_LABELS).length); let k = index"
           >
             <div class="form-check">
               <input

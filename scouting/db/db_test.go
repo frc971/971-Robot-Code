@@ -1419,11 +1419,11 @@ func TestNotes(t *testing.T) {
 
 	expected := []string{"Note 1", "Note 3"}
 
-	err := fixture.db.AddNotes(NotesData{TeamNumber: "1234", Notes: "Note 1", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: true, EasilyDefended: true})
+	err := fixture.db.AddNotes(NotesData{TeamNumber: "1234", MatchNumber: 5, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: true, EasilyDefended: true, NoShow: false})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: "1235", Notes: "Note 2", GoodDriving: false, BadDriving: true, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: false, EasilyDefended: false})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: "1235", MatchNumber: 54, SetNumber: 1, CompLevel: "quals", Notes: "Note 2", GoodDriving: false, BadDriving: true, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: false, EasilyDefended: false, NoShow: false})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: "1234", Notes: "Note 3", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: true, BadDefense: false, EasilyDefended: true})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: "1234", MatchNumber: 23, SetNumber: 3, CompLevel: "quals", Notes: "Note 3", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: true, BadDefense: false, EasilyDefended: true, NoShow: true})
 	check(t, err, "Failed to add Note")
 
 	actual, err := fixture.db.QueryNotes("1234")
