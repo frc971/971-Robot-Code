@@ -78,11 +78,13 @@ struct ProcStat {
   int64_t exit_code;
 };
 
-// Retrieves the stats for a particular process (note that there also exists a
-// /proc/[pid]/task/[tid]/stat with the same format for per-thread information;
-// we currently do not read that).
-// Returns nullopt if unable to read/parse the file.
-std::optional<ProcStat> ReadProcStat(int pid);
+// Retrieves the statistics for a particular process or thread. If only a pid is
+// provided, it reads the process's stat file at /proc/[pid]/stat. If both pid
+// and tid are provided, it reads the thread's stat file at
+// /proc/[pid]/task/[tid]/stat. Returns nullopt if unable to read or parse the
+// file.
+std::optional<ProcStat> ReadProcStat(pid_t pid,
+                                     std::optional<pid_t> tid = std::nullopt);
 
 // This class provides a basic utility for retrieving general performance
 // information on running processes (named after the top utility). It can either
@@ -95,12 +97,29 @@ std::optional<ProcStat> ReadProcStat(int pid);
 // extremely short-lived loads, this may do a poor job of capturing information.
 class Top {
  public:
+  // Set the ring buffer size to 2 so we can keep track of a current reading and
+  // previous reading.
+  static constexpr int kRingBufferSize = 2;
+
   // A snapshot of the resource usage of a process.
   struct Reading {
     aos::monotonic_clock::time_point reading_time;
     std::chrono::nanoseconds total_run_time;
     // Memory usage in bytes.
     uint64_t memory_usage;
+  };
+
+  struct ThreadReading {
+    aos::monotonic_clock::time_point reading_time;
+    std::chrono::nanoseconds total_run_time;
+  };
+
+  struct ThreadReadings {
+    aos::RingBuffer<ThreadReading, kRingBufferSize> readings;
+    double cpu_percent;
+    std::string name;  // Name of the thread
+    aos::monotonic_clock::time_point start_time;
+    ThreadState state;
   };
 
   // All the information we have about a process.
@@ -112,10 +131,28 @@ class Top {
     // True if this is a kernel thread, false if this is a userspace thread.
     bool kthread;
     // Last 2 readings
-    aos::RingBuffer<Reading, 2> readings;
+    aos::RingBuffer<Reading, kRingBufferSize> readings;
+    std::map<pid_t, ThreadReadings> thread_readings;
   };
 
-  Top(aos::EventLoop *event_loop, bool track_threads = false);
+  // An enum for track_threads with enabled and disabled
+  enum class TrackThreadsMode {
+    kDisabled,
+    kEnabled  // Track the thread ids for each process.
+  };
+
+  // An enum for track_per_thread_info with enabled and disabled
+  enum class TrackPerThreadInfoMode {
+    kDisabled,
+    kEnabled  // Track statistics for each thread.
+  };
+
+  // Constructs a new Top object.
+  //   event_loop: The event loop object to be used.
+  //   track_threads: Set to true to track the thread IDs for each process.
+  //   track_per_thread_info: Set to true to track statistics for each thread.
+  Top(aos::EventLoop *event_loop, TrackThreadsMode track_threads,
+      TrackPerThreadInfoMode track_per_thread_info_mode);
 
   // Set whether to track all the top processes (this will result in us having
   // to track every single process on the system, so that we can sort them).
@@ -150,6 +187,7 @@ class Top {
   aos::monotonic_clock::time_point ProcessStartTime(const ProcStat &proc_stat);
   uint64_t RealMemoryUsage(const ProcStat &proc_stat);
   void UpdateReadings();
+  void UpdateThreadReadings(pid_t pid, ProcessReadings &process);
   // Adds thread ids for the given pid to the pids set,
   // if we are tracking threads.
   void MaybeAddThreadIds(pid_t pid, std::set<pid_t> *pids);
@@ -164,7 +202,10 @@ class Top {
 
   std::set<pid_t> pids_to_track_;
   bool track_all_ = false;
-  bool track_threads_;
+  TrackThreadsMode track_threads_;
+
+  // Whether to include per-thread information in the top processes.
+  TrackPerThreadInfoMode track_per_thread_info_;
 
   std::map<pid_t, ProcessReadings> readings_;
 

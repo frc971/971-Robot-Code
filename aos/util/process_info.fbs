@@ -1,5 +1,39 @@
 namespace aos.util;
 
+// Defines the various states a thread can be in within a Linux environment, as commonly displayed in system monitoring tools and the Linux /proc directory.
+enum ThreadState : byte {
+  // 'R' - Running: The thread is currently running or ready to run.
+  RUNNING = 0,
+  // 'S' - Sleeping interruptible: The thread is sleeping until some event happens.
+  SLEEPING_INTERRUPTIBLE = 1,
+  // 'D' Sleeping uninterruptible: The thread is sleeping and cannot interrupted (typically waiting for I/O).
+  SLEEPING_UNINTERRUPTIBLE = 2,
+  // 'T' - Stopped: The thread is stopped (suspended) by a signal or because it is being debugged.
+  STOPPED = 3,
+  // 'Z' - Zombie: The thread has completed execution but still has an entry in the process table to report its exit status to its parent.
+  ZOMBIE = 4,
+  // 'I' - Idle: The thread is an idle kernel thread not associated with any process (typically used by the kernel to perform functions such as handling deferred work).
+  IDLE = 5
+}
+
+
+table ThreadInfo {
+  // Thread ID of the thread in question.
+  tid: uint (id: 0);
+  // Name of the thread.
+  name: string (id: 1);
+  // CPU usage of the thread as a ratio of a single CPU core, calculated
+  // from the /proc/[pid]/task/[tid]/stat file. It involves parsing CPU time fields (utime and stime)
+  // and computing the usage relative to the elapsed time since the last check. This value is
+  // expressed as a ratio in the range [0, 1], where 1.0 usage means full utilization of one core.
+  cpu_usage: float (id: 2);
+  // In units of nanoseconds, reference clock monotonic. The time at which the thread
+  // started executing.
+  start_time: int64 (id: 3);
+  // State of the thread.
+  state: ThreadState (id: 4);
+}
+
 // ProcessInfo captures state information associated with a given process.
 table ProcessInfo {
   // Process ID of the process in question.
@@ -14,6 +48,8 @@ table ProcessInfo {
   // Amount of physical RAM taken by this process, in bytes. Will be a multiple of the
   // system's page size.
   physical_memory: uint64 (id: 3);
+  // List of threads, each with its own CPU usage, name, and ID.
+  threads: [ThreadInfo] (id: 4);
 }
 
 table TopProcessesFbs {

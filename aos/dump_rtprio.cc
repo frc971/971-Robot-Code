@@ -258,7 +258,8 @@ int main(int argc, char **argv) {
   aos::ShmEventLoop event_loop(&config.message());
   event_loop.SkipTimingReport();
   event_loop.SkipAosLog();
-  aos::util::Top top(&event_loop, true);
+  aos::util::Top top(&event_loop, aos::util::Top::TrackThreadsMode::kEnabled,
+                     aos::util::Top::TrackPerThreadInfoMode::kDisabled);
   top.set_track_top_processes(true);
 
   const cpu_set_t all_cpus = FindAllCpus();

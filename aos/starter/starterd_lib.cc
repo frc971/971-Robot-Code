@@ -55,7 +55,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       shm_base_(FLAGS_shm_base),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }),
-      top_(&event_loop_) {
+      top_(&event_loop_, aos::util::Top::TrackThreadsMode::kDisabled,
+           aos::util::Top::TrackPerThreadInfoMode::kEnabled) {
   event_loop_.SkipAosLog();
 
   cleanup_timer_->set_name("cleanup");

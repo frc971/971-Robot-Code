@@ -148,7 +148,8 @@ class IrqAffinity {
       EventLoop *event_loop,
       const aos::FlatbufferDetachedBuffer<aos::starter::IrqAffinityConfig>
           &irq_affinity_config)
-      : top_(event_loop) {
+      : top_(event_loop, aos::util::Top::TrackThreadsMode::kDisabled,
+             aos::util::Top::TrackPerThreadInfoMode::kDisabled) {
     if (irq_affinity_config.message().has_kthreads()) {
       PopulateThreads(irq_affinity_config.message().kthreads(), &kthreads_);
     }

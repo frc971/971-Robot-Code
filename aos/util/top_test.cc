@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
+#include <gmock/gmock.h>
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
@@ -15,11 +16,18 @@
 
 namespace aos::util::testing {
 
+void SetThreadName(const std::string &name) {
+  pthread_setname_np(pthread_self(), name.c_str());
+}
+
+constexpr std::string_view kTestCPUConsumer = "TestCPUConsumer";
+
 class TopTest : public ::testing::Test {
  protected:
   TopTest()
       : shm_dir_(aos::testing::TestTmpDir() + "/aos"),
         cpu_consumer_([this]() {
+          SetThreadName(std::string(kTestCPUConsumer));
           while (!stop_flag_.load()) {
           }
         }),
@@ -60,7 +68,8 @@ TEST_F(TopTest, TestSelfStat) {
 
 TEST_F(TopTest, QuerySingleProcess) {
   const pid_t pid = getpid();
-  Top top(&event_loop_);
+  Top top(&event_loop_, Top::TrackThreadsMode::kDisabled,
+          Top::TrackPerThreadInfoMode::kDisabled);
   top.set_track_pids({pid});
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
       ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
@@ -80,6 +89,49 @@ TEST_F(TopTest, QuerySingleProcess) {
   // Sanity check memory usage.
   ASSERT_LT(1000000, info.message().physical_memory());
   ASSERT_GT(1000000000, info.message().physical_memory());
+
+  // Verify no per-thread information is included by default.
+  ASSERT_FALSE(info.message().has_threads());
+}
+
+TEST_F(TopTest, QuerySingleProcessWithThreads) {
+  const pid_t pid = getpid();
+  Top top(&event_loop_, Top::TrackThreadsMode::kDisabled,
+          Top::TrackPerThreadInfoMode::kEnabled);
+  top.set_track_pids({pid});
+  event_loop_.AddTimer([this]() { event_loop_.Exit(); })
+      ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
+  event_loop_.Run();
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(true);
+  fbb.Finish(top.InfoForProcess(&fbb, pid));
+  aos::FlatbufferDetachedBuffer<ProcessInfo> info = fbb.Release();
+  ASSERT_EQ(pid, info.message().pid());
+  ASSERT_TRUE(info.message().has_name());
+  ASSERT_EQ("top_test", info.message().name()->string_view());
+  // Check that we did indeed consume ~1 CPU core (because we're multi-threaded,
+  // we could've consumed a bit more; and on systems where we are competing with
+  // other processes for CPU time, we may not get a full 100% load).
+  ASSERT_LT(0.5, info.message().cpu_usage());
+  ASSERT_GT(1.1, info.message().cpu_usage());
+  // Sanity check memory usage.
+  ASSERT_LT(1000000, info.message().physical_memory());
+  ASSERT_GT(1000000000, info.message().physical_memory());
+
+  // Validate that we have some per-thread information.
+  ASSERT_TRUE(info.message().has_threads());
+  ASSERT_GT(info.message().threads()->size(), 0);
+  std::set<std::string_view> thread_names;
+  double thread_cpu_usage = 0.0;
+  for (const ThreadInfo *thread_info : *info.message().threads()) {
+    thread_names.insert(thread_info->name()->str());
+    thread_cpu_usage += thread_info->cpu_usage();
+    ASSERT_TRUE(thread_info->has_state());
+  }
+  // Validate that at least one thread was named correctly.
+  ASSERT_THAT(thread_names, ::testing::Contains(kTestCPUConsumer));
+  // Validate that we consumed at some cpu one a thread.
+  ASSERT_GT(thread_cpu_usage, 0);
 }
 
 TEST_F(TopTest, TopProcesses) {
@@ -108,7 +160,8 @@ TEST_F(TopTest, TopProcesses) {
     }
   }
 
-  Top top(&event_loop_);
+  Top top(&event_loop_, Top::TrackThreadsMode::kDisabled,
+          Top::TrackPerThreadInfoMode::kDisabled);
   top.set_track_top_processes(true);
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
       ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
@@ -152,7 +205,8 @@ TEST_F(TopTest, TopProcesses) {
 TEST_F(TopTest, AllTopProcesses) {
   constexpr int kNProcesses = 1000000;
 
-  Top top(&event_loop_);
+  Top top(&event_loop_, Top::TrackThreadsMode::kDisabled,
+          Top::TrackPerThreadInfoMode::kDisabled);
   top.set_track_top_processes(true);
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
       ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
