@@ -14,5 +14,15 @@ ExecStart=bash -c 'echo 1 > /dev/nvgpu/igpu0/power'
 # Set all the clocks to max frequency
 ExecStart=/usr/bin/jetson_clocks
 
+# Pin the camera clocks to max too to make things simpler.
+ExecStart=bash -c 'echo 1 > /sys/kernel/debug/bpmp/debug/clk/vi/mrq_rate_locked'
+ExecStart=bash -c 'echo 1 > /sys/kernel/debug/bpmp/debug/clk/isp/mrq_rate_locked'
+ExecStart=bash -c 'echo 1 > /sys/kernel/debug/bpmp/debug/clk/nvcsi/mrq_rate_locked'
+ExecStart=bash -c 'echo 1 > /sys/kernel/debug/bpmp/debug/clk/emc/mrq_rate_locked'
+ExecStart=bash -c 'cat /sys/kernel/debug/bpmp/debug/clk/vi/max_rate | tee /sys/kernel/debug/bpmp/debug/clk/vi/rate'
+ExecStart=bash -c 'cat /sys/kernel/debug/bpmp/debug/clk/isp/max_rate | tee /sys/kernel/debug/bpmp/debug/clk/isp/rate'
+ExecStart=bash -c 'cat /sys/kernel/debug/bpmp/debug/clk/nvcsi/max_rate | tee /sys/kernel/debug/bpmp/debug/clk/nvcsi/rate'
+ExecStart=bash -c 'cat /sys/kernel/debug/bpmp/debug/clk/emc/max_rate | tee /sys/kernel/debug/bpmp/debug/clk/emc/rate'
+
 TimeoutSec=0
 RemainAfterExit=yes
