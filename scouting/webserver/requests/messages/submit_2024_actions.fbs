@@ -6,10 +6,11 @@ table StartMatchAction {
 
 enum ScoreType: short {
     kAMP,
-    kAMP_AMPLIFIED,
     kSPEAKER,
     kSPEAKER_AMPLIFIED,
     kDROPPED,
+    kOUT_OF_FIELD,
+    kSHUTTLED,
 }
 
 table MobilityAction {

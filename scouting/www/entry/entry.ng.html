@@ -161,14 +161,14 @@
       </div>
       <button
         *ngIf="autoPhase"
-        class="btn btn-dark"
+        class="btn btn-primary"
         (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
       >
         Start Teleop
       </button>
       <button
         *ngIf="!autoPhase"
-        class="btn btn-info"
+        class="btn btn-primary"
         (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
       >
         Endgame
@@ -194,49 +194,48 @@
       >
         DEAD
       </button>
-      <button
-        class="btn btn-info"
-        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kDROPPED});"
-      >
-        Dropped
-      </button>
-      <div *ngIf="!autoPhase" class="d-grid gap-1" style="padding: 0">
-        <div
-          style="
-            display: flex-wrap;
-            padding: 0;
-            justify-content: center;
-            text-align: center;
-            align-content: center;
-            margin: 0;
-          "
+      <div class="half-button-container">
+        <button
+          class="btn btn-info half-button"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kDROPPED});"
         >
+          Dropped
+        </button>
+        <button
+          class="btn btn-info half-button"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kOUT_OF_FIELD});"
+        >
+          Out Of Field
+        </button>
+      </div>
+      <div
+        *ngIf="!autoPhase"
+        class="d-grid gap-1"
+        style="padding: 0; margin: 0"
+      >
+        <div class="half-button-container">
           <button
-            class="btn btn-success"
+            class="btn btn-success half-button"
             (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP});"
-            style="width: 48%; height: 12vh; margin: 0px 10px 10px 0px"
           >
             AMP
           </button>
 
           <button
-            class="btn btn-warning"
-            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP_AMPLIFIED});"
-            style="width: 48%; height: 12vh; margin: 0px 0px 10px 0px"
+            class="btn btn-warning half-button"
+            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSHUTTLED});"
           >
-            AMP AMPLIFIED
+            SHUTTLED
           </button>
           <button
-            class="btn btn-success"
+            class="btn btn-success half-button"
             (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER});"
-            style="width: 48%; height: 12vh; margin: 0px 10px 0px 0px"
           >
             SPEAKER
           </button>
           <button
-            class="btn btn-warning"
+            class="btn btn-warning half-button"
             (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER_AMPLIFIED});"
-            style="width: 48%; height: 12vh; margin: 0px 0px 0px 0px"
           >
             SPEAKER AMPLIFIED
           </button>
@@ -283,7 +282,7 @@
         </button>
       </div>
       <button
-        class="btn btn-dark"
+        class="btn btn-primary"
         *ngIf="autoPhase"
         (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
       >
@@ -291,7 +290,7 @@
       </button>
       <button
         *ngIf="!autoPhase"
-        class="btn btn-info"
+        class="btn btn-primary"
         (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
       >
         Endgame
@@ -384,7 +383,7 @@
       </div>
       <button
         *ngIf="!autoPhase"
-        class="btn btn-info"
+        class="btn btn-primary"
         (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match
@@ -420,7 +419,7 @@
         Revive
       </button>
       <button
-        class="btn btn-info"
+        class="btn btn-primary"
         (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
       >
         End Match

@@ -455,7 +455,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 	stat := db.Stats2024{
 		PreScouting: submit2024Actions.PreScouting(), TeamNumber: string(submit2024Actions.TeamNumber()), MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
 		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-		Speaker: 0, Amp: 0, SpeakerAmplified: 0, AmpAmplified: 0, NotesDropped: 0, Penalties: 0,
+		Speaker: 0, Amp: 0, SpeakerAmplified: 0, NotesDropped: 0, Shuttled: 0, OutOfField: 0, Penalties: 0,
 		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "",
 	}
 	// Loop over all actions.
@@ -502,12 +502,11 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 			}
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
+			count_in_cycle := true
 			if score_type == submit_2024_actions.ScoreTypekAMP && auto {
 				stat.AmpAuto += 1
 			} else if score_type == submit_2024_actions.ScoreTypekAMP && !auto {
 				stat.Amp += 1
-			} else if score_type == submit_2024_actions.ScoreTypekAMP_AMPLIFIED && !auto {
-				stat.AmpAmplified += 1
 			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER && !auto {
 				stat.Speaker += 1
 			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER && auto {
@@ -516,20 +515,32 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 				stat.SpeakerAmplified += 1
 			} else if score_type == submit_2024_actions.ScoreTypekDROPPED && auto {
 				stat.NotesDroppedAuto += 1
+				count_in_cycle = false
 			} else if score_type == submit_2024_actions.ScoreTypekDROPPED && !auto {
 				stat.NotesDropped += 1
+				count_in_cycle = false
+			} else if score_type == submit_2024_actions.ScoreTypekSHUTTLED {
+				stat.Shuttled += 1
+				count_in_cycle = false
+			} else if score_type == submit_2024_actions.ScoreTypekOUT_OF_FIELD {
+				stat.OutOfField += 1
+				count_in_cycle = false
 			} else {
 				return db.Stats2024{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
 			picked_up = false
-			if lastPlacedTime != int64(0) {
-				// If this is not the first time we place,
-				// start counting cycle time. We define cycle
-				// time as the time between placements.
-				overall_time += int64(action.Timestamp()) - lastPlacedTime
+			if count_in_cycle {
+				// Assuming dropped, shuttled, and out of field
+				// notes are not counted in total cycle time.
+				if lastPlacedTime != int64(0) {
+					// If this is not the first time we place,
+					// start counting cycle time. We define cycle
+					// time as the time between placements.
+					overall_time += int64(action.Timestamp()) - lastPlacedTime
+				}
 				cycles += 1
+				lastPlacedTime = int64(action.Timestamp())
 			}
-			lastPlacedTime = int64(action.Timestamp())
 		} else if action_type == submit_2024_actions.ActionTypeEndMatchAction {
 			var endMatchAction submit_2024_actions.EndMatchAction
 			endMatchAction.Init(actionTable.Bytes, actionTable.Pos)
@@ -590,8 +601,9 @@ func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			Speaker:          stat.Speaker,
 			Amp:              stat.Amp,
 			SpeakerAmplified: stat.SpeakerAmplified,
-			AmpAmplified:     stat.AmpAmplified,
 			NotesDropped:     stat.NotesDropped,
+			Shuttled:         stat.Shuttled,
+			OutOfField:       stat.OutOfField,
 			Penalties:        stat.Penalties,
 			TrapNote:         stat.TrapNote,
 			Spotlight:        stat.Spotlight,
