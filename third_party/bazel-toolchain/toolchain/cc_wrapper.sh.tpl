@@ -32,6 +32,7 @@ set -eu
 
 # Call the C++ compiler.
 if [[ -f %{toolchain_path_prefix}bin/clang ]]; then
+  export LD_LIBRARY_PATH=external/llvm_toolchain/llvm/lib/
   exec %{toolchain_path_prefix}bin/clang "$@"
 elif [[ "${BASH_SOURCE[0]}" == "/"* ]]; then
   # Some consumers of `CcToolchainConfigInfo` (e.g. `cmake` from rules_foreign_cc)
@@ -41,6 +42,7 @@ elif [[ "${BASH_SOURCE[0]}" == "/"* ]]; then
   # This script is at _execroot_/external/_repo_name_/bin/clang_wrapper.sh
   execroot_path="${BASH_SOURCE[0]%/*/*/*/*}"
   clang="${execroot_path}/%{toolchain_path_prefix}bin/clang"
+  export LD_LIBRARY_PATH="${execroot_path}/external/llvm_toolchain/llvm/lib/"
   exec "${clang}" "${@}"
 else
   >&2 echo "ERROR: could not find clang; PWD=\"$(pwd)\"; PATH=\"${PATH}\"."

@@ -32,7 +32,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #    output from the previous step.
 # 4. Follow steps 2., 5., and 6. from "adding new packages".
 
-def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None, release = "bullseye"):
+def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None, release = "bookworm"):
     """Downloads a set of packages as well as their dependencies.
 
     You can also specify excludes in case some of the dependencies are meta

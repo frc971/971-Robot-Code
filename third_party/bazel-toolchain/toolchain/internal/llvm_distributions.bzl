@@ -309,6 +309,7 @@ _llvm_distributions = {
     "clang+llvm-17.0.2-sparc64-unknown-linux-gnu.tar.xz": "950d1ef440f17e29c4201450ad619d3b4a37a0bbf15f19ce03195e0b4da7d73f",
     "clang+llvm-17.0.2-sparcv9-sun-solaris2.11.tar.xz": "3702914668b5758817374271fa8a41fe67c77b2e86f17706c9d6906f250de6ae",
     "clang+llvm-17.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.xz": "df297df804766f8fb18f10a188af78e55d82bb8881751408c2fa694ca19163a8",
+    "clang+llvm-17.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.zst": "f2eec88faa0036ae2af03af26bd7cb5c6cb0223659b1d7d33739aa9008af5964",
 }
 
 # Note: Unlike the user-specified llvm_mirror attribute, the URL prefixes in
@@ -396,9 +397,14 @@ def download_llvm_preconfigured(rctx):
             urls.append(pattern.format(llvm_version = llvm_version, basename = basename))
     urls.append("{0}{1}".format(_llvm_distributions_base_url[llvm_version], url_suffix))
 
+    if basename.endswith(".tar.zst"):
+        stripPrefix = basename[:(len(basename) - len(".tar.zst"))]
+    else:
+        stripPrefix = basename[:(len(basename) - len(".tar.xz"))]
+
     rctx.download_and_extract(
         urls,
         sha256 = _llvm_distributions[basename],
-        stripPrefix = basename[:(len(basename) - len(".tar.xz"))],
+        stripPrefix = stripPrefix,
         auth = _get_auth(rctx, urls),
     )
