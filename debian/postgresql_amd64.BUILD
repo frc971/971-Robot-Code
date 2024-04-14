@@ -43,6 +43,7 @@ exec $(rlocation postgresql_amd64/usr/lib/postgresql/13/bin/%s) "$@"
         srcs = ["%s.sh" % binary],
         data = glob([
             "usr/lib/**/*",
+            "usr/share/postgresql/**/*",
             "lib/**/*",
         ]),
         visibility = ["//visibility:public"],

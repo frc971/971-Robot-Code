@@ -20,6 +20,6 @@ def ng_esbuild(name, **kwargs):
 
     esbuild(
         name = name,
-        config = "//tools/build_rules/js:ngc.esbuild.js",
+        config = "//tools/build_rules/js:ngc.esbuild.mjs",
         **kwargs
     )

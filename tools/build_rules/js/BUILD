@@ -1,5 +1,6 @@
 load("@npm//:@angular/compiler-cli/package_json.bzl", angular_compiler_cli = "bin")
 load(":ts.bzl", "ts_project")
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 
 exports_files([
     "cypress.config.js",
@@ -16,13 +17,19 @@ ts_project(
     name = "ngc.esbuild",
     srcs = ["ngc.esbuild.ts"],
     tsconfig = "//:tsconfig.node",
-    visibility = ["//visibility:public"],
     deps = [
         "//:node_modules/@angular/compiler-cli",
         "//:node_modules/@babel/core",
         #"//:node_modules/@types/babel__core",
         "//:node_modules/@types/node",
     ],
+)
+
+copy_file(
+    name = "ngc_esbuild_js_copy",
+    src = ":ngc.esbuild.js",
+    out = "ngc.esbuild.mjs",
+    visibility = ["//visibility:public"],
 )
 
 py_binary(

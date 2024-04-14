@@ -50,7 +50,9 @@ cypress_test(
     ],
     runner = "scouting_test_runner.js",
     tags = [
-        "no-remote-cache",
+        # This test fails for some reason when run on remote execution.  It
+        # would be great to figure out why and fix it.
+        "no-remote",
     ],
 )
 
