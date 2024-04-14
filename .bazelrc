@@ -97,10 +97,11 @@ build --spawn_strategy=sandboxed
 build --sandbox_default_allow_network=false
 build --incompatible_exclusive_test_sandboxed
 
-build --strategy=TsProject=sandboxed
-build --strategy=CopyFile=standalone
-build --strategy=CopyDirectory=standalone
-build --strategy=CopyToDirectory=standalone
+build --strategy=TsProject=remote,sandboxed
+build --strategy=CopyFile=remote,standalone
+build --strategy=CopyDirectory=remote,standalone
+build --strategy=CopyToDirectory=remote,standalone
+build --strategy=NpmLifecycleHook=remote,sandboxed,standalone
 
 # Honor the setting of `skipLibCheck` in the tsconfig.json file.
 # https://www.typescriptlang.org/tsconfig#skipLibCheck
@@ -124,6 +125,8 @@ build --java_runtime_version=openjdk_11 --tool_java_runtime_version=openjdk_11
 # Prevent falling back to the host JDK.
 startup --noautodetect_server_javabase
 
+common --experimental_repo_remote_exec
+
 # Give each build action and test its own /tmp.
 build --sandbox_tmpfs_path=/tmp
 
@@ -142,6 +145,17 @@ common --enable_bzlmod=false
 
 # Disable warnings about using directories in Bazel.
 startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
+
+build --incompatible_strict_action_env --experimental_inmemory_dotd_files --experimental_inmemory_jdeps_files --experimental_remote_merkle_tree_cache --incompatible_allow_tags_propagation
+
+# Builds on the buildbarn cluster running in the datacenter.  This will only
+# work inside the datacenter.
+build:remote --remote_executor=grpc://data-fast:8980
+build:remote --remote_timeout=1500
+build:remote --spawn_strategy=remote,linux-sandbox
+build:remote --grpc_keepalive_time=30s
+build:remote --remote_instance_name=fuse
+build:remote --verbose_failures
 
 # Load a local file that users can use to customize bazel invocations.  This
 # should stay the last line in this file so users can override things when they

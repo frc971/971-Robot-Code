@@ -10,6 +10,10 @@ platform(
         "//tools/platforms/nodejs:has_support",
         "//tools/platforms/gpu:nvidia",
     ],
+    exec_properties = {
+        "container-image": "docker://docker.io/debian:bookworm",
+        "OSFamily": "linux",
+    },
 )
 
 platform(
