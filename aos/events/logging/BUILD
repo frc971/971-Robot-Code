@@ -233,6 +233,12 @@ sh_test(
     data = [
         ":logfile_utils_out_of_space_test_runner",
     ],
+    tags = [
+        # This uses unclone to make a new mount namespace.  Turns out, this is
+        # quite hard to figure out how to put in a remote cluster.  So just
+        # give up and run it locally under linux-sandbox where it is easy.
+        "no-remote-exec",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@bazel_tools//tools/bash/runfiles",
