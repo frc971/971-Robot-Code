@@ -17,6 +17,8 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/vision_util_lib.h"
 
+ABSL_DECLARE_FLAG(bool, draw_axes);
+
 namespace frc971::vision {
 
 class IntrinsicsCalibration {
@@ -38,12 +40,18 @@ class IntrinsicsCalibration {
 
   void MaybeCalibrate();
 
+  // Expose CharucoExtractor for testing purposes
+  CharucoExtractor &GetCharucoExtractor() { return charuco_extractor_; };
+
   static aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
   BuildCalibration(cv::Mat camera_matrix, cv::Mat dist_coeffs,
                    aos::realtime_clock::time_point realtime_now,
                    std::string_view cpu_type, uint16_t cpu_number,
                    std::string_view camera_channel, std::string_view camera_id,
                    uint16_t team_number, double reprojection_error);
+
+  // Return how many captures we've made so far
+  int NumCaptures() const { return all_charuco_ids_.size(); };
 
  private:
   static constexpr double kDeltaRThreshold = M_PI / 6.0;
@@ -61,9 +69,9 @@ class IntrinsicsCalibration {
   std::vector<std::vector<int>> all_charuco_ids_;
   std::vector<std::vector<cv::Point2f>> all_charuco_corners_;
 
-  Eigen::Affine3d H_camera_board_;
-  Eigen::Affine3d prev_H_camera_board_;
-  Eigen::Affine3d prev_image_H_camera_board_;
+  // Inverses of the board location in camera frame, for computing deltas later
+  Eigen::Affine3d prev_H_board_camera_;
+  Eigen::Affine3d last_frame_H_board_camera_;
 
   // Camera intrinsics that we will use to bootstrap the intrinsics estimation
   // here. We make use of the intrinsics in this calibration to allow us to
@@ -71,8 +79,13 @@ class IntrinsicsCalibration {
   // the board is moving.
   aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
       base_intrinsics_;
+
   CharucoExtractor charuco_extractor_;
+
   ImageCallback image_callback_;
+  cv::Size image_size_;
+  // Image used to visualize collected points as they come in
+  cv::Mat point_viz_image_;
 
   const bool display_undistorted_;
   const std::string calibration_folder_;
