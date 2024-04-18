@@ -262,6 +262,7 @@ export class EntryComponent implements OnInit {
         case ActionType.EndAutoPhaseAction:
           this.autoPhase = true;
           this.section = 'Pickup';
+          break;
         case ActionType.NoShowAction:
           this.autoPhase = true;
           this.section = 'Init';
