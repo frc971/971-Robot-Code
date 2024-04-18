@@ -208,9 +208,11 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
  private:
   void OnSample(GstSample *sample);
 
+  aos::ShmEventLoop *event_loop_;
   std::map<::seasocks::WebSocket *, std::unique_ptr<Connection>> connections_;
   ::seasocks::Server *server_;
   std::unique_ptr<GstSampleSource> source_;
+  aos::TimerHandler *manual_restart_handle_;
 
   aos::Sender<frc971::vision::CameraImage> sender_;
 };
@@ -275,7 +277,10 @@ class Connection {
 
 WebsocketHandler::WebsocketHandler(aos::ShmEventLoop *event_loop,
                                    ::seasocks::Server *server)
-    : server_(server) {
+    : event_loop_(event_loop),
+      server_(server),
+      manual_restart_handle_(
+          event_loop_->AddTimer([this]() { event_loop_->Exit(); })) {
   if (FLAGS_listen_on.empty()) {
     if (FLAGS_publish_images) {
       sender_ = event_loop->MakeSender<frc971::vision::CameraImage>("/camera");
@@ -286,6 +291,10 @@ WebsocketHandler::WebsocketHandler(aos::ShmEventLoop *event_loop,
     source_ = std::make_unique<ChannelSource>(
         event_loop, [this](auto sample) { OnSample(sample); });
   }
+  event_loop_->OnRun([this]() {
+    manual_restart_handle_->Schedule(event_loop_->monotonic_now() +
+                                     std::chrono::seconds(10));
+  });
 }
 
 void WebsocketHandler::onConnect(::seasocks::WebSocket *sock) {
@@ -333,6 +342,8 @@ void WebsocketHandler::OnSample(GstSample *sample) {
 
     builder.CheckOk(builder.Send(image_builder.Finish()));
   }
+  manual_restart_handle_->Schedule(event_loop_->monotonic_now() +
+                                   std::chrono::seconds(10));
 }
 
 void WebsocketHandler::onDisconnect(::seasocks::WebSocket *sock) {
