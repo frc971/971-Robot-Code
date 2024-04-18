@@ -1142,16 +1142,18 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
+		log.Println("Failed to receive submission request from", username)
 		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
 		return
 	}
 
 	request, success := parseRequest(w, requestBytes, "Submit2024Actions", submit_2024_actions.GetRootAsSubmit2024Actions)
 	if !success {
+		log.Println("Failed to parse submission request from", username)
 		return
 	}
 
-	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "from", username)
+	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "type", string(request.CompType()), "from", username)
 
 	for i := 0; i < request.ActionsListLength(); i++ {
 
@@ -1172,6 +1174,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 		// Do some error checking.
 		if action.Timestamp() < 0 {
+			log.Println("Got action with invalid timestamp (", action.Timestamp(), ") from", username)
 			respondWithError(w, http.StatusBadRequest, fmt.Sprint(
 				"Invalid timestamp field value of ", action.Timestamp()))
 			return
@@ -1179,6 +1182,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 		err = handler.db.AddAction(dbAction)
 		if err != nil {
+			log.Println("Failed to add action from", username, "to the database:", err)
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
 			return
 		}
@@ -1186,6 +1190,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	stats, err := ConvertActionsToStat2024(request)
 	if err != nil {
+		log.Println("Failed to add action from", username, "to the database:", err)
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
 		return
 	}
@@ -1194,6 +1199,7 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	err = handler.db.AddToStats2024(stats)
 	if err != nil {
+		log.Println("Failed to submit stats from", username, "to the database:", err)
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats2024: ", stats, ": ", err))
 		return
 	}
@@ -1201,6 +1207,8 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&Submit2024ActionsResponseT{}).Pack(builder))
 	w.Write(builder.FinishedBytes())
+
+	log.Println("Successfully added stats from", username)
 }
 
 type Delete2024DataScoutingHandler struct {
