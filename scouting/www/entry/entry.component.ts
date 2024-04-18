@@ -73,7 +73,7 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
 const QR_CODE_PIECE_SIZES = [150, 300, 450, 600, 750, 900];
 
 // The default index into QR_CODE_PIECE_SIZES.
-const DEFAULT_QR_CODE_PIECE_SIZE_INDEX = QR_CODE_PIECE_SIZES.indexOf(750);
+const DEFAULT_QR_CODE_PIECE_SIZE_INDEX = QR_CODE_PIECE_SIZES.indexOf(450);
 
 // The actions that are purely used for tracking state. They don't actually
 // have any permanent meaning and will not be saved in the database.
