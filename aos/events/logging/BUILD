@@ -260,6 +260,7 @@ cc_library(
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
         "//aos/containers:resizeable_buffer",
+        "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
@@ -434,6 +435,7 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -1021,5 +1023,35 @@ cc_binary(
         "//aos/containers:resizeable_buffer",
         "//aos/time",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+py_binary(
+    name = "plot_logger_profile",
+    srcs = [
+        "plot_logger_profile.py",
+    ],
+    target_compatible_with = [
+        # TODO(PRO-24640): Remove compatibility.
+        "@platforms//cpu:x86_64",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@pip//bokeh",
+        "@pip//numpy",
+        "@pip//tabulate",
+    ],
+)
+
+py_test(
+    name = "plot_logger_profile_test",
+    srcs = [
+        "plot_logger_profile_test.py",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":plot_logger_profile",
+        "@pip//numpy",
     ],
 )

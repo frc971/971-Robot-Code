@@ -20,9 +20,11 @@ class SnappyEncoder final : public DataEncoder {
   explicit SnappyEncoder(size_t max_message_size,
                          size_t chunk_size = 128 * 1024);
 
-  size_t Encode(Copier *copy, size_t start_byte) final;
+  // See base class for commments.
+  size_t Encode(Copier *copy, size_t start_byte,
+                std::chrono::nanoseconds *encode_duration = nullptr) final;
 
-  void Finish() final;
+  void Finish(std::chrono::nanoseconds *encode_duration = nullptr) final;
   void Clear(int n) final;
   absl::Span<const absl::Span<const uint8_t>> queue() final;
   size_t queued_bytes() const final;

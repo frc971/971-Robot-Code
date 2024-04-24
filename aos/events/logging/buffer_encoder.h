@@ -7,6 +7,7 @@
 
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/time/time.h"
 
 namespace aos::logger {
 
@@ -65,14 +66,19 @@ class DataEncoder {
 
   // Encodes and enqueues the given data encoder.  Starts at the start byte
   // (which must be a multiple of 8 bytes), and goes as far as it can.  Returns
-  // the amount encoded.
-  virtual size_t Encode(Copier *copy, size_t start_byte) = 0;
+  // the amount encoded. The `encode_duration` is optional, when provided it
+  // will be set to the amount of time spent by the encoder during this call.
+  virtual size_t Encode(
+      Copier *copy, size_t start_byte,
+      std::chrono::nanoseconds *encode_duration = nullptr) = 0;
 
   // Finalizes the encoding process. After this, queue_size() represents the
   // full extent of data which will be written to this file.
-  //
-  // Encode may not be called after this method.
-  virtual void Finish() = 0;
+  // This function may invoke the encoder to encode any remaining data remaining
+  // in the queue. The `encode_duration` is optional, when provided it will be
+  // set to the amount of time spent by the encoder during this call. Do not
+  // call Encode after calling this method.
+  virtual void Finish(std::chrono::nanoseconds *encode_duration = nullptr) = 0;
 
   // Clears the first n encoded buffers from the queue.
   virtual void Clear(int n) = 0;
@@ -105,8 +111,11 @@ class DummyEncoder final : public DataEncoder {
 
   bool HasSpace(size_t request) const final;
   size_t space() const final;
-  size_t Encode(Copier *copy, size_t start_byte) final;
-  void Finish() final {}
+
+  // See base class for commments.
+  size_t Encode(Copier *copy, size_t start_byte,
+                std::chrono::nanoseconds *encode_duration = nullptr) final;
+  void Finish(std::chrono::nanoseconds * /*encode_duration*/ = nullptr) final {}
   void Clear(int n) final;
   absl::Span<const absl::Span<const uint8_t>> queue() final;
   size_t queued_bytes() const final;

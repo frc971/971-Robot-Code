@@ -76,11 +76,15 @@ class NewDataWriter {
                     monotonic_clock::time_point monotonic_timestamp_time =
                         monotonic_clock::min_time);
 
-  // Coppies a message with the provided boot UUID.
-  void CopyDataMessage(DataEncoder::Copier *copier,
-                       const UUID &source_node_boot_uuid,
-                       aos::monotonic_clock::time_point now,
-                       aos::monotonic_clock::time_point message_time);
+  // Copies a message with the provided boot UUID.
+  // Similar to CopyMessage, but also checks that StoredDataType::DATA is
+  // allowed on this writer. Returns the duration of time spent on encoding the
+  // message.
+  std::chrono::nanoseconds CopyDataMessage(
+      DataEncoder::Copier *copier, const UUID &source_node_boot_uuid,
+      aos::monotonic_clock::time_point now,
+      aos::monotonic_clock::time_point message_time);
+
   void CopyTimestampMessage(DataEncoder::Copier *copier,
                             const UUID &source_node_boot_uuid,
                             aos::monotonic_clock::time_point now,
@@ -165,10 +169,12 @@ class NewDataWriter {
   // Signals that a node has rebooted.
   void Reboot(const UUID &source_node_boot_uuid);
 
-  void CopyMessage(DataEncoder::Copier *copier,
-                   const UUID &source_node_boot_uuid,
-                   aos::monotonic_clock::time_point now,
-                   aos::monotonic_clock::time_point message_time);
+  // Copies a message with the provided boot UUID.
+  // Returns the duration of time spent on encoding the message.
+  std::chrono::nanoseconds CopyMessage(
+      DataEncoder::Copier *copier, const UUID &source_node_boot_uuid,
+      aos::monotonic_clock::time_point now,
+      aos::monotonic_clock::time_point message_time);
 
   void QueueHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header);
@@ -507,6 +513,16 @@ class MultiNodeLogNamer : public LogNamer {
         });
   }
 
+  std::chrono::nanoseconds total_encode_duration() const {
+    return accumulate_data_writers(
+        total_encode_duration_,
+        [](std::chrono::nanoseconds x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
+          return x +
+                 data_writer.writer->WriteStatistics()->total_encode_duration();
+        });
+  }
+
   void ResetStatistics();
 
  protected:
@@ -575,6 +591,8 @@ class MultiNodeLogNamer : public LogNamer {
   int max_write_time_bytes_ = -1;
   int max_write_time_messages_ = -1;
   std::chrono::nanoseconds total_write_time_ = std::chrono::nanoseconds::zero();
+  std::chrono::nanoseconds total_encode_duration_ =
+      std::chrono::nanoseconds::zero();
   int total_write_count_ = 0;
   int total_write_messages_ = 0;
   int total_write_bytes_ = 0;

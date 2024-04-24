@@ -2,6 +2,7 @@
 #define AOS_EVENTS_LOGGING_LOG_WRITER_H_
 
 #include <chrono>
+#include <fstream>
 #include <string_view>
 #include <vector>
 
@@ -23,6 +24,31 @@ namespace aos::logger {
 // container.
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> PackConfiguration(
     const Configuration *const configuration);
+
+// A class to manage the writing of profile data. It will open a file during
+// construction and close it when it goes out of scope.
+class ProfileDataWriter {
+ public:
+  // A constructor to open the stream.
+  ProfileDataWriter(const std::filesystem::path &csv_path);
+
+  // Write the profile data to the file as a csv line.
+  void WriteProfileData(
+      const aos::monotonic_clock::time_point message_time,
+      const aos::monotonic_clock::time_point encoding_start_time,
+      const std::chrono::nanoseconds encode_duration, const Channel &channel);
+
+  // A destructor to close the stream if it's open.
+  ~ProfileDataWriter() {
+    if (stream_.is_open()) {
+      stream_.close();
+    }
+  }
+
+ private:
+  // The stream to write profiling data to.
+  std::ofstream stream_;
+};
 
 // Logs all channels available in the event loop to disk every 100 ms.
 // Start by logging one message per channel to capture any state and
@@ -87,6 +113,9 @@ class Logger {
     polling_period_ = polling_period;
   }
   std::chrono::nanoseconds polling_period() const { return polling_period_; }
+
+  // Sets the path to write profiling data to. nullopt will disable profiling.
+  void SetProfilingPath(const std::optional<std::filesystem::path> &path);
 
   std::optional<UUID> log_start_uuid() const { return log_start_uuid_; }
   UUID logger_instance_uuid() const { return logger_instance_uuid_; }
@@ -304,6 +333,12 @@ class Logger {
                                aos::monotonic_clock::time_point end,
                                const FetcherStruct &fetcher);
 
+  // Write an entry to the profile file.
+  void RecordProfileData(aos::monotonic_clock::time_point message_time,
+                         aos::monotonic_clock::time_point encoding_start_time,
+                         std::chrono::nanoseconds encode_duration,
+                         const Channel &channel);
+
   EventLoop *const event_loop_;
   // The configuration to place at the top of the log file.
   const Configuration *const configuration_;
@@ -384,6 +419,9 @@ class Logger {
 
   // Amount of time to run the logger behind now.
   std::chrono::nanoseconds logging_delay_ = std::chrono::nanoseconds(0);
+
+  // Profiling info
+  std::optional<ProfileDataWriter> profiling_info_;
 };
 
 }  // namespace aos::logger

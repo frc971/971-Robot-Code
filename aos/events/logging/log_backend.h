@@ -30,6 +30,12 @@ class WriteStats {
   std::chrono::nanoseconds total_write_time() const {
     return total_write_time_;
   }
+
+  // The total time spent encoding.
+  std::chrono::nanoseconds total_encode_duration() const {
+    return total_encode_duration_;
+  }
+
   // The total number of writes which have been performed.
   int total_write_count() const { return total_write_count_; }
   // The total number of messages which have been written.
@@ -45,9 +51,10 @@ class WriteStats {
     total_write_count_ = 0;
     total_write_messages_ = 0;
     total_write_bytes_ = 0;
+    total_encode_duration_ = std::chrono::nanoseconds::zero();
   }
 
-  void UpdateStats(aos::monotonic_clock::duration duration, ssize_t written,
+  void UpdateStats(std::chrono::nanoseconds duration, ssize_t written,
                    int iovec_size) {
     if (duration > max_write_time_) {
       max_write_time_ = duration;
@@ -60,11 +67,20 @@ class WriteStats {
     total_write_bytes_ += written;
   }
 
+  // Update our total_encode_duration_ stat. This needs to be a separate
+  // function from UpdateStats because it's called from a different level in the
+  // stack.
+  void UpdateEncodeDuration(std::chrono::nanoseconds duration) {
+    total_encode_duration_ += duration;
+  }
+
  private:
   std::chrono::nanoseconds max_write_time_ = std::chrono::nanoseconds::zero();
   int max_write_time_bytes_ = -1;
   int max_write_time_messages_ = -1;
   std::chrono::nanoseconds total_write_time_ = std::chrono::nanoseconds::zero();
+  std::chrono::nanoseconds total_encode_duration_ =
+      std::chrono::nanoseconds::zero();
   int total_write_count_ = 0;
   int total_write_messages_ = 0;
   int total_write_bytes_ = 0;

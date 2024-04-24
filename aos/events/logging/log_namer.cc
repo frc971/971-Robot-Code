@@ -231,13 +231,13 @@ void NewDataWriter::UpdateRemote(
   }
 }
 
-void NewDataWriter::CopyDataMessage(
+std::chrono::nanoseconds NewDataWriter::CopyDataMessage(
     DataEncoder::Copier *coppier, const UUID &source_node_boot_uuid,
     aos::monotonic_clock::time_point now,
     aos::monotonic_clock::time_point message_time) {
   CHECK(allowed_data_types_[static_cast<size_t>(StoredDataType::DATA)])
       << ": Tried to write data on non-data writer.";
-  CopyMessage(coppier, source_node_boot_uuid, now, message_time);
+  return CopyMessage(coppier, source_node_boot_uuid, now, message_time);
 }
 
 void NewDataWriter::CopyTimestampMessage(
@@ -259,10 +259,10 @@ void NewDataWriter::CopyRemoteTimestampMessage(
   CopyMessage(coppier, source_node_boot_uuid, now, message_time);
 }
 
-void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
-                                const UUID &source_node_boot_uuid,
-                                aos::monotonic_clock::time_point now,
-                                aos::monotonic_clock::time_point message_time) {
+std::chrono::nanoseconds NewDataWriter::CopyMessage(
+    DataEncoder::Copier *coppier, const UUID &source_node_boot_uuid,
+    aos::monotonic_clock::time_point now,
+    aos::monotonic_clock::time_point message_time) {
   // Trigger a reboot if we detect the boot UUID change.
   UpdateBoot(source_node_boot_uuid);
 
@@ -340,7 +340,8 @@ void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->name();
   CHECK_LE(coppier->size(), max_message_size_);
-  writer->CopyMessage(coppier, now);
+  std::chrono::nanoseconds encode_duration = writer->CopyMessage(coppier, now);
+  return encode_duration;
 }
 
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>

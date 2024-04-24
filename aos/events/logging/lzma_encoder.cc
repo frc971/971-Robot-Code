@@ -95,7 +95,8 @@ LzmaEncoder::LzmaEncoder(size_t max_message_size,
 
 LzmaEncoder::~LzmaEncoder() { lzma_end(&stream_); }
 
-size_t LzmaEncoder::Encode(Copier *copy, size_t start_byte) {
+size_t LzmaEncoder::Encode(Copier *copy, size_t start_byte,
+                           std::chrono::nanoseconds *encode_duration) {
   const size_t copy_size = copy->size();
   // LZMA compresses the data as it goes along, copying the compressed results
   // into another buffer.  So, there's no need to store more than one message
@@ -107,13 +108,14 @@ size_t LzmaEncoder::Encode(Copier *copy, size_t start_byte) {
 
   stream_.next_in = input_buffer_.data();
   stream_.avail_in = copy_size;
-
-  RunLzmaCode(LZMA_RUN);
+  RunLzmaCode(LZMA_RUN, encode_duration);
 
   return copy_size - start_byte;
 }
 
-void LzmaEncoder::Finish() { RunLzmaCode(LZMA_FINISH); }
+void LzmaEncoder::Finish(std::chrono::nanoseconds *encode_duration) {
+  RunLzmaCode(LZMA_FINISH, encode_duration);
+}
 
 void LzmaEncoder::Clear(const int n) {
   CHECK_GE(n, 0);
@@ -154,7 +156,8 @@ size_t LzmaEncoder::queued_bytes() const {
   return bytes;
 }
 
-void LzmaEncoder::RunLzmaCode(lzma_action action) {
+void LzmaEncoder::RunLzmaCode(lzma_action action,
+                              std::chrono::nanoseconds *encode_duration) {
   CHECK(!finished_);
 
   // This is to keep track of how many bytes resulted from encoding this input
@@ -181,8 +184,20 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
       last_avail_out = stream_.avail_out;
     }
 
-    // Encode the data.
-    lzma_ret status = lzma_code(&stream_, action);
+    // Declare status, which will be populated by lzma_code.
+    lzma_ret status;
+
+    if (encode_duration == nullptr) {
+      // Perform lzma_code without measuring the time.
+      status = lzma_code(&stream_, action);
+    } else {
+      // Measure the encoding time of lzma_code
+      const monotonic_clock::time_point start_time =
+          aos::monotonic_clock::now();
+      status = lzma_code(&stream_, action);
+      *encode_duration = aos::monotonic_clock::now() - start_time;
+    }
+
     CHECK(LzmaCodeIsOk(status));
     if (action == LZMA_FINISH) {
       if (status == LZMA_STREAM_END) {

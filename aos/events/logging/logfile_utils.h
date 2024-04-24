@@ -73,8 +73,9 @@ class DetachedBufferWriter {
   // Triggers a flush if there's enough data queued up.
   //
   // Steals the detached buffer from it.
-  void CopyMessage(DataEncoder::Copier *coppier,
-                   aos::monotonic_clock::time_point now);
+  // Returns the duration of time spent on encoding the message.
+  std::chrono::nanoseconds CopyMessage(DataEncoder::Copier *copier,
+                                       aos::monotonic_clock::time_point now);
 
   // Indicates we got ENOSPC when trying to write. After this returns true, no
   // further data is written.

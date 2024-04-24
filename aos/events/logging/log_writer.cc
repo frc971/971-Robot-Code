@@ -6,6 +6,9 @@
 #include <map>
 #include <vector>
 
+#include "absl/strings/ascii.h"  // for AsciiStrToLower
+#include "absl/strings/str_cat.h"
+
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
@@ -713,23 +716,29 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
             ? f.fetcher->context().source_boot_uuid
             : event_loop_->boot_uuid();
     // Write!
-    const auto start = event_loop_->monotonic_now();
+    const monotonic_clock::time_point start_time = event_loop_->monotonic_now();
 
     ContextDataCopier coppier(f.fetcher->context(), f.logged_channel_index,
                               f.log_type, event_loop_);
 
-    aos::monotonic_clock::time_point message_time =
+    const aos::monotonic_clock::time_point message_time =
         static_cast<int>(node_index_) != f.data_node_index
             ? f.fetcher->context().monotonic_remote_time
             : f.fetcher->context().monotonic_event_time;
-    writer->CopyDataMessage(&coppier, source_node_boot_uuid, start,
-                            message_time);
-    RecordCreateMessageTime(start, coppier.end_time(), f);
+    const std::chrono::nanoseconds encode_duration = writer->CopyDataMessage(
+        &coppier, source_node_boot_uuid, start_time, message_time);
+    RecordCreateMessageTime(start_time, coppier.end_time(), f);
+
+    const Channel *channel = f.fetcher->channel();
 
     VLOG(2) << "Wrote data as node " << FlatbufferToJson(node_)
-            << " for channel "
-            << configuration::CleanedChannelToString(f.fetcher->channel())
+            << " for channel " << configuration::CleanedChannelToString(channel)
             << " to " << writer->name();
+
+    if (profiling_info_.has_value()) {
+      profiling_info_->WriteProfileData(message_time, start_time,
+                                        encode_duration, *channel);
+    }
   }
 }
 
@@ -936,6 +945,68 @@ void Logger::RecordCreateMessageTime(aos::monotonic_clock::time_point start,
     max_log_delay_ = log_delay;
     max_log_delay_channel_ = fetcher.logged_channel_index;
   }
+}
+
+void Logger::SetProfilingPath(
+    const std::optional<std::filesystem::path> &path) {
+  if (path.has_value()) {
+    profiling_info_.emplace(path.value());
+
+  } else {
+    profiling_info_.reset();
+  }
+}
+
+void ProfileDataWriter::WriteProfileData(
+    const aos::monotonic_clock::time_point message_time,
+    const aos::monotonic_clock::time_point encoding_start_time,
+    const std::chrono::nanoseconds encode_duration, const Channel &channel) {
+  const int64_t encode_duration_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(encode_duration)
+          .count();
+  const int64_t encoding_start_time_ns =
+      encoding_start_time.time_since_epoch().count();
+  const std::string message_time_s =
+      std::to_string(std::chrono::duration_cast<std::chrono::duration<double>>(
+                         message_time.time_since_epoch())
+                         .count());
+
+  const std::string log_entry =
+      absl::StrCat(channel.name()->string_view(), ",",  // channel name
+                   channel.type()->string_view(), ",",  // channel type
+                   encode_duration_ns, ",",             // encode duration
+                   encoding_start_time_ns, ",",         // encoding start time
+                   message_time_s, "\n"                 // message time
+      );
+  stream_ << log_entry;
+}
+
+ProfileDataWriter::ProfileDataWriter(const std::filesystem::path &path) {
+  CHECK(!path.empty());
+
+  const std::string extension = path.extension().string();
+  const std::string lower_case_extension = absl::AsciiStrToLower(extension);
+
+  // Warn if the path is not a csv file.
+  if (std::filesystem::is_directory(path)) {
+    LOG(WARNING) << "Path for logger profiling output file should be a csv "
+                    "file, not a directory. Received path: "
+                 << path << ".";
+  } else if (lower_case_extension != ".csv") {
+    LOG(WARNING) << "The extension for logger profiling output file should be "
+                    "'.csv'. Received path: "
+                 << extension << ".";
+  }
+
+  stream_.open(path, std::ios::out);
+  CHECK(stream_.is_open()) << ": Failed to open " << path;
+
+  // Write the header that describes the file content and the column names.
+  stream_
+      << "# This file is in csv format and contains profiling data for each "
+         "channel. The column names are: channel_name, channel_type, "
+         "encode_duration_ns, encoding_start_time_ns, message_time_s"
+      << std::endl;
 }
 
 }  // namespace aos::logger

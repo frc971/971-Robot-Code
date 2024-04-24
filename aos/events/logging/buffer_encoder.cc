@@ -22,7 +22,8 @@ size_t DummyEncoder::space() const {
 
 bool DummyEncoder::HasSpace(size_t request) const { return request <= space(); }
 
-size_t DummyEncoder::Encode(Copier *copy, size_t start_byte) {
+size_t DummyEncoder::Encode(Copier *copy, size_t start_byte,
+                            std::chrono::nanoseconds * /*encode_duration*/) {
   const size_t input_buffer_initial_size = input_buffer_.size();
 
   size_t expected_write_size =

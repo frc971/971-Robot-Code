@@ -172,23 +172,30 @@ DetachedBufferWriter &DetachedBufferWriter::operator=(
   return *this;
 }
 
-void DetachedBufferWriter::CopyMessage(DataEncoder::Copier *copier,
-                                       aos::monotonic_clock::time_point now) {
+std::chrono::nanoseconds DetachedBufferWriter::CopyMessage(
+    DataEncoder::Copier *copier, aos::monotonic_clock::time_point now) {
   if (ran_out_of_space_) {
     // We don't want any later data to be written after space becomes
     // available, so refuse to write anything more once we've dropped data
     // because we ran out of space.
-    return;
+    return std::chrono::nanoseconds::zero();
   }
 
   const size_t message_size = copier->size();
   size_t overall_bytes_written = 0;
 
+  std::chrono::nanoseconds total_encode_duration =
+      std::chrono::nanoseconds::zero();
+
   // Keep writing chunks until we've written it all.  If we end up with a
   // partial write, this means we need to flush to disk.
   do {
+    // Initialize encode_duration for the case that the encoder cannot measure
+    // encode duration for a single message.
+    std::chrono::nanoseconds encode_duration = std::chrono::nanoseconds::zero();
     const size_t bytes_written =
-        encoder_->Encode(copier, overall_bytes_written);
+        encoder_->Encode(copier, overall_bytes_written, &encode_duration);
+
     CHECK(bytes_written != 0);
 
     overall_bytes_written += bytes_written;
@@ -197,16 +204,24 @@ void DetachedBufferWriter::CopyMessage(DataEncoder::Copier *copier,
               << message_size << " wrote " << overall_bytes_written;
       Flush(now);
     }
+    total_encode_duration += encode_duration;
   } while (overall_bytes_written < message_size);
 
+  WriteStatistics()->UpdateEncodeDuration(total_encode_duration);
+
   FlushAtThreshold(now);
+  return total_encode_duration;
 }
 
 void DetachedBufferWriter::Close() {
   if (!log_sink_->is_open()) {
     return;
   }
-  encoder_->Finish();
+  // Initialize encode_duration for the case that the encoder cannot measure
+  // encode duration for a single message.
+  std::chrono::nanoseconds encode_duration = std::chrono::nanoseconds::zero();
+  encoder_->Finish(&encode_duration);
+  WriteStats().UpdateEncodeDuration(encode_duration);
   while (encoder_->queue_size() > 0) {
     Flush(monotonic_clock::max_time);
   }

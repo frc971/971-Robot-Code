@@ -571,4 +571,129 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
   EXPECT_EQ(replay_count, sent_messages);
 }
 
+// Helper function to verify the contents of the profiling data file.
+void VerifyProfilingData(const std::filesystem::path &profiling_path) {
+  std::ifstream file(profiling_path);
+  ASSERT_TRUE(file.is_open()) << "Failed to open profiling data file.";
+
+  std::string line;
+
+  // Verify that the header is a comment starting with '#'.
+  std::getline(file, line);
+  ASSERT_THAT(line, ::testing::StartsWith("#"));
+
+  // Now, verify the contents of each line.
+  int record_count = 0;
+
+  // Track the total encoding duration.
+  uint64_t total_encoding_duration_ns = 0;
+
+  while (std::getline(file, line)) {
+    std::stringstream line_stream(line);
+    std::string cell;
+
+    // Extract each cell from the CSV line.
+    std::vector<std::string> cells;
+    while (std::getline(line_stream, cell, ',')) {
+      cells.push_back(cell);
+    }
+
+    // Expecting 5 fields: channel_name, channel_type, encode_duration_ns,
+    // encoding_start_time_ns, message_time_s.
+    ASSERT_EQ(cells.size(), 5) << "Incorrect number of fields in the CSV line.";
+
+    // Channel name and type are strings and just need to not be empty.
+    EXPECT_FALSE(cells[0].empty()) << "Channel name is empty.";
+    EXPECT_FALSE(cells[1].empty()) << "Channel type is empty.";
+
+    // Encode duration, encoding start time should be positive numbers.
+    const int64_t encode_duration_ns = std::stoll(cells[2]);
+    const int64_t encoding_start_time_ns = std::stoll(cells[3]);
+
+    ASSERT_GT(encode_duration_ns, 0)
+        << "Encode duration is not positive. Line: " << line;
+    ASSERT_GT(encoding_start_time_ns, 0)
+        << "Encoding start time is not positive. Line: " << line;
+
+    // Message time should be non-negative.
+    const double message_time_s = std::stod(cells[4]);
+    EXPECT_GE(message_time_s, 0) << "Message time is negative";
+    ++record_count;
+    total_encoding_duration_ns += encode_duration_ns;
+  }
+
+  EXPECT_GT(record_count, 0) << "Profiling data file is empty.";
+  LOG(INFO) << "Total encoding duration: " << total_encoding_duration_ns;
+}
+
+// Tests logging many messages with LZMA compression.
+TEST_F(LoggerTest, ManyMessagesLzmaWithProfiling) {
+  const std::string tmpdir = aos::testing::TestTmpDir();
+  const std::string base_name = tmpdir + "/lzma_logfile";
+  const std::string config_sha256 =
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
+  const std::string logfile = absl::StrCat(base_name, ".part0.xz");
+  const std::string profiling_path =
+      absl::StrCat(tmpdir, "/encoding_profile.csv");
+
+  // Clean up any previous test artifacts.
+  unlink(config_sha256.c_str());
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+  ping_.set_quiet(true);
+
+  {
+    std::unique_ptr<aos::EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    std::unique_ptr<aos::EventLoop> ping_spammer_event_loop =
+        event_loop_factory_.MakeEventLoop("ping_spammer");
+    aos::Sender<examples::Ping> ping_sender =
+        ping_spammer_event_loop->MakeSender<examples::Ping>("/test");
+
+    aos::TimerHandler *timer_handler =
+        ping_spammer_event_loop->AddTimer([&ping_sender]() {
+          aos::Sender<examples::Ping>::Builder builder =
+              ping_sender.MakeBuilder();
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          CHECK_EQ(builder.Send(ping_builder.Finish()),
+                   aos::RawSender::Error::kOk);
+        });
+
+    // Send a message every 50 microseconds to simulate high throughput.
+    ping_spammer_event_loop->OnRun([&ping_spammer_event_loop, timer_handler]() {
+      timer_handler->Schedule(ping_spammer_event_loop->monotonic_now(),
+                              std::chrono::microseconds(50));
+    });
+
+    aos::logger::Logger logger(logger_event_loop.get());
+    logger.set_separate_config(false);
+    logger.set_polling_period(std::chrono::milliseconds(100));
+
+    // Enable logger profiling.
+    logger.SetProfilingPath(profiling_path);
+
+    std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> log_namer =
+        std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
+            base_name, logger_event_loop->configuration(),
+            logger_event_loop.get(), logger_event_loop->node());
+#ifdef LZMA
+    // Set up LZMA encoder.
+    log_namer->set_encoder_factory([](size_t max_message_size) {
+      return std::make_unique<aos::logger::LzmaEncoder>(max_message_size, 1);
+    });
+#endif
+
+    logger.StartLogging(std::move(log_namer));
+
+    event_loop_factory_.RunFor(std::chrono::seconds(1));
+  }
+
+#ifdef LZMA
+  VerifyProfilingData(profiling_path);
+#endif
+}
+
 }  // namespace aos::logger::testing

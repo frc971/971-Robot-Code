@@ -39,18 +39,23 @@ class LzmaEncoder final : public DataEncoder {
     return true;
   }
   size_t space() const final { return input_buffer_.capacity(); }
-  size_t Encode(Copier *copy, size_t start_byte) final;
-  void Finish() final;
+
+  // See base class for commments.
+  size_t Encode(Copier *copy, size_t start_byte,
+                std::chrono::nanoseconds *encode_duration = nullptr) final;
+  void Finish(std::chrono::nanoseconds *encode_duration = nullptr) final;
   void Clear(int n) final;
   absl::Span<const absl::Span<const uint8_t>> queue() final;
   size_t queued_bytes() const final;
   size_t total_bytes() const final { return total_bytes_; }
+
   size_t queue_size() const final { return queue_.size(); }
 
  private:
   static constexpr size_t kEncodedBufferSizeBytes{1024 * 128};
 
-  void RunLzmaCode(lzma_action action);
+  void RunLzmaCode(lzma_action action,
+                   std::chrono::nanoseconds *encode_duration);
 
   lzma_stream stream_;
   uint32_t compression_preset_;
@@ -64,6 +69,9 @@ class LzmaEncoder final : public DataEncoder {
   // Total bytes that resulted from encoding raw data since the last call to
   // Reset.
   size_t total_bytes_ = 0;
+
+  std::chrono::nanoseconds total_encode_duration_ =
+      std::chrono::nanoseconds::zero();
 
   // Buffer that messages get coppied into for encoding.
   ResizeableBuffer input_buffer_;

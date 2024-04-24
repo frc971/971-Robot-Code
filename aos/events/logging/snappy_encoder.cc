@@ -41,9 +41,16 @@ SnappyEncoder::SnappyEncoder(size_t max_message_size, size_t chunk_size)
   total_bytes_ += queue_.back().size();
 }
 
-void SnappyEncoder::Finish() { EncodeCurrentBuffer(); }
+void SnappyEncoder::Finish(std::chrono::nanoseconds * /*encode_duration*/) {
+  // TODO (Maxwell Gumley): find a way to measure encode duration for a single
+  // message.
+  EncodeCurrentBuffer();
+}
 
-size_t SnappyEncoder::Encode(Copier *copy, size_t start_byte) {
+size_t SnappyEncoder::Encode(Copier *copy, size_t start_byte,
+                             std::chrono::nanoseconds * /*encode_duration*/) {
+  // TODO (Maxwell Gumley): find a way to measure encode duration for a single
+  // message.
   CHECK_EQ(start_byte, 0u);
   buffer_source_.Append(copy);
 
