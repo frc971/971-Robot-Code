@@ -375,10 +375,10 @@ TEST_F(FlatbufferMerge, Basic) {
   JsonMerge("{ \"foo_ulong\": 5 }", "{ \"foo_ulong\": 7 }",
             "{ \"foo_ulong\": 7 }");
 
-  JsonMerge("{ \"foo_float\": 5.0 }", "{ \"foo_float\": 7.1 }",
+  JsonMerge("{ \"foo_float\": 5 }", "{ \"foo_float\": 7.1 }",
             "{ \"foo_float\": 7.1 }");
 
-  JsonMerge("{ \"foo_double\": 5.0 }", "{ \"foo_double\": 7.1 }",
+  JsonMerge("{ \"foo_double\": 5 }", "{ \"foo_double\": 7.1 }",
             "{ \"foo_double\": 7.1 }");
 }
 
@@ -424,9 +424,9 @@ TEST_F(FlatbufferMerge, Array) {
             "{ \"vector_foo_ulong\": [ 3, 1, 3, 2 ] }",
             "{ \"vector_foo_ulong\": [ 9, 7, 1, 3, 1, 3, 2 ] }");
 
-  JsonMerge("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
-            "{ \"vector_foo_float\": [ -3.0, 1.3, 3.0, 2.0 ] }",
-            "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0, -3.0, 1.3, 3.0, 2.0 ] }");
+  JsonMerge("{ \"vector_foo_float\": [ 9, 7, 1 ] }",
+            "{ \"vector_foo_float\": [ -3, 1.3, 3, 2 ] }",
+            "{ \"vector_foo_float\": [ 9, 7, 1, -3, 1.3, 3, 2 ] }");
 
   JsonMerge(
       "{ \"vector_foo_string\": [ \"9\", \"7\", \"1 \" ] }",

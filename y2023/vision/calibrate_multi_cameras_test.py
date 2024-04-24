@@ -75,12 +75,12 @@ def check_calib_match(args, max_pose_error: float):
                 calc_file = calc_calib_dir + file
 
         # Next find the "ground truth" file with this pi_name
-        external_dir = 'external/calibrate_multi_cameras_data/'
-        files = os.listdir(external_dir)
+        expected_dir = 'y2023/vision/test_data/'
+        files = os.listdir(expected_dir)
         gt_file = ""
         for file in files[::-1]:
             if pi_name in file:
-                gt_file = external_dir + file
+                gt_file = expected_dir + file
 
         if calc_file != "" and gt_file != "":
             if not compare_files(gt_file, calc_file):

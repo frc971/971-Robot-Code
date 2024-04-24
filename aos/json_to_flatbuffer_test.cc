@@ -93,10 +93,15 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_long\": 5 }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_ulong\": 5 }"));
 
-  // TODO(james): Make FlatbufferToJson() always print out integer
-  // floating-point numbers identically.
-  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.0 }", TestReflection::kNo));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.0 }", TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 50 }"));
+  // Test that we can distinguish between floats that vary by a single bit.
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 1.1 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 1.0999999 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5 }"));
+  // Check that we handle/distinguish between doubles that vary by a single bit.
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 1.561154546713 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 1.56115454671299 }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"None\" }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"UType\" }"));
@@ -116,24 +121,22 @@ TEST_F(JsonToFlatbufferTest, Structs) {
                   "\"foo_byte\": 2 } } }"));
   EXPECT_TRUE(JsonAndBack(
       "{ \"foo_struct_scalars\": { \"foo_float\": 1.234, \"foo_double\": "
-      "4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, \"foo_int64\": "
-      "-1030, \"foo_uint64\": 18446744073709551614 } }",
+      "4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, "
+      "\"foo_int64\": -1030, \"foo_uint64\": 18446744073709551614 } }",
       TestReflection::kNo));
   // Confirm that we parse integers into floating point fields correctly.
   EXPECT_TRUE(JsonAndBack(
       "{ \"foo_struct_scalars\": { \"foo_float\": 1, \"foo_double\": "
       "2, \"foo_int32\": 3, \"foo_uint32\": 4, \"foo_int64\": "
       "5, \"foo_uint64\": 6 } }",
-      "{ \"foo_struct_scalars\": { \"foo_float\": 1.0, \"foo_double\": "
-      "2.0, \"foo_int32\": 3, \"foo_uint32\": 4, \"foo_int64\": "
-      "5, \"foo_uint64\": 6 } }",
       TestReflection::kNo));
   EXPECT_TRUE(JsonAndBack(
       "{ \"vector_foo_struct_scalars\": [ { \"foo_float\": 1.234, "
-      "\"foo_double\": 4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, "
-      "\"foo_int64\": -1030, \"foo_uint64\": 18446744073709551614 }, { "
-      "\"foo_float\": 2.0, \"foo_double\": 4.1, \"foo_int32\": 10, "
-      "\"foo_uint32\": 13, \"foo_int64\": 15, \"foo_uint64\": 18 } ] }",
+      "\"foo_double\": 4.567, \"foo_int32\": -971, "
+      "\"foo_uint32\": 4294967294, \"foo_int64\": -1030, \"foo_uint64\": "
+      "18446744073709551614 }, { \"foo_float\": 2, \"foo_double\": "
+      "4.1, \"foo_int32\": 10, \"foo_uint32\": 13, "
+      "\"foo_int64\": 15, \"foo_uint64\": 18 } ] }",
       TestReflection::kNo));
   EXPECT_TRUE(
       JsonAndBack("{ \"foo_struct_enum\": { \"foo_enum\": \"UByte\" } }"));
@@ -209,8 +212,8 @@ TEST_F(JsonToFlatbufferTest, Unicode) {
 
 // Tests that we can handle decimal points.
 TEST_F(JsonToFlatbufferTest, DecimalPoint) {
-  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.1 }"));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.1 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.099999 }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.099999999999 }"));
 }
 
 // Test what happens if you pass a field name that we don't know.
@@ -283,19 +286,15 @@ TEST_F(JsonToFlatbufferTest, Array) {
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [ 9, 7, 1 ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [  ] }"));
 
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [  ] }"));
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9, 7, 1 ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [  ] }"));
 
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ] }",
-                          "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9, 7, 1 ] }",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
+                          "{ \"vector_foo_float\": [ 9, 7, 1 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          "{ \"vector_foo_double\": [ 9, 7, 1 ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [  ] }"));
@@ -336,8 +335,7 @@ TEST_F(JsonToFlatbufferTest, CStyleComments) {
   /* foo */
   "vector_foo_double": [ 9, 7, 1 ] /* foo */
 } /* foo */)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+                          "{ \"vector_foo_double\": [ 9, 7, 1 ] }"));
 }
 
 // Tests that C++ style comments get stripped.
@@ -346,8 +344,7 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
   // foo
   "vector_foo_double": [ 9, 7, 1 ] // foo
 } // foo)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+                          "{ \"vector_foo_double\": [ 9, 7, 1 ] }"));
 
   // Test empty comment on its own line doesn't remove the next line.
   EXPECT_TRUE(JsonAndBack(R"({
@@ -355,8 +352,8 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
   "vector_foo_double": [ 9, 7, 1 ], // foo
   "vector_foo_float": [ 3, 1, 4 ]
 } // foo)",
-                          "{ \"vector_foo_float\": [ 3.0, 1.0, 4.0 ], "
-                          "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          "{ \"vector_foo_float\": [ 3, 1, 4 ], "
+                          "\"vector_foo_double\": [ 9, 7, 1 ] }",
                           TestReflection::kNo));
 
   // Test empty comment at end of line doesn't remove the next line.
@@ -365,8 +362,8 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
   "vector_foo_double": [ 2, 7, 1 ], //
   "vector_foo_float": [ 3, 1, 4 ]
 } // foo)",
-                          "{ \"vector_foo_float\": [ 3.0, 1.0, 4.0 ], "
-                          "\"vector_foo_double\": [ 2.0, 7.0, 1.0 ] }",
+                          "{ \"vector_foo_float\": [ 3, 1, 4 ], "
+                          "\"vector_foo_double\": [ 2, 7, 1 ] }",
                           TestReflection::kNo));
 
   // Test empty comment at end of document doesn't cause error.
@@ -375,8 +372,8 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
   "vector_foo_double": [ 5, 6, 7 ], // foo
   "vector_foo_float": [ 7, 8, 9 ]
 } //)",
-                          "{ \"vector_foo_float\": [ 7.0, 8.0, 9.0 ], "
-                          "\"vector_foo_double\": [ 5.0, 6.0, 7.0 ] }",
+                          "{ \"vector_foo_float\": [ 7, 8, 9 ], "
+                          "\"vector_foo_double\": [ 5, 6, 7 ] }",
                           TestReflection::kNo));
 }
 
@@ -389,8 +386,8 @@ TEST_F(JsonToFlatbufferTest, MixedStyleComments) {
 }
 // foo
 /* foo */)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
-                          TestReflection::kNo));
+                          "{ \"vector_foo_double\": [ 9, 7, 1 ] }",
+                          TestReflection::kYes));
 }
 
 // Tests that multiple arrays get properly handled.
@@ -398,8 +395,6 @@ TEST_F(JsonToFlatbufferTest, MultipleArrays) {
   EXPECT_TRUE(
       JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ], \"vector_foo_double\": "
                   "[ 9, 7, 1 ] }",
-                  "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ], "
-                  "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
                   TestReflection::kNo));
 }
 

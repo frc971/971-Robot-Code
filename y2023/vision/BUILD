@@ -288,7 +288,7 @@ py_test(
         ":calibrate_multi_cameras",
         "//y2023/vision/calib_files",
         "@calibrate_multi_cameras_data",
-    ],
+    ] + glob(["test_data/**"]),
     target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 

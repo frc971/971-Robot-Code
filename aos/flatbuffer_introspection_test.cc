@@ -61,8 +61,8 @@ TEST_F(FlatbufferIntrospectionTest, FloatTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out,
-            "{ \"foo_double\": 0.555555555555556, \"foo_float\": 0.333333 }");
+  EXPECT_EQ(
+      out, "{ \"foo_double\": 0.5555555555555556, \"foo_float\": 0.33333334 }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, NanFloatTest) {
@@ -129,18 +129,19 @@ TEST_F(FlatbufferIntrospectionTest, VectorScalarTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out,
-            "{ \"vector_foo_bool\": [ true, false, true, false ], "
-            "\"vector_foo_byte\": [ -3, -2, -1, 0, 1, 2, 3 ], "
-            "\"vector_foo_double\": [ 0, 0.111111111111111, 0.222222222222222, "
-            "0.333333333333333 ], \"vector_foo_float\": [ 0, 0.111111, "
-            "0.222222, 0.333333 ], \"vector_foo_int\": [ -300, -200, -100, 0, "
-            "100, 200, 300 ], \"vector_foo_long\": [ -3000, -2000, -1000, 0, "
-            "1000, 2000, 3000 ], \"vector_foo_short\": [ -30, -20, -10, 0, 10, "
-            "20, 30 ], \"vector_foo_ubyte\": [ 0, 1, 2, 3, 4, 5, 6 ], "
-            "\"vector_foo_uint\": [ 0, 100, 200, 300, 400, 500, 600 ], "
-            "\"vector_foo_ulong\": [ 0, 1000, 2000, 3000, 4000, 5000, 6000 ], "
-            "\"vector_foo_ushort\": [ 0, 10, 20, 30, 40, 50, 60 ] }");
+  EXPECT_EQ(
+      out,
+      "{ \"vector_foo_bool\": [ true, false, true, false ], "
+      "\"vector_foo_byte\": [ -3, -2, -1, 0, 1, 2, 3 ], \"vector_foo_double\": "
+      "[ 0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333 ], "
+      "\"vector_foo_float\": [ 0, 0.11111111, 0.22222222, 0.33333334 ], "
+      "\"vector_foo_int\": [ -300, -200, -100, 0, 100, 200, 300 ], "
+      "\"vector_foo_long\": [ -3000, -2000, -1000, 0, 1000, 2000, 3000 ], "
+      "\"vector_foo_short\": [ -30, -20, -10, 0, 10, 20, 30 ], "
+      "\"vector_foo_ubyte\": [ 0, 1, 2, 3, 4, 5, 6 ], \"vector_foo_uint\": [ "
+      "0, 100, 200, 300, 400, 500, 600 ], \"vector_foo_ulong\": [ 0, 1000, "
+      "2000, 3000, 4000, 5000, 6000 ], \"vector_foo_ushort\": [ 0, 10, 20, 30, "
+      "40, 50, 60 ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, StringTest) {
@@ -463,13 +464,12 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorScalarTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer(),
                                      {.multi_line = true});
 
-  EXPECT_EQ(out,
-            "{\n"
-            "  \"vector_foo_double\": [ 0, 0.111111111111111, "
-            "0.222222222222222, 0.333333333333333 ],\n"
-            "  \"vector_foo_float\": [ 0, 0.111111, 0.222222, 0.333333 ],\n"
-            "  \"vector_foo_int\": [ -300, -200, -100, 0, 100, 200, 300 ]\n"
-            "}");
+  EXPECT_EQ(
+      out,
+      "{\n  \"vector_foo_double\": [ 0, 0.1111111111111111, "
+      "0.2222222222222222, 0.3333333333333333 ],\n  \"vector_foo_float\": [ 0, "
+      "0.11111111, 0.22222222, 0.33333334 ],\n  \"vector_foo_int\": [ -300, "
+      "-200, -100, 0, 100, 200, 300 ]\n}");
 }
 
 // Tests that a nullptr buffer prints nullptr.

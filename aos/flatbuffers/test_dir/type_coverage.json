@@ -130,7 +130,7 @@
   55
  ],
  "vector_foo_float": [
-  21.0,
+  21,
   3.4,
   5.5
  ],
@@ -195,16 +195,16 @@
  },
  "vector_foo_struct_scalars": [
   {
-   "foo_float": 1.0,
-   "foo_double": 2.0,
+   "foo_float": 1,
+   "foo_double": 2,
    "foo_int32": 3,
    "foo_uint32": 4,
    "foo_int64": 5,
    "foo_uint64": 6
   },
   {
-   "foo_float": 7.0,
-   "foo_double": 8.0,
+   "foo_float": 7,
+   "foo_double": 8,
    "foo_int32": 9,
    "foo_uint32": 10,
    "foo_int64": 11,

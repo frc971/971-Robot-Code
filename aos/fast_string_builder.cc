@@ -1,5 +1,7 @@
 #include "aos/fast_string_builder.h"
 
+#include <charconv>
+
 namespace aos {
 
 FastStringBuilder::FastStringBuilder(std::size_t initial_size) {
@@ -30,20 +32,22 @@ void FastStringBuilder::Append(std::string_view str) {
 
 void FastStringBuilder::Append(float val) {
   std::size_t index = str_.size();
-  Resize(17);
-  int result = absl::SNPrintF(str_.data() + index, 17, "%.6g", val);
-  PCHECK(result != -1);
-  CHECK(result < 17);
-  str_.resize(index + result);
+  constexpr std::size_t kMaxSize = 17;
+  Resize(kMaxSize);
+  const std::to_chars_result result =
+      std::to_chars(str_.data() + index, str_.data() + index + kMaxSize, val);
+  CHECK(result.ec == std::errc()) << std::make_error_code(result.ec).message();
+  str_.resize(result.ptr - str_.data());
 }
 
 void FastStringBuilder::Append(double val) {
   std::size_t index = str_.size();
-  Resize(25);
-  int result = absl::SNPrintF(str_.data() + index, 25, "%.15g", val);
-  PCHECK(result != -1);
-  CHECK(result < 25);
-  str_.resize(index + result);
+  constexpr std::size_t kMaxSize = 25;
+  Resize(kMaxSize);
+  const std::to_chars_result result =
+      std::to_chars(str_.data() + index, str_.data() + index + kMaxSize, val);
+  CHECK(result.ec == std::errc()) << std::make_error_code(result.ec).message();
+  str_.resize(result.ptr - str_.data());
 }
 
 void FastStringBuilder::AppendChar(char val) {

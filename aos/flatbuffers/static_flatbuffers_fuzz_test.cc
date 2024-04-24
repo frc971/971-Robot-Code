@@ -74,7 +74,7 @@ TEST_F(StaticFlatbuffersFuzzTest, JsonFuzzing) {
       },
       {
           "",
-          "\"substruct\": {\n  \"x\": 971.0,\n  \"y\": 123.0\n }",
+          "\"substruct\": {\n  \"x\": 971,\n  \"y\": 123\n }",
       },
       {
           "",
@@ -95,44 +95,44 @@ TEST_F(StaticFlatbuffersFuzzTest, JsonFuzzing) {
           "\"vector_of_structs\": [\n  \n ]",
           R"json("vector_of_structs": [
   {
-   "x": 1.0,
-   "y": 2.0
+   "x": 1,
+   "y": 2
   }
  ])json",
           R"json("vector_of_structs": [
   {
-   "x": 1.0,
-   "y": 2.0
+   "x": 1,
+   "y": 2
   },
   {
-   "x": 3.0,
-   "y": 4.0
+   "x": 3,
+   "y": 4
   },
   {
-   "x": 5.0,
-   "y": 6.0
+   "x": 5,
+   "y": 6
   }
  ])json",
           R"json("vector_of_structs": [
   {
-   "x": 1.0,
-   "y": 2.0
+   "x": 1,
+   "y": 2
   },
   {
-   "x": 3.0,
-   "y": 4.0
+   "x": 3,
+   "y": 4
   },
   {
-   "x": 5.0,
-   "y": 6.0
+   "x": 5,
+   "y": 6
   },
   {
-   "x": 7.0,
-   "y": 8.0
+   "x": 7,
+   "y": 8
   },
   {
-   "x": 9.0,
-   "y": 10.0
+   "x": 9,
+   "y": 10
   }
  ])json",
       },

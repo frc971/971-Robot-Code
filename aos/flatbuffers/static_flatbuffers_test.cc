@@ -211,7 +211,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     CHECK(builder.AsFlatbufferSpan().Verify());
     EXPECT_EQ(123, object->AsFlatbuffer().foo());
     EXPECT_EQ(971, object->AsFlatbuffer().baz());
-    EXPECT_EQ(R"json({ "foo": 123, "baz": 971.0 })json",
+    EXPECT_EQ(R"json({ "foo": 123, "baz": 971 })json",
               aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
     TestMemory(builder.buffer());
   }
@@ -308,8 +308,8 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  }
 })json",
         aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
@@ -333,8 +333,8 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
@@ -373,24 +373,24 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
  },
  "vector_of_structs": [
   {
-   "x": 48.0,
-   "y": 67.0
+   "x": 48,
+   "y": 67
   },
   {
-   "x": 118.0,
-   "y": 148.0
+   "x": 118,
+   "y": 148
   },
   {
-   "x": 971.0,
-   "y": 973.0
+   "x": 971,
+   "y": 973
   }
  ]
 })json",
@@ -420,24 +420,24 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
  },
  "vector_of_structs": [
   {
-   "x": 48.0,
-   "y": 67.0
+   "x": 48,
+   "y": 67
   },
   {
-   "x": 118.0,
-   "y": 148.0
+   "x": 118,
+   "y": 148
   },
   {
-   "x": 971.0,
-   "y": 973.0
+   "x": 971,
+   "y": 973
   }
  ],
  "vector_of_tables": [
@@ -469,24 +469,24 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
  },
  "vector_of_structs": [
   {
-   "x": 48.0,
-   "y": 67.0
+   "x": 48,
+   "y": 67
   },
   {
-   "x": 118.0,
-   "y": 148.0
+   "x": 118,
+   "y": 148
   },
   {
-   "x": 971.0,
-   "y": 973.0
+   "x": 971,
+   "y": 973
   }
  ],
  "vector_of_tables": [
@@ -526,8 +526,8 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
@@ -537,16 +537,16 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
  ],
  "vector_of_structs": [
   {
-   "x": 48.0,
-   "y": 67.0
+   "x": 48,
+   "y": 67
   },
   {
-   "x": 118.0,
-   "y": 148.0
+   "x": 118,
+   "y": 148
   },
   {
-   "x": 971.0,
-   "y": 973.0
+   "x": 971,
+   "y": 973
   }
  ],
  "vector_of_tables": [
@@ -592,8 +592,8 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   "D"
  ],
  "substruct": {
-  "x": 971.0,
-  "y": 254.0
+  "x": 971,
+  "y": 254
  },
  "subtable": {
   "foo": 1234
@@ -603,16 +603,16 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
  ],
  "vector_of_structs": [
   {
-   "x": 48.0,
-   "y": 67.0
+   "x": 48,
+   "y": 67
   },
   {
-   "x": 118.0,
-   "y": 148.0
+   "x": 118,
+   "y": 148
   },
   {
-   "x": 971.0,
-   "y": 973.0
+   "x": 971,
+   "y": 973
   }
  ],
  "vector_of_tables": [
@@ -718,8 +718,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
   1
  ],
  "substruct": {
-  "x": 2.0,
-  "y": 3.0
+  "x": 2,
+  "y": 3
  }
 })json",
         aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
@@ -737,8 +737,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
   1
  ],
  "substruct": {
-  "x": 4.0,
-  "y": 5.0
+  "x": 4,
+  "y": 5
  }
 })json",
         aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
@@ -759,8 +759,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
   1
  ],
  "substruct": {
-  "x": 4.0,
-  "y": 5.0
+  "x": 4,
+  "y": 5
  },
  "subtable": {
   "baz": 9.71
@@ -782,11 +782,11 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
   1
  ],
  "substruct": {
-  "x": 4.0,
-  "y": 5.0
+  "x": 4,
+  "y": 5
  },
  "subtable": {
-  "baz": 16.780001
+  "baz": 16.78
  }
 })json",
         aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
@@ -1059,8 +1059,8 @@ TEST_F(StaticFlatbuffersTest, ObjectApiCopy) {
   EXPECT_EQ(
       "{ \"scalar\": 971, \"vector_of_scalars\": [  ], \"string\": \"\", "
       "\"vector_of_strings\": [ \"971\" ], \"subtable\": { \"foo\": 0, "
-      "\"baz\": 0.0 }, \"vector_aligned\": [  ], \"vector_of_structs\": [ { "
-      "\"x\": 1.0, \"y\": 2.0 } ], \"vector_of_tables\": [  ], "
+      "\"baz\": 0 }, \"vector_aligned\": [  ], \"vector_of_structs\": [ { "
+      "\"x\": 1, \"y\": 2 } ], \"vector_of_tables\": [  ], "
       "\"unspecified_length_vector\": [  ], \"unspecified_length_string\": "
       "\"\", \"unspecified_length_vector_of_strings\": [  ] }",
       aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
