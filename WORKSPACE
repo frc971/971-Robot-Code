@@ -915,6 +915,7 @@ nodejs_register_toolchains(
 npm_translate_lock(
     name = "npm",
     data = [
+        "//aos/analysis/foxglove_extension:package.json",
         "@//:package.json",
         "@//:pnpm-workspace.yaml",
         "@//scouting/webserver/requests/messages:package.json",

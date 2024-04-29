@@ -1,5 +1,6 @@
 packages:
-  - 'scouting/webserver/requests/messages'
-  - 'scouting/www'
-  - 'scouting/www/*'
-  - 'scouting/www/test/*'
+- scouting/webserver/requests/messages
+- scouting/www
+- scouting/www/*
+- scouting/www/test/*
+- aos/analysis/foxglove_extension
