@@ -118,6 +118,20 @@ class Reallocator {
   }
 };
 
+// Allocates aligned memory.
+template <size_t alignment>
+class AlignedReallocator {
+ public:
+  static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
+    void *new_memory = std::aligned_alloc(alignment, new_capacity);
+    if (old) {
+      memcpy(new_memory, old, old_size);
+      free(old);
+    }
+    return new_memory;
+  }
+};
+
 // A resizable buffer which uses realloc when it needs to grow to attempt to
 // avoid full coppies.
 class ResizeableBuffer : public AllocatorResizeableBuffer<Reallocator> {};

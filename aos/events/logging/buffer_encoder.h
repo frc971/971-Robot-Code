@@ -15,6 +15,10 @@ class DataEncoder {
  public:
   virtual ~DataEncoder() = default;
 
+  // Size of an aligned sector used to detect when the data is aligned enough to
+  // use O_DIRECT instead.
+  static constexpr size_t kSector = 512u;
+
   // Interface to copy data into a buffer.
   class Copier {
    public:
@@ -114,21 +118,7 @@ class DummyEncoder final : public DataEncoder {
  private:
   size_t total_bytes_ = 0;
 
-  // A class which uses aligned_alloc to allocate sector aligned blocks of
-  // memory.
-  class AlignedReallocator {
-   public:
-    static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
-      void *new_memory = std::aligned_alloc(512, new_capacity);
-      if (old) {
-        memcpy(new_memory, old, old_size);
-        free(old);
-      }
-      return new_memory;
-    }
-  };
-
-  AllocatorResizeableBuffer<AlignedReallocator> input_buffer_;
+  AllocatorResizeableBuffer<aos::AlignedReallocator<kSector>> input_buffer_;
   std::vector<absl::Span<const uint8_t>> return_queue_;
 };
 

@@ -12,6 +12,7 @@
 #include "glog/logging.h"
 
 #include "aos/containers/resizeable_buffer.h"
+#include "aos/events/logging/log_backend.h"
 #include "aos/init.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
@@ -38,19 +39,6 @@ DEFINE_bool(rate_limit, false,
 DEFINE_double(write_bandwidth, 120.0,
               "Write speed in MB/s to simulate. This is only used when "
               "--rate_limit is specified.");
-
-// Stolen from aos/events/logging/DummyEncoder
-class AlignedReallocator {
- public:
-  static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
-    void *new_memory = std::aligned_alloc(512, new_capacity);
-    if (old) {
-      memcpy(new_memory, old, old_size);
-      free(old);
-    }
-    return new_memory;
-  }
-};
 
 void trap_sig(int signum) { exit(signum); }
 
@@ -82,7 +70,9 @@ int main(int argc, char **argv) {
     std::signal(SIGHUP, trap_sig);
     std::atexit(cleanup);
   }
-  aos::AllocatorResizeableBuffer<AlignedReallocator> data;
+  aos::AllocatorResizeableBuffer<
+      aos::AlignedReallocator<aos::logger::FileHandler::kSector>>
+      data;
 
   {
     // We want uncompressible data.  The easiest way to do this is to grab a
