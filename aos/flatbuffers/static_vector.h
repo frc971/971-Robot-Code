@@ -377,7 +377,10 @@ class Vector : public ResizeableObject {
     // clear the buffer to zero.
     resize_inline(input_size, SetZero::kNo);
 
-    memcpy(inline_data(), input_data, size() * sizeof(InlineType));
+    if (input_size > 0) {
+      memcpy(inline_data(), CHECK_NOTNULL(input_data),
+             size() * sizeof(InlineType));
+    }
     return true;
   }
 
