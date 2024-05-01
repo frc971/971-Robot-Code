@@ -126,17 +126,35 @@ std::vector<internal::FileOperations::File> FindLogs(std::string filename) {
   return files;
 }
 
+namespace {
+
+void AddLogfiles(std::string_view filename,
+                 std::vector<internal::FileOperations::File> *found_logfiles) {
+  const auto file_operations = MakeFileOperations(filename);
+  if (file_operations->Exists()) {
+    file_operations->FindLogs(found_logfiles);
+  } else {
+    LOG(FATAL) << "File " << filename << " does not exist";
+  }
+}
+
+};  // namespace
+
 std::vector<internal::FileOperations::File> FindLogs(int argc, char **argv) {
   std::vector<internal::FileOperations::File> found_logfiles;
 
   for (int i = 1; i < argc; i++) {
-    std::string filename = argv[i];
-    const auto file_operations = MakeFileOperations(filename);
-    if (file_operations->Exists()) {
-      file_operations->FindLogs(&found_logfiles);
-    } else {
-      LOG(FATAL) << "File " << filename << " does not exist";
-    }
+    AddLogfiles(argv[i], &found_logfiles);
+  }
+  return found_logfiles;
+}
+
+std::vector<internal::FileOperations::File> FindLogs(
+    const std::vector<std::string> &paths) {
+  std::vector<internal::FileOperations::File> found_logfiles;
+
+  for (const std::string &filename : paths) {
+    AddLogfiles(filename, &found_logfiles);
   }
   return found_logfiles;
 }

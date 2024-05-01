@@ -167,6 +167,8 @@ std::vector<internal::FileOperations::File> FindLogs(std::string filename);
 
 // Recursively searches for logfiles in argv[1] and onward.
 std::vector<internal::FileOperations::File> FindLogs(int argc, char **argv);
+std::vector<internal::FileOperations::File> FindLogs(
+    const std::vector<std::string> &paths);
 
 // Proxy container to bind log parts with log source. It helps with reading logs
 // from virtual media such as memory or S3.

@@ -157,4 +157,75 @@ TEST(FileOperationTest, ListDirectory) {
   EXPECT_EQ(logs.front().name, log_file);
 }
 
+// Tests that FindLogs returns reasonable results.
+TEST(LogfileSorting, FindLogs) {
+  std::string log_folder = aos::testing::TestTmpDir() + "/log_folder";
+  util::UnlinkRecursive(log_folder);
+  std::filesystem::create_directories(log_folder);
+
+  std::filesystem::create_directories(log_folder + "/log1/a");
+  std::ofstream(log_folder + "/log1/a/part1.bfbs").good();
+  std::ofstream(log_folder + "/log1/a/part2.bfbs").good();
+  std::ofstream(log_folder + "/log1/a/randomfile").good();
+  std::filesystem::create_directories(log_folder + "/log1/b");
+  std::ofstream(log_folder + "/log1/b/part1.bfbs").good();
+  std::ofstream(log_folder + "/log1/b/randomfile").good();
+  std::filesystem::create_directories(log_folder + "/log1/c");
+  std::ofstream(log_folder + "/log1/c/part1.bfbs").good();
+  std::ofstream(log_folder + "/log1/c/part2.bfbs").good();
+  std::ofstream(log_folder + "/log1/c/part3.bfbs").good();
+
+  std::filesystem::create_directories(log_folder + "/log2/a");
+  std::ofstream(log_folder + "/log2/a/part1.bfbs").good();
+  std::ofstream(log_folder + "/log2/a/part2.bfbs").good();
+  std::ofstream(log_folder + "/log2/a/part3.bfbs").good();
+  std::ofstream(log_folder + "/log2/a/randomfile").good();
+
+  std::filesystem::create_directories(log_folder + "/log3/b");
+  std::ofstream(log_folder + "/log3/b/part1.bfbs").good();
+  std::filesystem::create_directories(log_folder + "/log3/c");
+  std::ofstream(log_folder + "/log3/c/part1.bfbs").good();
+  std::ofstream(log_folder + "/log3/c/part2.bfbs").good();
+  std::ofstream(log_folder + "/log3/c/part3.bfbs").good();
+
+  auto empty_file_with_name = [](std::string_view name) {
+    return ::testing::AllOf(
+        ::testing::Field(&internal::FileOperations::File::name, name),
+        ::testing::Field(&internal::FileOperations::File::size, 0u));
+  };
+
+  {
+    std::vector<internal::FileOperations::File> result = FindLogs(
+        std::vector<std::string>{log_folder + "/log1", log_folder + "/log3"});
+
+    EXPECT_EQ(result.size(), 10);
+  }
+
+  {
+    std::vector<internal::FileOperations::File> result =
+        FindLogs(std::vector<std::string>{log_folder + "/log1"});
+
+    EXPECT_THAT(result,
+                ::testing::UnorderedElementsAre(
+                    empty_file_with_name(log_folder + "/log1/a/part1.bfbs"),
+                    empty_file_with_name(log_folder + "/log1/a/part2.bfbs"),
+                    empty_file_with_name(log_folder + "/log1/b/part1.bfbs"),
+                    empty_file_with_name(log_folder + "/log1/c/part1.bfbs"),
+                    empty_file_with_name(log_folder + "/log1/c/part2.bfbs"),
+                    empty_file_with_name(log_folder + "/log1/c/part3.bfbs")));
+  }
+
+  {
+    std::vector<internal::FileOperations::File> result =
+        FindLogs(std::vector<std::string>{log_folder + "/log3"});
+
+    EXPECT_THAT(result,
+                ::testing::UnorderedElementsAre(
+                    empty_file_with_name(log_folder + "/log3/b/part1.bfbs"),
+                    empty_file_with_name(log_folder + "/log3/c/part1.bfbs"),
+                    empty_file_with_name(log_folder + "/log3/c/part2.bfbs"),
+                    empty_file_with_name(log_folder + "/log3/c/part3.bfbs")));
+  }
+}
+
 }  // namespace aos::logger::testing
