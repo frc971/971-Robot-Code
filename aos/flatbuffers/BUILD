@@ -33,6 +33,7 @@ cc_test(
     name = "base_test",
     srcs = ["base_test.cc"],
     deps = [
+        ":aligned_allocator",
         ":base",
         "//aos/testing:googletest",
     ],
@@ -164,4 +165,18 @@ filegroup(
     name = "test_static_file",
     srcs = ["test_static.h"],
     visibility = [":__subpackages__"],
+)
+
+cc_library(
+    name = "aligned_allocator",
+    srcs = ["aligned_allocator.cc"],
+    hdrs = ["aligned_allocator.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":base",
+        "//aos/containers:resizeable_buffer",
+        "//aos/events:event_loop",
+        "//aos/ipc_lib:data_alignment",
+        "@com_github_google_glog//:glog",
+    ],
 )

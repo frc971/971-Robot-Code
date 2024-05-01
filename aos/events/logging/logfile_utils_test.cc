@@ -274,6 +274,7 @@ TEST(MessageTest, Sorting) {
                  BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(1)},
              .monotonic_remote_boot = 0xffffff,
              .monotonic_timestamp_boot = 0xffffff,
+             .header = nullptr,
              .data = nullptr};
   Message m2{.channel_index = 0,
              .queue_index = BootQueueIndex{.boot = 0, .index = 0u},
@@ -281,6 +282,7 @@ TEST(MessageTest, Sorting) {
                  BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(2)},
              .monotonic_remote_boot = 0xffffff,
              .monotonic_timestamp_boot = 0xffffff,
+             .header = nullptr,
              .data = nullptr};
 
   EXPECT_LT(m1, m2);
@@ -960,24 +962,24 @@ TEST_F(PartsMergerTest, TwoFileTimestampMerger) {
 
   EXPECT_EQ(output[0].timestamp.boot, 0u);
   EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(101000));
-  EXPECT_FALSE(output[0].data->has_monotonic_timestamp_time);
+  EXPECT_FALSE(output[0].header->has_monotonic_timestamp_time);
 
   EXPECT_EQ(output[1].timestamp.boot, 0u);
   EXPECT_EQ(output[1].timestamp.time, e + chrono::milliseconds(101001));
-  EXPECT_TRUE(output[1].data->has_monotonic_timestamp_time);
-  EXPECT_EQ(output[1].data->monotonic_timestamp_time,
+  EXPECT_TRUE(output[1].header->has_monotonic_timestamp_time);
+  EXPECT_EQ(output[1].header->monotonic_timestamp_time,
             monotonic_clock::time_point(std::chrono::nanoseconds(971)));
 
   EXPECT_EQ(output[2].timestamp.boot, 0u);
   EXPECT_EQ(output[2].timestamp.time, e + chrono::milliseconds(101002));
-  EXPECT_TRUE(output[2].data->has_monotonic_timestamp_time);
-  EXPECT_EQ(output[2].data->monotonic_timestamp_time,
+  EXPECT_TRUE(output[2].header->has_monotonic_timestamp_time);
+  EXPECT_EQ(output[2].header->monotonic_timestamp_time,
             monotonic_clock::time_point(std::chrono::nanoseconds(972)));
 
   EXPECT_EQ(output[3].timestamp.boot, 0u);
   EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(101003));
-  EXPECT_TRUE(output[3].data->has_monotonic_timestamp_time);
-  EXPECT_EQ(output[3].data->monotonic_timestamp_time,
+  EXPECT_TRUE(output[3].header->has_monotonic_timestamp_time);
+  EXPECT_EQ(output[3].header->monotonic_timestamp_time,
             monotonic_clock::time_point(std::chrono::nanoseconds(973)));
 }
 

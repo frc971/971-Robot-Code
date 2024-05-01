@@ -6,6 +6,8 @@
 
 #include "gtest/gtest.h"
 
+#include "aos/flatbuffers/aligned_allocator.h"
+
 namespace aos::fbs::testing {
 // Tests that PaddedSize() behaves as expected.
 TEST(BaseTest, PaddedSize) {
@@ -16,7 +18,7 @@ TEST(BaseTest, PaddedSize) {
   EXPECT_EQ(8, PaddedSize(7, 4));
 }
 
-inline constexpr size_t kDefaultSize = 16;
+inline constexpr size_t kDefaultSize = AlignedVectorAllocator::kAlignment * 2;
 template <typename T>
 class AllocatorTest : public ::testing::Test {
  protected:
@@ -32,7 +34,8 @@ AllocatorTest<SpanAllocator>::AllocatorTest()
       allocator_(std::make_unique<SpanAllocator>(
           std::span<uint8_t>{buffer_.data(), buffer_.size()})) {}
 
-using AllocatorTypes = ::testing::Types<SpanAllocator, VectorAllocator>;
+using AllocatorTypes =
+    ::testing::Types<SpanAllocator, VectorAllocator, AlignedVectorAllocator>;
 TYPED_TEST_SUITE(AllocatorTest, AllocatorTypes);
 
 // Tests that we can create and not use a VectorAllocator.
@@ -79,6 +82,11 @@ TYPED_TEST(AllocatorTest, InsertBytes) {
 
 // Tests that we can remove bytes from an arbitrary spot in the buffer.
 TYPED_TEST(AllocatorTest, RemoveBytes) {
+  // Deletion doesn't require resizing, so we don't need to worry about it being
+  // larger than the alignment to test everything.  The test requires the size
+  // to be < 255 to store the sentinal values.
+  const size_t kDefaultSize = 128;
+
   const size_t half_size = kDefaultSize / 2;
   std::span<uint8_t> span =
       this->allocator_->Allocate(kDefaultSize, 4, SetZero::kYes).value();

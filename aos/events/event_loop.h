@@ -166,7 +166,8 @@ class RawSender {
 
   // Sends a single block of data by refcounting it to avoid copies.  The data
   // must not change after being passed into Send. The remote arguments have the
-  // same meaning as in Send above.
+  // same meaning as in Send above.  Note: some implmementations will have to
+  // copy anyways, but other implementations can skip the copy.
   Error Send(const SharedSpan data);
   Error Send(const SharedSpan data,
              monotonic_clock::time_point monotonic_remote_time,

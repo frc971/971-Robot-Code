@@ -9,6 +9,7 @@
 #include "glog/logging.h"
 
 #include "aos/containers/resizeable_buffer.h"
+#include "aos/ipc_lib/data_alignment.h"
 #include "aos/macros.h"
 #include "aos/util/file.h"
 

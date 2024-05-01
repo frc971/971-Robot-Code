@@ -509,6 +509,7 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/containers:resizeable_buffer",
+        "//aos/ipc_lib:data_alignment",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
