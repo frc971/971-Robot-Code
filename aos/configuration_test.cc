@@ -1022,6 +1022,38 @@ TEST_F(ConfigurationTest, SourceNodeIndex) {
   EXPECT_THAT(result, ::testing::ElementsAreArray({0, 1, 0, 0}));
 }
 
+// Tests that SourceNode reasonably handles both single and multi-node configs.
+TEST_F(ConfigurationTest, SourceNode) {
+  {
+    FlatbufferDetachedBuffer<Configuration> config_single_node =
+        ReadConfig(ArtifactPath("aos/testdata/config1.json"));
+    const Node *result =
+        SourceNode(&config_single_node.message(),
+                   config_single_node.message().channels()->Get(0));
+    EXPECT_EQ(result, nullptr);
+  }
+
+  {
+    FlatbufferDetachedBuffer<Configuration> config_multi_node =
+        ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+    size_t pi1_channels = 0;
+    size_t pi2_channels = 0;
+    for (const aos::Channel *channel :
+         *config_multi_node.message().channels()) {
+      const Node *result = SourceNode(&config_multi_node.message(), channel);
+      if (channel->source_node()->string_view() == "pi1") {
+        ++pi1_channels;
+        EXPECT_EQ(result, config_multi_node.message().nodes()->Get(0));
+      } else {
+        ++pi2_channels;
+        EXPECT_EQ(result, config_multi_node.message().nodes()->Get(1));
+      }
+    }
+    EXPECT_GT(pi1_channels, 0u);
+    EXPECT_GT(pi2_channels, 0u);
+  }
+}
+
 // Tests that we reject invalid logging configurations.
 TEST_F(ConfigurationDeathTest, InvalidLoggerConfig) {
   EXPECT_DEATH(
