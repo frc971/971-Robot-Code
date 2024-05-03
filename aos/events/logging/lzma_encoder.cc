@@ -195,7 +195,13 @@ void LzmaEncoder::RunLzmaCode(lzma_action action,
       const monotonic_clock::time_point start_time =
           aos::monotonic_clock::now();
       status = lzma_code(&stream_, action);
-      *encode_duration = aos::monotonic_clock::now() - start_time;
+      const monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+      DCHECK_NE(start_time, end_time)
+          << "Timestamp equality check failed, indicating insufficient clock "
+             "resolution. This was observed while measuring the execution "
+             "duration of 'lzma_code'. If using Xen as the OS clock source, "
+             "consider switching to TSC for higher clock resolution.";
+      *encode_duration = end_time - start_time;
     }
 
     CHECK(LzmaCodeIsOk(status));

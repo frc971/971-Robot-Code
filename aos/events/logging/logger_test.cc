@@ -587,6 +587,7 @@ void VerifyProfilingData(const std::filesystem::path &profiling_path) {
 
   // Track the total encoding duration.
   uint64_t total_encoding_duration_ns = 0;
+  std::vector<int64_t> encode_durations_ns;
 
   while (std::getline(file, line)) {
     std::stringstream line_stream(line);
@@ -610,6 +611,8 @@ void VerifyProfilingData(const std::filesystem::path &profiling_path) {
     const int64_t encode_duration_ns = std::stoll(cells[2]);
     const int64_t encoding_start_time_ns = std::stoll(cells[3]);
 
+    encode_durations_ns.push_back(encode_duration_ns);
+
     ASSERT_GT(encode_duration_ns, 0)
         << "Encode duration is not positive. Line: " << line;
     ASSERT_GT(encoding_start_time_ns, 0)
@@ -624,6 +627,26 @@ void VerifyProfilingData(const std::filesystem::path &profiling_path) {
 
   EXPECT_GT(record_count, 0) << "Profiling data file is empty.";
   LOG(INFO) << "Total encoding duration: " << total_encoding_duration_ns;
+
+  std::sort(encode_durations_ns.begin(), encode_durations_ns.end());
+
+  // calculate the minimum encode duration.
+  const int64_t min_encode_duration_ns = encode_durations_ns.front();
+  LOG(INFO) << "Minimum encoding duration: " << min_encode_duration_ns;
+
+  // calculate the maximum encode duration.
+  const int64_t max_encode_duration_ns = encode_durations_ns.back();
+  LOG(INFO) << "Maximum encoding duration: " << max_encode_duration_ns;
+
+  // calculate the median encode duration.
+  const int median_index = encode_durations_ns.size() / 2;
+  const int64_t median_encode_duration_ns = encode_durations_ns[median_index];
+  LOG(INFO) << "Median encoding duration: " << median_encode_duration_ns;
+
+  // calculate the average encode duration.
+  const int64_t average_encode_duration_ns =
+      total_encoding_duration_ns / record_count;
+  LOG(INFO) << "Average encoding duration: " << average_encode_duration_ns;
 }
 
 // Tests logging many messages with LZMA compression.
