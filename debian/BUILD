@@ -70,6 +70,10 @@ load(
     ":xvfb_amd64.bzl",
     xvfb_amd64_debs = "files",
 )
+load(
+    ":clang_amd64.bzl",
+    clang_amd64_debs = "files",
+)
 load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 package(default_visibility = ["//visibility:public"])
@@ -154,20 +158,16 @@ download_packages(
 
 download_packages(
     name = "download_clang_deps",
-    excludes = [
-        "lib32stdc++6",
-        "libstdc++6",
-    ],
-    force_includes = [
-        "libc6",
-        "libc6-dev",
-    ],
     packages = [
-        "clang-6.0",
-        "clang-format-6.0",
-        "gcc",
-        "gfortran",
+        "libtinfo5",
+        "libxml2",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "clang_amd64",
+    files = clang_amd64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

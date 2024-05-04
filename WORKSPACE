@@ -188,6 +188,10 @@ load(
     "//debian:xvfb_amd64.bzl",
     xvfb_amd64_debs = "files",
 )
+load(
+    "//debian:clang_amd64.bzl",
+    clang_amd64_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(rsync_debs)
@@ -231,6 +235,8 @@ generate_repositories_for_debs(libtinfo5_arm64_debs)
 
 generate_repositories_for_debs(xvfb_amd64_debs)
 
+generate_repositories_for_debs(clang_amd64_debs)
+
 local_repository(
     name = "com_grail_bazel_toolchain",
     path = "third_party/bazel-toolchain",
@@ -249,7 +255,7 @@ llvm_version = "17.0.2"
 
 llvm(
     name = "llvm_k8",
-    distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-22.04.tar.xz" % llvm_version,
+    distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-22.04.tar.zst" % llvm_version,
     llvm_version = llvm_version,
 )
 
@@ -458,8 +464,8 @@ http_archive(
 http_archive(
     name = "amd64_debian_sysroot",
     build_file = "@//:compilers/amd64_debian_rootfs.BUILD",
-    sha256 = "5d9d4131f3997d8543d45e673bfb15e21d7ca4c64923da91ee8d06f801dddb59",
-    url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.xz",
+    sha256 = "ceaf7e3fd4af04aca2ff0d55c94ce30c2b45d1136b0e81e9be5ebc1003f96052",
+    url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.zst",
 )
 
 local_repository(
@@ -1386,19 +1392,28 @@ http_archive(
 )
 
 http_archive(
-    name = "libtinfo5_amd64",
+    name = "clang_amd64_deps",
     build_file_content = """
-exports_files(
-    [
-        'lib/x86_64-linux-gnu/libtinfo.so.5',
-        'lib/x86_64-linux-gnu/libtinfo.so.5.9',
-    ],
-    ["//visibility:public"],
+libs = [
+    'lib/x86_64-linux-gnu/libtinfo.so.5',
+    'lib/x86_64-linux-gnu/libtinfo.so.5.9',
+    'usr/lib/x86_64-linux-gnu/libxml2.so.2',
+    'usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14',
+    'usr/lib/x86_64-linux-gnu/libicuuc.so.72',
+    'usr/lib/x86_64-linux-gnu/libicuuc.so.72.1',
+    'usr/lib/x86_64-linux-gnu/libicudata.so.72',
+    'usr/lib/x86_64-linux-gnu/libicudata.so.72.1',
+]
+exports_files(libs, ["//visibility:public"])
+
+filegroup(
+    name = "all",
+    srcs = libs,
+    visibility = ["//visibility:public"],
 )
 """,
-    patch_cmds = ["touch lib/x86_64-linux-gnu/BUILD"],
-    sha256 = "059e14f77dce365c57b96284aae98c892f61e269b3fbb7d07714b7135c2e5617",
-    urls = ["https://software.frc971.org/Build-Dependencies/libtinfo5_amd64.tar.gz"],
+    sha256 = "6ae7cbedd9b1d54da095d460e2832c2a3e2917fbfa2ed22c6787d4b527a5677d",
+    urls = ["https://software.frc971.org/Build-Dependencies/clang_amd64.tar.gz"],
 )
 
 http_archive(

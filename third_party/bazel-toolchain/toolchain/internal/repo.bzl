@@ -41,9 +41,21 @@ def llvm_repo_impl(rctx):
     if os == "linux":
         if arch == "x86_64":
             rctx.symlink(
-                Label("@libtinfo5_amd64//lib/x86_64-linux-gnu:libtinfo.so.5.9"),
+              Label("@clang_amd64_deps//:lib/x86_64-linux-gnu/libtinfo.so.5.9"),
                 "lib/libtinfo.so.5.9",
             )
+            rctx.symlink(
+              Label("@clang_amd64_deps//:usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14"),
+                "lib/libxml2.so.2.9.14",
+            )
+            rctx.symlink("lib/libxml2.so.2.9.14", "lib/libxml2.so.2")
+
+            for lib in ["libicudata", "libicuuc"]:
+                rctx.symlink(
+                  Label("@clang_amd64_deps//:usr/lib/x86_64-linux-gnu/" + lib + ".so.72.1"),
+                    "lib/" + lib + ".so.72.1",
+                )
+                rctx.symlink("lib/" + lib + ".so.72.1", "lib/" + lib + ".so.72")
         elif arch == "aarch64":
             rctx.symlink(
                 Label("@libtinfo5_arm64//lib/aarch64-linux-gnu:libtinfo.so.5.9"),

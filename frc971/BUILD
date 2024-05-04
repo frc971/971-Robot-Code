@@ -46,6 +46,7 @@ sh_binary(
     ],
     data = [
         "@amd64_debian_sysroot//:sysroot_files",
+        "@clang_amd64_deps//:all",
         "@deb_zlib1g_dev_1_2_11_dfsg_2_amd64_deb_repo//file",
         "@halide_k8//:build_files",
         "@llvm_toolchain//:all-components-x86_64-linux",

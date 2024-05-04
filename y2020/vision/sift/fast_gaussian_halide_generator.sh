@@ -30,11 +30,12 @@ ZLIB1G_DEV_AMD64_DEB="$(rlocation deb_zlib1g_dev_1_2_11_dfsg_2_amd64_deb_repo/fi
 ZLIB1G_DEV="$(mktemp -d)"
 
 LLVM_TOOLCHAIN="$(dirname "$(dirname "$(rlocation llvm_k8/bin/clang)")")"
+LLVM_LIBS="$(rlocation clang_amd64_deps)/usr/lib/x86_64-linux-gnu/"
 dpkg-deb -x "${ZLIB1G_DEV_AMD64_DEB}" "${ZLIB1G_DEV}"
 TARGET=x86_64-unknown-linux-gnu
 MULTIARCH=x86_64-linux-gnu
 
-export LD_LIBRARY_PATH="${SYSROOT}/usr/lib:${SYSROOT}/lib:${ZLIB1G_DEV}/usr/lib/${MULTIARCH}"
+export LD_LIBRARY_PATH="${SYSROOT}/usr/lib:${SYSROOT}/lib:${ZLIB1G_DEV}/usr/lib/${MULTIARCH}:${LLVM_LIBS}"
 
 "${LLVM_TOOLCHAIN}/bin/clang++" \
   -fcolor-diagnostics \
