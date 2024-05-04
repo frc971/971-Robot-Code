@@ -11,7 +11,7 @@
 #include "aos/realtime.h"
 
 DEFINE_int32(priority, -1, "If set, the RT priority to run at.");
-DEFINE_double(max_jitter, 5.00,
+DEFINE_double(max_jitter, 10.00,
               "The max time in seconds between messages before considering the "
               "camera processes dead.");
 DEFINE_double(grace_period, 10.00,
@@ -44,6 +44,9 @@ class State {
   }
 
   void HandleMessage(const aos::Context &context) {
+    if (last_time_ == aos::monotonic_clock::min_time) {
+      LOG(INFO) << "First message on " << channel_name_;
+    }
     last_time_ = context.monotonic_event_time;
   }
 
@@ -53,6 +56,8 @@ class State {
         event_loop->monotonic_now()) {
       // Restart camera services
       LOG(INFO) << "Restarting camera services";
+      LOG(INFO) << "Channel " << channel_name_ << " has not received a message "
+                << FLAGS_max_jitter << " seconds";
       CHECK_EQ(std::system("aos_starter stop argus_camera0"), 0);
       CHECK_EQ(std::system("aos_starter stop argus_camera1"), 0);
       CHECK_EQ(std::system("sudo systemctl restart nvargus-daemon.service"), 0);
