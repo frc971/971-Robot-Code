@@ -134,6 +134,9 @@ enum AutonomousMode : ubyte {
   FIVE_PIECE = 3,
   // Auto which picks up two game pieces from the center
   TWO_PIECE_STEAL = 4,
+  // Auto which picks up two game pieces from the center, routing
+  // through center.
+  TWO_PIECE_VIA_STAGE = 5,
 }
 
 table RobotConstants {

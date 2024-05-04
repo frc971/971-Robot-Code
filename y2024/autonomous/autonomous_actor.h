@@ -43,11 +43,13 @@ class AutonomousActor
   void MobilityAndShoot();
   void FourPieceAuto();
   void TwoPieceStealAuto();
+  void TwoPieceViaStageAuto();
   void SendSuperstructureGoal();
 
   void StopIntake();
   void Intake();
   void Aim();
+  void StopAiming();
   void Shoot();
   void StopFiring();
 
@@ -75,6 +77,7 @@ class AutonomousActor
   std::optional<std::array<SplineHandle, 1>> mobility_and_shoot_splines_;
   std::optional<std::array<SplineHandle, 5>> four_piece_splines_;
   std::optional<std::array<SplineHandle, 4>> two_piece_steal_splines_;
+  std::optional<std::array<SplineHandle, 4>> two_piece_via_stage_splines_;
 
   control_loops::superstructure::IntakeGoal intake_goal_ =
       control_loops::superstructure::IntakeGoal::NONE;

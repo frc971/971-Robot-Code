@@ -44,7 +44,19 @@ class AutonomousSplines {
                 "splines/2_piece_steal.2.json")),
         two_piece_steal_spline_4_(
             aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-                "splines/2_piece_steal.3.json")) {}
+                "splines/2_piece_steal.3.json")),
+        two_piece_via_stage_spline_1_(
+            aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+                "splines/2_piece_via_stage.0.json")),
+        two_piece_via_stage_spline_2_(
+            aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+                "splines/2_piece_via_stage.1.json")),
+        two_piece_via_stage_spline_3_(
+            aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+                "splines/2_piece_via_stage.2.json")),
+        two_piece_via_stage_spline_4_(
+            aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+                "splines/2_piece_via_stage.3.json")) {}
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder,
@@ -100,6 +112,23 @@ class AutonomousSplines {
           *builder,
       aos::Alliance alliance);
 
+  flatbuffers::Offset<frc971::MultiSpline> TwoPieceViaStageSpline1(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+  flatbuffers::Offset<frc971::MultiSpline> TwoPieceViaStageSpline2(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+  flatbuffers::Offset<frc971::MultiSpline> TwoPieceViaStageSpline3(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+  flatbuffers::Offset<frc971::MultiSpline> TwoPieceViaStageSpline4(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+
  private:
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> mobility_and_shoot_spline_;
@@ -113,6 +142,15 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> two_piece_steal_spline_2_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> two_piece_steal_spline_3_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> two_piece_steal_spline_4_;
+
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline>
+      two_piece_via_stage_spline_1_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline>
+      two_piece_via_stage_spline_2_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline>
+      two_piece_via_stage_spline_3_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline>
+      two_piece_via_stage_spline_4_;
 };
 
 }  // namespace y2024::autonomous
