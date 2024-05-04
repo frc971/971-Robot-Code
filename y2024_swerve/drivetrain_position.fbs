@@ -1,5 +1,5 @@
 include "frc971/control_loops/control_loops.fbs";
-namespace y2023_bot4;
+namespace y2024_swerve;
 
 table AbsoluteDrivetrainPosition {
   // Position of the follower wheels from the encoders

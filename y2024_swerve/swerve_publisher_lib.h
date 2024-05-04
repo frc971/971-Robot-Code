@@ -1,5 +1,5 @@
-#ifndef Y2023_BOT4_SWERVE_PUBLISHER_H_
-#define Y2023_BOT4_SWERVE_PUBLISHER_H_
+#ifndef Y2024_SWERVE_SWERVE_PUBLISHER_H_
+#define Y2024_SWERVE_SWERVE_PUBLISHER_H_
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -10,7 +10,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/drivetrain/swerve/swerve_drivetrain_output_generated.h"
 
-namespace y2023_bot4 {
+namespace y2024_swerve {
 
 namespace drivetrain = frc971::control_loops::drivetrain;
 
@@ -24,6 +24,6 @@ class SwervePublisher {
       drivetrain_output_sender_;
 };
 
-}  // namespace y2023_bot4
+}  // namespace y2024_swerve
 
-#endif  // Y2023_BOT4_SWERVE_PUBLISHER_H_
+#endif  // Y2024_SWERVE_SWERVE_PUBLISHER_H_

@@ -1,5 +1,5 @@
-#ifndef Y2023_BOT4_CONSTANTS_H
-#define Y2023_BOT4_CONSTANTS_H
+#ifndef Y2024_SWERVE_CONSTANTS_H
+#define Y2024_SWERVE_CONSTANTS_H
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -9,7 +9,7 @@
 
 #include "frc971/constants.h"
 
-namespace y2023_bot4::constants {
+namespace y2024_swerve::constants {
 struct Values {
   static const int kZeroingSampleSize = 200;
 
@@ -48,6 +48,6 @@ Values MakeValues(uint16_t team);
 
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
-}  // namespace y2023_bot4::constants
+}  // namespace y2024_swerve::constants
 
-#endif  // Y2023_BOT4_CONSTANTS_H
+#endif  // Y2024_SWERVE_CONSTANTS_H

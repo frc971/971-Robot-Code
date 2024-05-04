@@ -1,9 +1,9 @@
-#include "y2023_bot4/swerve_publisher_lib.h"
+#include "y2024_swerve/swerve_publisher_lib.h"
 
-y2023_bot4::SwervePublisher::SwervePublisher(aos::EventLoop *event_loop,
-                                             aos::ExitHandle *exit_handle,
-                                             const std::string &filename,
-                                             double duration)
+y2024_swerve::SwervePublisher::SwervePublisher(aos::EventLoop *event_loop,
+                                               aos::ExitHandle *exit_handle,
+                                               const std::string &filename,
+                                               double duration)
     : drivetrain_output_sender_(
           event_loop->MakeSender<drivetrain::swerve::Output>("/drivetrain")) {
   event_loop

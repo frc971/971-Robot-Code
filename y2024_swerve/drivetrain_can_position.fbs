@@ -1,5 +1,5 @@
 include "frc971/control_loops/can_talonfx.fbs";
-namespace y2023_bot4;
+namespace y2024_swerve;
 
 table SwerveModuleCANPosition {
   rotation: frc971.control_loops.CANTalonFX (id: 0);

@@ -5,7 +5,7 @@ load("//aos/util:config_validator_macro.bzl", "config_validator_test")
 
 config_validator_test(
     name = "config_validator_test",
-    config = "//y2023_bot4:aos_config",
+    config = "//y2024_swerve:aos_config",
 )
 
 robot_downloader(
@@ -64,7 +64,7 @@ filegroup(
     srcs = [
         "swerve_drivetrain_output.json",
     ],
-    visibility = ["//y2023_bot4:__subpackages__"],
+    visibility = ["//y2024_swerve:__subpackages__"],
 )
 
 cc_library(
@@ -151,7 +151,7 @@ cc_binary(
 
 aos_config(
     name = "aos_config",
-    src = "y2023_bot4.json",
+    src = "y2024_swerve.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
@@ -169,7 +169,7 @@ aos_config(
 
 aos_config(
     name = "config_roborio",
-    src = "y2023_bot4_roborio.json",
+    src = "y2024_swerve_roborio.json",
     flatbuffers = [
         ":drivetrain_position_fbs",
         ":drivetrain_can_position_fbs",
@@ -195,7 +195,7 @@ aos_config(
 
 aos_config(
     name = "config_imu",
-    src = "y2023_bot4_imu.json",
+    src = "y2024_swerve_imu.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
@@ -213,7 +213,7 @@ aos_config(
 
 aos_config(
     name = "config_logger",
-    src = "y2023_bot4_logger.json",
+    src = "y2024_swerve_logger.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",

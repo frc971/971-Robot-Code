@@ -12,8 +12,8 @@
     }
   ],
   "imports": [
-    "y2023_bot4_roborio.json",
-    "y2023_bot4_imu.json",
-    "y2023_bot4_logger.json"
+    "y2024_swerve_roborio.json",
+    "y2024_swerve_imu.json",
+    "y2024_swerve_logger.json"
   ]
 }
