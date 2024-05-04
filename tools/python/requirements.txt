@@ -14,6 +14,7 @@ scipy
 shapely
 validators
 yapf
+sympy
 
 # TODO(phil): Migrate to absl-py. These are abandoned as far as I can tell.
 python-gflags

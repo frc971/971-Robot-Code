@@ -50,7 +50,7 @@ mirrored on frc971 infrastructure.
 1. Follow the above procedure for adding new pip packages if not already done.
 2. Run the mirroring script.
 
-        bazel run //tools/python:mirror_pip_packages --config=k8_upstream_python -- --ssh_host <software>
+        bazel run //tools/python:mirror_pip_packages -- --ssh_host <software>
 
     where `<software>` is the `ssh(1)` target for reaching the server that hosts
     the FRC971 mirror.
