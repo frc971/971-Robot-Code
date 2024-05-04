@@ -160,7 +160,7 @@
     "transfer_roller_supply_current_limit": 40,
     "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 50,
-    "drivetrain_stator_current_limit": 200,
+    "drivetrain_stator_current_limit": 70,
     "climber_supply_current_limit": 40,
     "climber_stator_current_limit": 150,
     "extend_supply_current_limit": 30,
