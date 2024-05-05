@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "murata.h"
 #include "tdk.h"
@@ -36,8 +37,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MURATA_ACC_FILTER WRITE_FILTER_46HZ_ACC
-#define MURATA_GYRO_FILTER WRITE_FILTER_46HZ_GYRO
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,6 +53,8 @@ SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
 
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
@@ -75,13 +76,35 @@ PUTCHAR_PROTOTYPE {
 
 FDCAN_FilterTypeDef sFilterConfig;
 FDCAN_TxHeaderTypeDef tx_header;
+FDCAN_RxHeaderTypeDef rx_header;
 
 static CrossAxisCompMurata
     cac_murata;  // Cross-axis compensation. Details on datasheet page 11
-static DataMurataRaw data_murata_raw;
 static DataMurata data_murata;
-static DataTdkRaw data_tdk_raw;
 static DataTdk data_tdk;
+static uint8_t can_tx[64];
+static int can_tx_packet_counter;
+static CanData can_out;
+static int timer_index;
+
+static DataMurata murata_averaged;
+static DataTdk tdk_averaged;
+
+static DataRawInt16 uno_data[IMU_SAMPLES_PER_MS];
+static DataRawInt16 due_data[IMU_SAMPLES_PER_MS];
+static DataRawInt16 tdk_data[IMU_SAMPLES_PER_MS];
+
+static SpiOut uno_state;
+static SpiOut due_state;
+static SpiOut tdk_state;
+
+static uint8_t spi1_rx[2];
+static uint8_t spi1_tx[2];
+static FourBytes spi2_rx;
+static FourBytes spi2_tx;
+static FourBytes spi3_rx;
+static FourBytes spi3_tx;
+static FourBytes spi_murata_rx;
 
 /* USER CODE END PV */
 
@@ -96,10 +119,12 @@ static void MX_SPI3_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USB_PCD_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 static void EnableLeds(void);
-static void EnableSpiTdk(void);
+static void PowerTdk(void);
 static void ConvertEndianMurata(uint8_t *result, uint32_t original);
 static uint8_t MurataCRC8(uint8_t bit_value,
                           uint8_t redundancy);  // For checksum calculation.
@@ -114,12 +139,19 @@ static uint32_t SendSpiDue(uint32_t value);  // Murata DUE
 static uint8_t SendSpiTdk(uint8_t address, uint8_t data, bool read);
 static bool InitMurata(void);
 static void InitTdk(void);
-static void ReadDataMurata(void);
-static void ReadDataTdk(void);
-static void ConvertDataMurata(void);
-static void ConvertDataTdk(void);
-static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint8_t id);
-
+static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint32_t id);
+static void PWMSend(TIM_HandleTypeDef *htim, uint32_t channel, float data);
+static void ConstructCanfdPacket(uint8_t *tx, DataMurata *murata, DataTdk *tdk);
+static void AverageData(void);
+static void ComposeData(void);
+static void RealignData(void);
+static void SpiReadIt(SPI_HandleTypeDef *hspix, uint32_t reg);
+static void SpiCsStart(SPI_HandleTypeDef *hspix);
+static void SpiCsEnd(SPI_HandleTypeDef *hspix);
+static void SpiTdk(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
+                   SpiIn call);
+static void SpiMurata(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
+                      SpiIn call);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -163,12 +195,19 @@ int main(void) {
   MX_USART1_UART_Init();
   MX_TIM3_Init();
   MX_USB_PCD_Init();
+  MX_TIM2_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-  EnableLeds();  // Set LEDs to red
-  InitTdk();
-  InitMurata();
-  InitCan(&tx_header, 0xAA);
+  EnableLeds();               // Set LEDs to red
+  InitCan(&tx_header, 0x01);  // Initialize the CAN module
+  InitMurata();  // Run the Murata power up sequence (see pg 30 of datasheet)
+  InitTdk();     // Run the TDK power up sequence (see pg 22 of datasheet)
+  HAL_TIM_Base_Start_IT(&htim2);  // Start 1 us timer
+  HAL_TIM_Base_Start_IT(&htim1);  // Start 1 ms timer
+
+  HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_4);
 
   /* USER CODE END 2 */
 
@@ -179,30 +218,6 @@ int main(void) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    ReadDataMurata();
-    ConvertDataMurata();
-    printf(
-        "MUR IMU:\tX ACC: %.8f \tY ACC: %.8f \tZ ACC: %.8f \tX GYRO: %.8f \tY "
-        "GYRO: %.8f \tZ GYRO: %.8f \n\r",
-        data_murata.acc_x, data_murata.acc_y, data_murata.acc_z,
-        data_murata.gyro_x, data_murata.gyro_y, data_murata.gyro_z);
-
-    ReadDataTdk();
-    ConvertDataTdk();
-    printf(
-        "TDK IMU:\t\tX ACC: %.8f \tY ACC: %.8f \tZ ACC: %.8f \tX GYRO: %.8f "
-        "\tY GYRO: %.8f \tZ GYRO: %.8f \n\r",
-        data_tdk.acc_x, data_tdk.acc_y, data_tdk.acc_z, data_tdk.gyro_x,
-        data_tdk.gyro_y, data_tdk.gyro_z);
-
-    uint8_t tx_data[8] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-
-    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &tx_header, tx_data) !=
-        HAL_OK) {
-      Error_Handler();
-    }
-
-    HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -453,6 +468,86 @@ static void MX_SPI3_Init(void) {
 }
 
 /**
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM1_Init(void) {
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 168 - 1;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 333;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK) {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+}
+
+/**
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM2_Init(void) {
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 168 - 1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4.294967295E9;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+}
+
+/**
  * @brief TIM3 Initialization Function
  * @param None
  * @retval None
@@ -470,9 +565,9 @@ static void MX_TIM3_Init(void) {
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 2563;
+  htim3.Init.Prescaler = 24 - 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
+  htim3.Init.Period = 35000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
@@ -678,7 +773,7 @@ static void EnableLeds(void) {
   HAL_GPIO_WritePin(GPIOC, LED2_RED_Pin, GPIO_PIN_RESET);
 }
 
-static void EnableSpiTdk(void) {
+static void PowerTdk(void) {
   // TDK_PWR_EN starts high, must be set low before reading
   HAL_GPIO_WritePin(TDK_PWR_EN_GPIO_Port, TDK_PWR_EN_Pin, GPIO_PIN_RESET);
   // TDK_EN starts high, must be set low after a delay from TDK_PWR_EN
@@ -728,7 +823,7 @@ static uint8_t GetChecksumMurata(uint32_t data) {
 static uint32_t MakeSpiMsgMurata(uint8_t address, uint16_t data) {
   // Constructs SPI read/write frame
   // Details on datasheet page 32-34
-  uint32_t message = (uint32_t)((((address << 2) | 0x01) << 24) | data << 8);
+  uint32_t message = (uint32_t)(((address << 2) << 24) | data << 8);
   uint8_t redundancy = GetChecksumMurata(message);
   return (uint32_t)(message | redundancy);
 }
@@ -740,9 +835,9 @@ static uint32_t MakeSpiReadMsgMurata(uint8_t address) {
 
 static uint32_t TransmitSpiMurata(uint32_t value, GPIO_TypeDef *cs_port,
                                   uint16_t cs_pin, SPI_HandleTypeDef *hspix) {
-  union FourBytes rx_data_raw;
-  union FourBytes rx_data;
-  union FourBytes tx_data;
+  FourBytes rx_data_raw;
+  FourBytes rx_data;
+  FourBytes tx_data;
   ConvertEndianMurata(tx_data.byte, value);
   HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
   HAL_SPI_TransmitReceive(hspix, tx_data.byte, rx_data_raw.byte,
@@ -772,10 +867,6 @@ static uint8_t SendSpiTdk(uint8_t address, uint8_t data, bool read) {
   return spi_rx[0];
 }
 
-static uint8_t ReadSpiTdk(uint8_t address) {
-  return SendSpiTdk(address, 0x00, true);
-}
-
 static bool InitMurata(void) {
   int num_attempts = 0;
   uint32_t response_due = 0;
@@ -793,6 +884,13 @@ static bool InitMurata(void) {
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin, GPIO_PIN_SET);
 
   HAL_Delay(25);
+
+  SendSpiDue(MakeSpiReadMsgMurata(ACC_DC1_ADDRESS));  // cxx_cxy address
+
+  SendSpiDue(WRITE_OP_MODE_NORMAL);
+  SendSpiDue(WRITE_OP_MODE_NORMAL);
+  SendSpiUno(WRITE_OP_MODE_NORMAL);
+  HAL_Delay(70);
 
   SendSpiDue(WRITE_MODE_ASM_010);
   SendSpiDue(READ_MODE);
@@ -864,8 +962,9 @@ static bool InitMurata(void) {
   SendSpiUno(WRITE_OP_MODE_NORMAL);
   HAL_Delay(70);
 
-  SendSpiUno(MURATA_GYRO_FILTER);
-  SendSpiUno(MURATA_ACC_FILTER);
+  SendSpiUno(
+      MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
+  SendSpiUno(MakeSpiMsgMurata(MURATA_ACC_FILTER_ADDR, MURATA_ACC_FILTER_300HZ));
 
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin,
                     GPIO_PIN_RESET);  // Reset DUE
@@ -877,7 +976,8 @@ static bool InitMurata(void) {
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   HAL_Delay(1);
 
-  SendSpiDue(MURATA_GYRO_FILTER);
+  SendSpiDue(
+      MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
 
   for (num_attempts = 0; num_attempts < 2; num_attempts++) {
     HAL_Delay(405);
@@ -915,9 +1015,12 @@ static bool InitMurata(void) {
       SendSpiUno(WRITE_OP_MODE_NORMAL);
       HAL_Delay(50);
 
-      SendSpiUno(MURATA_GYRO_FILTER);
-      SendSpiUno(MURATA_ACC_FILTER);
-      SendSpiDue(MURATA_GYRO_FILTER);
+      SendSpiUno(
+          MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
+      SendSpiUno(
+          MakeSpiMsgMurata(MURATA_ACC_FILTER_ADDR, MURATA_ACC_FILTER_300HZ));
+      SendSpiDue(
+          MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
       HAL_Delay(45);
     } else {
       break;
@@ -931,31 +1034,216 @@ static bool InitMurata(void) {
   return true;
 }
 
-// Todo (Zach): separate the steps of reading data and realigning axis
-static void ReadDataMurata(void) {
-  SendSpiUno(READ_ACC_Z);
-  data_murata_raw.acc_z = -GET_SPI_DATA_INT16(SendSpiUno(READ_ACC_X));
-  data_murata_raw.acc_y = GET_SPI_DATA_INT16(SendSpiUno(READ_ACC_Y));
-  data_murata_raw.acc_x = GET_SPI_DATA_INT16(SendSpiUno(READ_GYRO_X));
-  data_murata_raw.gyro_y = -GET_SPI_DATA_INT16(SendSpiUno(READ_TEMP));
-  data_murata_raw.temp_uno = GET_SPI_DATA_INT16(SendSpiUno(READ_ACC_Z));
+static void InitTdk(void) {
+  // Power up sequence. See datasheet p22 for details
+  // The chip must receive power prior to SPI
+  PowerTdk();
 
-  SendSpiDue(READ_GYRO_Z);
-  data_murata_raw.gyro_z = GET_SPI_DATA_INT16(SendSpiDue(READ_GYRO_Y));
-  data_murata_raw.gyro_x = -GET_SPI_DATA_INT16(SendSpiDue(READ_TEMP));
-  data_murata_raw.temp_due = GET_SPI_DATA_INT16(SendSpiDue(READ_GYRO_Z));
+  // Send 0x81 to PWR_MGMT to initialize SPI
+  SendSpiTdk(PWR_MGMT_1, 0x81, false);
+  HAL_Delay(100);
+
+  // Setting the sample rates for TDK
+  SendSpiTdk(USER_CTRL, 0x55, false);
+  SendSpiTdk(ACCEL_CONFIG, 0x18, false);
+  SendSpiTdk(ACCEL_CONFIG_2, 0x08, false);
+  SendSpiTdk(GYRO_CONFIG, 0x1A, false);
+  SendSpiTdk(FIFO_EN, 0x00, false);
+  SendSpiTdk(CONFIG, 0x00, false);
+  SendSpiTdk(SMPLRT_DIV, 0x00, false);
 }
 
-static void ConvertDataMurata(void) {
-  data_murata.acc_x = MURATA_CONV_ACC(data_murata_raw.acc_x);
-  data_murata.acc_y = MURATA_CONV_ACC(data_murata_raw.acc_y);
-  data_murata.acc_z = MURATA_CONV_ACC(data_murata_raw.acc_z);
-  data_murata.gyro_x = MURATA_CONV_GYRO(data_murata_raw.gyro_x);
-  data_murata.gyro_y = MURATA_CONV_GYRO(data_murata_raw.gyro_y);
-  data_murata.gyro_z = MURATA_CONV_GYRO(data_murata_raw.gyro_z);
-  data_murata.temp_uno = MURATA_CONV_TEMP(data_murata_raw.temp_uno);
-  data_murata.temp_due = MURATA_CONV_TEMP(data_murata_raw.temp_due);
+static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint32_t id) {
+  // Initialize the Header
+  tx_header->Identifier = id;
+  tx_header->IdType = FDCAN_STANDARD_ID;
+  tx_header->TxFrameType = FDCAN_DATA_FRAME;
+  tx_header->DataLength = FDCAN_DLC_BYTES_8;
+  tx_header->ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+  tx_header->BitRateSwitch = FDCAN_BRS_OFF;
+  tx_header->FDFormat = FDCAN_CLASSIC_CAN;
+  tx_header->TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+  tx_header->MessageMarker = 0x0;  // Ignore because FDCAN_NO_TX_EVENTS
 
+  // Pull standby pin low
+  HAL_GPIO_WritePin(FDCAN_STBY_GPIO_Port, FDCAN_STBY_Pin, GPIO_PIN_RESET);
+
+  // Start the FDCAN module
+  if (HAL_FDCAN_Start(&hfdcan2) != HAL_OK) {
+    Error_Handler();
+  }
+
+  // Initialize can_out to zeros
+  memset(&can_out, 0, sizeof(can_out));
+}
+
+static void PWMSend(TIM_HandleTypeDef *htim, uint32_t channel, float data) {
+  if (htim == &htim3) {
+    // 10% pwm == min, 90% pwm == max
+    float pwm_period = (float)(htim->Init.Period);
+    float range;
+    float scale;
+    float translated;
+    uint32_t result;
+
+    switch (channel) {
+      case TIM_CHANNEL_3:
+        // Sends TDK Z-gyro data over PWM_Rate port
+        range = 2 * TDK_GYRO_MAG_MAX;
+        scale = (pwm_period * .8f) / range;
+        translated = data + range * .5f;
+        result = (uint32_t)(scale * translated + pwm_period * .1f);
+        if (result < pwm_period * .1f) {
+          result = pwm_period * .1f;
+        }
+        if (result > pwm_period * .9f) {
+          result = pwm_period * .9f;
+        }
+        TIM3->CCR3 = result;
+        break;
+
+      case TIM_CHANNEL_4:
+        // Unused PWM_Heading port
+        // TODO: (Zach) figure out if we keep it with the
+        // same as CH3 or if we add something else
+        range = 2 * TDK_GYRO_MAG_MAX;
+        scale = (pwm_period * .8f) / range;
+        translated = data + range * .5f;
+        result = (uint32_t)(scale * translated + pwm_period * .1f);
+        if (result < pwm_period * .1f) {
+          result = pwm_period * .1f;
+        }
+        if (result > pwm_period * .9f) {
+          result = pwm_period * .9f;
+        }
+        TIM3->CCR4 = result;
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
+/* 	CAN_FD Tx data packet specs:
+ *  https://docs.google.com/document/d/12AJUruW7DZ2pIrDzTyPC0qqFoia4QOSVlax6Jd7m4H0
+ */
+
+static void ConstructCanfdPacket(uint8_t *tx, DataMurata *murata,
+                                 DataTdk *tdk) {
+  // Clear the CAN packet
+  memset(tx, 0, 64 * sizeof(*tx));
+
+  // Write in the struct data
+  can_out.tdk_acc_x = tdk->acc_x;
+  can_out.tdk_acc_y = tdk->acc_y;
+  can_out.tdk_acc_z = tdk->acc_z;
+  can_out.tdk_gyro_x = tdk->gyro_x;
+  can_out.tdk_gyro_y = tdk->gyro_y;
+  can_out.tdk_gyro_z = tdk->gyro_z;
+
+  can_out.murata_acc_x = murata->acc_x;
+  can_out.murata_acc_y = murata->acc_y;
+  can_out.murata_acc_z = murata->acc_z;
+  can_out.murata_gyro_x = murata->gyro_x;
+  can_out.murata_gyro_y = murata->gyro_y;
+  can_out.murata_gyro_z = murata->gyro_z;
+
+  if (tdk->temp < 0) {
+    can_out.tdk_temp = 0;
+  } else if (tdk->temp > 255) {
+    can_out.tdk_temp = 255;
+  } else {
+    can_out.tdk_temp = (uint8_t)(tdk->temp);
+  }
+
+  if (murata->uno_temp < 0) {
+    can_out.uno_temp = 0;
+  } else if (murata->uno_temp > 255) {
+    can_out.uno_temp = 255;
+  } else {
+    can_out.uno_temp = (uint8_t)(murata->uno_temp);
+  }
+
+  if (murata->due_temp < 0) {
+    can_out.due_temp = 0;
+  } else if (murata->due_temp > 255) {
+    can_out.due_temp = 255;
+  } else {
+    can_out.due_temp = (uint8_t)(murata->due_temp);
+  }
+
+  can_out.timestamp = __HAL_TIM_GetCounter(&htim2);
+
+  memcpy(&tx[0], &can_out, sizeof(can_out));
+}
+
+static void AverageData(void) {
+  // Clear the float data fields
+  memset(&tdk_averaged, 0, sizeof(tdk_averaged));
+  memset(&murata_averaged, 0, sizeof(murata_averaged));
+
+  for (int i = 0; i < IMU_SAMPLES_PER_MS; i++) {
+    tdk_averaged.acc_x += tdk_data[i].acc_x;
+    tdk_averaged.acc_y += tdk_data[i].acc_y;
+    tdk_averaged.acc_z += tdk_data[i].acc_z;
+    tdk_averaged.gyro_x += tdk_data[i].gyro_x;
+    tdk_averaged.gyro_y += tdk_data[i].gyro_y;
+    tdk_averaged.gyro_z += tdk_data[i].gyro_z;
+    tdk_averaged.temp += tdk_data[i].temp;
+
+    murata_averaged.acc_x += uno_data[i].acc_x;
+    murata_averaged.acc_y += uno_data[i].acc_y;
+    murata_averaged.acc_z += uno_data[i].acc_z;
+    murata_averaged.gyro_x += uno_data[i].gyro_x;
+    murata_averaged.gyro_y += due_data[i].gyro_y;
+    murata_averaged.gyro_z += due_data[i].gyro_z;
+    murata_averaged.uno_temp += uno_data[i].temp;
+    murata_averaged.due_temp += due_data[i].temp;
+  }
+
+  tdk_averaged.acc_x /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.acc_y /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.acc_z /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.gyro_x /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.gyro_y /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.gyro_z /= IMU_SAMPLES_PER_MS;
+  tdk_averaged.temp /= IMU_SAMPLES_PER_MS;
+
+  murata_averaged.acc_x /= IMU_SAMPLES_PER_MS;
+  murata_averaged.acc_y /= IMU_SAMPLES_PER_MS;
+  murata_averaged.acc_z /= IMU_SAMPLES_PER_MS;
+  murata_averaged.gyro_x /= IMU_SAMPLES_PER_MS;
+  murata_averaged.gyro_y /= IMU_SAMPLES_PER_MS;
+  murata_averaged.gyro_z /= IMU_SAMPLES_PER_MS;
+  murata_averaged.uno_temp /= IMU_SAMPLES_PER_MS;
+  murata_averaged.due_temp /= IMU_SAMPLES_PER_MS;
+}
+
+static void ComposeData(void) {
+  // Clear the float data fields
+  memset(&data_tdk, 0, sizeof(data_tdk));
+  memset(&data_murata, 0, sizeof(data_murata));
+
+  // Assign the converted binary
+  data_tdk.acc_x = TDK_CONV_ACC(tdk_averaged.acc_x);
+  data_tdk.acc_y = TDK_CONV_ACC(tdk_averaged.acc_y);
+  data_tdk.acc_z = TDK_CONV_ACC(tdk_averaged.acc_z);
+  data_tdk.gyro_x = TDK_CONV_GYRO(tdk_averaged.gyro_x);
+  data_tdk.gyro_y = TDK_CONV_GYRO(tdk_averaged.gyro_y);
+  data_tdk.gyro_z = TDK_CONV_GYRO(tdk_averaged.gyro_z);
+  data_tdk.temp = TDK_CONV_TEMP(tdk_averaged.temp);
+
+  data_murata.acc_x = MURATA_CONV_ACC(murata_averaged.acc_x);
+  data_murata.acc_y = MURATA_CONV_ACC(murata_averaged.acc_y);
+  data_murata.acc_z = MURATA_CONV_ACC(murata_averaged.acc_z);
+  data_murata.gyro_x = MURATA_CONV_GYRO(murata_averaged.gyro_x);
+  data_murata.gyro_y = MURATA_CONV_GYRO(murata_averaged.gyro_y);
+  data_murata.gyro_z = MURATA_CONV_GYRO(murata_averaged.gyro_z);
+  data_murata.uno_temp = MURATA_CONV_TEMP(murata_averaged.uno_temp);
+  data_murata.due_temp = MURATA_CONV_TEMP(murata_averaged.due_temp);
+
+  // Apply the murata cross-axis compensation
   data_murata.acc_x = (cac_murata.bxx * data_murata.acc_x) +
                       (cac_murata.bxy * data_murata.acc_y) +
                       (cac_murata.bxz * data_murata.acc_z);
@@ -977,98 +1265,363 @@ static void ConvertDataMurata(void) {
                        (cac_murata.czz * data_murata.gyro_z);
 }
 
-static void ReadDataTdk(void) {
-  data_tdk_raw.acc_x_H = ReadSpiTdk(ACCEL_XOUT_H);
-  data_tdk_raw.acc_x_L = ReadSpiTdk(ACCEL_XOUT_L);
-  data_tdk_raw.acc_y_H = ReadSpiTdk(ACCEL_YOUT_H);
-  data_tdk_raw.acc_y_L = ReadSpiTdk(ACCEL_YOUT_L);
-  data_tdk_raw.acc_z_H = ReadSpiTdk(ACCEL_ZOUT_H);
-  data_tdk_raw.acc_z_L = ReadSpiTdk(ACCEL_ZOUT_L);
-  data_tdk_raw.gyro_x_H = ReadSpiTdk(GYRO_XOUT_H);
-  data_tdk_raw.gyro_x_L = ReadSpiTdk(GYRO_XOUT_L);
-  data_tdk_raw.gyro_y_H = ReadSpiTdk(GYRO_YOUT_H);
-  data_tdk_raw.gyro_y_L = ReadSpiTdk(GYRO_YOUT_L);
-  data_tdk_raw.gyro_z_H = ReadSpiTdk(GYRO_ZOUT_H);
-  data_tdk_raw.gyro_z_L = ReadSpiTdk(GYRO_ZOUT_L);
-  data_tdk_raw.temp_H = ReadSpiTdk(TEMP_OUT_H);
-  data_tdk_raw.temp_L = ReadSpiTdk(TEMP_OUT_L);
+static void RealignData(void) {
+  // Rotate the axis based on observed behavior
+  float f = data_tdk.acc_x;
+  data_tdk.acc_x = -data_tdk.acc_y;
+  data_tdk.acc_y = -f;
+  f = data_tdk.gyro_x;
+  data_tdk.acc_z = -data_tdk.acc_z;
+  data_tdk.gyro_x = -data_tdk.gyro_y;
+  data_tdk.gyro_y = -f;
+  data_tdk.gyro_z = -data_tdk.gyro_z;
+
+  f = data_murata.acc_x;
+  data_murata.acc_x = -data_murata.acc_y;
+  data_murata.acc_y = -f;
+  f = data_murata.gyro_x;
+  data_murata.gyro_x = -data_murata.gyro_y;
+  data_murata.gyro_y = -f;
 }
 
-static void ConvertDataTdk(void) {
-  data_tdk.acc_x = TDK_CONV_ACC(
-      CONV_UINT8_INT16(data_tdk_raw.acc_y_H, data_tdk_raw.acc_y_L));
-  data_tdk.acc_y = TDK_CONV_ACC(
-      CONV_UINT8_INT16(data_tdk_raw.acc_x_H, data_tdk_raw.acc_x_L));
-  data_tdk.acc_z = TDK_CONV_ACC(
-      CONV_UINT8_INT16(data_tdk_raw.acc_z_H, data_tdk_raw.acc_z_L));
-  data_tdk.gyro_x = -TDK_CONV_GYRO(
-      CONV_UINT8_INT16(data_tdk_raw.gyro_y_H, data_tdk_raw.gyro_y_L));
-  data_tdk.gyro_y = -TDK_CONV_GYRO(
-      CONV_UINT8_INT16(data_tdk_raw.gyro_x_H, data_tdk_raw.gyro_x_L));
-  data_tdk.gyro_z = -TDK_CONV_GYRO(
-      CONV_UINT8_INT16(data_tdk_raw.gyro_z_H, data_tdk_raw.gyro_z_L));
-  data_tdk.temp =
-      TDK_CONV_TEMP(CONV_UINT8_INT16(data_tdk_raw.temp_H, data_tdk_raw.temp_L));
+// Read SPI in interrupt mode
+static void SpiReadIt(SPI_HandleTypeDef *hspix, uint32_t reg) {
+  if (hspix == &hspi1) {
+    spi1_tx[0] = 0x00;
+    spi1_tx[1] = (uint8_t)(reg & 0xFF) | 0x80;
+    memset(spi1_rx, 0, sizeof(*spi1_rx));
+
+    HAL_SPI_TransmitReceive_IT(hspix, spi1_tx, spi1_rx, sizeof(spi1_tx) / 2);
+  } else if (hspix == &hspi2 || hspix == &hspi3) {
+    ConvertEndianMurata((hspix == &hspi2) ? (spi2_tx.byte) : (spi3_tx.byte),
+                        reg);
+    memset((hspix == &hspi2) ? spi2_rx.byte : spi3_rx.byte, 0, 4);
+
+    HAL_SPI_TransmitReceive_IT(
+        hspix, (hspix == &hspi2) ? spi2_tx.byte : spi3_tx.byte,
+        (hspix == &hspi2) ? spi2_rx.byte : spi3_rx.byte, 2);
+  }
 }
 
-static void InitTdk(void) {
-  // The chip must receive power prior to SPI
-  EnableSpiTdk();
-
-  // Send 0x81 to PWR_MGMT to initialize SPI
-  SendSpiTdk(PWR_MGMT_1, 0x81, false);
-  HAL_Delay(100);
-
-  // Setting the sample rates for TDK
-  SendSpiTdk(SMPLRT_DIV, 0x00, false);
-  SendSpiTdk(CONFIG, 0x00, false);
-  SendSpiTdk(GYRO_CONFIG, 0x1A, false);
-  SendSpiTdk(ACCEL_CONFIG, 0x18, false);
-  SendSpiTdk(ACCEL_CONFIG_2, 0x08, false);
-  SendSpiTdk(FIFO_EN, 0xF8, false);
-  SendSpiTdk(USER_CTRL, 0x55, false);
+static void SpiCsStart(SPI_HandleTypeDef *hspix) {
+  if (hspix == &hspi1) {
+    HAL_GPIO_WritePin(CS_TDK_ST_GPIO_Port, CS_TDK_ST_Pin,
+                      GPIO_PIN_RESET);  // CS low at start of transmission
+  } else if (hspix == &hspi2) {
+    HAL_GPIO_WritePin(CS_UNO_GPIO_Port, CS_UNO_Pin,
+                      GPIO_PIN_RESET);  // CS low at start of transmission
+  } else if (hspix == &hspi3) {
+    HAL_GPIO_WritePin(CS_DUE_GPIO_Port, CS_DUE_Pin,
+                      GPIO_PIN_RESET);  // CS low at start of transmission
+  }
 }
 
-/* 	CAN_FD Tx data packet:
- *
- * 	BYTES		Contents		Bits of content
- * 	[0..3]		murata_acc_x	[0..31]
- * 	[4..7]		murata_acc_y	[0..31]
- * 	[8..11]		murata_acc_z	[0..31]
- * 	[12..15]	murata_gyro_x	[0..31]
- * 	[16..19]	murata_gyro_y	[0..31]
- * 	[20..23]	murata_gyro_z	[0..31]
- * 	[24..27]	murata_due_temp	[0..31]
- * 	[28..31]	murata_uno_temp	[0..31]
- * 	[32..35]	tdk_acc_x		[0..31]
- * 	[36..39]	tdk_acc_y		[0..31]
- * 	[40..43]	tdk_acc_z		[0..31]
- * 	[44..47]	tdk_gyro_x		[0..31]
- * 	[48..51]	tdk_gyro_y		[0..31]
- * 	[52..55]	tdk_gyro_z		[0..31]
- * 	[56..59]	tdk_temp		[0..31]
- * 	[60..63]	murata_acc_x	[0..31]
- *
- */
+static void SpiCsEnd(SPI_HandleTypeDef *hspix) {
+  if (hspix == &hspi1) {
+    HAL_GPIO_WritePin(CS_TDK_ST_GPIO_Port, CS_TDK_ST_Pin,
+                      GPIO_PIN_SET);  // CS high at end of transmission
+  } else if (hspix == &hspi2) {
+    HAL_GPIO_WritePin(CS_UNO_GPIO_Port, CS_UNO_Pin,
+                      GPIO_PIN_SET);  // CS high at end of transmission
+  } else if (hspix == &hspi3) {
+    HAL_GPIO_WritePin(CS_DUE_GPIO_Port, CS_DUE_Pin,
+                      GPIO_PIN_SET);  // CS high at end of transmission
+  }
+}
 
-static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint8_t id) {
-  // Initialize the Header
-  tx_header->Identifier = id;
-  tx_header->IdType = FDCAN_STANDARD_ID;
-  tx_header->TxFrameType = FDCAN_DATA_FRAME;
-  tx_header->DataLength = FDCAN_DLC_BYTES_8;
-  tx_header->ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-  tx_header->BitRateSwitch = FDCAN_BRS_OFF;
-  tx_header->FDFormat = FDCAN_CLASSIC_CAN;
-  tx_header->TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-  tx_header->MessageMarker = 0x0;  // Ignore because FDCAN_NO_TX_EVENTS
+static void SpiTdk(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
+                   SpiIn call) {
+  switch (call) {
+    case SPI_INIT:
+      InitTdk();
+      break;
+    case SPI_ZERO:
+      memset(data, 0, IMU_SAMPLES_PER_MS * sizeof(*data));
+      break;
+    case SPI_START:
+      data[timer_index].state = 0;
+      data[timer_index].index = 0;
+      *res = SPI_READY;
+      break;
 
-  // Pull standby pin low
-  HAL_GPIO_WritePin(FDCAN_STBY_GPIO_Port, FDCAN_STBY_Pin, GPIO_PIN_RESET);
+    case SPI_RUN:
+      *res = SPI_BUSY;
 
-  // Start the FDCAN module
-  if (HAL_FDCAN_Start(&hfdcan2) != HAL_OK) {
-    Error_Handler();
+      SpiCsStart(hspix);
+
+      switch (data[timer_index].state) {
+        case 0:
+          SpiReadIt(hspix, ACCEL_XOUT_H);  // REG + acc_x_h
+          break;
+        case 1:
+          SpiReadIt(hspix, 0x00);  // acc_x_l + acc_y_h
+          break;
+        case 2:
+          SpiReadIt(hspix, 0x00);  // acc_y_l + acc_z_h
+          break;
+        case 3:
+          SpiReadIt(hspix, 0x00);  // acc_z_l + temp_h
+          break;
+        case 4:
+          SpiReadIt(hspix, 0x00);  // temp_l + gyro_x_h
+          break;
+        case 5:
+          SpiReadIt(hspix, 0x00);  // gyro_x_l + gyro_y_h
+          break;
+        case 6:
+          SpiReadIt(hspix, 0x00);  // gyro_y_l + gyro_z_h
+          break;
+        case 7:
+          SpiReadIt(hspix, 0x00);  // gyro_z_l + UNUSED
+          break;
+      }
+
+      *res = SPI_READY;
+      break;
+  }
+}
+
+static void SpiMurata(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
+                      SpiIn call) {
+  switch (call) {
+    case SPI_INIT:
+      InitMurata();
+      break;
+    case SPI_ZERO:
+      memset(data, 0, IMU_SAMPLES_PER_MS * sizeof(*data));
+      break;
+    case SPI_START:
+      data[timer_index].state = (hspix == &hspi3) ? 4 : 0;
+      data[timer_index].index = 0;
+      *res = SPI_READY;
+      break;
+
+    case SPI_RUN:
+      *res = SPI_BUSY;
+
+      SpiCsStart(hspix);
+
+      switch (data[timer_index].state) {
+        case 0:
+          SpiReadIt(hspix, READ_ACC_X);
+          break;
+        case 1:
+          SpiReadIt(hspix, READ_ACC_Y);
+          break;
+        case 2:
+          SpiReadIt(hspix, READ_ACC_Z);
+          break;
+        case 3:
+          SpiReadIt(hspix, READ_GYRO_X);
+          break;
+        case 4:
+          SpiReadIt(hspix, READ_TEMP);
+          break;
+        case 5:
+          SpiReadIt(hspix, READ_GYRO_Y);
+          break;
+        case 6:
+          SpiReadIt(hspix, READ_GYRO_Z);
+          break;
+      }
+
+      *res = SPI_READY;
+      break;
+  }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim == &htim1) {
+    timer_index++;
+    timer_index %= IMU_SAMPLES_PER_MS;
+
+    if (timer_index == 0) {
+      can_tx_packet_counter = 0;
+      AverageData();
+      ComposeData();
+      RealignData();
+
+      ConstructCanfdPacket(can_tx, &data_murata, &data_tdk);
+      can_out.can_counter++;
+      can_out.can_counter =
+          (can_out.can_counter == 0xFFFF) ? 0 : can_out.can_counter;
+
+      PWMSend(&htim3, TIM_CHANNEL_3, (data_murata.gyro_z));
+      PWMSend(&htim3, TIM_CHANNEL_4, (data_murata.gyro_z));
+
+      SpiTdk(tdk_data, &hspi1, &tdk_state, SPI_ZERO);
+      SpiMurata(uno_data, &hspi2, &uno_state, SPI_ZERO);
+      SpiMurata(due_data, &hspi3, &due_state, SPI_ZERO);
+    }
+
+    SpiTdk(tdk_data, &hspi1, &tdk_state, SPI_START);
+    SpiMurata(uno_data, &hspi2, &uno_state, SPI_START);
+    SpiMurata(due_data, &hspi3, &due_state, SPI_START);
+
+    if (tdk_state == SPI_READY && uno_state == SPI_READY &&
+        due_state == SPI_READY) {
+      for (int j = 0; j < 3; j++) {
+        tx_header.Identifier = can_tx_packet_counter + j + 1;
+        if (tx_header.Identifier == 9) {
+          break;
+        }
+        while (HAL_FDCAN_AddMessageToTxFifoQ(
+                   &hfdcan2, &tx_header,
+                   can_tx + (can_tx_packet_counter + j) * 8) != HAL_OK) {
+          // Error Handler will stop execution
+        }
+      }
+      can_tx_packet_counter += 3;
+
+      SpiTdk(tdk_data, &hspi1, &tdk_state, SPI_RUN);
+      SpiMurata(uno_data, &hspi2, &uno_state, SPI_RUN);
+      SpiMurata(due_data, &hspi3, &due_state, SPI_RUN);
+    }
+  }
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
+  if (hspi == &hspi1) {
+    switch (tdk_data[timer_index].state) {
+      case 0:
+        tdk_data[timer_index].acc_x = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 1:
+        tdk_data[timer_index].acc_x |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].acc_y = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 2:
+        tdk_data[timer_index].acc_y |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].acc_z = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 3:
+        tdk_data[timer_index].acc_z |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].temp = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 4:
+        tdk_data[timer_index].temp |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].gyro_x = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 5:
+        tdk_data[timer_index].gyro_x |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].gyro_y = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 6:
+        tdk_data[timer_index].gyro_y |= (int16_t)spi1_rx[1];
+        tdk_data[timer_index].gyro_z = (int16_t)(spi1_rx[0] << 8);
+        break;
+      case 7:
+        tdk_data[timer_index].gyro_z |= (int16_t)spi1_rx[1];
+        break;
+      default:
+        SpiCsEnd(hspi);
+        return;
+    }
+
+    tdk_data[timer_index].state++;
+    if (tdk_data[timer_index].state == 8) {
+      SpiCsEnd(hspi);
+      tdk_data[timer_index].state = 0;
+      can_out.tdk_counter++;
+      can_out.tdk_counter =
+          (can_out.tdk_counter == 0xFFFF) ? 0 : can_out.tdk_counter;
+      return;
+    }
+
+    SpiTdk(tdk_data, hspi, &tdk_state, SPI_RUN);
+    return;
+
+  } else if (hspi == &hspi2 || hspi == &hspi3) {
+    SpiCsEnd(hspi);
+    ConvertEndianMurata(spi_murata_rx.byte, (hspi == &hspi2)
+                                                ? spi2_rx.four_bytes
+                                                : spi3_rx.four_bytes);
+
+    if (hspi == &hspi2) {
+      switch (uno_data[timer_index].state) {
+        case 0:
+          uno_data[timer_index].temp =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 1:
+          uno_data[timer_index].acc_x =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 2:
+          uno_data[timer_index].acc_y =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 3:
+          uno_data[timer_index].acc_z =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 4:
+          uno_data[timer_index].gyro_x =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        default:
+          return;
+      }
+
+      if (uno_data[timer_index].index == 1) {
+        uno_data[timer_index].index = 0;
+
+        can_out.uno_counter++;
+        can_out.uno_counter =
+            (can_out.uno_counter == 0xFFFF) ? 0 : can_out.uno_counter;
+
+        return;
+      }
+
+      uno_data[timer_index].state++;
+
+      if (uno_data[timer_index].state == 5) {
+        uno_data[timer_index].state = 0;
+        uno_data[timer_index].index++;
+      }
+
+      SpiMurata(uno_data, hspi, &uno_state, SPI_RUN);
+
+      return;
+    } else if (hspi == &hspi3) {
+      switch (due_data[timer_index].state - 4) {
+        case 0:
+          due_data[timer_index].gyro_z =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 1:
+          due_data[timer_index].temp =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        case 2:
+          due_data[timer_index].gyro_y =
+              GET_SPI_DATA_INT16(spi_murata_rx.four_bytes);
+          break;
+        default:
+          return;
+      }
+
+      if (due_data[timer_index].index == 1) {
+        due_data[timer_index].index = 0;
+
+        can_out.due_counter++;
+        can_out.due_counter =
+            (can_out.due_counter == 0xFFFF) ? 0 : can_out.due_counter;
+
+        return;
+      }
+
+      due_data[timer_index].state++;
+
+      if (due_data[timer_index].state == 7) {
+        due_data[timer_index].state = 4;
+        due_data[timer_index].index++;
+      }
+
+      SpiMurata(due_data, hspi, &due_state, SPI_RUN);
+
+      return;
+    }
   }
 }
 
