@@ -554,20 +554,20 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
         2, true, "Drivetrain Bus", &canivore_signal_registry,
-        current_limits->drivetrain_supply_current_limit(),
-        current_limits->drivetrain_stator_current_limit());
+        current_limits->drivetrain_stator_current_limit(),
+        current_limits->drivetrain_supply_current_limit());
     std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
         1, true, "Drivetrain Bus", &canivore_signal_registry,
-        current_limits->drivetrain_supply_current_limit(),
-        current_limits->drivetrain_stator_current_limit());
+        current_limits->drivetrain_stator_current_limit(),
+        current_limits->drivetrain_supply_current_limit());
     std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
         4, false, "Drivetrain Bus", &canivore_signal_registry,
-        current_limits->drivetrain_supply_current_limit(),
-        current_limits->drivetrain_stator_current_limit());
+        current_limits->drivetrain_stator_current_limit(),
+        current_limits->drivetrain_supply_current_limit());
     std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
         5, false, "Drivetrain Bus", &canivore_signal_registry,
-        current_limits->drivetrain_supply_current_limit(),
-        current_limits->drivetrain_stator_current_limit());
+        current_limits->drivetrain_stator_current_limit(),
+        current_limits->drivetrain_supply_current_limit());
     std::shared_ptr<TalonFX> intake_pivot = std::make_shared<TalonFX>(
         6, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->intake_pivot_stator_current_limit(),

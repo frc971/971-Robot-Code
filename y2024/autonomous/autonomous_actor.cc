@@ -129,6 +129,30 @@ void AutonomousActor::Replan() {
           two_piece_steal_splines_.value()[0].starting_position();
       CHECK(starting_position_);
       break;
+    case AutonomousMode::TWO_PIECE_VIA_STAGE:
+      AOS_LOG(INFO, "TWO_PIECE_VIA_STAGE replanning!");
+      two_piece_via_stage_splines_ = {
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceViaStageSpline1,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kForward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceViaStageSpline2,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kBackward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceViaStageSpline3,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kForward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TwoPieceViaStageSpline4,
+                        &auto_splines_, std::placeholders::_1, alliance_),
+              SplineDirection::kBackward)};
+
+      starting_position_ =
+          two_piece_via_stage_splines_.value()[0].starting_position();
+      CHECK(starting_position_);
+      break;
   }
 
   is_planned_ = true;
@@ -160,6 +184,9 @@ bool AutonomousActor::Run(
       break;
     case AutonomousMode::TWO_PIECE_STEAL:
       TwoPieceStealAuto();
+      break;
+    case AutonomousMode::TWO_PIECE_VIA_STAGE:
+      TwoPieceViaStageAuto();
       break;
   }
   return true;
@@ -457,6 +484,113 @@ void AutonomousActor::TwoPieceStealAuto() {
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 }
 
+void AutonomousActor::TwoPieceViaStageAuto() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(two_piece_via_stage_splines_);
+  auto &splines = *two_piece_via_stage_splines_;
+
+  uint32_t initial_shot_count = shot_count();
+
+  // Always be aiming & firing.
+  Aim();
+  if (!WaitForPreloaded()) return;
+
+  Shoot();
+
+  AOS_LOG(
+      INFO, "Shooting Preloaded Note %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForNoteFired(initial_shot_count, std::chrono::seconds(2))) return;
+  StopAiming();
+
+  AOS_LOG(
+      INFO, "Shot first note %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  StopFiring();
+
+  AOS_LOG(
+      INFO, "Starting Spline 1 %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[0].WaitForPlan()) return;
+
+  splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(2.0)) return;
+  Intake();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.01)) return;
+
+  if (!splines[1].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting second spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  splines[1].Start();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.01)) return;
+
+  Aim();
+
+  AOS_LOG(
+      INFO, "Finished second spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  std::this_thread::sleep_for(chrono::milliseconds(1000));
+
+  Shoot();
+  StopIntake();
+
+  if (!WaitForNoteFired(initial_shot_count + 1, std::chrono::seconds(2)))
+    return;
+
+  StopFiring();
+  StopAiming();
+
+  AOS_LOG(
+      INFO, "Shot second note, starting drive %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[2].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting third spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+  splines[2].Start();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(2.0)) return;
+
+  Intake();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.01)) return;
+
+  if (!splines[3].WaitForPlan()) return;
+
+  AOS_LOG(
+      INFO, "Starting fourth spline %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+  splines[3].Start();
+
+  if (!splines[3].WaitForSplineDistanceRemaining(0.01)) return;
+
+  Aim();
+
+  Shoot();
+
+  std::this_thread::sleep_for(chrono::milliseconds(400));
+
+  if (!WaitForNoteFired(initial_shot_count + 2, std::chrono::seconds(2)))
+    return;
+
+  AOS_LOG(
+      INFO, "Done %lfs\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+}
+
 void AutonomousActor::SendSuperstructureGoal() {
   aos::Sender<control_loops::superstructure::GoalStatic>::StaticBuilder
       goal_builder = superstructure_goal_sender_.MakeStaticBuilder();
@@ -490,6 +624,11 @@ void AutonomousActor::StopIntake() {
 void AutonomousActor::Intake() {
   set_intake_goal(control_loops::superstructure::IntakeGoal::INTAKE);
   set_note_goal(control_loops::superstructure::NoteGoal::CATAPULT);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::StopAiming() {
+  set_auto_aim(control_loops::superstructure::AutoAimMode::NONE);
   SendSuperstructureGoal();
 }
 

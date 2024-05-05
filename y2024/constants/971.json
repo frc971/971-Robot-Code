@@ -40,29 +40,29 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.156725048053565
+              "measured_absolute_position" : 0.183060873152545
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.16416323147786 + 0.0111742298989474 + 0.0288009597941421 + 0.030747789533187 - 0.014014144034337 }}
+      "potentiometer_offset": {{ -0.18953940426369  }}
     },
     "turret_constants": {
       {% set _ = turret_zero.update(
           {
-              "measured_absolute_position" : 0.869811929996983
+              "measured_absolute_position" : 1.01975376211353
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 - 0.05 + 0.72907099601435 }}
+      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 - 0.05 + 0.72907099601435 - 0.0499928122527711 + 0.037944928379006 }}
     },
     "extend_constants": {
       {% set _ = extend_zero.update(
           {
-              "measured_absolute_position" : 0.1547
+              "measured_absolute_position" : 0.0992895926495078
           }
       ) %}
       "zeroing_constants": {{ extend_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879  - 0.1577}}
+      "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879  - 0.1577 - 0.0214825988393}}
     },
     "disable_extend": false,
     "disable_climber": false

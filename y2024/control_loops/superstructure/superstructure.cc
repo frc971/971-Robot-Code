@@ -17,7 +17,8 @@ DEFINE_bool(ignore_distance, false,
 constexpr double kExtendThreshold = 0.01;
 
 constexpr double kTurretLoadingThreshold = 0.05;
-constexpr double kAltitudeLoadingThreshold = 0.02;
+// Extra large so that we can survive loss of zeroes.
+constexpr double kAltitudeLoadingThreshold = 0.04;
 
 constexpr std::chrono::milliseconds kExtraIntakingTime =
     std::chrono::milliseconds(500);

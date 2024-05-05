@@ -9,42 +9,42 @@
     {
       "distance_from_goal": 4.0,
       "shot_params": {
-          "shot_altitude_angle": 1.15,
-          "shot_speed_over_ground": 1.0
+          "shot_altitude_angle": 0.93,
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 6.5,
       "shot_params": {
-          "shot_altitude_angle": 1.15,
-          "shot_speed_over_ground": 1.0
+          "shot_altitude_angle": 0.93,
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 8.5,
       "shot_params": {
           "shot_altitude_angle": 0.85,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 10.0,
       "shot_params": {
           "shot_altitude_angle": 0.8,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     },
     {
       "distance_from_goal": 15.0,
       "shot_params": {
           "shot_altitude_angle": 0.75,
-          "shot_speed_over_ground": 1.0
+          "shot_speed_over_ground": 100000.0
       }
     }
   ],
   "shooter_interpolation_table": [
     {
-        "distance_from_goal": 0.7,
+        "distance_from_goal": 0.5,
         "shot_params": {
             "shot_altitude_angle": 0.85,
             "shot_speed_over_ground": 16.0
@@ -53,21 +53,21 @@
     {
       "distance_from_goal": 1.24,
       "shot_params": {
-          "shot_altitude_angle": 0.85,
+          "shot_altitude_angle": 0.825,
           "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 1.904,
       "shot_params": {
-          "shot_altitude_angle": 0.73,
+          "shot_altitude_angle": 0.66,
           "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 2.404,
       "shot_params": {
-          "shot_altitude_angle": 0.645,
+          "shot_altitude_angle": 0.59,
           "shot_speed_over_ground": 16.0
       }
     },
@@ -75,30 +75,51 @@
     {
       "distance_from_goal": 2.744,
       "shot_params": {
-          "shot_altitude_angle": 0.61,
+          "shot_altitude_angle": 0.56,
           "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 3.274,
       "shot_params": {
-          "shot_altitude_angle": 0.55,
+          "shot_altitude_angle": 0.515,
+          "shot_speed_over_ground": 16.0
+      }
+    },
+    {
+      "distance_from_goal": 3.76,
+      "shot_params": {
+          "shot_altitude_angle": 0.50,
           "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 4.00,
       "shot_params": {
-          "shot_altitude_angle": 0.515,
+          "shot_altitude_angle": 0.465,
           "shot_speed_over_ground": 16.0
       }
     },
     {
       "distance_from_goal": 4.68,
       "shot_params": {
-          "shot_altitude_angle": 0.51,
+          "shot_altitude_angle": 0.47,
           "shot_speed_over_ground": 16.0
       }
+    }
+  ],
+  "note_interpolation_table": [
+    {
+        "amperage": 6.0,
+        "note_params": {
+            "turret_offset": 0.09
+        }
+    },
+    {
+        "amperage": 10.0,
+        "note_params": {
+            "turret_offset": 0.09
+        }
     }
   ],
   "intake_roller_voltages": {
@@ -139,7 +160,7 @@
     "transfer_roller_supply_current_limit": 40,
     "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 50,
-    "drivetrain_stator_current_limit": 200,
+    "drivetrain_stator_current_limit": 70,
     "climber_supply_current_limit": 40,
     "climber_stator_current_limit": 150,
     "extend_supply_current_limit": 30,
@@ -153,7 +174,7 @@
     "catapult_supply_current_limit": 60,
     "catapult_stator_current_limit": 250,
     "retention_roller_stator_current_limit": 20,
-    "slower_retention_roller_stator_current_limit": 2,
+    "slower_retention_roller_stator_current_limit": 12,
     "shooting_retention_roller_stator_current_limit": -20,
     "retention_roller_supply_current_limit": 10
   },
@@ -297,9 +318,10 @@
   "turret_loading_position": 0.58,
   "catapult_return_position": 0.0,
   "min_altitude_shooting_angle": 0.4,
-  "max_altitude_shooting_angle": 1.15,
+  "max_altitude_shooting_angle": 0.94,
   "retention_roller_voltages": {
-    "retaining": 1.5,
+    "intaking": 1.5,
+    "retaining": 0.6,
     "spitting": 6.0
   },
   // TODO(Filip): Update the speaker and amp shooter setpoints
@@ -316,8 +338,8 @@
   "extend_set_points": {
     "trap": 0.46,
     "amp": 0.35,
-    "catapult": 0.017,
-    "retracted": 0.017
+    "catapult": 0.022,
+    "retracted": 0.022
   },
   "turret_avoid_extend_collision_position": 0.0,
   "altitude_avoid_extend_collision_position": 0.3,

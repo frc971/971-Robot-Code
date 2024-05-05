@@ -22,8 +22,22 @@ Aimer::Aimer(aos::EventLoop *event_loop,
           y2024::constants::Values::InterpolationTableFromFlatbuffer(
               robot_constants_->common()
                   ->shooter_shuttle_interpolation_table())),
+      note_interpolation_table_(
+          y2024::constants::Values::NoteInterpolationTableFromFlatbuffer(
+              robot_constants_->common()->note_interpolation_table())),
       joystick_state_fetcher_(
-          event_loop_->MakeFetcher<aos::JoystickState>("/aos")) {}
+          event_loop_->MakeFetcher<aos::JoystickState>("/aos")) {
+  event_loop_->MakeWatcher(
+      "/superstructure/rio",
+      [this](const y2024::control_loops::superstructure::CANPosition &msg) {
+        if (latch_current_) return;
+
+        if (msg.has_retention_roller()) {
+          note_current_average_.AddData(
+              msg.retention_roller()->torque_current());
+        }
+      });
+}
 
 void Aimer::Update(
     const frc971::control_loops::drivetrain::Status *status,
@@ -38,8 +52,6 @@ void Aimer::Update(
   if (status == nullptr) {
     return;
   }
-  const frc971::control_loops::Pose robot_pose({status->x(), status->y(), 0},
-                                               status->theta());
   aos::Alliance alliance = aos::Alliance::kRed;
   if (!joystick_state_fetcher_.Fetch() && !received_joystick_state_) {
     received_joystick_state_ = false;
@@ -49,6 +61,15 @@ void Aimer::Update(
     CHECK_NOTNULL(joystick_state_fetcher_.get());
     alliance = joystick_state_fetcher_->alliance();
   }
+
+  const bool ignore_localizer_pos =
+      auto_aim_mode == AutoAimMode::TURRET_SHUTTLE;
+  const Eigen::Vector3d ignore_localizer_position{
+      0.0 * (alliance == aos::Alliance::kRed ? 1.0 : -1.0), -1.0, 0.0};
+  const frc971::control_loops::Pose robot_pose(
+      ignore_localizer_pos ? ignore_localizer_position
+                           : Eigen::Vector3d{status->x(), status->y(), 0},
+      status->theta());
 
   frc971::shooter_interpolation::InterpolationTable<
       y2024::constants::Values::ShotParams> *current_interpolation_table =
@@ -73,7 +94,14 @@ void Aimer::Update(
                      robot_constants_->common()->turret()->range()),
                  current_interpolation_table->Get(current_goal_.target_distance)
                      .shot_speed_over_ground,
-                 /*wrap_mode=*/0.15, M_PI - kTurretZeroOffset},
+                 /*wrap_mode=*/0.15,
+                 // If we don't have any retention roller data, the averager
+                 // will return 0. If we get a current that is out-of-range of
+                 // the interpolation table, we will use the terminal values of
+                 // the interpolation table.
+                 M_PI - note_interpolation_table_
+                            .Get(note_current_average_.GetAverage()(0))
+                            .turret_offset},
       RobotState{
           robot_pose, {xdot, ydot}, linear_angular(1), current_goal_.position});
 
@@ -86,6 +114,9 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   builder.add_turret_position(current_goal_.position);
   builder.add_turret_velocity(current_goal_.velocity);
   builder.add_target_distance(current_goal_.target_distance);
-  builder.add_shot_distance(DistanceToGoal());
+  builder.add_note_current(note_current_average_.GetAverage()(0));
+  builder.add_current_turret_offset(
+      note_interpolation_table_.Get(note_current_average_.GetAverage()(0))
+          .turret_offset);
   return builder.Finish();
 }

@@ -223,4 +223,47 @@ AutonomousSplines::TwoPieceStealSpline4(
                    alliance);
 }
 
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::TwoPieceViaStageSpline1(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       two_piece_via_stage_spline_1_, builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::TwoPieceViaStageSpline2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       two_piece_via_stage_spline_2_, builder->fbb()),
+                   alliance);
+}
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::TwoPieceViaStageSpline3(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       two_piece_via_stage_spline_3_, builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::TwoPieceViaStageSpline4(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(
+                       two_piece_via_stage_spline_4_, builder->fbb()),
+                   alliance);
+}
+
 }  // namespace y2024::autonomous

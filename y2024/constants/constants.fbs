@@ -29,6 +29,15 @@ table InterpolationTablePoint {
     shot_params: ShotParams (id: 1);
 }
 
+table NoteParams {
+    turret_offset: double (id: 0);
+}
+
+table NoteInterpolationTablePoint {
+    amperage: double (id: 0);
+    note_params: NoteParams (id: 1);
+}
+
 // Amount of voltage to give to the intake rollers when:
 // spitting, which represents voltage when IntakeRollerGoal is SPITTING
 // and intaking, which represents voltage when IntakeRollerGoal is INTAKING
@@ -125,6 +134,9 @@ enum AutonomousMode : ubyte {
   FIVE_PIECE = 3,
   // Auto which picks up two game pieces from the center
   TWO_PIECE_STEAL = 4,
+  // Auto which picks up two game pieces from the center, routing
+  // through center.
+  TWO_PIECE_VIA_STAGE = 5,
 }
 
 table RobotConstants {
@@ -161,6 +173,8 @@ table ShooterTargets {
 table RetentionRollerVoltages {
   retaining:double (id: 0);
   spitting:double (id: 1);
+  // Used for pulling the game-piece in while it is not yet loaded.
+  intaking:double (id: 2);
 }
 
 // Set of april tag targets, by april tag ID, to ignore when on a
@@ -175,6 +189,7 @@ table Common {
   target_map:frc971.vision.TargetMap (id: 0);
   shooter_interpolation_table: [InterpolationTablePoint] (id: 1);
   shooter_shuttle_interpolation_table: [InterpolationTablePoint] (id: 30);
+  note_interpolation_table: [NoteInterpolationTablePoint] (id: 31);
   intake_roller_voltages:IntakeRollerVoltages (id : 2);
   intake_pivot_set_points:IntakePivotSetPoints (id: 3);
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);

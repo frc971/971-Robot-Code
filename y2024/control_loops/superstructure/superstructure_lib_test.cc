@@ -48,6 +48,10 @@ using AbsoluteEncoderSimulator = frc971::control_loops::SubsystemSimulator<
     AbsoluteEncoderSubsystem::State,
     constants::Values::AbsoluteEncoderConstants>;
 
+// Value to make the auto-aim tests pass because they use a current-based
+// interpolation table. This should be the zero-value.
+static constexpr double kTurretZeroOffset = 0.09;
+
 class SuperstructureSimulation {
  public:
   SuperstructureSimulation(::aos::EventLoop *event_loop,
@@ -1389,11 +1393,11 @@ TEST_F(SuperstructureTest, AutoAim) {
   EXPECT_NEAR(
       -M_PI_2,
       superstructure_status_fetcher_->shooter()->aimer()->turret_position() -
-          M_PI - Aimer::kTurretZeroOffset,
+          M_PI - kTurretZeroOffset,
       5e-4);
   EXPECT_NEAR(-M_PI_2,
               superstructure_status_fetcher_->shooter()->turret()->position() -
-                  M_PI - Aimer::kTurretZeroOffset,
+                  M_PI - kTurretZeroOffset,
               5e-4);
 
   EXPECT_EQ(
@@ -1435,11 +1439,11 @@ TEST_F(SuperstructureTest, AutoAim) {
   EXPECT_NEAR(
       M_PI_2,
       superstructure_status_fetcher_->shooter()->aimer()->turret_position() +
-          M_PI - Aimer::kTurretZeroOffset,
+          M_PI - kTurretZeroOffset,
       5e-4);
   EXPECT_NEAR(M_PI_2,
               superstructure_status_fetcher_->shooter()->turret()->position() +
-                  M_PI - Aimer::kTurretZeroOffset,
+                  M_PI - kTurretZeroOffset,
               5e-4);
   EXPECT_EQ(
       kDistanceFromSpeaker,

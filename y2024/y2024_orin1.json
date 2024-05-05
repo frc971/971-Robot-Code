@@ -441,7 +441,7 @@
         "--exposure=0",
         "--framerate=30",
         "--streaming_port=1181",
-        "--bitrate=2000000",
+        "--bitrate=1000000",
         "--data_dir=/home/pi/bin/image_streamer_www"
       ],
       "user": "pi",

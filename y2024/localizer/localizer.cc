@@ -420,9 +420,13 @@ void Localizer::HandleTarget(
       return;
     } else {
       if (utils_.MaybeInAutonomous()) {
-        april_tag_noise_scalar = 2.0;
+        april_tag_noise_scalar = 1.5;
       } else {
-        april_tag_noise_scalar = 10.0;
+        if (target_id == 13 || target_id == 14) {
+          april_tag_noise_scalar = 5.0;
+        } else {
+          april_tag_noise_scalar = 5.0;
+        }
       }
     }
   }

@@ -30,6 +30,7 @@ enum AutoAimMode: ubyte {
     NONE = 0, // No auto aim.
     SPEAKER = 1, // Auto aim for the speaker shot.
     SHUTTLE = 2, // Auto aim for the shuttle shot.
+    TURRET_SHUTTLE = 3, // Auto aim for the turret-only shuttle shot.
 }
 
 table ShooterGoal {
@@ -79,7 +80,7 @@ table Goal {
     fire: bool (id: 4);
 
     // Tells the climber to go absurdly slow on FULL_EXTEND
-    // Deprecated now because we take care of this through 
+    // Deprecated now because we take care of this through
     // climber_goal_voltage
     slow_climber: bool = false (id: 6, deprecated);
 

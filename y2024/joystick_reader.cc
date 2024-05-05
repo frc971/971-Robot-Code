@@ -34,6 +34,8 @@ using Side = frc971::control_loops::drivetrain::RobotSide;
 
 DEFINE_double(speaker_altitude_position_override, -1,
               "If set, use this as the altitude angle for the fixed shot.");
+DEFINE_bool(allow_force_preload, false,
+            "If set, enable the kForcePreload button.");
 
 namespace y2024::input::joysticks {
 
@@ -51,6 +53,7 @@ const ButtonLocation kIntakeRollers(2, 5);
 const ButtonLocation kCatapultLoad(2, 1);
 const ButtonLocation kAmp(2, 4);
 const ButtonLocation kFire(2, 8);
+const ButtonLocation kForceLoad(2, 9);
 const ButtonLocation kDriverFire(1, 1);
 const ButtonLocation kTrap(2, 6);
 const ButtonLocation kAutoAim(1, 8);
@@ -60,6 +63,7 @@ const ButtonLocation kShoot(0, 0);
 const ButtonLocation kRaiseClimber(3, 2);
 const ButtonLocation kRaiseFastClimber(3, 1);
 const ButtonLocation kAimShuttle(2, 10);
+const ButtonLocation kTurretShuttle(1, 10);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
 const ButtonLocation kExtraButtonFour(0, 0);
@@ -134,12 +138,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           superstructure::NoteGoal::NONE);
     }
     auto shooter_goal = superstructure_goal_builder->add_shooter_goal();
+    shooter_goal->set_preloaded(FLAGS_allow_force_preload &&
+                                data.IsPressed(kForceLoad));
     if (data.IsPressed(kAutoAim)) {
       shooter_goal->set_auto_aim(
           control_loops::superstructure::AutoAimMode::SPEAKER);
     } else if (data.IsPressed(kAimShuttle)) {
       shooter_goal->set_auto_aim(
           control_loops::superstructure::AutoAimMode::SHUTTLE);
+    } else if (data.IsPressed(kTurretShuttle)) {
+      shooter_goal->set_auto_aim(
+          control_loops::superstructure::AutoAimMode::TURRET_SHUTTLE);
     }
 
     // Updating aiming for shooter goal, only one type of aim should be possible
