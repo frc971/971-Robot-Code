@@ -9,9 +9,9 @@
 #include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "y2023_bot4/constants.h"
-#include "y2023_bot4/drivetrain_can_position_static.h"
-#include "y2023_bot4/drivetrain_position_generated.h"
+#include "y2024_swerve/constants.h"
+#include "y2024_swerve/drivetrain_can_position_static.h"
+#include "y2024_swerve/drivetrain_position_generated.h"
 
 DEFINE_bool(ctre_diag_server, false,
             "If true, enable the diagnostics server for interacting with "
@@ -24,7 +24,7 @@ using frc971::wpilib::swerve::SwerveModule;
 
 namespace drivetrain = frc971::control_loops::drivetrain;
 
-namespace y2023_bot4::wpilib {
+namespace y2024_swerve::wpilib {
 namespace {
 
 template <class T>
@@ -303,6 +303,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace y2023_bot4::wpilib
+}  // namespace y2024_swerve::wpilib
 
-AOS_ROBOT_CLASS(::y2023_bot4::wpilib::WPILibRobot)
+AOS_ROBOT_CLASS(::y2024_swerve::wpilib::WPILibRobot)

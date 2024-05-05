@@ -98,7 +98,7 @@
         },
         {
             "name": "/drivetrain",
-            "type": "y2023_bot4.AbsoluteDrivetrainPosition",
+            "type": "y2024_swerve.AbsoluteDrivetrainPosition",
             "source_node": "roborio",
             "frequency": 250,
             "num_senders": 1,
@@ -106,7 +106,7 @@
         },
         {
             "name": "/drivetrain",
-            "type": "y2023_bot4.AbsoluteCANPosition",
+            "type": "y2024_swerve.AbsoluteCANPosition",
             "source_node": "roborio",
             "frequency": 250,
             "num_senders": 1,

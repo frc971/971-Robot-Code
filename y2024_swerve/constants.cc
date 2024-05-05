@@ -1,4 +1,4 @@
-#include "y2023_bot4/constants.h"
+#include "y2024_swerve/constants.h"
 
 #include <cstdint>
 
@@ -6,7 +6,7 @@
 
 #include "aos/network/team_number.h"
 
-namespace y2023_bot4::constants {
+namespace y2024_swerve::constants {
 Values MakeValues(uint16_t team) {
   LOG(INFO) << "creating a Constants for team: " << team;
   Values r;
@@ -47,4 +47,4 @@ Values MakeValues(uint16_t team) {
 }
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
-}  // namespace y2023_bot4::constants
+}  // namespace y2024_swerve::constants
