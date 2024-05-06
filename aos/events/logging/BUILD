@@ -1,6 +1,6 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 static_flatbuffer(
     name = "logger_fbs",
@@ -201,9 +201,9 @@ cc_library(
         "@com_google_absl//absl/types:span",
     ] + select({
         "//tools:cpu_k8": [
+            ":lzma_encoder",
             ":s3_fetcher",
             ":s3_file_operations",
-            ":lzma_encoder",
         ],
         "//tools:cpu_arm64": [":lzma_encoder"],
         "//conditions:default": [],

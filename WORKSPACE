@@ -11,9 +11,11 @@ load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
 
 http_archive(
     name = "platforms",
-    sha256 = "2c8d8347427e6bb0ba7cf9f933c08fe2be2b62ff2454546ad852f7bf267aad87",
-    strip_prefix = "platforms-e658a6af526089406d0057160542597501ba65d7",
-    url = "https://github.com/bazelbuild/platforms/archive/e658a6af526089406d0057160542597501ba65d7.zip",
+    sha256 = "218efe8ee736d26a3572663b374a253c012b716d8af0c07e842e82f238a0a7ee",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.10/platforms-0.0.10.tar.gz",
+        "https://github.com/bazelbuild/platforms/releases/download/0.0.10/platforms-0.0.10.tar.gz",
+    ],
 )
 
 http_archive(
@@ -31,9 +33,9 @@ bazel_skylib_workspace()
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "979667bb7276ee8fcf2c114c9be9932b9a3052a64a647e0dcaacfb9c0016f0a3",
-    strip_prefix = "bazel-lib-2.4.1",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.4.1/bazel-lib-v2.4.1.tar.gz",
+    sha256 = "a8a92645e7298bbf538aa880131c6adb4cf6239bbd27230f077a00414d58e4ce",
+    strip_prefix = "bazel-lib-2.7.2",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.7.2/bazel-lib-v2.7.2.tar.gz",
 )
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains", "register_jq_toolchains")
@@ -117,64 +119,20 @@ load(
     apache2_debs = "files",
 )
 load(
-    "//debian:postgresql_amd64.bzl",
-    postgresql_amd64_debs = "files",
-)
-load(
-    "//debian:patch.bzl",
-    patch_debs = "files",
-)
-load(
-    "//debian:rsync.bzl",
-    rsync_debs = "files",
-)
-load(
-    "//debian:ssh.bzl",
-    ssh_debs = "files",
-)
-load(
-    "//debian:pandoc.bzl",
-    pandoc_debs = "files",
-)
-load(
-    "//debian:libusb.bzl",
-    libusb_debs = "files",
-)
-load(
-    "//debian:mingw_compiler.bzl",
-    mingw_compiler_debs = "files",
-)
-load(
-    "//debian:patchelf.bzl",
-    patchelf_debs = "files",
-)
-load(
     "//debian:arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
 )
 load(
-    "//debian:gtk_runtime.bzl",
-    gtk_runtime_debs = "files",
-)
-load(
-    "//debian:opencv_amd64.bzl",
-    opencv_amd64_debs = "files",
+    "//debian:clang_amd64.bzl",
+    clang_amd64_debs = "files",
 )
 load(
     "//debian:gstreamer_amd64.bzl",
     gstreamer_amd64_debs = "files",
 )
 load(
-    "//debian:m4.bzl",
-    m4_debs = "files",
-)
-load(
-    "//debian:lzma_amd64.bzl",
-    lzma_amd64_debs = "files",
-)
-load(
-    "//debian:lzma_arm64.bzl",
-    lzma_arm64_debs = "files",
+    "//debian:gtk_runtime.bzl",
+    gtk_runtime_debs = "files",
 )
 load(
     "//debian:libtinfo5_amd64.bzl",
@@ -185,14 +143,58 @@ load(
     libtinfo5_arm64_debs = "files",
 )
 load(
+    "//debian:libusb.bzl",
+    libusb_debs = "files",
+)
+load(
+    "//debian:lzma_amd64.bzl",
+    lzma_amd64_debs = "files",
+)
+load(
+    "//debian:lzma_arm64.bzl",
+    lzma_arm64_debs = "files",
+)
+load(
+    "//debian:m4.bzl",
+    m4_debs = "files",
+)
+load(
+    "//debian:mingw_compiler.bzl",
+    mingw_compiler_debs = "files",
+)
+load(
+    "//debian:opencv_amd64.bzl",
+    opencv_amd64_debs = "files",
+)
+load("//debian:packages.bzl", "generate_repositories_for_debs")
+load(
+    "//debian:pandoc.bzl",
+    pandoc_debs = "files",
+)
+load(
+    "//debian:patch.bzl",
+    patch_debs = "files",
+)
+load(
+    "//debian:patchelf.bzl",
+    patchelf_debs = "files",
+)
+load(
+    "//debian:postgresql_amd64.bzl",
+    postgresql_amd64_debs = "files",
+)
+load(
+    "//debian:rsync.bzl",
+    rsync_debs = "files",
+)
+load(
+    "//debian:ssh.bzl",
+    ssh_debs = "files",
+)
+load(
     "//debian:xvfb_amd64.bzl",
     xvfb_amd64_debs = "files",
 )
-load(
-    "//debian:clang_amd64.bzl",
-    clang_amd64_debs = "files",
-)
-load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(rsync_debs)
 
@@ -379,9 +381,9 @@ http_archive(
     name = "com_google_absl",
     patch_args = ["-p1"],
     patches = ["//third_party/abseil:abseil.patch"],
-    sha256 = "ea1d31db00eb37e607bfda17ffac09064670ddf05da067944c4766f517876390",
-    strip_prefix = "abseil-cpp-c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
-    url = "https://github.com/abseil/abseil-cpp/archive/c2435f8342c2d0ed8101cb43adfd605fdc52dca2.zip",
+    sha256 = "733726b8c3a6d39a4120d7e45ea8b41a434cdacde401cba500f14236c49b39dc",
+    strip_prefix = "abseil-cpp-20240116.2",
+    url = "https://github.com/abseil/abseil-cpp/archive/refs/tags/20240116.2.tar.gz",
 )
 
 local_repository(
@@ -869,9 +871,15 @@ cc_library(
 
 http_archive(
     name = "aspect_rules_js",
-    sha256 = "630a71aba66c4023a5b16ab3efafaeed8b1a2865ccd168a34611eb73876b3fc4",
-    strip_prefix = "rules_js-1.37.1",
-    url = "https://github.com/aspect-build/rules_js/releases/download/v1.37.1/rules_js-v1.37.1.tar.gz",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "//third_party:rules_js/0001-Fix-package-permissions.patch",
+    ],
+    sha256 = "bc9b4a01ef8eb050d8a7a050eedde8ffb1e45a56b0e4094e26f06c17d5fcf1d5",
+    strip_prefix = "rules_js-1.41.2",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.41.2/rules_js-v1.41.2.tar.gz",
 )
 
 load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
@@ -1319,10 +1327,10 @@ http_archive(
     patches = [
         "@//third_party:rules_go/0001-Disable-warnings-for-external-repositories.patch",
     ],
-    sha256 = "dd926a88a564a9246713a9c00b35315f54cbd46b31a26d5d8fb264c07045f05d",
+    sha256 = "af47f30e9cbd70ae34e49866e201b3f77069abb111183f2c0297e7e74ba6bbc0",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.38.1/rules_go-v0.38.1.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.38.1/rules_go-v0.38.1.zip",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.47.0/rules_go-v0.47.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.47.0/rules_go-v0.47.0.zip",
     ],
 )
 
@@ -1334,10 +1342,10 @@ http_archive(
     patches = [
         "@//third_party:bazel-gazelle/0001-Fix-visibility-of-gazelle-runner.patch",
     ],
-    sha256 = "ecba0f04f96b4960a5b250c8e8eeec42281035970aa8852dda73098274d14a1d",
+    sha256 = "75df288c4b31c81eb50f51e2e14f4763cb7548daae126817247064637fd9ea62",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.29.0/bazel-gazelle-v0.29.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.29.0/bazel-gazelle-v0.29.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.36.0/bazel-gazelle-v0.36.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.36.0/bazel-gazelle-v0.36.0.tar.gz",
     ],
 )
 
@@ -1360,18 +1368,18 @@ gazelle_dependencies()
 
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "ace0abf35274ee0f08d5564635505ed55a0bc346a6534413d3c5b040fc926332",
-    strip_prefix = "protobuf-24.3",
-    url = "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v24.3.zip",
+    sha256 = "4fc5ff1b2c339fb86cd3a25f0b5311478ab081e65ad258c6789359cd84d421f8",
+    strip_prefix = "protobuf-26.1",
+    url = "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v26.1.tar.gz",
 )
 
 http_archive(
     name = "com_github_grpc_grpc",
     patch_args = ["-p1"],
     patches = ["//debian:grpc.patch"],
-    sha256 = "a3a65f0129c4922c5d7f4c11dcd40083a12ca54076fd3a927bcd63c53b7e44a5",
-    strip_prefix = "grpc-1.59.2",
-    url = "https://github.com/grpc/grpc/archive/refs/tags/v1.59.2.tar.gz",
+    sha256 = "493d9905aa09124c2f44268b66205dd013f3925a7e82995f36745974e97af609",
+    strip_prefix = "grpc-1.63.0",
+    url = "https://github.com/grpc/grpc/archive/refs/tags/v1.63.0.tar.gz",
 )
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
@@ -1472,17 +1480,15 @@ http_archive(
 )
 
 # This one is tricky to get an archive because it has recursive submodules. These semi-automated steps do work though:
-# git clone -b 1.10.34 --recurse-submodules --depth=1 https://github.com/aws/aws-sdk-cpp
+# git clone -b 1.11.321 --recurse-submodules --depth=1 https://github.com/aws/aws-sdk-cpp
 # cd aws-sdk-cpp
 # echo bsdtar -a -cf aws_sdk-version.tar.gz --ignore-zeros @\<\(git archive HEAD\) $(git submodule foreach --recursive --quiet 'echo @\<\(cd $displaypath \&\& git archive HEAD --prefix=$displaypath/\)')
 # Now run the command that printed, and the output will be at aws_sdk-version.tar.gz.
 http_archive(
     name = "aws_sdk",
     build_file = "//debian:aws_sdk.BUILD",
-    patch_args = ["-p1"],
-    patches = ["//debian:aws_sdk.patch"],
-    sha256 = "de6570d10c246189fd8c02100f7f0d9af8499a3ef94a131eeb85619f3bd6c604",
-    url = "https://software.frc971.org/Build-Dependencies/aws_sdk-1.10.34.tar.gz",
+    sha256 = "08856b91139d209f7423e60dd8f74a14ab6d053ca40088fcb42fd02484003e95",
+    url = "https://software.frc971.org/Build-Dependencies/aws_sdk-1.11.321.tar.gz",
 )
 
 # Source code of LZ4 (files under lib/) are under BSD 2-Clause.

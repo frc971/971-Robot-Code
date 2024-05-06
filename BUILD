@@ -1,8 +1,8 @@
-load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@aspect_rules_ts//ts:defs.bzl", "ts_config")
-load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config")
+load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+load("@npm//:defs.bzl", "npm_link_all_packages")
 
 # Link npm packages
 npm_link_all_packages(name = "node_modules")

@@ -1,5 +1,5 @@
-load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 # In order to use deb packages in the build you have to follow these steps.
 #

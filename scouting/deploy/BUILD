@@ -1,5 +1,5 @@
-load("@rules_pkg//pkg:pkg.bzl", "pkg_deb", "pkg_tar")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
+load("@rules_pkg//pkg:pkg.bzl", "pkg_deb", "pkg_tar")
 
 pkg_files(
     name = "systemd_files",

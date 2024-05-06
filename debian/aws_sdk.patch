@@ -1,25 +1,13 @@
-Submodule crt/aws-crt-cpp contains modified content
-Submodule crt/aws-c-cal contains modified content
 diff --git a/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c b/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
 index 761455b..fc434ba 100644
 --- a/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
 +++ b/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
-@@ -37,7 +37,7 @@ struct openssl_evp_md_ctx_table *g_aws_openssl_evp_md_ctx_table = NULL;
- /* 1.1 */
- extern HMAC_CTX *HMAC_CTX_new(void) __attribute__((weak, used));
- extern void HMAC_CTX_free(HMAC_CTX *) __attribute__((weak, used));
--extern int HMAC_CTX_reset(HMAC_CTX *) __attribute__((weak, used));
-+//extern int HMAC_CTX_reset(HMAC_CTX *) __attribute__((weak, used));
-
- /* 1.0.2 */
- extern void HMAC_CTX_init(HMAC_CTX *) __attribute__((weak, used));
-@@ -46,7 +46,7 @@ extern void HMAC_CTX_cleanup(HMAC_CTX *) __attribute__((weak)) __attribute__((us
- /* common */
+@@ -44,7 +44,7 @@ extern void HMAC_CTX_init(HMAC_CTX *) __attribute__((weak, used));
+ extern void HMAC_CTX_cleanup(HMAC_CTX *) __attribute__((weak, used));
  extern int HMAC_Update(HMAC_CTX *, const unsigned char *, size_t) __attribute__((weak, used));
  extern int HMAC_Final(HMAC_CTX *, unsigned char *, unsigned int *) __attribute__((weak, used));
--extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak, used));
-+//extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak, used));
-
- /* libcrypto 1.1 stub for init */
- static void s_hmac_ctx_init_noop(HMAC_CTX *ctx) {
-Submodule crt/s2n contains modified content
+-extern int HMAC_Init_ex(HMAC_CTX *, const void *, size_t, const EVP_MD *, ENGINE *) __attribute__((weak, used));
++//extern int HMAC_Init_ex(HMAC_CTX *, const void *, size_t, const EVP_MD *, ENGINE *) __attribute__((weak, used));
+ 
+ static int s_hmac_init_ex_bssl(HMAC_CTX *ctx, const void *key, size_t key_len, const EVP_MD *md, ENGINE *impl) {
+     AWS_PRECONDITION(ctx);

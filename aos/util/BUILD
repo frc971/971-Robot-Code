@@ -1,7 +1,7 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("config_validator_macro.bzl", "config_validator_test")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("config_validator_macro.bzl", "config_validator_test")
 
 package(default_visibility = ["//visibility:public"])
 

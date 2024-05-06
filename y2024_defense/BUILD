@@ -1,6 +1,6 @@
-load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 config_validator_test(
     name = "config_validator_test",

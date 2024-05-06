@@ -1,6 +1,6 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//aos:config.bzl", "aos_config")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//aos:config.bzl", "aos_config")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 exports_files(["roborio_irq_config.json"])
 

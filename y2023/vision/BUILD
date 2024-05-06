@@ -1,7 +1,7 @@
-load("//frc971:halide.bzl", "halide_library")
-load("//tools/build_rules:select.bzl", "cpu_select")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//frc971:halide.bzl", "halide_library")
+load("//tools/build_rules:select.bzl", "cpu_select")
 
 cc_binary(
     name = "camera_reader",

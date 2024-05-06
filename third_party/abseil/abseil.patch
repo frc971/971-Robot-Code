@@ -244,15 +244,6 @@ index edeabd81..49674f5f 100644
      textual_hdrs = ["include/cctz/civil_time_detail.h"],
      visibility = ["//visibility:public"],
      deps = ["//absl/base:config"],
-@@ -53,6 +62,8 @@ cc_library(
-         "include/cctz/time_zone.h",
-         "include/cctz/zone_info_source.h",
-     ],
-+    copts = ABSL_DEFAULT_COPTS,
-+    linkopts = ABSL_DEFAULT_LINKOPTS,
-     # OS X and iOS no longer use `linkopts = ["-framework CoreFoundation"]`
-     # as (1) bazel adds it automatically, and (2) it caused problems when
-     # cross-compiling for Android.
 diff --git a/absl/copts/configure_copts.bzl b/absl/copts/configure_copts.bzl
 index ca5f26da..0b10dc0b 100644
 --- a/absl/copts/configure_copts.bzl

@@ -1,8 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools:platforms.bzl", "platforms")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 
 static_flatbuffer(
     name = "vision_fbs",

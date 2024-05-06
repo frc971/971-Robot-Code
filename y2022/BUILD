@@ -1,8 +1,8 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
-load("//tools/build_rules:template.bzl", "jinja2_template")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
+load("//frc971:downloader.bzl", "robot_downloader")
+load("//tools/build_rules:template.bzl", "jinja2_template")
 
 config_validator_test(
     name = "config_validator_test",

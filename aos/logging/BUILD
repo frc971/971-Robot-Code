@@ -1,5 +1,5 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 # The primary client logging interface.
 cc_library(

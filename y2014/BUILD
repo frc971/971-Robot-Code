@@ -1,5 +1,5 @@
-load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 cc_library(
     name = "constants",

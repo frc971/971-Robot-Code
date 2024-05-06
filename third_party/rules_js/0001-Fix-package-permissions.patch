@@ -1,0 +1,33 @@
+diff --git a/npm/private/npm_package_store.bzl b/npm/private/npm_package_store.bzl
+index 9ab33e56..46446bd9 100644
+--- a/npm/private/npm_package_store.bzl
++++ b/npm/private/npm_package_store.bzl
+@@ -198,23 +198,14 @@ def _npm_package_store_impl(ctx):
+             if utils.is_tarball_extension(src_directory.extension):
+                 # npm packages are always published with one top-level directory inside the tarball, tho the name is not predictable
+                 # we can use the --strip-components 1 argument with tar to strip one directory level
+-                args = ctx.actions.args()
+-                args.add("--extract")
+-                args.add("--no-same-owner")
+-                args.add("--no-same-permissions")
+-                args.add("--strip-components")
+-                args.add(str(1))
+-                args.add("--file")
+-                args.add(src_directory.path)
+-                args.add("--directory")
+-                args.add(virtual_store_directory.path)
+-
+                 bsdtar = ctx.toolchains["@aspect_bazel_lib//lib:tar_toolchain_type"]
+-                ctx.actions.run(
+-                    executable = bsdtar.tarinfo.binary,
++                ctx.actions.run_shell(
++                    tools = [bsdtar.tarinfo.binary],
+                     inputs = depset(direct = [src_directory], transitive = [bsdtar.default.files]),
+                     outputs = [virtual_store_directory],
+-                    arguments = [args],
++                    command = bsdtar.tarinfo.binary.path + " --extract --no-same-owner --no-same-permissions --strip-components 1 --file " +
++                              src_directory.path + " --directory " +
++                              virtual_store_directory.path + " && find " + virtual_store_directory.path + " -type d -exec chmod 755 {} \\;",
+                     mnemonic = "NpmPackageExtract",
+                     progress_message = "Extracting npm package {}@{}".format(package, version),
+                 )

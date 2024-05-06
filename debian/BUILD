@@ -3,60 +3,20 @@ load(
     apache2_debs = "files",
 )
 load(
-    ":postgresql_amd64.bzl",
-    postgresql_amd64_debs = "files",
-)
-load(
-    ":patch.bzl",
-    patch_debs = "files",
-)
-load(
-    ":rsync.bzl",
-    rsync_debs = "files",
-)
-load(
-    ":ssh.bzl",
-    ssh_debs = "files",
-)
-load(
-    ":pandoc.bzl",
-    pandoc_debs = "files",
-)
-load(
-    ":libusb.bzl",
-    libusb_debs = "files",
-)
-load(
-    ":mingw_compiler.bzl",
-    mingw_compiler_debs = "files",
-)
-load(
-    ":patchelf.bzl",
-    patchelf_debs = "files",
-)
-load(
     ":arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
 )
 load(
-    ":gtk_runtime.bzl",
-    gtk_runtime_debs = "files",
-)
-load(
-    ":opencv_amd64.bzl",
-    opencv_amd64_debs = "files",
+    ":clang_amd64.bzl",
+    clang_amd64_debs = "files",
 )
 load(
     ":gstreamer_amd64.bzl",
     gstreamer_amd64_debs = "files",
 )
 load(
-    ":lzma_amd64.bzl",
-    lzma_amd64_debs = "files",
-)
-load(
-    ":lzma_arm64.bzl",
-    lzma_arm64_debs = "files",
+    ":gtk_runtime.bzl",
+    gtk_runtime_debs = "files",
 )
 load(
     ":libtinfo5_amd64.bzl",
@@ -67,14 +27,54 @@ load(
     libtinfo5_arm64_debs = "files",
 )
 load(
+    ":libusb.bzl",
+    libusb_debs = "files",
+)
+load(
+    ":lzma_amd64.bzl",
+    lzma_amd64_debs = "files",
+)
+load(
+    ":lzma_arm64.bzl",
+    lzma_arm64_debs = "files",
+)
+load(
+    ":mingw_compiler.bzl",
+    mingw_compiler_debs = "files",
+)
+load(
+    ":opencv_amd64.bzl",
+    opencv_amd64_debs = "files",
+)
+load(":packages.bzl", "download_packages", "generate_deb_tarball")
+load(
+    ":pandoc.bzl",
+    pandoc_debs = "files",
+)
+load(
+    ":patch.bzl",
+    patch_debs = "files",
+)
+load(
+    ":patchelf.bzl",
+    patchelf_debs = "files",
+)
+load(
+    ":postgresql_amd64.bzl",
+    postgresql_amd64_debs = "files",
+)
+load(
+    ":rsync.bzl",
+    rsync_debs = "files",
+)
+load(
+    ":ssh.bzl",
+    ssh_debs = "files",
+)
+load(
     ":xvfb_amd64.bzl",
     xvfb_amd64_debs = "files",
 )
-load(
-    ":clang_amd64.bzl",
-    clang_amd64_debs = "files",
-)
-load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 package(default_visibility = ["//visibility:public"])
 

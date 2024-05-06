@@ -1,5 +1,5 @@
-load("//motors:macros.bzl", "hex_from_elf")
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
+load("//motors:macros.bzl", "hex_from_elf")
 
 copy_file(
     name = "copy_startup",

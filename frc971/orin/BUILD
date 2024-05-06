@@ -1,5 +1,5 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//frc971:halide.bzl", "halide_library")
 
 exports_files(["orin_irq_config.json"])

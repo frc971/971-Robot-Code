@@ -1,5 +1,5 @@
-load("//motors:macros.bzl", "hex_from_elf")
 load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
+load("//motors:macros.bzl", "hex_from_elf")
 
 jevois_crc_args = [
     "$(location //third_party/pycrc:pycrc_main)",

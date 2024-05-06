@@ -1,8 +1,8 @@
-load("//tools/build_rules:js.bzl", "ts_project")
-load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
+load("//tools/build_rules:js.bzl", "ts_project")
 
 ts_project(
     name = "demo",

@@ -100,6 +100,7 @@ build --incompatible_exclusive_test_sandboxed
 build --strategy=TsProject=sandboxed
 build --strategy=CopyFile=standalone
 build --strategy=CopyDirectory=standalone
+build --strategy=CopyToDirectory=standalone
 
 # Honor the setting of `skipLibCheck` in the tsconfig.json file.
 # https://www.typescriptlang.org/tsconfig#skipLibCheck
@@ -136,8 +137,13 @@ build --per_file_copt=-third_party/.*,-external/.*@-Werror,-Wextra,-Wpointer-ari
 # NOTE: Explicitly disable -Werror because the `-external/.*` filter does not work
 build --per_file_copt=third_party/.*,external/.*@-Wno-sign-compare,-Wno-cast-align,-Wno-error,-Wno-unused-parameter,-Wno-cast-qual,-Wno-format-nonliteral,-Wno-tautological-type-limit-compare,-Wno-missing-field-initializers,-Wno-unused-function,-Wno-cast-function-type,-Wno-comment,-Wno-typedef-redefinition,-Wno-tautological-unsigned-enum-zero-compare,-Wno-extra,-Wno-type-limits,-Wno-attributes,-Wno-deprecated
 
+# bzlmod breaks our code base right now, deal with this later.
+common --enable_bzlmod=false
+
+# Disable warnings about using directories in Bazel.
+startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
+
 # Load a local file that users can use to customize bazel invocations.  This
 # should stay the last line in this file so users can override things when they
 # want.
 try-import %workspace%/.bazelrc.user
-

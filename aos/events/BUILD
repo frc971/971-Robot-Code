@@ -1,7 +1,7 @@
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_library", "rust_test")
 

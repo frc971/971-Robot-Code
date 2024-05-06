@@ -1,5 +1,5 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 package(default_visibility = ["//visibility:public"])
 

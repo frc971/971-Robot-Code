@@ -1,5 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 def static_flatbuffer(name, visibility = None, deps = [], srcs = [], **kwargs):
     """Generates the code for the static C++ flatbuffer API for the specified fbs file.

@@ -1,7 +1,7 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 

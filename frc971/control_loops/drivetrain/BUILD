@@ -1,10 +1,10 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//tools/build_rules:template.bzl", "jinja2_template")
-load("//tools/build_rules:js.bzl", "ts_project")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
-load("//tools/build_rules:select.bzl", "cpu_select")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//tools/build_rules:js.bzl", "ts_project")
+load("//tools/build_rules:select.bzl", "cpu_select")
+load("//tools/build_rules:template.bzl", "jinja2_template")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -197,10 +197,10 @@ cc_library(
         "drivetrain_config.h",
     ],
     deps = [
+        ":drivetrain_config_fbs",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/control_loops:state_feedback_loop_converters",
-        ":drivetrain_config_fbs",
     ] + select({
         "@platforms//os:linux": [
             "//frc971/control_loops:hybrid_state_feedback_loop",

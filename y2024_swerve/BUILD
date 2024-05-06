@@ -1,7 +1,7 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 config_validator_test(
     name = "config_validator_test",

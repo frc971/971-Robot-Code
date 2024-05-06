@@ -1,5 +1,5 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 cc_library(

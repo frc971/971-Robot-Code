@@ -1,5 +1,5 @@
-load("@rules_rust//rust:toolchain.bzl", "rust_stdlib_filegroup", "rust_toolchain")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_rust//rust:toolchain.bzl", "rust_stdlib_filegroup", "rust_toolchain")
 
 # We have to declare our toolchains individually to get the corect constraints
 # configured so we can robustly select the correct one for each of our

@@ -1,6 +1,6 @@
 load("//aos:config.bzl", "aos_config")
-load("//tools/build_rules:template.bzl", "jinja2_template")
 load("//frc971/control_loops/drivetrain:drivetrain_config.bzl", "drivetrain_config")
+load("//tools/build_rules:template.bzl", "jinja2_template")
 
 genrule(
     name = "genrule_drivetrain",

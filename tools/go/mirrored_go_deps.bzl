@@ -1,6 +1,6 @@
-load("//tools/go:go_mirrors.bzl", "GO_MIRROR_INFO")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
+load("//tools/go:go_mirrors.bzl", "GO_MIRROR_INFO")
 
 def maybe_override_go_dep(name, importpath, sum, version, **kwargs):
     """This macro selects between our dependency mirrors and upstream sources.

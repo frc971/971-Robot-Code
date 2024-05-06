@@ -1,5 +1,5 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 static_flatbuffer(
     name = "matrix_fbs",

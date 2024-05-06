@@ -1,3 +1,4 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", _flatbuffer_rust_library = "flatbuffer_rust_library")
 load(
     "@rules_rust//rust:defs.bzl",
     _rust_binary = "rust_binary",
@@ -6,7 +7,6 @@ load(
     _rust_library = "rust_library",
     _rust_test = "rust_test",
 )
-load("@com_github_google_flatbuffers//:build_defs.bzl", _flatbuffer_rust_library = "flatbuffer_rust_library")
 
 def rust_doc_test(target_compatible_with = ["//tools/platforms/rust:has_support"], tags = [], **kwargs):
     # TODO(james): Attempting to execute this remotely results

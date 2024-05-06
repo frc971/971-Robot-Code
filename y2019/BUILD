@@ -1,8 +1,8 @@
-load("//frc971:downloader.bzl", "robot_downloader")
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//aos:config.bzl", "aos_config")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//aos:config.bzl", "aos_config")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//frc971:downloader.bzl", "robot_downloader")
 
 robot_downloader(
     data = [

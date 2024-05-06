@@ -1,17 +1,17 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
+load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("@aspect_rules_cypress//cypress:defs.bzl", "cypress_module_test")
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_js//js:providers.bzl", "JsInfo")
 load("@aspect_rules_js//npm:defs.bzl", "npm_package")
+load("@aspect_rules_rollup//rollup:defs.bzl", upstream_rollup_bundle = "rollup")
+load("@aspect_rules_terser//terser:defs.bzl", terser_minified = "terser")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
-load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
-load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 
 #load("@npm//:history-server/package_json.bzl", history_server_bin = "bin")
 load("@npm//:html-insert-assets/package_json.bzl", html_insert_assets_bin = "bin")
 load("//tools/build_rules/js:ng.bzl", "ng_esbuild", "ng_project")
 load("//tools/build_rules/js:ts.bzl", _ts_project = "ts_project")
-load("@aspect_rules_rollup//rollup:defs.bzl", upstream_rollup_bundle = "rollup")
-load("@aspect_rules_terser//terser:defs.bzl", terser_minified = "terser")
-load("@aspect_rules_cypress//cypress:defs.bzl", "cypress_module_test")
 
 ts_project = _ts_project
 

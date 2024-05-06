@@ -1,12 +1,12 @@
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
-load("//aos:config.bzl", "aos_config")
-load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//aos:config.bzl", "aos_config")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 
 package(default_visibility = ["//visibility:public"])
 

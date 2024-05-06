@@ -1,5 +1,5 @@
-load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 
 filegroup(
     name = "files",

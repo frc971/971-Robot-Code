@@ -1,5 +1,5 @@
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 load("//tools:platforms.bzl", "platforms")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 
 gtk_dependent_cc_binary(
     name = "blob_stream_replay",

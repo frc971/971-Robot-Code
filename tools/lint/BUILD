@@ -1,6 +1,6 @@
 load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
-load("@pip_deps//:requirements.bzl", "entry_point")
 load("@npm//:prettier/package_json.bzl", prettier_bin = "bin")
+load("@pip_deps//:requirements.bzl", "entry_point")
 
 prettier_bin.prettier_binary(
     name = "prettier_binary",

@@ -1,6 +1,6 @@
-load("//tools/build_rules:js.bzl", "ts_project")
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//tools/build_rules:js.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
