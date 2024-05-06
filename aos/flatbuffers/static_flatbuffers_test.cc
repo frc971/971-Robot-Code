@@ -274,19 +274,21 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     EXPECT_EQ(R"json({ "scalar": 123, "vector_of_scalars": [ 4, 5 ] })json",
               aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
     {
+      // Set the string to a value that is as long as its static length. An
+      // extra byte for the null character should be automatically allocated.
       EXPECT_FALSE(object->has_string());
       auto string = object->add_string();
       EXPECT_TRUE(object->has_string());
-      string->SetString("Hello, World!");
-      EXPECT_EQ(13u, object->string()->size());
+      string->SetString("This is twenty chars");
+      EXPECT_EQ(20u, object->string()->size());
       ASSERT_TRUE(fbs.has_string());
-      ASSERT_EQ(13u, fbs.string()->size());
-      EXPECT_EQ("Hello, World!", fbs.string()->string_view());
+      ASSERT_EQ(20u, fbs.string()->size());
+      EXPECT_EQ("This is twenty chars", fbs.string()->string_view());
       // Check that we null-terminated correctly.
-      EXPECT_EQ(13u, strnlen(fbs.string()->c_str(), 20));
+      EXPECT_EQ(20u, strnlen(fbs.string()->c_str(), 21));
     }
     EXPECT_EQ(
-        R"json({ "scalar": 123, "vector_of_scalars": [ 4, 5 ], "string": "Hello, World!" })json",
+        R"json({ "scalar": 123, "vector_of_scalars": [ 4, 5 ], "string": "This is twenty chars" })json",
         aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
     {
       EXPECT_FALSE(object->has_vector_of_strings());
@@ -306,7 +308,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ]
@@ -328,7 +330,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -353,7 +355,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -393,7 +395,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -440,7 +442,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -489,7 +491,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -546,7 +548,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
@@ -612,7 +614,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   4,
   5
  ],
- "string": "Hello, World!",
+ "string": "This is twenty chars",
  "vector_of_strings": [
   "D"
  ],
