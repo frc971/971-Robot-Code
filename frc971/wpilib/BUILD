@@ -499,16 +499,13 @@ cc_library(
     hdrs = [
         "talonfx.h",
     ],
-    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
         "//aos:math",
         "//aos/events:shm_event_loop",
         "//aos/logging",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
-        "//third_party:phoenix",
         "//third_party:phoenix6",
-        "//third_party:wpilib",
         "@com_github_google_glog//:glog",
     ],
 )
