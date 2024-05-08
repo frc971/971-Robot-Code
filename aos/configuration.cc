@@ -1149,9 +1149,12 @@ void HandleReverseMaps(
     // Now handle node specific maps.
     const flatbuffers::String *const match_source_node_string =
         match->source_node();
-    if (node != nullptr && match_source_node_string != nullptr &&
-        match_source_node_string->string_view() !=
-            node->name()->string_view()) {
+    if (match_source_node_string != nullptr &&
+        // We have a node and it matches.
+        ((node != nullptr && match_source_node_string->string_view() !=
+                                 node->name()->string_view()) ||
+         // Or we don't have a node so we can't match.
+         node == nullptr)) {
       continue;
     }
 
@@ -1240,9 +1243,12 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
     // Now handle node specific maps.
     const flatbuffers::String *const match_source_node_string =
         match->source_node();
-    if (node && match_source_node_string &&
-        match_source_node_string->string_view() !=
-            node->name()->string_view()) {
+    if (match_source_node_string &&
+        // We've got a node and it matches.
+        ((node && match_source_node_string->string_view() !=
+                      node->name()->string_view()) ||
+         // Or we don't have a node, so we can't match.
+         node == nullptr)) {
       continue;
     }
 
