@@ -1,6 +1,6 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 load("@npm//:@angular/compiler-cli/package_json.bzl", angular_compiler_cli = "bin")
 load(":ts.bzl", "ts_project")
-load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 
 exports_files([
     "cypress.config.js",
