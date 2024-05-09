@@ -174,6 +174,10 @@ def _pkg_web(name, entry_point, entry_deps, html_assets, assets, production, vis
         entry_points = [entry_point],
         srcs = entry_deps,
         define = NG_PROD_DEFINE if production else NG_DEV_DEFINE,
+        deps = [
+            "//:node_modules/@babel/core",
+            "//:node_modules/@angular/compiler-cli",
+        ],
         format = "esm",
         output_dir = True,
         splitting = True,
@@ -301,7 +305,7 @@ def rollup_bundle(name, entry_point, node_modules = "//:node_modules", deps = []
     copy_file(
         name = name + "__rollup_config",
         src = "//:rollup.config.js",
-        out = name + "__rollup_config.js",
+        out = name + "__rollup_config.mjs",
     )
 
     upstream_rollup_bundle(
@@ -312,7 +316,7 @@ def rollup_bundle(name, entry_point, node_modules = "//:node_modules", deps = []
         ],
         node_modules = node_modules,
         sourcemap = "false",
-        config_file = ":%s__rollup_config.js" % name,
+        config_file = ":%s__rollup_config.mjs" % name,
         entry_point = entry_point,
         **kwargs
     )
@@ -387,7 +391,7 @@ def cypress_test(name, runner, data = None, **kwargs):
 
     copy_file(
         name = name + "_config",
-        out = name + "_cypress.config.js",
+        out = name + "_cypress.config.mjs",
         src = "//tools/build_rules/js:cypress.config.js",
         visibility = ["//visibility:private"],
     )
@@ -401,7 +405,7 @@ def cypress_test(name, runner, data = None, **kwargs):
         name = name,
         args = [
             "run",
-            "--config-file=%s_cypress.config.js" % name,
+            "--config-file=%s_cypress.config.mjs" % name,
             "--browser=" + chrome_location,
         ],
         browsers = ["@chrome_linux//:all"],
