@@ -445,3 +445,14 @@ cc_library(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cc_library(
+    name = "memory_estimation",
+    srcs = ["memory_estimation.cc"],
+    hdrs = ["memory_estimation.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lockless_queue",
+        "//aos:configuration",
+    ],
+)
