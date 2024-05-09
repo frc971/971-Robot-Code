@@ -71,6 +71,12 @@ cc_test(
         "@orin_large_image_apriltag//file",
     ],
     features = ["cuda"],
+    tags = [
+        # This needs a GPU, which means we need the GPU to be accessible inside
+        # the container.  Rather than solve that right now, just run it under
+        # linux-sandbox on the host which has a GPU already.
+        "no-remote-exec",
+    ],
     deps = [
         ":apriltag",
         ":ycbcr",
