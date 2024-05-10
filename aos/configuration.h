@@ -127,6 +127,11 @@ const Node *GetNodeOrDie(const Configuration *config, const Node *node);
 const Node *GetMyNode(const Configuration *config);
 const Node *GetNodeFromHostname(const Configuration *config,
                                 std::string_view name);
+// Determine if this node exists in this configuration. This function checks to
+// make sure this pointer exists in the configuration. This function is useful
+// for determing if the node is named the same but from a different
+// configuration.
+bool IsNodeFromConfiguration(const Configuration *config, const Node *node);
 
 // Returns a printable name for the node.  (singlenode) if we are on a single
 // node system, and the name otherwise.

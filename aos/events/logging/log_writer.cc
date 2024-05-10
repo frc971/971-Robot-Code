@@ -498,6 +498,9 @@ void Logger::WriteHeader(aos::monotonic_clock::time_point monotonic_start_time,
   last_synchronized_time_ = monotonic_start_time;
 
   for (const Node *node : log_namer_->nodes()) {
+    // Verify the log_namer is using the nodes from configuration_.
+    CHECK(configuration::IsNodeFromConfiguration(configuration_, node));
+
     const int node_index = configuration::GetNodeIndex(configuration_, node);
     MaybeUpdateTimestamp(node, node_index, monotonic_start_time,
                          realtime_start_time);

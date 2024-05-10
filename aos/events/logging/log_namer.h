@@ -232,6 +232,10 @@ class LogNamer {
         configuration_(configuration),
         node_(node),
         logger_node_index_(configuration::GetNodeIndex(configuration_, node_)) {
+    // The LogNamer should never need the node from the event loop, only the
+    // node from the logger configuration. Check to ensure that the correct node
+    // was passed to the constructor.
+    CHECK(configuration::IsNodeFromConfiguration(configuration_, node_));
     nodes_.emplace_back(node_);
   }
   virtual ~LogNamer() = default;
@@ -293,9 +297,10 @@ class LogNamer {
                      realtime_clock::time_point realtime_start_time,
                      monotonic_clock::time_point logger_monotonic_start_time,
                      realtime_clock::time_point logger_realtime_start_time) {
-    VLOG(1) << "Setting node " << node_index << " to start time "
-            << monotonic_start_time << " rt " << realtime_start_time << " UUID "
-            << boot_uuid;
+    VLOG(1) << "Setting node_index " << node_index << ", node_name: "
+            << configuration_->nodes()->Get(node_index)->name()->string_view()
+            << " to start time " << monotonic_start_time << " rt "
+            << realtime_start_time << " UUID " << boot_uuid;
     NodeState *node_state = GetNodeState(node_index, boot_uuid);
     node_state->monotonic_start_time = monotonic_start_time;
     node_state->realtime_start_time = realtime_start_time;
@@ -621,6 +626,13 @@ class MultiNodeFilesLogNamer : public MultiNodeLogNamer {
   MultiNodeFilesLogNamer(EventLoop *event_loop,
                          std::unique_ptr<RenamableFileBackend> backend)
       : MultiNodeLogNamer(std::move(backend), event_loop) {}
+
+  MultiNodeFilesLogNamer(EventLoop *event_loop,
+                         const Configuration *configuration,
+                         std::unique_ptr<RenamableFileBackend> backend,
+                         const Node *node)
+      : MultiNodeLogNamer(std::move(backend), configuration, event_loop, node) {
+  }
 
   ~MultiNodeFilesLogNamer() override = default;
 

@@ -1163,6 +1163,30 @@ const Node *GetNodeFromHostname(const Configuration *config,
   return nullptr;
 }
 
+bool IsNodeFromConfiguration(const Configuration *config, const Node *node) {
+  if (config == nullptr) {
+    return false;
+  }
+
+  // Check if is multinode
+  if (MultiNode(config)) {
+    if (node == nullptr) {
+      return false;
+    }
+    for (const Node *node_from_config : *config->nodes()) {
+      if (node_from_config == node) {
+        return true;
+      }
+    }
+    return false;
+  } else {
+    // nullptr is the node for all single node configurations. Return true so
+    // this function can be used in the same way for single or multinode
+    // configurations.
+    return node == nullptr;
+  }
+}
+
 std::string_view NodeName(const Configuration *config, size_t node_index) {
   if (!configuration::MultiNode(config)) {
     return "(singlenode)";

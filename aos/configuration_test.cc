@@ -1262,4 +1262,84 @@ TEST_F(ConfigurationTest, RemoveChannelsFromConfigMultiNode) {
                               test_channel_type);
 }
 
+// Test fixture for testing IsNodeFromConfiguration.
+// Initializes multiple configurations which share the same node names.
+// Use IsNodeFromConfiguration to check if a node is in a configuration.
+class IsNodeFromConfigurationFixtureTest : public ConfigurationTest {
+ protected:
+  // Use unique_ptr for deferred initialization
+  std::unique_ptr<FlatbufferDetachedBuffer<Configuration>> config1;
+  std::unique_ptr<FlatbufferDetachedBuffer<Configuration>> config2;
+  const Node *node1_config1;
+  const Node *node2_config1;
+  const Node *node1_config2;
+  const Node *node2_config2;
+
+  IsNodeFromConfigurationFixtureTest() {
+    // Initialize configurations here
+    config1 = std::make_unique<FlatbufferDetachedBuffer<Configuration>>(
+        JsonToFlatbuffer(R"config({
+          "nodes": [
+            {"name": "node1"},
+            {"name": "node2"}
+          ]
+        })config",
+                         Configuration::MiniReflectTypeTable()));
+
+    config2 = std::make_unique<FlatbufferDetachedBuffer<Configuration>>(
+        JsonToFlatbuffer(R"config({
+          "nodes": [
+            {"name": "node1"},
+            {"name": "node2"}
+          ]
+        })config",
+                         Configuration::MiniReflectTypeTable()));
+
+    // Initialize nodes after configuration initialization
+    node1_config1 = config1->message().nodes()->Get(0);
+    node2_config1 = config1->message().nodes()->Get(1);
+    node1_config2 = config2->message().nodes()->Get(0);
+    node2_config2 = config2->message().nodes()->Get(1);
+  }
+
+  void SetUp() override {
+    ConfigurationTest::SetUp();
+    // Any additional setup can go here.
+  }
+};
+
+// Test case when node exists in the configuration.
+TEST_F(IsNodeFromConfigurationFixtureTest, NodeExistsInConfiguration) {
+  EXPECT_TRUE(IsNodeFromConfiguration(&config1->message(), node1_config1));
+  EXPECT_TRUE(IsNodeFromConfiguration(&config1->message(), node2_config1));
+}
+
+// Test case when node does not exist in the configuration.
+TEST_F(IsNodeFromConfigurationFixtureTest, NodeDoesNotExistsInConfiguration) {
+  EXPECT_FALSE(IsNodeFromConfiguration(&config1->message(), node1_config2));
+  EXPECT_FALSE(IsNodeFromConfiguration(&config1->message(), node2_config2));
+}
+
+// Test case for nodes with same names but from different configurations.
+TEST_F(IsNodeFromConfigurationFixtureTest, SameNameDifferentConfiguration) {
+  EXPECT_FALSE(IsNodeFromConfiguration(&config1->message(), node1_config2));
+  EXPECT_FALSE(IsNodeFromConfiguration(&config1->message(), node2_config2));
+  EXPECT_FALSE(IsNodeFromConfiguration(&config2->message(), node1_config1));
+  EXPECT_FALSE(IsNodeFromConfiguration(&config2->message(), node2_config1));
+}
+
+// Test case for null pointers.
+TEST_F(IsNodeFromConfigurationFixtureTest, NullPointers) {
+  EXPECT_FALSE(IsNodeFromConfiguration(nullptr, nullptr));
+  EXPECT_FALSE(IsNodeFromConfiguration(&config1->message(), nullptr));
+  EXPECT_FALSE(IsNodeFromConfiguration(nullptr, node1_config1));
+}
+
+// Tests that SourceNode reasonably handles both single and multi-node configs.
+TEST(IsNodeFromConfigurationTest, SingleNode) {
+  FlatbufferDetachedBuffer<Configuration> config_single_node =
+      ReadConfig(ArtifactPath("aos/testdata/config1.json"));
+  EXPECT_TRUE(IsNodeFromConfiguration(&config_single_node.message(), nullptr));
+}
+
 }  // namespace aos::configuration::testing
