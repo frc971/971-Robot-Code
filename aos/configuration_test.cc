@@ -1342,4 +1342,17 @@ TEST(IsNodeFromConfigurationTest, SingleNode) {
   EXPECT_TRUE(IsNodeFromConfiguration(&config_single_node.message(), nullptr));
 }
 
+// Tests that we can use a utility to remove individual channels from a
+// multi-node config.
+TEST_F(ConfigurationTest, MultinodeMerge) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/testdata/multinode_merge.json"));
+
+  EXPECT_EQ(
+      absl::StripSuffix(util::ReadFileToStringOrDie(ArtifactPath(
+                            "aos/testdata/multinode_merge_expected.json")),
+                        "\n"),
+      FlatbufferToJson(config, {.multi_line = true}));
+}
+
 }  // namespace aos::configuration::testing

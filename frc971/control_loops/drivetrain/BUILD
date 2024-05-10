@@ -150,7 +150,6 @@ aos_config(
     src = "drivetrain_simulation_channels.json",
     flatbuffers = [
         ":drivetrain_status_fbs",
-        "//frc971/control_loops:encoder_fault_status_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

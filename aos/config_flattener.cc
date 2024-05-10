@@ -45,7 +45,13 @@ int Main(int argc, char **argv) {
   std::vector<aos::FlatbufferVector<reflection::Schema>> schemas;
 
   for (int i = 3; i < argc; ++i) {
-    schemas.emplace_back(FileToFlatbuffer<reflection::Schema>(argv[i]));
+    auto schema = FileToFlatbuffer<reflection::Schema>(argv[i]);
+    if (!schema.message().has_root_table()) {
+      LOG(ERROR) << "Schema in " << argv[i]
+                 << " does not have a root table, aborting";
+      return 1;
+    }
+    schemas.emplace_back(std::move(schema));
   }
 
   aos::FlatbufferDetachedBuffer<Configuration> merged_config =

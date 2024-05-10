@@ -1,0 +1,46 @@
+{
+ "channels": [
+  {
+   "name": "/foo",
+   "type": ".aos.bar",
+   "max_size": 5,
+   "source_node": "pi1",
+   "destination_nodes": [
+    {
+     "name": "pi2",
+     "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+     "timestamp_logger_nodes": [
+      "pi1",
+      "pi3"
+     ]
+    }
+   ],
+   "logger": "LOCAL_AND_REMOTE_LOGGER",
+   "logger_nodes": [
+    "pi1",
+    "pi2"
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "pi1",
+   "hostname": "raspberrypi",
+   "tags": [
+    "a",
+    "c"
+   ]
+  },
+  {
+   "name": "pi2",
+   "hostname": "raspberrypi2",
+   "tags": [
+    "b",
+    "c"
+   ]
+  },
+  {
+   "name": "pi3"
+  }
+ ]
+}

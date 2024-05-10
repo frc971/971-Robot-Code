@@ -3,11 +3,27 @@ load("@org_frc971//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 FLATC_ARGS = [arg for arg in DEFAULT_FLATC_ARGS if arg != "--require-explicit-ids"]
 
+NON_TABLE_SCHEMAS = [
+    "Duration.fbs",
+    "Time.fbs",
+]
+
 static_flatbuffer(
-    name = "schemas",
-    srcs = glob(["*.fbs"]),
+    name = "non_table_schemas",
+    srcs = NON_TABLE_SCHEMAS,
     flatc_args = FLATC_ARGS,
     visibility = ["//visibility:public"],
+)
+
+static_flatbuffer(
+    name = "schemas",
+    srcs = glob(
+        ["*.fbs"],
+        exclude = NON_TABLE_SCHEMAS,
+    ),
+    flatc_args = FLATC_ARGS,
+    visibility = ["//visibility:public"],
+    deps = [":non_table_schemas"],
 )
 
 load("@org_frc971//aos:flatbuffers.bzl", "cc_static_flatbuffer")

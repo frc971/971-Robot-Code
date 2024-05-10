@@ -3,6 +3,7 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
+load("//tools/build_rules:select.bzl", "compiler_select")
 load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_library")
 
 exports_files(["aos_dump_autocomplete.sh"])
@@ -301,6 +302,10 @@ cc_library(
     hdrs = [
         "configuration.h",
     ],
+    copts = compiler_select({
+        "clang": [],
+        "gcc": ["-Wno-missing-field-initializers"],
+    }),
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
