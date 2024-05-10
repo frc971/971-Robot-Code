@@ -209,6 +209,10 @@ ThreadState CharToThreadState(const char state) {
       return ThreadState::ZOMBIE;
     case 'I':
       return ThreadState::IDLE;
+    case 'X':
+      return ThreadState::DEAD;
+    case 't':
+      return ThreadState::TRACING_STOP;
     default:
       LOG(FATAL) << "Invalid thread state character: " << state;
   }

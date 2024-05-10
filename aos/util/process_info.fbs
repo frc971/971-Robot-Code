@@ -13,7 +13,11 @@ enum ThreadState : byte {
   // 'Z' - Zombie: The thread has completed execution but still has an entry in the process table to report its exit status to its parent.
   ZOMBIE = 4,
   // 'I' - Idle: The thread is an idle kernel thread not associated with any process (typically used by the kernel to perform functions such as handling deferred work).
-  IDLE = 5
+  IDLE = 5,
+  // 'X' - Dead
+  DEAD = 6,
+  // 't' - Tracing stop: The thread is stopped for tracing.
+  TRACING_STOP = 7,
 }
 
 
