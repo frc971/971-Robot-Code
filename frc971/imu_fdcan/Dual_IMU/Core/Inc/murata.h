@@ -15,10 +15,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "math.h"
+
 #define CONV_INT16_INT8_H(a) ((int8_t)(((a) >> 8) & 0xFF))
 #define CONV_INT16_INT8_L(a) ((int8_t)(a & 0xFF))
+#define CONV_UINT8_INT16(a_H, a_L) (int16_t)((a_H << 8) | a_L)
 #define CONV_UINT16_UINT8_H(a) ((uint8_t)(((a) >> 8) & 0xFF))
 #define CONV_UINT16_UINT8_L(a) ((uint8_t)(a & 0xFF))
+#define CONV_UINT16_INT8_H(a) ((int8_t)(((a) >> 8) & 0xFF))
+#define CONV_UINT16_INT8_L(a) ((int8_t)(a & 0xFF))
 
 #define GET_SPI_DATA_INT16(a) ((int16_t)(((a) >> 8) & 0xFFFF))
 #define GET_SPI_DATA_UINT16(a) ((uint16_t)(((a) >> 8) & 0xFFFF))
@@ -26,7 +31,7 @@
 #define GET_SPI_DATA_UINT8_L(a) ((uint8_t)((a >> 8) & 0xFF))
 #define CHECK_RS_ERROR(a) (!(((a) >> 24) & 0x03))
 #define MURATA_CONV_TEMP(a) (float)((a / 30.0f) + 25)
-#define MURATA_CONV_GYRO(a) (float)(a / 80.0f)
+#define MURATA_CONV_GYRO(a) (float)(a / 80.0f) * ((float)(M_PI) / 180.0f)
 #define MURATA_CONV_ACC(a) (float)(a / 4905.0f)
 
 // Define each operation as SPI 32-bit frame. Details in datasheet page 34
@@ -40,6 +45,11 @@
 #define WRITE_FILTER_46HZ_ACC 0xE8022248   // Set 46 Hz filter
 #define WRITE_EOI_BIT 0xE000025B
 
+#define MURATA_GYRO_FILTER_ADDR 0x36
+#define MURATA_GYRO_FILTER_300HZ 0x2424
+#define MURATA_ACC_FILTER_ADDR 0xE8
+#define MURATA_ACC_FILTER_300HZ 0x0444
+
 #define READ_GYRO_X 0x040000F7
 #define READ_GYRO_Y 0x0C0000FB
 #define READ_GYRO_Z 0x040000F7
@@ -48,11 +58,6 @@
 #define READ_ACC_Z 0x180000E5
 #define READ_TEMP 0x1C0000E3
 
-#define READ_ACCELEROMETER_STATUS 0x4800009D
-#define READ_COMMON_STATUS_1 0x50000089
-#define READ_COMMON_STATUS_2 0x5400008F
-#define READ_RATE_STATUS_1 0x40000091
-#define READ_RATE_STATUS_2 0x44000097
 #define READ_SUMMARY_STATUS 0x380000D5
 #define READ_TRC_0 0x740000BF
 #define READ_TRC_1 0x780000B5
@@ -81,8 +86,8 @@ typedef struct {
   int16_t gyro_x;    // deg/s
   int16_t gyro_y;    // deg/s
   int16_t gyro_z;    // deg/s
-  int16_t temp_due;  // C
-  int16_t temp_uno;  // C
+  int16_t due_temp;  // C
+  int16_t uno_temp;  // C
 } DataMurataRaw;
 
 // Human readable sensor data
@@ -93,8 +98,8 @@ typedef struct {
   float gyro_x;
   float gyro_y;
   float gyro_z;
-  float temp_due;
-  float temp_uno;
+  float due_temp;
+  float uno_temp;
 } DataMurata;
 
 // Cross axis compensation values for fine tuning acc and gyro output

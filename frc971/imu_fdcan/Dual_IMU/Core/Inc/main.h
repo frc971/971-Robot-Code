@@ -56,12 +56,63 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 // Different representations of the same four byte value. Simplifies conversion.
-union FourBytes {
+typedef union {
   float decimal;
   uint32_t four_bytes;
   uint16_t two_bytes[2];
   uint8_t byte[4];
-};
+} FourBytes;
+
+typedef enum { SPI_INIT, SPI_ZERO, SPI_START, SPI_RUN } SpiIn;
+
+typedef enum { SPI_READY, SPI_BUSY } SpiOut;
+
+typedef struct {
+  int16_t acc_x;
+  int16_t acc_y;
+  int16_t acc_z;
+  int16_t gyro_x;
+  int16_t gyro_y;
+  int16_t gyro_z;
+  int16_t temp;
+  int state;
+  int index;
+} DataRawInt16;
+
+typedef struct {
+  float acc_x;
+  float acc_y;
+  float acc_z;
+  float gyro_x;
+  float gyro_y;
+  float gyro_z;
+  float temp;
+} DataOutFloat;
+
+typedef struct {
+  uint32_t timestamp;
+  uint16_t can_counter;
+  uint16_t tdk_counter;
+  uint16_t uno_counter;
+  uint16_t due_counter;
+  float tdk_acc_x;
+  float tdk_acc_y;
+  float tdk_acc_z;
+  float tdk_gyro_x;
+  float tdk_gyro_y;
+  float tdk_gyro_z;
+  float murata_acc_x;
+  float murata_acc_y;
+  float murata_acc_z;
+  float murata_gyro_x;
+  float murata_gyro_y;
+  float murata_gyro_z;
+  uint8_t tdk_temp;
+  uint8_t uno_temp;
+  uint8_t due_temp;
+  uint8_t flags;
+} CanData;
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -95,6 +146,10 @@ union FourBytes {
 #define T_VCP_TX_GPIO_Port GPIOC
 #define T_VCP_RX_Pin GPIO_PIN_5
 #define T_VCP_RX_GPIO_Port GPIOC
+#define PWM_RATE_Pin GPIO_PIN_0
+#define PWM_RATE_GPIO_Port GPIOB
+#define PWM_HEADING_Pin GPIO_PIN_1
+#define PWM_HEADING_GPIO_Port GPIOB
 #define CS_UNO_Pin GPIO_PIN_12
 #define CS_UNO_GPIO_Port GPIOB
 #define SCK_UNO_Pin GPIO_PIN_13
@@ -129,6 +184,9 @@ union FourBytes {
 #define FDCAN_STBY_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
+#define IMU_SAMPLES_PER_MS 3
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
