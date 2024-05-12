@@ -1014,7 +1014,9 @@ cc_binary(
     srcs = [
         "ssd_profiler.cc",
     ],
+    visibility = ["//visibility:public"],
     deps = [
+        ":log_backend",
         "//aos:init",
         "//aos/containers:resizeable_buffer",
         "//aos/time",

@@ -246,19 +246,10 @@ using WriteRecipe = std::vector<std::vector<int>>;
 struct FileWriteTestBase : public ::testing::Test {
   uint8_t NextRandom() { return distribution(engine); }
 
-  class AlignedReallocator {
-   public:
-    static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
-      void *new_memory = std::aligned_alloc(512, new_capacity);
-      if (old) {
-        memcpy(new_memory, old, old_size);
-        free(old);
-      }
-      return new_memory;
-    }
-  };
+  AllocatorResizeableBuffer<AlignedReallocator<aos::logger::FileHandler::kSector
 
-  AllocatorResizeableBuffer<AlignedReallocator> buffer;
+                                               >>
+      buffer;
 
   void TestRecipe(const WriteRecipe &recipe) {
     VLOG(1) << "Starting";
@@ -374,8 +365,8 @@ TEST_F(FileWriteTestBase, RandomTest) {
 
 // Test an aligned to unaligned transition to make sure everything works.
 TEST_F(FileWriteTestBase, AlignedToUnaligned) {
-  AllocatorResizeableBuffer<AlignedReallocator> aligned_buffer;
-  AllocatorResizeableBuffer<AlignedReallocator> unaligned_buffer;
+  AllocatorResizeableBuffer<AlignedReallocator<512>> aligned_buffer;
+  AllocatorResizeableBuffer<AlignedReallocator<512>> unaligned_buffer;
 
   aligned_buffer.resize(FileHandler::kSector * 4);
   std::generate(std::begin(aligned_buffer), std::end(aligned_buffer),
