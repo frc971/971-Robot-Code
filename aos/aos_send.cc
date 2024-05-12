@@ -58,7 +58,14 @@ int main(int argc, char **argv) {
   flatbuffers::FlatBufferBuilder fbb(sender->fbb_allocator()->size(),
                                      sender->fbb_allocator());
   fbb.ForceDefaults(true);
-  fbb.Finish(aos::JsonToFlatbuffer(message_to_send, channel->schema(), &fbb));
+  flatbuffers::Offset<flatbuffers::Table> msg_offset =
+      aos::JsonToFlatbuffer(message_to_send, channel->schema(), &fbb);
+
+  if (msg_offset.IsNull()) {
+    return 1;
+  }
+
+  fbb.Finish(msg_offset);
 
   if (FLAGS_rate < 0) {
     sender->CheckOk(sender->Send(fbb.GetSize()));
