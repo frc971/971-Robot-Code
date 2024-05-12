@@ -79,6 +79,44 @@ INSTANTIATE_TEST_SUITE_P(
                          ForceTimestampBuffering::kAutoBuffer}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
+// Class to spam Pong messages blindly.
+class PongSender {
+ public:
+  PongSender(EventLoop *loop, std::string_view channel_name)
+      : sender_(loop->MakeSender<examples::Pong>(channel_name)) {
+    loop->AddPhasedLoop(
+        [this](int) {
+          aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
+          examples::Pong::Builder pong_builder =
+              builder.MakeBuilder<examples::Pong>();
+          CHECK_EQ(builder.Send(pong_builder.Finish()), RawSender::Error::kOk);
+        },
+        chrono::milliseconds(10));
+  }
+
+ private:
+  aos::Sender<examples::Pong> sender_;
+};
+
+// Class to spam Ping messages blindly.
+class PingSender {
+ public:
+  PingSender(EventLoop *loop, std::string_view channel_name)
+      : sender_(loop->MakeSender<examples::Ping>(channel_name)) {
+    loop->AddPhasedLoop(
+        [this](int) {
+          aos::Sender<examples::Ping>::Builder builder = sender_.MakeBuilder();
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          CHECK_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
+        },
+        chrono::milliseconds(10));
+  }
+
+ private:
+  aos::Sender<examples::Ping> sender_;
+};
+
 // Tests that we can write and read simple multi-node log files.
 TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
   if (file_strategy() == FileStrategy::kCombine) {
@@ -436,6 +474,8 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
                   pi1_event_loop->context().monotonic_event_time);
         EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
                   pi1_event_loop->context().realtime_event_time);
+        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_transmit_time,
+                  monotonic_clock::min_time);
 
         ++pi1_ping_count;
       });
@@ -452,11 +492,21 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
         EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
                   pi2_ping_count * chrono::milliseconds(10) +
                       realtime_clock::epoch());
-        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time +
-                      chrono::microseconds(150),
+        // The message at the start of each second doesn't have wakeup latency
+        // since timing reports and server statistics wake us up already at that
+        // point in time.
+        chrono::nanoseconds offset = chrono::microseconds(150);
+        if (pi2_event_loop->context().monotonic_remote_time.time_since_epoch() %
+                chrono::seconds(1) ==
+            chrono::seconds(0)) {
+          offset = chrono::microseconds(100);
+        }
+        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time + offset,
                   pi2_event_loop->context().monotonic_event_time);
-        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time +
-                      chrono::microseconds(150),
+        EXPECT_EQ(pi2_event_loop->context().monotonic_event_time -
+                      chrono::microseconds(100),
+                  pi2_event_loop->context().monotonic_remote_transmit_time);
+        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time + offset,
                   pi2_event_loop->context().realtime_event_time);
         ++pi2_ping_count;
       });
@@ -464,63 +514,81 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
   constexpr ssize_t kQueueIndexOffset = -9;
   // Confirm that the ping and pong counts both match, and the value also
   // matches.
-  pi1_event_loop->MakeWatcher(
-      "/test", [&pi1_event_loop, &pi1_ping_count,
-                &pi1_pong_count](const examples::Pong &pong) {
-        VLOG(1) << "Pi1 pong " << FlatbufferToJson(&pong) << " at "
-                << pi1_event_loop->context().monotonic_remote_time << " -> "
-                << pi1_event_loop->context().monotonic_event_time;
+  pi1_event_loop->MakeWatcher("/test", [&pi1_event_loop, &pi1_ping_count,
+                                        &pi1_pong_count](
+                                           const examples::Pong &pong) {
+    VLOG(1) << "Pi1 pong " << FlatbufferToJson(&pong) << " at "
+            << pi1_event_loop->context().monotonic_remote_time << " -> "
+            << pi1_event_loop->context().monotonic_event_time;
 
-        EXPECT_EQ(pi1_event_loop->context().remote_queue_index,
-                  pi1_pong_count + kQueueIndexOffset);
-        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time,
-                  chrono::microseconds(200) +
-                      pi1_pong_count * chrono::milliseconds(10) +
-                      monotonic_clock::epoch());
-        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
-                  chrono::microseconds(200) +
-                      pi1_pong_count * chrono::milliseconds(10) +
-                      realtime_clock::epoch());
+    EXPECT_EQ(pi1_event_loop->context().remote_queue_index,
+              pi1_pong_count + kQueueIndexOffset);
 
-        EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time +
-                      chrono::microseconds(150),
-                  pi1_event_loop->context().monotonic_event_time);
-        EXPECT_EQ(pi1_event_loop->context().realtime_remote_time +
-                      chrono::microseconds(150),
-                  pi1_event_loop->context().realtime_event_time);
+    chrono::nanoseconds offset = chrono::microseconds(200);
+    if ((pi1_event_loop->context().monotonic_remote_time.time_since_epoch() -
+         chrono::microseconds(150)) %
+            chrono::seconds(1) ==
+        chrono::seconds(0)) {
+      offset = chrono::microseconds(150);
+    }
 
-        EXPECT_EQ(pong.value(), pi1_pong_count + 1);
-        ++pi1_pong_count;
-        EXPECT_EQ(pi1_ping_count, pi1_pong_count);
-      });
-  pi2_event_loop->MakeWatcher(
-      "/test", [&pi2_event_loop, &pi2_ping_count,
-                &pi2_pong_count](const examples::Pong &pong) {
-        VLOG(1) << "Pi2 pong " << FlatbufferToJson(&pong) << " at "
-                << pi2_event_loop->context().monotonic_remote_time << " -> "
-                << pi2_event_loop->context().monotonic_event_time;
+    EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time,
+              offset + pi1_pong_count * chrono::milliseconds(10) +
+                  monotonic_clock::epoch());
+    EXPECT_EQ(pi1_event_loop->context().realtime_remote_time,
+              offset + pi1_pong_count * chrono::milliseconds(10) +
+                  realtime_clock::epoch());
 
-        EXPECT_EQ(pi2_event_loop->context().remote_queue_index,
-                  pi2_pong_count + kQueueIndexOffset);
+    EXPECT_EQ(pi1_event_loop->context().monotonic_remote_time +
+                  chrono::microseconds(150),
+              pi1_event_loop->context().monotonic_event_time);
+    EXPECT_EQ(pi1_event_loop->context().realtime_remote_time +
+                  chrono::microseconds(150),
+              pi1_event_loop->context().realtime_event_time);
+    EXPECT_EQ(pi1_event_loop->context().monotonic_remote_transmit_time,
+              pi1_event_loop->context().monotonic_event_time -
+                  chrono::microseconds(100));
 
-        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
-                  chrono::microseconds(200) +
-                      pi2_pong_count * chrono::milliseconds(10) +
-                      monotonic_clock::epoch());
-        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
-                  chrono::microseconds(200) +
-                      pi2_pong_count * chrono::milliseconds(10) +
-                      realtime_clock::epoch());
+    EXPECT_EQ(pong.value(), pi1_pong_count + 1);
+    ++pi1_pong_count;
+    EXPECT_EQ(pi1_ping_count, pi1_pong_count);
+  });
+  pi2_event_loop->MakeWatcher("/test", [&pi2_event_loop, &pi2_ping_count,
+                                        &pi2_pong_count](
+                                           const examples::Pong &pong) {
+    VLOG(1) << "Pi2 pong " << FlatbufferToJson(&pong) << " at "
+            << pi2_event_loop->context().monotonic_remote_time << " -> "
+            << pi2_event_loop->context().monotonic_event_time;
 
-        EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
-                  pi2_event_loop->context().monotonic_event_time);
-        EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
-                  pi2_event_loop->context().realtime_event_time);
+    EXPECT_EQ(pi2_event_loop->context().remote_queue_index,
+              pi2_pong_count + kQueueIndexOffset);
 
-        EXPECT_EQ(pong.value(), pi2_pong_count + 1);
-        ++pi2_pong_count;
-        EXPECT_EQ(pi2_ping_count, pi2_pong_count);
-      });
+    chrono::nanoseconds offset = chrono::microseconds(200);
+    if ((pi2_event_loop->context().monotonic_remote_time.time_since_epoch() -
+         chrono::microseconds(150)) %
+            chrono::seconds(1) ==
+        chrono::seconds(0)) {
+      offset = chrono::microseconds(150);
+    }
+
+    EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
+              offset + pi2_pong_count * chrono::milliseconds(10) +
+                  monotonic_clock::epoch());
+    EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
+              offset + pi2_pong_count * chrono::milliseconds(10) +
+                  realtime_clock::epoch());
+
+    EXPECT_EQ(pi2_event_loop->context().monotonic_remote_time,
+              pi2_event_loop->context().monotonic_event_time);
+    EXPECT_EQ(pi2_event_loop->context().realtime_remote_time,
+              pi2_event_loop->context().realtime_event_time);
+    EXPECT_EQ(pi2_event_loop->context().monotonic_remote_transmit_time,
+              monotonic_clock::min_time);
+
+    EXPECT_EQ(pong.value(), pi2_pong_count + 1);
+    ++pi2_pong_count;
+    EXPECT_EQ(pi2_ping_count, pi2_pong_count);
+  });
 
   log_reader_factory.Run();
   EXPECT_EQ(pi1_ping_count, 2010);
@@ -1855,6 +1923,9 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
               chrono::nanoseconds(header.realtime_sent_time()));
           const aos::monotonic_clock::time_point header_monotonic_remote_time(
               chrono::nanoseconds(header.monotonic_remote_time()));
+          const aos::monotonic_clock::time_point
+              header_monotonic_remote_transmit_time(
+                  chrono::nanoseconds(header.monotonic_remote_transmit_time()));
           const aos::realtime_clock::time_point header_realtime_remote_time(
               chrono::nanoseconds(header.realtime_remote_time()));
 
@@ -1870,11 +1941,28 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
             ASSERT_TRUE(pi1_timestamp_on_pi2_fetcher.FetchNext());
             pi1_context = &pi1_timestamp_on_pi1_fetcher.context();
             pi2_context = &pi1_timestamp_on_pi2_fetcher.context();
+            // Timestamps don't have wakeup delay, so they show back up after 2
+            // times the network delay on the source node.  Confirm that matches
+            // when we are reading the log.
+            EXPECT_EQ(pi1_event_loop->context().monotonic_event_time,
+                      pi1_context->monotonic_event_time + 2 * network_delay);
           } else if (header.channel_index() == ping_timestamp_channel) {
             ASSERT_TRUE(ping_on_pi1_fetcher.FetchNext());
             ASSERT_TRUE(ping_on_pi2_fetcher.FetchNext());
             pi1_context = &ping_on_pi1_fetcher.context();
             pi2_context = &ping_on_pi2_fetcher.context();
+            // Ping messages get picked up faster at the start of each message
+            // when timers wake up.  Verify all that behavior matches exactly as
+            // expected when reading the log.
+            EXPECT_EQ(pi1_event_loop->context().monotonic_event_time,
+                      pi1_context->monotonic_event_time + 2 * network_delay +
+                          ((pi1_event_loop->context().monotonic_event_time -
+                            2 * network_delay)
+                                           .time_since_epoch() %
+                                       chrono::nanoseconds(1000000000) ==
+                                   chrono::nanoseconds(0)
+                               ? chrono::nanoseconds(0)
+                               : send_delay));
           } else {
             LOG(FATAL) << "Unknown channel " << FlatbufferToJson(&header) << " "
                        << configuration::CleanedChannelToString(
@@ -1899,18 +1987,13 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
                     header_realtime_remote_time);
           EXPECT_EQ(pi2_context->monotonic_remote_time,
                     header_monotonic_remote_time);
+          EXPECT_EQ(pi2_context->monotonic_remote_transmit_time,
+                    header_monotonic_remote_transmit_time);
 
           EXPECT_EQ(pi1_context->realtime_event_time,
                     header_realtime_remote_time);
           EXPECT_EQ(pi1_context->monotonic_event_time,
                     header_monotonic_remote_time);
-
-          // Time estimation isn't perfect, but we know the clocks were
-          // identical when logged, so we know when this should have come back.
-          // Confirm we got it when we expected.
-          EXPECT_EQ(pi1_event_loop->context().monotonic_event_time,
-                    pi1_context->monotonic_event_time + 2 * network_delay +
-                        send_delay);
         });
   }
   for (std::pair<int, std::string> channel :
@@ -1935,6 +2018,9 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
               chrono::nanoseconds(header.realtime_sent_time()));
           const aos::monotonic_clock::time_point header_monotonic_remote_time(
               chrono::nanoseconds(header.monotonic_remote_time()));
+          const aos::monotonic_clock::time_point
+              header_monotonic_remote_transmit_time(
+                  chrono::nanoseconds(header.monotonic_remote_transmit_time()));
           const aos::realtime_clock::time_point header_realtime_remote_time(
               chrono::nanoseconds(header.realtime_remote_time()));
 
@@ -1950,11 +2036,20 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
             ASSERT_TRUE(pi2_timestamp_on_pi1_fetcher.FetchNext());
             pi2_context = &pi2_timestamp_on_pi2_fetcher.context();
             pi1_context = &pi2_timestamp_on_pi1_fetcher.context();
+            // Again, timestamps don't have wakeup delay, so they show back up
+            // after 2 times the network delay on the source node.
+            EXPECT_EQ(pi2_event_loop->context().monotonic_event_time,
+                      pi2_context->monotonic_event_time + 2 * network_delay);
           } else if (header.channel_index() == pong_timestamp_channel) {
             ASSERT_TRUE(pong_on_pi2_fetcher.FetchNext());
             ASSERT_TRUE(pong_on_pi1_fetcher.FetchNext());
             pi2_context = &pong_on_pi2_fetcher.context();
             pi1_context = &pong_on_pi1_fetcher.context();
+            // And Pong messages come back repeatably since they aren't at the
+            // start of a second.
+            EXPECT_EQ(pi2_event_loop->context().monotonic_event_time,
+                      pi2_context->monotonic_event_time + 2 * network_delay +
+                          send_delay);
           } else {
             LOG(FATAL) << "Unknown channel " << FlatbufferToJson(&header) << " "
                        << configuration::CleanedChannelToString(
@@ -1979,18 +2074,13 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
                     header_realtime_remote_time);
           EXPECT_EQ(pi1_context->monotonic_remote_time,
                     header_monotonic_remote_time);
+          EXPECT_EQ(pi1_context->monotonic_remote_transmit_time,
+                    header_monotonic_remote_transmit_time);
 
           EXPECT_EQ(pi2_context->realtime_event_time,
                     header_realtime_remote_time);
           EXPECT_EQ(pi2_context->monotonic_event_time,
                     header_monotonic_remote_time);
-
-          // Time estimation isn't perfect, but we know the clocks were
-          // identical when logged, so we know when this should have come back.
-          // Confirm we got it when we expected.
-          EXPECT_EQ(pi2_event_loop->context().monotonic_event_time,
-                    pi2_context->monotonic_event_time + 2 * network_delay +
-                        send_delay);
         });
   }
 
@@ -2228,7 +2318,7 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
           case 3:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
             ASSERT_EQ(monotonic_start_time, monotonic_clock::epoch() +
-                                                chrono::nanoseconds(2322999462))
+                                                chrono::nanoseconds(2323000000))
                 << " on " << file;
             break;
           default:
@@ -2255,7 +2345,7 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
           case 5:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
             ASSERT_EQ(monotonic_start_time, monotonic_clock::epoch() +
-                                                chrono::nanoseconds(2322999462))
+                                                chrono::nanoseconds(2323000000))
                 << " on " << file;
             break;
           default:
@@ -2320,6 +2410,18 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                     .oldest_local_unreliable_monotonic_timestamps()
                     ->Get(1)));
     const monotonic_clock::time_point
+        oldest_remote_reliable_monotonic_transmit_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_remote_reliable_monotonic_transmit_timestamps()
+                    ->Get(1)));
+    const monotonic_clock::time_point
+        oldest_local_reliable_monotonic_transmit_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_local_reliable_monotonic_transmit_timestamps()
+                    ->Get(1)));
+    const monotonic_clock::time_point
         oldest_remote_reliable_monotonic_timestamps =
             monotonic_clock::time_point(chrono::nanoseconds(
                 log_header->message()
@@ -2362,6 +2464,10 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                     monotonic_clock::max_time);
           EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
                     monotonic_clock::max_time);
+          EXPECT_EQ(oldest_remote_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::max_time);
+          EXPECT_EQ(oldest_local_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::max_time);
           break;
         default:
           FAIL();
@@ -2383,6 +2489,10 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                     monotonic_clock::max_time);
           EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
                     monotonic_clock::max_time);
+          EXPECT_EQ(oldest_remote_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(90250)));
+          EXPECT_EQ(oldest_local_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(90350)));
           break;
         case 1:
           ASSERT_EQ(oldest_remote_monotonic_timestamps,
@@ -2401,7 +2511,13 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                     monotonic_clock::time_point(chrono::microseconds(100000)))
               << file;
           EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
-                    monotonic_clock::time_point(chrono::microseconds(100150)))
+                    monotonic_clock::time_point(chrono::microseconds(100100)))
+              << file;
+          EXPECT_EQ(oldest_remote_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(90250)))
+              << file;
+          EXPECT_EQ(oldest_local_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(90350)))
               << file;
           break;
         case 2:
@@ -2423,6 +2539,13 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
           EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
                     monotonic_clock::max_time)
               << file;
+          EXPECT_EQ(oldest_remote_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::milliseconds(1323) +
+                                                chrono::microseconds(250)))
+              << file;
+          EXPECT_EQ(oldest_local_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(10100350)))
+              << file;
           break;
         case 3:
           ASSERT_EQ(oldest_remote_monotonic_timestamps,
@@ -2441,7 +2564,14 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                     monotonic_clock::time_point(chrono::microseconds(1423000)))
               << file;
           EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
-                    monotonic_clock::time_point(chrono::microseconds(10200150)))
+                    monotonic_clock::time_point(chrono::microseconds(10200100)))
+              << file;
+          EXPECT_EQ(oldest_remote_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::milliseconds(1323) +
+                                                chrono::microseconds(250)))
+              << file;
+          EXPECT_EQ(oldest_local_reliable_monotonic_transmit_timestamps,
+                    monotonic_clock::time_point(chrono::microseconds(10100350)))
               << file;
           break;
         default:
@@ -3124,6 +3254,107 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
   }
 }
 
+// Tests that we can relog with a subset of the original config. This is useful
+// for excluding obsolete or deprecated channels, so they don't appear in the
+// configuration when reading the log.
+TEST_P(MultinodeLoggerTest, LogPartialConfig) {
+  time_converter_.StartEqual();
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  auto sorted_parts = SortParts(logfiles_);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  LogReader reader(sorted_parts);
+  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
+
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
+
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi1) << " pi1";
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi2) << " pi2";
+  LOG(INFO) << "now pi1 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi1)->monotonic_now();
+  LOG(INFO) << "now pi2 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now();
+
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
+
+  reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
+
+  const FlatbufferDetachedBuffer<Configuration> partial_configuration_buffer =
+      configuration::GetPartialConfiguration(
+          *reader.event_loop_factory()->configuration(),
+          [](const Channel &channel) {
+            if (channel.name()->string_view().starts_with("/original/")) {
+              LOG(INFO) << "Omitting channel from save_log, channel: "
+                        << channel.name()->string_view() << ", "
+                        << channel.type()->string_view();
+              return false;
+            }
+            return true;
+          });
+
+  // And confirm we can re-create a log again, while checking the contents.
+  std::vector<std::string> log_files;
+  {
+    const Configuration *partial_configuration =
+        &(partial_configuration_buffer.message());
+
+    LoggerState pi1_logger =
+        MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi1"),
+                   &log_reader_factory, partial_configuration);
+    LoggerState pi2_logger =
+        MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi2"),
+                   &log_reader_factory, partial_configuration);
+
+    pi1_logger.StartLogger(tmp_dir_ + "/logs/relogged1");
+    pi2_logger.StartLogger(tmp_dir_ + "/logs/relogged2");
+
+    log_reader_factory.Run();
+
+    for (auto &x : pi1_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged1_", x));
+    }
+    for (auto &x : pi2_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged2_", x));
+    }
+  }
+
+  reader.Deregister();
+
+  // And verify that we can run the LogReader over the relogged files without
+  // hitting any fatal errors.
+  {
+    auto sorted_parts = SortParts(log_files);
+    EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+    LogReader relogged_reader(sorted_parts);
+    relogged_reader.Register();
+
+    relogged_reader.event_loop_factory()->Run();
+  }
+}
+
 // Tests that we properly replay a log where the start time for a node is
 // before any data on the node.  This can happen if the logger starts before
 // data is published.  While the scenario below is a bit convoluted, we have
@@ -3288,7 +3519,7 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
                                                       chrono::seconds(1)));
   EXPECT_THAT(result[2].second,
               ::testing::ElementsAre(realtime_clock::epoch() +
-                                     chrono::microseconds(34900150)));
+                                     chrono::microseconds(34900100)));
 }
 
 // Tests that local data before remote data after reboot is properly replayed.
@@ -3440,7 +3671,7 @@ TEST(MultinodeRebootLoggerTest,
   EXPECT_THAT(result[0].first, ::testing::ElementsAre(realtime_clock::epoch()));
   EXPECT_THAT(result[0].second,
               ::testing::ElementsAre(realtime_clock::epoch() +
-                                     chrono::microseconds(11000350)));
+                                     chrono::microseconds(11000300)));
 
   EXPECT_THAT(result[1].first,
               ::testing::ElementsAre(
@@ -3448,13 +3679,13 @@ TEST(MultinodeRebootLoggerTest,
                   realtime_clock::epoch() + chrono::microseconds(107005000)));
   EXPECT_THAT(result[1].second,
               ::testing::ElementsAre(
-                  realtime_clock::epoch() + chrono::microseconds(4000150),
-                  realtime_clock::epoch() + chrono::microseconds(111000200)));
+                  realtime_clock::epoch() + chrono::microseconds(4000100),
+                  realtime_clock::epoch() + chrono::microseconds(111000150)));
 
   EXPECT_THAT(result[2].first, ::testing::ElementsAre(realtime_clock::epoch()));
   EXPECT_THAT(result[2].second,
               ::testing::ElementsAre(realtime_clock::epoch() +
-                                     chrono::microseconds(11000150)));
+                                     chrono::microseconds(11000100)));
 
   auto start_stop_result = ConfirmReadable(
       filenames, realtime_clock::epoch() + chrono::milliseconds(2000),
@@ -3598,7 +3829,7 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
   EXPECT_THAT(result[0].first, ::testing::ElementsAre(realtime_clock::epoch()));
   EXPECT_THAT(result[0].second,
               ::testing::ElementsAre(realtime_clock::epoch() +
-                                     chrono::microseconds(11000350)));
+                                     chrono::microseconds(11000300)));
 
   EXPECT_THAT(result[1].first,
               ::testing::ElementsAre(
@@ -3606,13 +3837,13 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
                   realtime_clock::epoch() + chrono::microseconds(6005000)));
   EXPECT_THAT(result[1].second,
               ::testing::ElementsAre(
-                  realtime_clock::epoch() + chrono::microseconds(4900150),
-                  realtime_clock::epoch() + chrono::microseconds(11000200)));
+                  realtime_clock::epoch() + chrono::microseconds(4900100),
+                  realtime_clock::epoch() + chrono::microseconds(11000150)));
 
   EXPECT_THAT(result[2].first, ::testing::ElementsAre(realtime_clock::epoch()));
   EXPECT_THAT(result[2].second,
               ::testing::ElementsAre(realtime_clock::epoch() +
-                                     chrono::microseconds(11000150)));
+                                     chrono::microseconds(11000100)));
 
   // Confirm we observed the correct start and stop times.  We should see the
   // reboot here.
@@ -3632,7 +3863,7 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
                   realtime_clock::epoch() + chrono::microseconds(6005000)));
   EXPECT_THAT(start_stop_result[1].second,
               ::testing::ElementsAre(
-                  realtime_clock::epoch() + chrono::microseconds(4900150),
+                  realtime_clock::epoch() + chrono::microseconds(4900100),
                   realtime_clock::epoch() + chrono::seconds(8)));
   EXPECT_THAT(
       start_stop_result[2].first,
@@ -4585,24 +4816,71 @@ TEST(MultinodeLoggerLoopTest, StartDisconnected) {
   auto result = ConfirmReadable(filenames);
 }
 
-// Class to spam Pong messages blindly.
-class PongSender {
- public:
-  PongSender(EventLoop *loop, std::string_view channel_name)
-      : sender_(loop->MakeSender<examples::Pong>(channel_name)) {
-    loop->AddPhasedLoop(
-        [this](int) {
-          aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
-          examples::Pong::Builder pong_builder =
-              builder.MakeBuilder<examples::Pong>();
-          CHECK_EQ(builder.Send(pong_builder.Finish()), RawSender::Error::kOk);
-        },
-        chrono::milliseconds(10));
+// Tests that only having a delayed, reliable message from a boot results in a
+// readable log.
+//
+// Note: this is disabled since it doesn't work yet.  Un-disable this when the
+// code is fixed!
+TEST(MultinodeLoggerLoopTest, ReliableOnlyTimestamps) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/logging/"
+                       "multinode_pingpong_reboot_reliable_only_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  constexpr chrono::nanoseconds kRebootTime = chrono::seconds(100);
+  {
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + kRebootTime,
+        {BootTimestamp::epoch() + kRebootTime,
+         BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()}});
   }
 
- private:
-  aos::Sender<examples::Pong> sender_;
-};
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+
+  // We want unreliable timestamps from one boot, a reliable timestamp from the
+  // same boot, and then a long delayed reliable timestamp from the second boot.
+  // This produces conflicting information about when the second boot happened.
+  std::vector<std::string> filenames;
+  PingSender *app1 = pi1->AlwaysStart<PingSender>("pingsender", "/atest1");
+  PingSender *app2 = pi1->AlwaysStart<PingSender>("pingsender", "/atest2");
+  event_loop_factory.RunFor(chrono::seconds(1));
+  pi1->Stop(app2);
+  event_loop_factory.RunFor(kRebootTime - chrono::seconds(2));
+  pi1->Stop(app1);
+
+  event_loop_factory.RunFor(chrono::seconds(1) + kRebootTime * 2);
+
+  {
+    // Collect a small log after reboot.
+    LoggerState pi1_logger = MakeLoggerState(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
+    pi1_logger.StartLogger(kLogfile1_1);
+
+    event_loop_factory.RunFor(chrono::seconds(1));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Make sure we can read this.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  auto result = ConfirmReadable(filenames);
+}
 
 // Tests that we log correctly as nodes connect slowly.
 TEST(MultinodeLoggerLoopTest, StaggeredConnect) {

@@ -57,6 +57,7 @@ class SctpClientConnection {
     int64_t realtime_sent_time;
     uint32_t queue_index;
     int64_t monotonic_remote_time;
+    int64_t monotonic_remote_transmit_time;
     int64_t realtime_remote_time;
     uint32_t remote_queue_index;
   };

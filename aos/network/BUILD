@@ -500,6 +500,32 @@ aos_config(
 )
 
 aos_config(
+    name = "message_bridge_test_mismatched_configs_pi1_and_pi2_config",
+    src = "message_bridge_test_mismatched_configs_pi1_and_pi2.json",
+    flatbuffers = [
+        ":remote_message_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:aos_config"],
+)
+
+aos_config(
+    name = "message_bridge_test_mismatched_configs_pi1_and_pi3_config",
+    src = "message_bridge_test_mismatched_configs_pi1_and_pi3.json",
+    flatbuffers = [
+        ":remote_message_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:aos_config"],
+)
+
+aos_config(
     name = "message_bridge_auth_test_config",
     src = "message_bridge_auth_test.json",
     flatbuffers = [
@@ -594,6 +620,8 @@ cc_test(
     data = [
         ":message_bridge_test_combined_timestamps_common_config",
         ":message_bridge_test_common_config",
+        ":message_bridge_test_mismatched_configs_pi1_and_pi2_config",
+        ":message_bridge_test_mismatched_configs_pi1_and_pi3_config",
     ],
     flaky = True,
     shard_count = 16,
@@ -608,6 +636,23 @@ cc_test(
         "//aos/events:pong_fbs",
         "//aos/events:shm_event_loop",
         "//aos/ipc_lib:event",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
+
+cc_test(
+    name = "message_bridge_server_status_test",
+    srcs = [
+        "message_bridge_server_status_test.cc",
+    ],
+    data = [
+        ":message_bridge_test_combined_timestamps_common_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":message_bridge_server_status",
+        "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
         "//aos/testing:path",
     ],

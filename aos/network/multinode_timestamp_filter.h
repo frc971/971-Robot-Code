@@ -1,6 +1,7 @@
 #ifndef AOS_NETWORK_MULTINODE_TIMESTAMP_FILTER_H_
 #define AOS_NETWORK_MULTINODE_TIMESTAMP_FILTER_H_
 
+#include <atomic>
 #include <functional>
 #include <map>
 #include <string_view>
@@ -171,7 +172,7 @@ class NewtonSolver {
   size_t my_solve_number_;
 
   // The global solve number counter used to deterministically find problems.
-  static size_t solve_number_;
+  static std::atomic<size_t> solve_number_;
 };
 
 // A condensed representation of the time estimation problem statement.  This is

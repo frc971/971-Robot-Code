@@ -237,9 +237,16 @@ Application::Application(std::string_view name,
           event_loop_->AddTimer([this]() { MaybeHandleSignal(); })),
       on_change_({on_change}),
       quiet_flag_(quiet_flag) {
+  // Keep the length of the timer name bounded to some reasonable length.
+  start_timer_->set_name(absl::StrCat("app_start_", name.substr(0, 10)));
+  restart_timer_->set_name(absl::StrCat("app_restart_", name.substr(0, 10)));
+  stop_timer_->set_name(absl::StrCat("app_stop_", name.substr(0, 10)));
+  pipe_timer_->set_name(absl::StrCat("app_pipe_", name.substr(0, 10)));
+  child_status_handler_->set_name(
+      absl::StrCat("app_status_handler_", name.substr(0, 10)));
   // Every second poll to check if the child is dead. This is used as a
-  // default for the case where the user is not directly catching SIGCHLD and
-  // calling MaybeHandleSignal for us.
+  // default for the case where the user is not directly catching SIGCHLD
+  // and calling MaybeHandleSignal for us.
   child_status_handler_->Schedule(event_loop_->monotonic_now(),
                                   std::chrono::seconds(1));
 }

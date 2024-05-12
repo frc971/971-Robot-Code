@@ -88,11 +88,10 @@ class RealtimeMultiNodeLoggerTest : public ::testing::Test {
 
 TEST_F(RealtimeLoggerTest, RealtimeReplay) {
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(std::chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
@@ -123,11 +122,10 @@ TEST_F(RealtimeLoggerTest, RealtimeReplay) {
 // is included on a single node config
 TEST_F(RealtimeLoggerTest, SingleNodeReplayChannels) {
   {
-    std::unique_ptr<EventLoop> logger_event_loop =
-        event_loop_factory_.MakeEventLoop("logger");
-
     event_loop_factory_.RunFor(std::chrono::milliseconds(95));
 
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));

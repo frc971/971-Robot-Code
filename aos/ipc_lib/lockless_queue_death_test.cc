@@ -79,10 +79,11 @@ TEST(LocklessQueueTest, Death) {
         for (int i = 0; i < 5; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
-          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
-                                realtime_clock::min_time, 0xffffffffl,
-                                UUID::Zero(), nullptr, nullptr, nullptr),
-                    LocklessQueueSender::Result::GOOD);
+          ASSERT_EQ(
+              sender.Send(data, s + 1, monotonic_clock::min_time,
+                          realtime_clock::min_time, monotonic_clock::min_time,
+                          0xffffffffl, UUID::Zero(), nullptr, nullptr, nullptr),
+              LocklessQueueSender::Result::GOOD);
           // Pin a message, so when we keep writing we will exercise the pinning
           // logic.
           if (i == 1) {
@@ -156,10 +157,11 @@ TEST(LocklessQueueTest, Death) {
           // Send a message to make sure that the queue still works.
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", 971);
-          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
-                                realtime_clock::min_time, 0xffffffffl,
-                                UUID::Zero(), nullptr, nullptr, nullptr),
-                    LocklessQueueSender::Result::GOOD);
+          ASSERT_EQ(
+              sender.Send(data, s + 1, monotonic_clock::min_time,
+                          realtime_clock::min_time, monotonic_clock::min_time,
+                          0xffffffffl, UUID::Zero(), nullptr, nullptr, nullptr),
+              LocklessQueueSender::Result::GOOD);
         }
 
         // Now loop through the queue and make sure the number in the snprintf
@@ -175,17 +177,18 @@ TEST(LocklessQueueTest, Death) {
           monotonic_clock::time_point monotonic_sent_time;
           realtime_clock::time_point realtime_sent_time;
           monotonic_clock::time_point monotonic_remote_time;
+          monotonic_clock::time_point monotonic_remote_transmit_time;
           realtime_clock::time_point realtime_remote_time;
           uint32_t remote_queue_index;
           UUID source_boot_uuid;
           char read_data[1024];
           size_t length;
 
-          LocklessQueueReader::Result read_result =
-              reader.Read(i, &monotonic_sent_time, &realtime_sent_time,
-                          &monotonic_remote_time, &realtime_remote_time,
-                          &remote_queue_index, &source_boot_uuid, &length,
-                          &(read_data[0]), std::ref(should_read));
+          LocklessQueueReader::Result read_result = reader.Read(
+              i, &monotonic_sent_time, &realtime_sent_time,
+              &monotonic_remote_time, &monotonic_remote_transmit_time,
+              &realtime_remote_time, &remote_queue_index, &source_boot_uuid,
+              &length, &(read_data[0]), std::ref(should_read));
 
           if (read_result != LocklessQueueReader::Result::GOOD) {
             if (read_result == LocklessQueueReader::Result::TOO_OLD) {

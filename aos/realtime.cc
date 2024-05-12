@@ -161,8 +161,24 @@ void UnsetCurrentThreadRealtimePriority() {
   MarkRealtime(false);
 }
 
+std::ostream &operator<<(std::ostream &stream, const cpu_set_t &cpuset) {
+  stream << "{CPUs ";
+  bool first_found = false;
+  for (int i = 0; i < CPU_SETSIZE; ++i) {
+    if (CPU_ISSET(i, &cpuset)) {
+      if (first_found) {
+        stream << ", ";
+      }
+      stream << i;
+      first_found = true;
+    }
+  }
+  stream << "}";
+  return stream;
+}
+
 void SetCurrentThreadAffinity(const cpu_set_t &cpuset) {
-  PCHECK(sched_setaffinity(0, sizeof(cpuset), &cpuset) == 0);
+  PCHECK(sched_setaffinity(0, sizeof(cpuset), &cpuset) == 0) << cpuset;
 }
 
 void SetCurrentThreadName(const std::string_view name) {

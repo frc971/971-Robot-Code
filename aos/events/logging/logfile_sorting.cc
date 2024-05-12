@@ -48,7 +48,7 @@ std::unique_ptr<internal::FileOperations> MakeFileOperations(
 }
 
 bool ConfigOnly(const LogFileHeader *header) {
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 35u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 37u);
   if (header->has_monotonic_start_time()) return false;
   if (header->has_realtime_start_time()) return false;
   if (header->has_max_out_of_order_duration()) return false;
@@ -74,6 +74,10 @@ bool ConfigOnly(const LogFileHeader *header) {
   if (header->has_oldest_local_unreliable_monotonic_timestamps()) return false;
   if (header->has_oldest_remote_reliable_monotonic_timestamps()) return false;
   if (header->has_oldest_local_reliable_monotonic_timestamps()) return false;
+  if (header->has_oldest_remote_reliable_monotonic_transmit_timestamps())
+    return false;
+  if (header->has_oldest_local_reliable_monotonic_transmit_timestamps())
+    return false;
   if (header->has_oldest_logger_remote_unreliable_monotonic_timestamps())
     return false;
   if (header->has_oldest_logger_local_unreliable_monotonic_timestamps())
@@ -711,16 +715,54 @@ void PartsSorter::PopulateFromFiles(
             chrono::nanoseconds(
                 log_header->message().oldest_remote_monotonic_timestamps()->Get(
                     node_index)));
+
         const monotonic_clock::time_point
-            oldest_local_unreliable_monotonic_timestamp(chrono::nanoseconds(
+            oldest_local_reliable_monotonic_transmit_timestamp =
+                log_header->message()
+                        .has_oldest_local_reliable_monotonic_transmit_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_local_reliable_monotonic_transmit_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
+        const monotonic_clock::time_point
+            oldest_remote_reliable_monotonic_transmit_timestamp =
+                log_header->message()
+                        .has_oldest_remote_reliable_monotonic_transmit_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_remote_reliable_monotonic_transmit_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
+        monotonic_clock::time_point oldest_local_unreliable_monotonic_timestamp(
+            chrono::nanoseconds(
                 log_header->message()
                     .oldest_local_unreliable_monotonic_timestamps()
                     ->Get(node_index)));
-        const monotonic_clock::time_point
+        monotonic_clock::time_point
             oldest_remote_unreliable_monotonic_timestamp(chrono::nanoseconds(
                 log_header->message()
                     .oldest_remote_unreliable_monotonic_timestamps()
                     ->Get(node_index)));
+
+        // Treat transmit timestamps like unreliable timestamps.  Update
+        // oldest_remote_unreliable_monotonic_timestamp accordingly to keep the
+        // logic after it simple and similar.
+        if (oldest_remote_reliable_monotonic_transmit_timestamp <
+            oldest_remote_unreliable_monotonic_timestamp) {
+          VLOG(1)
+              << "Updating oldest_remote_unreliable_monotonic_timestamp from "
+              << oldest_remote_unreliable_monotonic_timestamp << " to "
+              << oldest_remote_reliable_monotonic_transmit_timestamp
+              << " and oldest_local_unreliable_monotonic_timestamp from "
+              << oldest_local_unreliable_monotonic_timestamp << " to "
+              << oldest_local_reliable_monotonic_transmit_timestamp;
+
+          oldest_remote_unreliable_monotonic_timestamp =
+              oldest_remote_reliable_monotonic_transmit_timestamp;
+          oldest_local_unreliable_monotonic_timestamp =
+              oldest_local_reliable_monotonic_transmit_timestamp;
+        }
 
         const monotonic_clock::time_point
             oldest_logger_local_unreliable_monotonic_timestamp =

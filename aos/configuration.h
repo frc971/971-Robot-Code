@@ -248,6 +248,12 @@ aos::FlatbufferDetachedBuffer<Configuration> AddChannelToConfiguration(
     aos::FlatbufferVector<reflection::Schema> schema,
     const aos::Node *source_node = nullptr, ChannelT overrides = {});
 
+// Build a new configuration that only contains the channels we want to
+// include. This is useful for excluding obsolete or deprecated channels, so
+// they don't appear in the configuration when reading the log.
+FlatbufferDetachedBuffer<Configuration> GetPartialConfiguration(
+    const Configuration &configuration,
+    std::function<bool(const Channel &)> should_include_channel);
 }  // namespace configuration
 
 // Compare and equality operators for Channel.  Note: these only check the name

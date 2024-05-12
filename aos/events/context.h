@@ -24,6 +24,9 @@ struct Context {
   monotonic_clock::time_point monotonic_remote_time;
   realtime_clock::time_point realtime_remote_time;
 
+  // Time that the message was published over the network on the remote node.
+  monotonic_clock::time_point monotonic_remote_transmit_time;
+
   // Index in the queue.
   uint32_t queue_index;
   // Index into the remote queue.  Useful to determine if data was lost.  In a

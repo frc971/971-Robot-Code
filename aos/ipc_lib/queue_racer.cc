@@ -197,7 +197,8 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count,
         ++started_writes_;
         auto result =
             sender.Send(sizeof(ThreadPlusCount), aos::monotonic_clock::min_time,
-                        aos::realtime_clock::min_time, 0xffffffff,
+                        aos::realtime_clock::min_time,
+                        aos::monotonic_clock::min_time, 0xffffffff,
                         UUID::FromSpan(absl::Span<const uint8_t>(
                             reinterpret_cast<const uint8_t *>(&tpc),
                             sizeof(ThreadPlusCount))),
@@ -309,6 +310,7 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
     monotonic_clock::time_point monotonic_sent_time;
     realtime_clock::time_point realtime_sent_time;
     monotonic_clock::time_point monotonic_remote_time;
+    monotonic_clock::time_point monotonic_remote_transmit_time;
     realtime_clock::time_point realtime_remote_time;
     UUID source_boot_uuid;
     uint32_t remote_queue_index;
@@ -321,14 +323,16 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
                 0xffffffffu, LocklessQueueSize(queue_.memory())));
     LocklessQueueReader::Result read_result =
         set_should_read
-            ? reader.Read(wrapped_i, &monotonic_sent_time, &realtime_sent_time,
-                          &monotonic_remote_time, &realtime_remote_time,
-                          &remote_queue_index, &source_boot_uuid, &length,
-                          &(read_data[0]), std::ref(should_read))
+            ? reader.Read(
+                  wrapped_i, &monotonic_sent_time, &realtime_sent_time,
+                  &monotonic_remote_time, &monotonic_remote_transmit_time,
+                  &realtime_remote_time, &remote_queue_index, &source_boot_uuid,
+                  &length, &(read_data[0]), std::ref(should_read))
             : reader.Read(wrapped_i, &monotonic_sent_time, &realtime_sent_time,
-                          &monotonic_remote_time, &realtime_remote_time,
-                          &remote_queue_index, &source_boot_uuid, &length,
-                          &(read_data[0]), nop);
+                          &monotonic_remote_time,
+                          &monotonic_remote_transmit_time,
+                          &realtime_remote_time, &remote_queue_index,
+                          &source_boot_uuid, &length, &(read_data[0]), nop);
 
     // The code in lockless_queue.cc reads everything but data, checks that the
     // header hasn't changed, then reads the data.  So, if we succeed and both

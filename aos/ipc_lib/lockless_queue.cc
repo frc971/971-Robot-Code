@@ -953,6 +953,7 @@ LocklessQueueSender::Result LocklessQueueSender::Send(
     const char *data, size_t length,
     monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid,
     monotonic_clock::time_point *monotonic_sent_time,
     realtime_clock::time_point *realtime_sent_time, uint32_t *queue_index) {
@@ -962,13 +963,15 @@ LocklessQueueSender::Result LocklessQueueSender::Send(
   // adhere to this convention and place it at the end.
   memcpy((reinterpret_cast<char *>(Data()) + size() - length), data, length);
   return Send(length, monotonic_remote_time, realtime_remote_time,
-              remote_queue_index, source_boot_uuid, monotonic_sent_time,
-              realtime_sent_time, queue_index);
+              monotonic_remote_transmit_time, remote_queue_index,
+              source_boot_uuid, monotonic_sent_time, realtime_sent_time,
+              queue_index);
 }
 
 LocklessQueueSender::Result LocklessQueueSender::Send(
     size_t length, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid,
     monotonic_clock::time_point *monotonic_sent_time,
     realtime_clock::time_point *realtime_sent_time, uint32_t *queue_index) {
@@ -997,6 +1000,8 @@ LocklessQueueSender::Result LocklessQueueSender::Send(
   message->header.source_boot_uuid = source_boot_uuid;
   message->header.monotonic_remote_time = monotonic_remote_time;
   message->header.realtime_remote_time = realtime_remote_time;
+  message->header.monotonic_remote_transmit_time =
+      monotonic_remote_transmit_time;
 
   Index to_replace = Index::Invalid();
   while (true) {
@@ -1298,6 +1303,7 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
     monotonic_clock::time_point *monotonic_sent_time,
     realtime_clock::time_point *realtime_sent_time,
     monotonic_clock::time_point *monotonic_remote_time,
+    monotonic_clock::time_point *monotonic_remote_transmit_time,
     realtime_clock::time_point *realtime_remote_time,
     uint32_t *remote_queue_index, UUID *source_boot_uuid, size_t *length,
     char *data,
@@ -1379,6 +1385,8 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
   context.monotonic_event_time = m->header.monotonic_sent_time;
   context.realtime_event_time = m->header.realtime_sent_time;
   context.monotonic_remote_time = m->header.monotonic_remote_time;
+  context.monotonic_remote_transmit_time =
+      m->header.monotonic_remote_transmit_time;
   context.realtime_remote_time = m->header.realtime_remote_time;
   context.queue_index = queue_index.index();
   if (m->header.remote_queue_index == 0xffffffffu) {
@@ -1443,6 +1451,7 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
   *realtime_sent_time = context.realtime_event_time;
   *remote_queue_index = context.remote_queue_index;
   *monotonic_remote_time = context.monotonic_remote_time;
+  *monotonic_remote_transmit_time = context.monotonic_remote_transmit_time;
   *realtime_remote_time = context.realtime_remote_time;
   *source_boot_uuid = context.source_boot_uuid;
   *length = context.size;
@@ -1596,6 +1605,12 @@ void PrintLocklessQueueMemory(const LocklessQueueMemory *memory) {
         << "        monotonic_clock::time_point monotonic_remote_time = "
         << m->header.monotonic_remote_time << " 0x" << std::hex
         << m->header.monotonic_remote_time.time_since_epoch().count()
+        << std::dec << ::std::endl;
+    ::std::cout
+        << "        monotonic_clock::time_point "
+           "monotonic_remote_transmit_time = "
+        << m->header.monotonic_remote_transmit_time << " 0x" << std::hex
+        << m->header.monotonic_remote_transmit_time.time_since_epoch().count()
         << std::dec << ::std::endl;
     ::std::cout << "        realtime_clock::time_point realtime_remote_time = "
                 << m->header.realtime_remote_time << " 0x" << std::hex

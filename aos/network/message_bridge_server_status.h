@@ -52,7 +52,8 @@ class MessageBridgeServerStatus {
 
   MessageBridgeServerStatus(
       aos::EventLoop *event_loop,
-      std::function<void()> send_data = std::function<void()>());
+      std::function<void(uint32_t, monotonic_clock::time_point)> send_data =
+          std::function<void(uint32_t, monotonic_clock::time_point)>());
 
   MessageBridgeServerStatus(const MessageBridgeServerStatus &) = delete;
   MessageBridgeServerStatus(MessageBridgeServerStatus &&) = delete;
@@ -60,7 +61,8 @@ class MessageBridgeServerStatus {
       delete;
   MessageBridgeServerStatus &operator=(MessageBridgeServerStatus &&) = delete;
 
-  void set_send_data(std::function<void()> send_data) {
+  void set_send_data(
+      std::function<void(uint32_t, monotonic_clock::time_point)> send_data) {
     send_data_ = send_data;
   }
 
@@ -113,6 +115,10 @@ class MessageBridgeServerStatus {
   // connection that got rejected.
   void increment_invalid_connection_count() { ++invalid_connection_count_; }
 
+  // Increments the invalid connection count overall, and per node if we know
+  // which node (ie, node is not nullptr).
+  void MaybeIncrementInvalidConnectionCount(const Node *node);
+
  private:
   static constexpr std::chrono::nanoseconds kStatisticsPeriod =
       std::chrono::seconds(1);
@@ -148,7 +154,7 @@ class MessageBridgeServerStatus {
   aos::monotonic_clock::time_point last_statistics_send_time_ =
       aos::monotonic_clock::min_time;
 
-  std::function<void()> send_data_;
+  std::function<void(uint32_t, monotonic_clock::time_point)> send_data_;
 
   bool send_ = true;
 

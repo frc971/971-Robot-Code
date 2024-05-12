@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/events/function_scheduler.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
@@ -715,7 +716,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
 
           EXPECT_EQ(connection->partial_deliveries(), 0);
           EXPECT_TRUE(connection->has_monotonic_offset());
-          EXPECT_EQ(connection->monotonic_offset(), 150000);
+          EXPECT_EQ(connection->monotonic_offset(), 100000);
           EXPECT_EQ(connection->connection_count(), 1u);
           EXPECT_EQ(connection->connected_since_time(), 0);
         }
@@ -735,7 +736,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_GT(connection->received_packets(), 50);
         EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
-        EXPECT_EQ(connection->monotonic_offset(), 150000);
+        EXPECT_EQ(connection->monotonic_offset(), 100000);
         EXPECT_EQ(connection->connection_count(), 1u);
         EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi2_client_statistics_count;
@@ -754,7 +755,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_GE(connection->received_packets(), 5);
         EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
-        EXPECT_EQ(connection->monotonic_offset(), 150000);
+        EXPECT_EQ(connection->monotonic_offset(), 100000);
         EXPECT_EQ(connection->connection_count(), 1u);
         EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi3_client_statistics_count;
@@ -798,8 +799,10 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         [pi1_timestamp_channel, ping_timestamp_channel, &ping_on_pi2_fetcher,
          &ping_on_pi1_fetcher, &pi1_on_pi2_timestamp_fetcher,
          &pi1_on_pi1_timestamp_fetcher, &simulated_event_loop_factory, pi2,
-         channel_index = channel.first](const RemoteMessage &header) {
-          VLOG(1) << aos::FlatbufferToJson(&header);
+         channel_index = channel.first,
+         channel_name = channel.second](const RemoteMessage &header) {
+          VLOG(1) << channel_name << " aos::message_bridge::RemoteMessage -> "
+                  << aos::FlatbufferToJson(&header);
           EXPECT_TRUE(header.has_boot_uuid());
           EXPECT_EQ(UUID::FromVector(header.boot_uuid()),
                     simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
@@ -811,6 +814,9 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
               chrono::nanoseconds(header.realtime_sent_time()));
           const aos::monotonic_clock::time_point header_monotonic_remote_time(
               chrono::nanoseconds(header.monotonic_remote_time()));
+          const aos::monotonic_clock::time_point
+              header_monotonic_remote_transmit_time(
+                  chrono::nanoseconds(header.monotonic_remote_transmit_time()));
           const aos::realtime_clock::time_point header_realtime_remote_time(
               chrono::nanoseconds(header.realtime_remote_time()));
 
@@ -836,6 +842,9 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
 
             pi1_context = &pi1_on_pi1_timestamp_fetcher.context();
             pi2_context = &pi1_on_pi2_timestamp_fetcher.context();
+
+            EXPECT_EQ(header_monotonic_remote_transmit_time,
+                      pi2_context->monotonic_remote_time);
           } else if (header.channel_index() == ping_timestamp_channel) {
             // Find the forwarded message.
             while (ping_on_pi2_fetcher.context().monotonic_event_time <
@@ -851,6 +860,10 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
 
             pi1_context = &ping_on_pi1_fetcher.context();
             pi2_context = &ping_on_pi2_fetcher.context();
+
+            EXPECT_EQ(header_monotonic_remote_transmit_time,
+                      pi2_context->monotonic_event_time -
+                          simulated_event_loop_factory.network_delay());
           } else {
             LOG(FATAL) << "Unknown channel";
           }
@@ -868,6 +881,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
                     header_realtime_remote_time);
           EXPECT_EQ(pi2_context->monotonic_remote_time,
                     header_monotonic_remote_time);
+          EXPECT_EQ(pi2_context->monotonic_remote_transmit_time,
+                    header_monotonic_remote_transmit_time);
 
           // Confirm the forwarded message also matches the source message.
           EXPECT_EQ(pi1_context->queue_index, header.remote_queue_index());
@@ -2195,7 +2210,15 @@ TEST(SimulatedEventLoopTest, ReliableMessageResentOnReboot) {
     ::std::unique_ptr<EventLoop> ping_event_loop = pi2->MakeEventLoop("pong");
     aos::Fetcher<examples::Ping> fetcher =
         ping_event_loop->MakeFetcher<examples::Ping>("/reliable");
-    EXPECT_TRUE(fetcher.Fetch());
+    ASSERT_TRUE(fetcher.Fetch());
+    EXPECT_EQ(fetcher.context().monotonic_remote_time,
+              monotonic_clock::epoch());
+    // Message bridge picks up the Ping message immediately on reboot.
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              monotonic_clock::epoch());
+    EXPECT_EQ(fetcher.context().monotonic_event_time,
+              monotonic_clock::epoch() + factory.network_delay());
+    ASSERT_FALSE(fetcher.Fetch());
   }
 
   factory.RunFor(chrono::seconds(1));
@@ -2204,7 +2227,15 @@ TEST(SimulatedEventLoopTest, ReliableMessageResentOnReboot) {
     ::std::unique_ptr<EventLoop> ping_event_loop = pi2->MakeEventLoop("pong");
     aos::Fetcher<examples::Ping> fetcher =
         ping_event_loop->MakeFetcher<examples::Ping>("/reliable");
-    EXPECT_TRUE(fetcher.Fetch());
+    ASSERT_TRUE(fetcher.Fetch());
+    EXPECT_EQ(fetcher.context().monotonic_remote_time,
+              monotonic_clock::epoch());
+    // Message bridge picks up the Ping message immediately on reboot.
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              monotonic_clock::epoch() + chrono::seconds(1));
+    EXPECT_EQ(fetcher.context().monotonic_event_time,
+              monotonic_clock::epoch() + factory.network_delay());
+    ASSERT_FALSE(fetcher.Fetch());
   }
   EXPECT_NE(pi2_boot_uuid, pi2->boot_uuid());
 }
@@ -2260,6 +2291,8 @@ TEST(SimulatedEventLoopTest, ReliableMessageSentOnStaggeredBoot) {
               monotonic_clock::epoch() + factory.network_delay());
     EXPECT_EQ(fetcher.context().monotonic_remote_time,
               monotonic_clock::epoch());
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              monotonic_clock::epoch() + chrono::seconds(1));
   }
   {
     ::std::unique_ptr<EventLoop> pi1_event_loop = pi1->MakeEventLoop("pong");
@@ -2271,6 +2304,8 @@ TEST(SimulatedEventLoopTest, ReliableMessageSentOnStaggeredBoot) {
                   factory.network_delay());
     EXPECT_EQ(fetcher.context().monotonic_remote_time,
               monotonic_clock::epoch() - std::chrono::seconds(1));
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              monotonic_clock::epoch());
   }
 }
 
@@ -2459,6 +2494,527 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
 
     VerifyChannels(statistics_channels, disconnect_disable_time, {pi2->node()});
   }
+}
+
+// Struct to capture the expected time a message should be received (and it's
+// value).  This is from the perspective of the node receiving the message.
+struct ExpectedTimestamps {
+  // The time that the message was published on the sending node's monotonic
+  // clock.
+  monotonic_clock::time_point remote_time;
+  // The time that the message was virtually transmitted over the virtual
+  // network on the sending node's monotonic clock.
+  monotonic_clock::time_point remote_transmit_time;
+  // The time that the message was received on the receiving node's clock.
+  monotonic_clock::time_point event_time;
+  // The value inside the message.
+  int value;
+};
+
+// Tests that rapidly sent messages get timestamped correctly.
+TEST(SimulatedEventLoopTest, TransmitTimestamps) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/multinode_pingpong_test_split_config.json"));
+
+  message_bridge::TestingTimeConverter time(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory factory(&config.message());
+  factory.SetTimeConverter(&time);
+  time.StartEqual();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  ::std::unique_ptr<EventLoop> ping_event_loop = pi2->MakeEventLoop("pong");
+  aos::Fetcher<examples::Ping> fetcher =
+      ping_event_loop->MakeFetcher<examples::Ping>("/reliable");
+  EXPECT_FALSE(fetcher.Fetch());
+
+  {
+    ::std::unique_ptr<EventLoop> ping_event_loop = pi1->MakeEventLoop("ping");
+    FunctionScheduler run_at(ping_event_loop.get());
+    aos::Sender<examples::Ping> test_message_sender =
+        ping_event_loop->MakeSender<examples::Ping>("/reliable");
+    aos::monotonic_clock::time_point now = ping_event_loop->monotonic_now();
+    for (const std::chrono::nanoseconds dt :
+         {chrono::microseconds(5000), chrono::microseconds(1),
+          chrono::microseconds(2), chrono::microseconds(70),
+          chrono::microseconds(63), chrono::microseconds(140)}) {
+      now += dt;
+      run_at.ScheduleAt([&]() { SendPing(&test_message_sender, 1); }, now);
+    }
+
+    now += chrono::milliseconds(10);
+
+    factory.RunFor(now - ping_event_loop->monotonic_now());
+  }
+
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const chrono::nanoseconds send_delay = factory.send_delay();
+  const chrono::nanoseconds network_delay = factory.network_delay();
+
+  const std::vector<ExpectedTimestamps> expected_values = {
+      // First message shows up after wakeup + network delay as expected.
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5000),
+          .remote_transmit_time = e + chrono::microseconds(5000) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5000) + send_delay + network_delay,
+          .value = 1,
+      },
+      // Next message is close enough that it gets picked up at the same wakeup.
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5001),
+          .remote_transmit_time = e + chrono::microseconds(5000) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5000) + send_delay + network_delay,
+          .value = 1,
+      },
+      // Same for the third.
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5003),
+          .remote_transmit_time = e + chrono::microseconds(5000) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5000) + send_delay + network_delay,
+          .value = 1,
+      },
+      // Fourth waits long enough to do the right thing.
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5073),
+          .remote_transmit_time = e + chrono::microseconds(5073) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5073) + send_delay + network_delay,
+          .value = 1,
+      },
+      // Fifth waits long enough to do the right thing as well (but kicks off
+      // while the fourth is in flight over the network).
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5136),
+          .remote_transmit_time = e + chrono::microseconds(5136) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5136) + send_delay + network_delay,
+          .value = 1,
+      },
+      // Sixth waits long enough to do the right thing as well (but kicks off
+      // while the fifth is in flight over the network and has almost landed).
+      // The timer wakeup for the Timestamp message coming back will find the
+      // sixth message a little bit early.
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(5276),
+          .remote_transmit_time = e + chrono::microseconds(5273) + send_delay,
+          .event_time =
+              e + chrono::microseconds(5273) + send_delay + network_delay,
+          .value = 1,
+      },
+  };
+
+  for (const ExpectedTimestamps value : expected_values) {
+    ASSERT_TRUE(fetcher.FetchNext());
+    EXPECT_EQ(fetcher.context().monotonic_remote_time, value.remote_time);
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              value.remote_transmit_time);
+    EXPECT_EQ(fetcher.context().monotonic_event_time, value.event_time);
+    EXPECT_EQ(fetcher->value(), value.value);
+  }
+
+  ASSERT_FALSE(fetcher.FetchNext());
+}
+
+// Tests that a reliable message gets forwarded if it was sent originally when
+// nodes were disconnected.
+TEST_F(SimulatedEventLoopDisconnectTest, ReliableMessageSendsOnConnect) {
+  time.StartEqual();
+  factory.SkipTimingReport();
+  factory.DisableStatistics();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  // Fully disconnect the nodes.
+  pi1->Disconnect(pi2->node());
+  pi2->Disconnect(pi1->node());
+
+  std::unique_ptr<aos::EventLoop> pi2_event_loop =
+      pi2->MakeEventLoop("fetcher");
+  aos::Fetcher<examples::Ping> pi2_reliable_fetcher =
+      pi2_event_loop->MakeFetcher<examples::Ping>("/reliable");
+
+  factory.RunFor(chrono::milliseconds(100));
+
+  {
+    std::unique_ptr<aos::EventLoop> pi1_event_loop =
+        pi1->MakeEventLoop("sender");
+    aos::Sender<examples::Ping> pi1_reliable_sender =
+        pi1_event_loop->MakeSender<examples::Ping>("/reliable");
+    FunctionScheduler run_at(pi1_event_loop.get());
+    aos::monotonic_clock::time_point now = pi1_event_loop->monotonic_now();
+    for (int i = 0; i < 100; ++i) {
+      run_at.ScheduleAt([&, i = i]() { SendPing(&pi1_reliable_sender, i); },
+                        now);
+      now += chrono::milliseconds(100);
+    }
+    now += chrono::milliseconds(50);
+
+    factory.RunFor(now - pi1_event_loop->monotonic_now());
+  }
+
+  ASSERT_FALSE(pi2_reliable_fetcher.Fetch());
+
+  pi1->Connect(pi2->node());
+  pi2->Connect(pi1->node());
+
+  factory.RunFor(chrono::milliseconds(1));
+
+  ASSERT_TRUE(pi2_reliable_fetcher.Fetch());
+  ASSERT_EQ(pi2_reliable_fetcher.context().monotonic_remote_time,
+            monotonic_clock::epoch() + chrono::milliseconds(10000));
+  ASSERT_EQ(pi2_reliable_fetcher.context().monotonic_remote_transmit_time,
+            monotonic_clock::epoch() + chrono::milliseconds(10150));
+  ASSERT_EQ(pi2_reliable_fetcher.context().monotonic_event_time,
+            monotonic_clock::epoch() + chrono::milliseconds(10150) +
+                factory.network_delay());
+  ASSERT_EQ(pi2_reliable_fetcher->value(), 99);
+
+  // TODO(austin): Verify that the dropped packet count increases.
+
+  ASSERT_FALSE(pi2_reliable_fetcher.Fetch());
+}
+
+// Tests that if we disconnect while a message is in various states of being
+// queued, it gets either dropped or sent as expected.
+TEST_F(SimulatedEventLoopDisconnectTest, MessageInFlightDuringDisconnect) {
+  time.StartEqual();
+  factory.SkipTimingReport();
+  factory.DisableStatistics();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  std::unique_ptr<aos::EventLoop> pi1_event_loop = pi1->MakeEventLoop("sender");
+
+  std::unique_ptr<aos::EventLoop> pi2_event_loop =
+      pi2->MakeEventLoop("fetcher");
+  aos::Fetcher<examples::Ping> fetcher =
+      pi2_event_loop->MakeFetcher<examples::Ping>("/unreliable");
+
+  ASSERT_FALSE(fetcher.Fetch());
+
+  aos::monotonic_clock::time_point now = pi1_event_loop->monotonic_now();
+  {
+    FunctionScheduler run_at(pi1_event_loop.get());
+    aos::Sender<examples::Ping> pi1_sender =
+        pi1_event_loop->MakeSender<examples::Ping>("/unreliable");
+
+    int i = 0;
+    for (const std::chrono::nanoseconds dt :
+         {chrono::microseconds(5000), chrono::microseconds(1),
+          chrono::microseconds(2), chrono::microseconds(70),
+          chrono::microseconds(63), chrono::microseconds(140),
+          chrono::microseconds(160)}) {
+      run_at.ScheduleAt(
+          [&]() {
+            pi1->Connect(pi2->node());
+            pi2->Connect(pi1->node());
+          },
+          now);
+
+      now += chrono::milliseconds(100);
+
+      run_at.ScheduleAt([&, i = i]() { SendPing(&pi1_sender, i); }, now);
+
+      now += dt;
+
+      run_at.ScheduleAt(
+          [&]() {
+            // Fully disconnect the nodes.
+            pi1->Disconnect(pi2->node());
+            pi2->Disconnect(pi1->node());
+          },
+          now);
+
+      now += chrono::milliseconds(100) - dt;
+      ++i;
+    }
+
+    factory.RunFor(now - pi1_event_loop->monotonic_now());
+  }
+
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const chrono::nanoseconds send_delay = factory.send_delay();
+  const chrono::nanoseconds network_delay = factory.network_delay();
+
+  const std::vector<ExpectedTimestamps> expected_values = {
+      ExpectedTimestamps{
+          .remote_time = e + chrono::milliseconds(100),
+          .remote_transmit_time = e + chrono::milliseconds(100) + send_delay,
+          .event_time =
+              e + chrono::milliseconds(100) + send_delay + network_delay,
+          .value = 0,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::milliseconds(1300),
+          .remote_transmit_time = e + chrono::milliseconds(1300) + send_delay,
+          .event_time =
+              e + chrono::milliseconds(1300) + send_delay + network_delay,
+          .value = 6,
+      },
+  };
+
+  for (const ExpectedTimestamps value : expected_values) {
+    ASSERT_TRUE(fetcher.FetchNext());
+    EXPECT_EQ(fetcher.context().monotonic_remote_time, value.remote_time);
+    EXPECT_EQ(fetcher.context().monotonic_remote_transmit_time,
+              value.remote_transmit_time);
+    EXPECT_EQ(fetcher.context().monotonic_event_time, value.event_time);
+    EXPECT_EQ(fetcher->value(), value.value);
+  }
+
+  // TODO(austin): Verify that the dropped packet count increases.
+
+  ASSERT_FALSE(fetcher.Fetch());
+}
+
+class PingLogger {
+ public:
+  PingLogger(aos::EventLoop *event_loop, std::string_view channel,
+             std::vector<std::pair<aos::Context, int>> *msgs)
+      : event_loop_(event_loop),
+        fetcher_(event_loop_->MakeFetcher<examples::Ping>(channel)),
+        msgs_(msgs) {
+    event_loop_->OnRun([this]() { CHECK(!fetcher_.Fetch()); });
+  }
+
+  ~PingLogger() {
+    while (fetcher_.FetchNext()) {
+      msgs_->emplace_back(fetcher_.context(), fetcher_->value());
+    }
+  }
+
+ private:
+  aos::EventLoop *event_loop_;
+  aos::Fetcher<examples::Ping> fetcher_;
+  std::vector<std::pair<aos::Context, int>> *msgs_;
+};
+
+// Tests that rebooting while a message is in flight works as expected.
+TEST_F(SimulatedEventLoopDisconnectTest, MessageInFlightDuringReboot) {
+  time.StartEqual();
+  for (int i = 0; i < 8; ++i) {
+    time.RebootAt(1, distributed_clock::epoch() + chrono::seconds(10 * i));
+  }
+
+  factory.SkipTimingReport();
+  factory.DisableStatistics();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  std::unique_ptr<aos::EventLoop> pi1_event_loop = pi1->MakeEventLoop("sender");
+
+  aos::monotonic_clock::time_point now = pi1_event_loop->monotonic_now();
+  FunctionScheduler run_at(pi1_event_loop.get());
+  aos::Sender<examples::Ping> pi1_sender =
+      pi1_event_loop->MakeSender<examples::Ping>("/unreliable");
+
+  int i = 0;
+  for (const std::chrono::nanoseconds dt :
+       {chrono::microseconds(5000), chrono::microseconds(1),
+        chrono::microseconds(2), chrono::microseconds(70),
+        chrono::microseconds(63), chrono::microseconds(140),
+        chrono::microseconds(160)}) {
+    run_at.ScheduleAt([&, i = i]() { SendPing(&pi1_sender, i); },
+                      now + chrono::seconds(10) - dt);
+
+    now += chrono::seconds(10);
+    ++i;
+  }
+
+  std::vector<std::pair<aos::Context, int>> msgs;
+
+  pi2->OnStartup([pi2, &msgs]() {
+    pi2->AlwaysStart<PingLogger>("ping_logger", "/unreliable", &msgs);
+  });
+
+  factory.RunFor(now - pi1_event_loop->monotonic_now() + chrono::seconds(10));
+
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const chrono::nanoseconds send_delay = factory.send_delay();
+  const chrono::nanoseconds network_delay = factory.network_delay();
+
+  const std::vector<ExpectedTimestamps> expected_values = {
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(9995000),
+          .remote_transmit_time =
+              e + chrono::microseconds(9995000) + send_delay,
+          .event_time =
+              e + chrono::microseconds(9995000) + send_delay + network_delay,
+          .value = 0,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(19999999),
+          .remote_transmit_time =
+              e + chrono::microseconds(19999999) + send_delay,
+          .event_time =
+              e + chrono::microseconds(-1) + send_delay + network_delay,
+          .value = 1,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(29999998),
+          .remote_transmit_time =
+              e + chrono::microseconds(29999998) + send_delay,
+          .event_time =
+              e + chrono::microseconds(-2) + send_delay + network_delay,
+          .value = 2,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(69999840),
+          .remote_transmit_time =
+              e + chrono::microseconds(69999840) + send_delay,
+          .event_time =
+              e + chrono::microseconds(9999840) + send_delay + network_delay,
+          .value = 6,
+      },
+  };
+
+  ASSERT_EQ(msgs.size(), expected_values.size());
+
+  for (size_t i = 0; i < msgs.size(); ++i) {
+    EXPECT_EQ(msgs[i].first.monotonic_remote_time,
+              expected_values[i].remote_time);
+    EXPECT_EQ(msgs[i].first.monotonic_remote_transmit_time,
+              expected_values[i].remote_transmit_time);
+    EXPECT_EQ(msgs[i].first.monotonic_event_time,
+              expected_values[i].event_time);
+    EXPECT_EQ(msgs[i].second, expected_values[i].value);
+  }
+
+  // TODO(austin): Verify that the dropped packet count increases.
+}
+
+// Tests that rebooting while a message is in flight works as expected.
+TEST_F(SimulatedEventLoopDisconnectTest, ReliableMessageInFlightDuringReboot) {
+  time.StartEqual();
+  for (int i = 0; i < 8; ++i) {
+    time.RebootAt(1, distributed_clock::epoch() + chrono::seconds(10 * i));
+  }
+
+  factory.SkipTimingReport();
+  factory.DisableStatistics();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  std::unique_ptr<aos::EventLoop> pi1_event_loop = pi1->MakeEventLoop("sender");
+
+  aos::monotonic_clock::time_point now = pi1_event_loop->monotonic_now();
+  FunctionScheduler run_at(pi1_event_loop.get());
+  aos::Sender<examples::Ping> pi1_sender =
+      pi1_event_loop->MakeSender<examples::Ping>("/reliable");
+
+  int i = 0;
+  for (const std::chrono::nanoseconds dt :
+       {chrono::microseconds(5000), chrono::microseconds(1),
+        chrono::microseconds(2), chrono::microseconds(70),
+        chrono::microseconds(63), chrono::microseconds(140),
+        chrono::microseconds(160)}) {
+    run_at.ScheduleAt([&, i = i]() { SendPing(&pi1_sender, i); },
+                      now + chrono::seconds(10) - dt);
+
+    now += chrono::seconds(10);
+    ++i;
+  }
+
+  std::vector<std::pair<aos::Context, int>> msgs;
+
+  PingLogger *logger;
+  pi2->OnStartup([pi2, &msgs, &logger]() {
+    logger = pi2->AlwaysStart<PingLogger>("ping_logger", "/reliable", &msgs);
+  });
+
+  factory.RunFor(now - pi1_event_loop->monotonic_now() + chrono::seconds(10));
+
+  // Stop the logger to flush the last boot of data.
+  pi2->Stop(logger);
+
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const chrono::nanoseconds send_delay = factory.send_delay();
+  const chrono::nanoseconds network_delay = factory.network_delay();
+
+  // Verified using --vmodule=simulated_event_loop=1 and looking at the actual
+  // event times to confirm what should have been forwarded when.
+  const std::vector<ExpectedTimestamps> expected_values = {
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(9995000),
+          .remote_transmit_time =
+              e + chrono::microseconds(9995000) + send_delay,
+          .event_time =
+              e + chrono::microseconds(9995000) + send_delay + network_delay,
+          .value = 0,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(9995000),
+          .remote_transmit_time = e + chrono::microseconds(10000000),
+          .event_time = e + network_delay,
+          .value = 0,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(19999999),
+          .remote_transmit_time = e + chrono::microseconds(20000000),
+          .event_time = e + network_delay,
+          .value = 1,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(29999998),
+          .remote_transmit_time = e + chrono::microseconds(30000000),
+          .event_time = e + network_delay,
+          .value = 2,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(39999930),
+          .remote_transmit_time = e + chrono::microseconds(40000000),
+          .event_time = e + network_delay,
+          .value = 3,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(49999937),
+          .remote_transmit_time = e + chrono::microseconds(50000000),
+          .event_time = e + network_delay,
+          .value = 4,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(59999860),
+          .remote_transmit_time = e + chrono::microseconds(60000000),
+          .event_time = e + network_delay,
+          .value = 5,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(69999840),
+          .remote_transmit_time = e + chrono::microseconds(69999890),
+          .event_time = e + chrono::microseconds(9999890) + network_delay,
+          .value = 6,
+      },
+      ExpectedTimestamps{
+          .remote_time = e + chrono::microseconds(69999840),
+          .remote_transmit_time = e + chrono::microseconds(70000000),
+          .event_time = e + network_delay,
+          .value = 6,
+      },
+  };
+
+  ASSERT_EQ(msgs.size(), expected_values.size());
+
+  for (size_t i = 0; i < msgs.size(); ++i) {
+    EXPECT_EQ(msgs[i].first.monotonic_remote_time,
+              expected_values[i].remote_time);
+    EXPECT_EQ(msgs[i].first.monotonic_remote_transmit_time,
+              expected_values[i].remote_transmit_time);
+    EXPECT_EQ(msgs[i].first.monotonic_event_time,
+              expected_values[i].event_time);
+    EXPECT_EQ(msgs[i].second, expected_values[i].value);
+  }
+
+  // TODO(austin): Verify that the dropped packet count increases.
 }
 
 }  // namespace aos::testing

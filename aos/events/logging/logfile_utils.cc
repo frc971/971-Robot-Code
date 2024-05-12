@@ -316,13 +316,16 @@ flatbuffers::Offset<MessageHeader> PackRemoteMessage(
   message_header_builder.add_monotonic_sent_time(msg->monotonic_sent_time());
   message_header_builder.add_realtime_sent_time(msg->realtime_sent_time());
 
+  message_header_builder.add_monotonic_timestamp_time(
+      monotonic_timestamp_time.time_since_epoch().count());
+
+  message_header_builder.add_monotonic_remote_transmit_time(
+      msg->monotonic_remote_transmit_time());
+
   message_header_builder.add_monotonic_remote_time(
       msg->monotonic_remote_time());
   message_header_builder.add_realtime_remote_time(msg->realtime_remote_time());
   message_header_builder.add_remote_queue_index(msg->remote_queue_index());
-
-  message_header_builder.add_monotonic_timestamp_time(
-      monotonic_timestamp_time.time_since_epoch().count());
 
   return message_header_builder.Finish();
 }
@@ -345,119 +348,116 @@ size_t PackRemoteMessageInline(
       }
       // clang-format off
       // header:
-      //   +0x00 | 5C 00 00 00             | UOffset32  | 0x0000005C (92) Loc: +0x5C                | size prefix
+      //   +0x00 | 5C 00 00 00             | UOffset32 | 0x0000005C (92) Loc: +0x5C                | size prefix
+
       buffer = Push<flatbuffers::uoffset_t>(
           buffer, message_size - sizeof(flatbuffers::uoffset_t));
-      //   +0x04 | 20 00 00 00             | UOffset32  | 0x00000020 (32) Loc: +0x24                | offset to root table `aos.logger.MessageHeader`
-      buffer = Push<flatbuffers::uoffset_t>(buffer, 0x20);
+      //   +0x04 | 1C 00 00 00             | UOffset32 | 0x0000001C (28) Loc: +0x20                | offset to root table `aos.logger.MessageHeader`
+      buffer = Push<flatbuffers::uoffset_t>(buffer, 0x1C);
       [[fallthrough]];
     case 0x08u:
       if ((end_byte) == 0x08u) {
         break;
       }
       //
-      // padding:
-      //   +0x08 | 00 00 00 00 00 00       | uint8_t[6] | ......                                    | padding
-      buffer = Pad(buffer, 6);
-      //
       // vtable (aos.logger.MessageHeader):
-      //   +0x0E | 16 00                   | uint16_t   | 0x0016 (22)                               | size of this vtable
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x16);
+      //   +0x08 | 18 00                   | uint16_t  | 0x0018 (24)                               | size of this vtable
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x18);
+      //   +0x0A | 40 00                   | uint16_t  | 0x0040 (64)                               | size of referring table
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x40);
+      //   +0x0C | 3C 00                   | VOffset16 | 0x003C (60)                               | offset to field `channel_index` (id: 0)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x3c);
+      //   +0x0E | 30 00                   | VOffset16 | 0x0030 (48)                               | offset to field `monotonic_sent_time` (id: 1)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x30);
       [[fallthrough]];
     case 0x10u:
       if ((end_byte) == 0x10u) {
         break;
       }
-      //   +0x10 | 3C 00                   | uint16_t   | 0x003C (60)                               | size of referring table
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x3c);
-      //   +0x12 | 38 00                   | VOffset16  | 0x0038 (56)                               | offset to field `channel_index` (id: 0)
+      //   +0x10 | 28 00                   | VOffset16 | 0x0028 (40)                               | offset to field `realtime_sent_time` (id: 2)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x28);
+      //   +0x12 | 38 00                   | VOffset16 | 0x0038 (56)                               | offset to field `queue_index` (id: 3)
       buffer = Push<flatbuffers::voffset_t>(buffer, 0x38);
-      //   +0x14 | 2C 00                   | VOffset16  | 0x002C (44)                               | offset to field `monotonic_sent_time` (id: 1)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x2c);
-      //   +0x16 | 24 00                   | VOffset16  | 0x0024 (36)                               | offset to field `realtime_sent_time` (id: 2)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x24);
+      //   +0x14 | 00 00                   | VOffset16 | 0x0000 (0)                                | offset to field `data` (id: 4) <null> (Vector)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
+      //   +0x16 | 10 00                   | VOffset16 | 0x0010 (16)                               | offset to field `monotonic_remote_time` (id: 5)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x10);
       [[fallthrough]];
     case 0x18u:
       if ((end_byte) == 0x18u) {
         break;
       }
-      //   +0x18 | 34 00                   | VOffset16  | 0x0034 (52)                               | offset to field `queue_index` (id: 3)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x34);
-      //   +0x1A | 00 00                   | VOffset16  | 0x0000 (0)                                | offset to field `data` (id: 4) <null> (Vector)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
-      //   +0x1C | 1C 00                   | VOffset16  | 0x001C (28)                               | offset to field `monotonic_remote_time` (id: 5)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x1c);
-      //   +0x1E | 14 00                   | VOffset16  | 0x0014 (20)                               | offset to field `realtime_remote_time` (id: 6)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x14);
+      //   +0x18 | 08 00                   | VOffset16 | 0x0008 (8)                                | offset to field `realtime_remote_time` (id: 6)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x08);
+      //   +0x1A | 04 00                   | VOffset16 | 0x0004 (4)                                | offset to field `remote_queue_index` (id: 7)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
+      //   +0x1C | 20 00                   | VOffset16 | 0x0020 (32)                               | offset to field `monotonic_timestamp_time` (id: 8)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x20);
+      //   +0x1E | 18 00                   | VOffset16 | 0x0018 (24)                               | offset to field `monotonic_remote_transmit_time` (id: 9)
+      buffer = Push<flatbuffers::voffset_t>(buffer, 0x18);
       [[fallthrough]];
     case 0x20u:
       if ((end_byte) == 0x20u) {
         break;
       }
-      //   +0x20 | 10 00                   | VOffset16  | 0x0010 (16)                               | offset to field `remote_queue_index` (id: 7)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x10);
-      //   +0x22 | 04 00                   | VOffset16  | 0x0004 (4)                                | offset to field `monotonic_timestamp_time` (id: 8)
-      buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
-      //
+
+
       // root_table (aos.logger.MessageHeader):
-      //   +0x24 | 16 00 00 00             | SOffset32  | 0x00000016 (22) Loc: +0x0E                | offset to vtable
-      buffer = Push<flatbuffers::uoffset_t>(buffer, 0x16);
+      //   +0x20 | 18 00 00 00             | SOffset32 | 0x00000018 (24) Loc: +0x08                | offset to vtable
+      buffer = Push<flatbuffers::uoffset_t>(buffer, 0x18);
+      //   +0x24 | 8B 00 00 00             | uint32_t  | 0x0000008B (139)                          | table field `remote_queue_index` (UInt)
+      buffer = Push<uint32_t>(buffer, msg->remote_queue_index());
       [[fallthrough]];
     case 0x28u:
       if ((end_byte) == 0x28u) {
         break;
       }
-      //   +0x28 | F6 0B D8 11 A4 A8 B1 71 | int64_t    | 0x71B1A8A411D80BF6 (8192514619791117302)  | table field `monotonic_timestamp_time` (Long)
-      buffer = Push<int64_t>(buffer,
-                             monotonic_timestamp_time.time_since_epoch().count());
+      //   +0x28 | D4 C9 48 86 92 8B 6A AF | int64_t   | 0xAF6A8B928648C9D4 (-5806675308106429996) | table field `realtime_remote_time` (Long)
+      buffer = Push<int64_t>(buffer, msg->realtime_remote_time());
       [[fallthrough]];
     case 0x30u:
       if ((end_byte) == 0x30u) {
         break;
       }
-      //   +0x30 | 00 00 00 00             | uint8_t[4] | ....                                      | padding
-      // TODO(austin): Can we re-arrange the order to ditch the padding?
-      // (Answer is yes, but what is the impact elsewhere?  It will change the
-      // binary format)
-      buffer = Pad(buffer, 4);
-      //   +0x34 | 75 00 00 00             | uint32_t   | 0x00000075 (117)                          | table field `remote_queue_index` (UInt)
-      buffer = Push<uint32_t>(buffer, msg->remote_queue_index());
+      //    +0x30 | 65 B1 32 50 FE 54 50 6B | int64_t   | 0x6B5054FE5032B165 (7732774011439067493)  | table field `monotonic_remote_time` (Long)
+      buffer = Push<int64_t>(buffer, msg->monotonic_remote_time());
       [[fallthrough]];
     case 0x38u:
       if ((end_byte) == 0x38u) {
         break;
       }
-      //   +0x38 | AA B0 43 0A 35 BE FA D2 | int64_t    | 0xD2FABE350A43B0AA (-3244071446552268630) | table field `realtime_remote_time` (Long)
-      buffer = Push<int64_t>(buffer, msg->realtime_remote_time());
+      //   +0x38 | EA 4D CC E0 FC 20 86 71 | int64_t   | 0x718620FCE0CC4DEA (8180262043640417770)  | table field `monotonic_remote_transmit_time` (Long)
+      buffer = Push<int64_t>(buffer, msg->monotonic_remote_transmit_time());
       [[fallthrough]];
     case 0x40u:
       if ((end_byte) == 0x40u) {
         break;
       }
-      //   +0x40 | D5 40 30 F3 C1 A7 26 1D | int64_t    | 0x1D26A7C1F33040D5 (2100550727665467605)  | table field `monotonic_remote_time` (Long)
-      buffer = Push<int64_t>(buffer, msg->monotonic_remote_time());
+      //   +0x40 | 8E 59 CF 88 9D DF 02 07 | int64_t   | 0x0702DF9D88CF598E (505211975917066638)   | table field `monotonic_timestamp_time` (Long)
+      buffer = Push<int64_t>(buffer,
+                             monotonic_timestamp_time.time_since_epoch().count());
       [[fallthrough]];
     case 0x48u:
       if ((end_byte) == 0x48u) {
         break;
       }
-      //   +0x48 | 5B 25 32 A1 4A E8 46 CA | int64_t    | 0xCA46E84AA132255B (-3871151422448720549) | table field `realtime_sent_time` (Long)
+      //   +0x48 | 14 D5 A7 D8 B2 E4 EF 89 | int64_t   | 0x89EFE4B2D8A7D514 (-8507329714289388268) | table field `realtime_sent_time` (Long)
       buffer = Push<int64_t>(buffer, msg->realtime_sent_time());
       [[fallthrough]];
     case 0x50u:
       if ((end_byte) == 0x50u) {
         break;
       }
-      //   +0x50 | 49 7D 45 1F 8C 36 6B A3 | int64_t    | 0xA36B368C1F457D49 (-6671178447571288759) | table field `monotonic_sent_time` (Long)
+      //    +0x50 | 19 7D 7F EF 86 8D 92 65 | int64_t   | 0x65928D86EF7F7D19 (7319067955113721113)  | table field `monotonic_sent_time` (Long)
       buffer = Push<int64_t>(buffer, msg->monotonic_sent_time());
       [[fallthrough]];
     case 0x58u:
       if ((end_byte) == 0x58u) {
         break;
       }
-      //   +0x58 | 33 00 00 00             | uint32_t   | 0x00000033 (51)                           | table field `queue_index` (UInt)
+      //   +0x58 | FC 00 00 00             | uint32_t  | 0x000000FC (252)                          | table field `queue_index` (UInt)
       buffer = Push<uint32_t>(buffer, msg->queue_index());
-      //   +0x5C | 76 00 00 00             | uint32_t   | 0x00000076 (118)                          | table field `channel_index` (UInt)
+      //   +0x5C | 9C 00 00 00             | uint32_t  | 0x0000009C (156)                          | table field `channel_index` (UInt)
       buffer = Push<uint32_t>(buffer, channel_index);
       // clang-format on
       [[fallthrough]];
@@ -477,7 +477,6 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 
   switch (log_type) {
     case LogType::kLogMessage:
-    case LogType::kLogMessageAndDeliveryTime:
     case LogType::kLogRemoteMessage:
       // Since the timestamps are 8 byte aligned, we are going to end up adding
       // padding in the middle of the message to pad everything out to 8 byte
@@ -525,6 +524,8 @@ flatbuffers::Offset<MessageHeader> PackMessage(
           context.monotonic_remote_time.time_since_epoch().count());
       message_header_builder.add_realtime_remote_time(
           context.realtime_remote_time.time_since_epoch().count());
+      message_header_builder.add_monotonic_remote_transmit_time(
+          context.monotonic_remote_transmit_time.time_since_epoch().count());
       message_header_builder.add_remote_queue_index(context.remote_queue_index);
       break;
 
@@ -535,20 +536,6 @@ flatbuffers::Offset<MessageHeader> PackMessage(
           context.monotonic_event_time.time_since_epoch().count());
       message_header_builder.add_realtime_sent_time(
           context.realtime_event_time.time_since_epoch().count());
-      break;
-
-    case LogType::kLogMessageAndDeliveryTime:
-      message_header_builder.add_queue_index(context.queue_index);
-      message_header_builder.add_remote_queue_index(context.remote_queue_index);
-      message_header_builder.add_monotonic_sent_time(
-          context.monotonic_event_time.time_since_epoch().count());
-      message_header_builder.add_realtime_sent_time(
-          context.realtime_event_time.time_since_epoch().count());
-      message_header_builder.add_monotonic_remote_time(
-          context.monotonic_remote_time.time_since_epoch().count());
-      message_header_builder.add_realtime_remote_time(
-          context.realtime_remote_time.time_since_epoch().count());
-      message_header_builder.add_data(data_offset);
       break;
   }
 
@@ -580,41 +567,19 @@ flatbuffers::uoffset_t PackMessageHeaderSize(LogType log_type) {
       return
           // Root table size + offset.
           sizeof(flatbuffers::uoffset_t) * 2 +
-          // 6 padding bytes to pad the header out properly.
-          4 +
           // vtable header (size + size of table)
           sizeof(flatbuffers::voffset_t) * 2 +
           // offsets to all the fields.
-          sizeof(flatbuffers::voffset_t) * 8 +
+          sizeof(flatbuffers::voffset_t) * 10 +
           // pointer to vtable
           sizeof(flatbuffers::soffset_t) +
           // remote_queue_index
           sizeof(uint32_t) +
           // realtime_remote_time, monotonic_remote_time, realtime_sent_time,
           // monotonic_sent_time
-          sizeof(int64_t) * 4 +
+          sizeof(int64_t) * 5 +
           // queue_index, channel_index
           sizeof(uint32_t) * 2;
-
-    case LogType::kLogMessageAndDeliveryTime:
-      return
-          // Root table size + offset.
-          sizeof(flatbuffers::uoffset_t) * 2 +
-          // 4 padding bytes to pad the header out properly.
-          4 +
-          // vtable header (size + size of table)
-          sizeof(flatbuffers::voffset_t) * 2 +
-          // offsets to all the fields.
-          sizeof(flatbuffers::voffset_t) * 8 +
-          // pointer to vtable
-          sizeof(flatbuffers::soffset_t) +
-          // pointer to data
-          sizeof(flatbuffers::uoffset_t) +
-          // realtime_remote_time, monotonic_remote_time, realtime_sent_time,
-          // monotonic_sent_time
-          sizeof(int64_t) * 4 +
-          // remote_queue_index, queue_index, channel_index
-          sizeof(uint32_t) * 3;
 
     case LogType::kLogRemoteMessage:
       return
@@ -648,7 +613,6 @@ flatbuffers::uoffset_t PackMessageSize(LogType log_type, size_t data_size) {
       return PackMessageHeaderSize(log_type);
 
     case LogType::kLogMessage:
-    case LogType::kLogMessageAndDeliveryTime:
     case LogType::kLogRemoteMessage:
       return PackMessageHeaderSize(log_type) +
              // Vector...
@@ -822,10 +786,10 @@ size_t PackMessageInline(uint8_t *buffer, const Context &context,
           }
           // clang-format off
           // header:
-          //   +0x00 | 4C 00 00 00             | UOffset32  | 0x0000004C (76) Loc: +0x4C                | size prefix
+          //   +0x00 | 54 00 00 00             | UOffset32 | 0x00000054 (84) Loc: +0x54                | size prefix
           buffer = Push<flatbuffers::uoffset_t>(
               buffer, message_size - sizeof(flatbuffers::uoffset_t));
-          //   +0x04 | 1C 00 00 00             | UOffset32  | 0x0000001C (28) Loc: +0x20                | offset to root table `aos.logger.MessageHeader`
+          //   +0x04 | 1C 00 00 00             | UOffset32 | 0x0000001C (28) Loc: +0x20                | offset to root table `aos.logger.MessageHeader`
           buffer = Push<flatbuffers::uoffset_t>(buffer, 0x1c);
 
           [[fallthrough]];
@@ -834,254 +798,98 @@ size_t PackMessageInline(uint8_t *buffer, const Context &context,
             break;
           }
           //
-          // padding:
-          //   +0x08 | 00 00 00 00             | uint8_t[4] | ....                                      | padding
-          buffer = Pad(buffer, 4);
-          //
           // vtable (aos.logger.MessageHeader):
-          //   +0x0C | 14 00                   | uint16_t   | 0x0014 (20)                               | size of this vtable
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x14);
-          //   +0x0E | 30 00                   | uint16_t   | 0x0030 (48)                               | size of referring table
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x30);
-          [[fallthrough]];
-        case 0x10u:
-          if ((end_byte) == 0x10u) {
-            break;
-          }
-          //   +0x10 | 2C 00                   | VOffset16  | 0x002C (44)                               | offset to field `channel_index` (id: 0)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x2c);
-          //   +0x12 | 20 00                   | VOffset16  | 0x0020 (32)                               | offset to field `monotonic_sent_time` (id: 1)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x20);
-          //   +0x14 | 18 00                   | VOffset16  | 0x0018 (24)                               | offset to field `realtime_sent_time` (id: 2)
+          //   +0x08 | 18 00                   | uint16_t  | 0x0018 (24)                               | size of this vtable
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x18);
-          //   +0x16 | 28 00                   | VOffset16  | 0x0028 (40)                               | offset to field `queue_index` (id: 3)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x28);
-          [[fallthrough]];
-        case 0x18u:
-          if ((end_byte) == 0x18u) {
-            break;
-          }
-          //   +0x18 | 00 00                   | VOffset16  | 0x0000 (0)                                | offset to field `data` (id: 4) <null> (Vector)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
-          //   +0x1A | 10 00                   | VOffset16  | 0x0010 (16)                               | offset to field `monotonic_remote_time` (id: 5)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x10);
-          //   +0x1C | 08 00                   | VOffset16  | 0x0008 (8)                                | offset to field `realtime_remote_time` (id: 6)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x08);
-          //   +0x1E | 04 00                   | VOffset16  | 0x0004 (4)                                | offset to field `remote_queue_index` (id: 7)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
-          [[fallthrough]];
-        case 0x20u:
-          if ((end_byte) == 0x20u) {
-            break;
-          }
-          //
-          // root_table (aos.logger.MessageHeader):
-          //   +0x20 | 14 00 00 00             | SOffset32  | 0x00000014 (20) Loc: +0x0C                | offset to vtable
-          buffer = Push<flatbuffers::uoffset_t>(buffer, 0x14);
-          //   +0x24 | 69 00 00 00             | uint32_t   | 0x00000069 (105)                          | table field `remote_queue_index` (UInt)
-          buffer = Push<uint32_t>(buffer, context.remote_queue_index);
-          [[fallthrough]];
-        case 0x28u:
-          if ((end_byte) == 0x28u) {
-            break;
-          }
-          //   +0x28 | C6 85 F1 AB 83 B5 CD EB | int64_t    | 0xEBCDB583ABF185C6 (-1455307527440726586) | table field `realtime_remote_time` (Long)
-          buffer = Push<int64_t>(buffer, context.realtime_remote_time.time_since_epoch().count());
-          [[fallthrough]];
-        case 0x30u:
-          if ((end_byte) == 0x30u) {
-            break;
-          }
-          //   +0x30 | 47 24 D3 97 1E 42 2D 99 | int64_t    | 0x992D421E97D32447 (-7409193112790948793) | table field `monotonic_remote_time` (Long)
-          buffer = Push<int64_t>(buffer, context.monotonic_remote_time.time_since_epoch().count());
-          [[fallthrough]];
-        case 0x38u:
-          if ((end_byte) == 0x38u) {
-            break;
-          }
-          //   +0x38 | C8 B9 A7 AB 79 F2 CD 60 | int64_t    | 0x60CDF279ABA7B9C8 (6975498002251626952)  | table field `realtime_sent_time` (Long)
-          buffer = Push<int64_t>(buffer, context.realtime_event_time.time_since_epoch().count());
-          [[fallthrough]];
-        case 0x40u:
-          if ((end_byte) == 0x40u) {
-            break;
-          }
-          //   +0x40 | EA 8F 2A 0F AF 01 7A AB | int64_t    | 0xAB7A01AF0F2A8FEA (-6090553694679822358) | table field `monotonic_sent_time` (Long)
-          buffer = Push<int64_t>(buffer, context.monotonic_event_time.time_since_epoch().count());
-          [[fallthrough]];
-        case 0x48u:
-          if ((end_byte) == 0x48u) {
-            break;
-          }
-          //   +0x48 | F5 00 00 00             | uint32_t   | 0x000000F5 (245)                          | table field `queue_index` (UInt)
-          buffer = Push<uint32_t>(buffer, context.queue_index);
-          //   +0x4C | 88 00 00 00             | uint32_t   | 0x00000088 (136)                          | table field `channel_index` (UInt)
-          buffer = Push<uint32_t>(buffer, channel_index);
-
-          // clang-format on
-      }
-      break;
-
-    case LogType::kLogMessageAndDeliveryTime:
-      switch (start_byte) {
-        case 0x00u:
-          if ((end_byte) == 0x00u) {
-            break;
-          }
-          // clang-format off
-          // header:
-          //   +0x00 | 5C 00 00 00             | UOffset32  | 0x0000005C (92) Loc: +0x5C                | size prefix
-          buffer = Push<flatbuffers::uoffset_t>(
-              buffer, message_size - sizeof(flatbuffers::uoffset_t));
-          //   +0x04 | 1C 00 00 00             | UOffset32  | 0x0000001C (28) Loc: +0x20                | offset to root table `aos.logger.MessageHeader`
-          buffer = Push<flatbuffers::uoffset_t>(buffer, 0x1c);
-          [[fallthrough]];
-        case 0x08u:
-          if ((end_byte) == 0x08u) {
-            break;
-          }
-          //
-          // padding:
-          //   +0x08 | 00 00 00 00             | uint8_t[4] | ....                                      | padding
-          buffer = Pad(buffer, 4);
-          //
-          // vtable (aos.logger.MessageHeader):
-          //   +0x0C | 14 00                   | uint16_t   | 0x0014 (20)                               | size of this vtable
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x14);
-          //   +0x0E | 34 00                   | uint16_t   | 0x0034 (52)                               | size of referring table
+          //   +0x0A | 38 00                   | uint16_t  | 0x0038 (56)                               | size of referring table
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x38);
+          //   +0x0C | 34 00                   | VOffset16 | 0x0034 (52)                               | offset to field `channel_index` (id: 0)
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x34);
+          //   +0x0E | 28 00                   | VOffset16 | 0x0028 (40)                               | offset to field `monotonic_sent_time` (id: 1)
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x28);
           [[fallthrough]];
         case 0x10u:
           if ((end_byte) == 0x10u) {
             break;
           }
-          //   +0x10 | 30 00                   | VOffset16  | 0x0030 (48)                               | offset to field `channel_index` (id: 0)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x30);
-          //   +0x12 | 20 00                   | VOffset16  | 0x0020 (32)                               | offset to field `monotonic_sent_time` (id: 1)
+          //   +0x10 | 20 00                   | VOffset16 | 0x0020 (32)                               | offset to field `realtime_sent_time` (id: 2)
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x20);
-          //   +0x14 | 18 00                   | VOffset16  | 0x0018 (24)                               | offset to field `realtime_sent_time` (id: 2)
+          //   +0x12 | 30 00                   | VOffset16 | 0x0030 (48)                               | offset to field `queue_index` (id: 3)
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x30);
+          //   +0x14 | 00 00                   | VOffset16 | 0x0000 (0)                                | offset to field `data` (id: 4) <null> (Vector)
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
+          //   +0x16 | 18 00                   | VOffset16 | 0x0018 (24)                               | offset to field `monotonic_remote_time` (id: 5)
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x18);
-          //   +0x16 | 2C 00                   | VOffset16  | 0x002C (44)                               | offset to field `queue_index` (id: 3)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x2c);
           [[fallthrough]];
         case 0x18u:
           if ((end_byte) == 0x18u) {
             break;
           }
-          //   +0x18 | 04 00                   | VOffset16  | 0x0004 (4)                                | offset to field `data` (id: 4)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
-          //   +0x1A | 10 00                   | VOffset16  | 0x0010 (16)                               | offset to field `monotonic_remote_time` (id: 5)
+          //   +0x18 | 10 00                   | VOffset16 | 0x0010 (16)                               | offset to field `realtime_remote_time` (id: 6)
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x10);
-          //   +0x1C | 08 00                   | VOffset16  | 0x0008 (8)                                | offset to field `realtime_remote_time` (id: 6)
+          //   +0x1A | 04 00                   | VOffset16 | 0x0004 (4)                                | offset to field `remote_queue_index` (id: 7)
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
+          //   +0x1C | 00 00                   | VOffset16 | 0x0000 (0)                                | offset to field `monotonic_timestamp_time` (id: 8) <defaults to -9223372036854775808> (Long)
+          buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
+          //   +0x1E | 08 00                   | VOffset16 | 0x0008 (8)                                | offset to field `monotonic_remote_transmit_time` (id: 9)
           buffer = Push<flatbuffers::voffset_t>(buffer, 0x08);
-          //   +0x1E | 28 00                   | VOffset16  | 0x0028 (40)                               | offset to field `remote_queue_index` (id: 7)
-          buffer = Push<flatbuffers::voffset_t>(buffer, 0x28);
           [[fallthrough]];
         case 0x20u:
           if ((end_byte) == 0x20u) {
             break;
           }
-          //
           // root_table (aos.logger.MessageHeader):
-          //   +0x20 | 14 00 00 00             | SOffset32  | 0x00000014 (20) Loc: +0x0C                | offset to vtable
-          buffer = Push<flatbuffers::uoffset_t>(buffer, 0x14);
-          //   +0x24 | 30 00 00 00             | UOffset32  | 0x00000030 (48) Loc: +0x54                | offset to field `data` (vector)
-          buffer = Push<flatbuffers::uoffset_t>(buffer, 0x30);
+          //   +0x20 | 18 00 00 00             | SOffset32 | 0x00000018 (24) Loc: +0x08                | offset to vtable
+          buffer = Push<flatbuffers::uoffset_t>(buffer, 0x18);
+          //   +0x24 | 3F 9A 69 37             | uint32_t  | 0x37699A3F (929667647)                    | table field `remote_queue_index` (UInt)
+          buffer = Push<uint32_t>(buffer, context.remote_queue_index);
           [[fallthrough]];
         case 0x28u:
           if ((end_byte) == 0x28u) {
             break;
           }
-          //   +0x28 | C4 C8 87 BF 40 6C 1F 29 | int64_t    | 0x291F6C40BF87C8C4 (2963206105180129476)  | table field `realtime_remote_time` (Long)
-          buffer = Push<int64_t>(buffer, context.realtime_remote_time.time_since_epoch().count());
+          //   +0x28 | 00 00 00 00 00 00 00 80 | int64_t   | 0x8000000000000000 (-9223372036854775808) | table field `monotonic_remote_transmit_time` (Long)
+          buffer = Push<int64_t>(buffer, context.monotonic_remote_transmit_time.time_since_epoch().count());
           [[fallthrough]];
         case 0x30u:
           if ((end_byte) == 0x30u) {
             break;
           }
-          //   +0x30 | 0F 00 26 FD D2 6D C0 1F | int64_t    | 0x1FC06DD2FD26000F (2287949363661897743)  | table field `monotonic_remote_time` (Long)
-          buffer = Push<int64_t>(buffer, context.monotonic_remote_time.time_since_epoch().count());
+          //   +0x30 | 1D CE 4A 38 54 33 C9 F8 | int64_t   | 0xF8C93354384ACE1D (-519827845169885667)  | table field `realtime_remote_time` (Long)
+          buffer = Push<int64_t>(buffer, context.realtime_remote_time.time_since_epoch().count());
           [[fallthrough]];
         case 0x38u:
           if ((end_byte) == 0x38u) {
             break;
           }
-          //   +0x38 | 29 75 09 C0 73 73 BF 88 | int64_t    | 0x88BF7373C0097529 (-8593022623019338455) | table field `realtime_sent_time` (Long)
-          buffer = Push<int64_t>(buffer, context.realtime_event_time.time_since_epoch().count());
+          //   +0x38 | FE EA DF 1D C7 3F C6 03 | int64_t   | 0x03C63FC71DDFEAFE (271974951934749438)   | table field `monotonic_remote_time` (Long)
+          buffer = Push<int64_t>(buffer, context.monotonic_remote_time.time_since_epoch().count());
           [[fallthrough]];
         case 0x40u:
           if ((end_byte) == 0x40u) {
             break;
           }
-          //   +0x40 | 6D 8A AE 04 50 25 9C E9 | int64_t    | 0xE99C255004AE8A6D (-1613373540899321235) | table field `monotonic_sent_time` (Long)
-          buffer = Push<int64_t>(buffer, context.monotonic_event_time.time_since_epoch().count());
+          //   +0x40 | 4E 0C 96 6E FB B5 CE 12 | int64_t   | 0x12CEB5FB6E960C4E (1355220629381844046)  | table field `realtime_sent_time` (Long)
+          buffer = Push<int64_t>(buffer, context.realtime_event_time.time_since_epoch().count());
           [[fallthrough]];
         case 0x48u:
           if ((end_byte) == 0x48u) {
             break;
           }
-          //   +0x48 | 47 00 00 00             | uint32_t   | 0x00000047 (71)                           | table field `remote_queue_index` (UInt)
-          buffer = Push<uint32_t>(buffer, context.remote_queue_index);
-          //   +0x4C | 4C 00 00 00             | uint32_t   | 0x0000004C (76)                           | table field `queue_index` (UInt)
-          buffer = Push<uint32_t>(buffer, context.queue_index);
+          //   +0x48 | 51 56 56 F9 0A 0B 0F 12 | int64_t   | 0x120F0B0AF9565651 (1301270959094126161)  | table field `monotonic_sent_time` (Long)
+          buffer = Push<int64_t>(buffer, context.monotonic_event_time.time_since_epoch().count());
           [[fallthrough]];
         case 0x50u:
           if ((end_byte) == 0x50u) {
             break;
           }
-          //   +0x50 | 72 00 00 00             | uint32_t   | 0x00000072 (114)                          | table field `channel_index` (UInt)
+          //   +0x50 | 0C A5 42 18             | uint32_t  | 0x1842A50C (407020812)                    | table field `queue_index` (UInt)
+          buffer = Push<uint32_t>(buffer, context.queue_index);
+          //   +0x54 | 87 10 7C D7             | uint32_t  | 0xD77C1087 (3615232135)                   | table field `channel_index` (UInt)
           buffer = Push<uint32_t>(buffer, channel_index);
-          //
-          // vector (aos.logger.MessageHeader.data):
-          //   +0x54 | 07 00 00 00             | uint32_t   | 0x00000007 (7)                            | length of vector (# items)
-          buffer = Push<flatbuffers::uoffset_t>(buffer, context.size);
-          [[fallthrough]];
-        case 0x58u:
-          if ((end_byte) == 0x58u) {
-            break;
-          }
-          [[fallthrough]];
-        default:
-          //   +0x58 | B1                      | uint8_t    | 0xB1 (177)                                | value[0]
-          //   +0x59 | 4A                      | uint8_t    | 0x4A (74)                                 | value[1]
-          //   +0x5A | 50                      | uint8_t    | 0x50 (80)                                 | value[2]
-          //   +0x5B | 24                      | uint8_t    | 0x24 (36)                                 | value[3]
-          //   +0x5C | AF                      | uint8_t    | 0xAF (175)                                | value[4]
-          //   +0x5D | C8                      | uint8_t    | 0xC8 (200)                                | value[5]
-          //   +0x5E | D5                      | uint8_t    | 0xD5 (213)                                | value[6]
-          //
-          // padding:
-          //   +0x5F | 00                      | uint8_t[1] | .                                         | padding
+
           // clang-format on
-
-          if (start_byte <= 0x58 && end_byte == message_size) {
-            // The easy one, slap it all down.
-            buffer = PushBytes(buffer, context.data, context.size);
-            buffer =
-                Pad(buffer, ((context.size + 7) & 0xfffffff8u) - context.size);
-          } else {
-            const size_t data_start_byte =
-                start_byte < 0x58 ? 0x0u : (start_byte - 0x58);
-            const size_t data_end_byte = end_byte - 0x58;
-            const size_t padded_size = ((context.size + 7) & 0xfffffff8u);
-            if (data_start_byte < padded_size) {
-              buffer = PushBytes(
-                  buffer,
-                  reinterpret_cast<const uint8_t *>(context.data) +
-                      data_start_byte,
-                  std::min(context.size, data_end_byte) - data_start_byte);
-              if (data_end_byte == padded_size) {
-                // We can only pad the last 7 bytes, so this only gets written
-                // if we write the last byte.
-                buffer = Pad(buffer,
-                             ((context.size + 7) & 0xfffffff8u) - context.size);
-              }
-            }
-          }
-
-          break;
       }
-
       break;
 
     case LogType::kLogRemoteMessage:
@@ -1559,6 +1367,9 @@ std::shared_ptr<UnpackedMessageHeader> UnpackedMessageHeader::MakeMessage(
     realtime_remote_time = realtime_clock::time_point(
         chrono::nanoseconds(message.realtime_remote_time()));
   }
+  aos::monotonic_clock::time_point monotonic_remote_transmit_time =
+      aos::monotonic_clock::time_point(
+          std::chrono::nanoseconds(message.monotonic_remote_transmit_time()));
 
   std::optional<uint32_t> remote_queue_index;
   if (message.has_remote_queue_index()) {
@@ -1572,7 +1383,7 @@ std::shared_ptr<UnpackedMessageHeader> UnpackedMessageHeader::MakeMessage(
       realtime_clock::time_point(
           chrono::nanoseconds(message.realtime_sent_time())),
       message.queue_index(), monotonic_remote_time, realtime_remote_time,
-      remote_queue_index,
+      monotonic_remote_transmit_time, remote_queue_index,
       monotonic_clock::time_point(
           std::chrono::nanoseconds(message.monotonic_timestamp_time())),
       message.has_monotonic_timestamp_time(), span);
@@ -1780,6 +1591,10 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &msg) {
   if (msg.realtime_remote_time != realtime_clock::min_time) {
     os << ", .realtime_remote_time=" << msg.realtime_remote_time;
   }
+  if (msg.monotonic_remote_transmit_time != BootTimestamp::min_time()) {
+    os << ", .monotonic_remote_transmit_time="
+       << msg.monotonic_remote_transmit_time;
+  }
   if (msg.monotonic_timestamp_time != BootTimestamp::min_time()) {
     os << ", .monotonic_timestamp_time=" << msg.monotonic_timestamp_time;
   }
@@ -1824,6 +1639,7 @@ const Message *MessageSorter::Front() {
       size_t monotonic_remote_boot = 0xffffff;
 
       if (msg->monotonic_remote_time.has_value()) {
+        CHECK_LT(msg->channel_index, source_node_index_.size());
         const Node *node = parts().config->nodes()->Get(
             source_node_index_[msg->channel_index]);
 
@@ -2204,6 +2020,7 @@ void SplitTimestampBootMerger::QueueTimestamps(
       queue_timestamps_ran_ = true;
       return;
     }
+    CHECK_LT(msg->channel_index, source_node.size());
     if (source_node[msg->channel_index] != static_cast<size_t>(node())) {
       timestamp_messages_.emplace_back(TimestampedMessage{
           .channel_index = msg->channel_index,
@@ -2216,6 +2033,9 @@ void SplitTimestampBootMerger::QueueTimestamps(
           .monotonic_remote_time = {msg->monotonic_remote_boot,
                                     msg->data->monotonic_remote_time.value()},
           .realtime_remote_time = msg->data->realtime_remote_time.value(),
+          .monotonic_remote_transmit_time =
+              {msg->monotonic_remote_boot,
+               msg->data->monotonic_remote_transmit_time},
           .monotonic_timestamp_time = {msg->monotonic_timestamp_boot,
                                        msg->data->monotonic_timestamp_time},
           .data = std::move(msg->data)});
@@ -2381,6 +2201,9 @@ TimestampMapper::TimestampMapper(
       source_node_.emplace_back(configuration::GetNodeIndex(
           config, channel->source_node()->string_view()));
     }
+  } else {
+    // The node index for single-node logs is always 0.
+    source_node_.resize(config->channels()->size(), 0);
   }
 }
 
@@ -2404,16 +2227,17 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
 }
 
 void TimestampMapper::QueueMessage(const Message *msg) {
-  matched_messages_.emplace_back(
-      TimestampedMessage{.channel_index = msg->channel_index,
-                         .queue_index = msg->queue_index,
-                         .monotonic_event_time = msg->timestamp,
-                         .realtime_event_time = msg->data->realtime_sent_time,
-                         .remote_queue_index = BootQueueIndex::Invalid(),
-                         .monotonic_remote_time = BootTimestamp::min_time(),
-                         .realtime_remote_time = realtime_clock::min_time,
-                         .monotonic_timestamp_time = BootTimestamp::min_time(),
-                         .data = std::move(msg->data)});
+  matched_messages_.emplace_back(TimestampedMessage{
+      .channel_index = msg->channel_index,
+      .queue_index = msg->queue_index,
+      .monotonic_event_time = msg->timestamp,
+      .realtime_event_time = msg->data->realtime_sent_time,
+      .remote_queue_index = BootQueueIndex::Invalid(),
+      .monotonic_remote_time = BootTimestamp::min_time(),
+      .realtime_remote_time = realtime_clock::min_time,
+      .monotonic_remote_transmit_time = BootTimestamp::min_time(),
+      .monotonic_timestamp_time = BootTimestamp::min_time(),
+      .data = std::move(msg->data)});
   VLOG(1) << node_name() << " Inserted " << matched_messages_.back();
 }
 
@@ -2536,6 +2360,9 @@ TimestampMapper::MatchResult TimestampMapper::MaybeQueueMatched() {
         .monotonic_remote_time = {msg->monotonic_remote_boot,
                                   msg->data->monotonic_remote_time.value()},
         .realtime_remote_time = msg->data->realtime_remote_time.value(),
+        .monotonic_remote_transmit_time =
+            {msg->monotonic_remote_boot,
+             msg->data->monotonic_remote_transmit_time},
         .monotonic_timestamp_time = {msg->monotonic_timestamp_boot,
                                      msg->data->monotonic_timestamp_time},
         .data = std::move(data.data)});

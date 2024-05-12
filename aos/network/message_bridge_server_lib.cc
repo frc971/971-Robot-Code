@@ -95,6 +95,8 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
       context.realtime_event_time.time_since_epoch().count());
   remote_data_builder.add_data(data_offset);
   remote_data_builder.add_boot_uuid(boot_uuid_offset);
+  remote_data_builder.add_monotonic_remote_transmit_time(
+      monotonic_clock::now().time_since_epoch().count());
 
   // TODO(austin): Use an iovec to build it up in 3 parts to avoid the copy?
   // Only useful when not logging.
@@ -304,6 +306,8 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
         remote_message_builder.add_remote_queue_index(
             message_header->queue_index());
         remote_message_builder.add_boot_uuid(boot_uuid_offset);
+        remote_message_builder.add_monotonic_remote_transmit_time(
+            message_header->monotonic_remote_transmit_time());
 
         server_status->AddPartialDeliveries(peer.node_index,
                                             partial_deliveries);
@@ -418,7 +422,10 @@ MessageBridgeServer::MessageBridgeServer(
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
               event_loop->node()->port(), requested_authentication),
-      server_status_(event_loop, [this]() { timestamp_state_->SendData(); }),
+      server_status_(event_loop,
+                     [this](uint32_t, monotonic_clock::time_point) {
+                       timestamp_state_->SendData();
+                     }),
       config_sha256_(std::move(config_sha256)),
       allocator_(0),
       refresh_key_timer_(event_loop->AddTimer([this]() { RequestAuthKey(); })),
@@ -672,42 +679,11 @@ void MessageBridgeServer::MessageReceived() {
       HandleData(message.get());
       break;
     case Message::kOverflow:
-      MaybeIncrementInvalidConnectionCount(nullptr);
+      server_status_.MaybeIncrementInvalidConnectionCount(nullptr);
       NodeDisconnected(message->header.rcvinfo.rcv_assoc_id);
       break;
   }
   server_.FreeMessage(std::move(message));
-}
-
-void MessageBridgeServer::MaybeIncrementInvalidConnectionCount(
-    const Node *node) {
-  server_status_.increment_invalid_connection_count();
-
-  if (node == nullptr) {
-    return;
-  }
-
-  if (!node->has_name()) {
-    return;
-  }
-
-  const aos::Node *client_node = configuration::GetNode(
-      event_loop_->configuration(), node->name()->string_view());
-
-  if (client_node == nullptr) {
-    return;
-  }
-
-  const int node_index =
-      configuration::GetNodeIndex(event_loop_->configuration(), client_node);
-
-  ServerConnection *connection =
-      server_status_.nodes()[node_index].value().server_connection;
-
-  if (connection != nullptr) {
-    connection->mutate_invalid_connection_count(
-        connection->invalid_connection_count() + 1);
-  }
 }
 
 void MessageBridgeServer::HandleData(const Message *message) {
@@ -725,7 +701,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         }
         server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
-        MaybeIncrementInvalidConnectionCount(nullptr);
+        server_status_.MaybeIncrementInvalidConnectionCount(nullptr);
         return;
       }
     }
@@ -737,7 +713,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
       }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
-      MaybeIncrementInvalidConnectionCount(connect->node());
+      server_status_.MaybeIncrementInvalidConnectionCount(connect->node());
       return;
     }
 
@@ -750,7 +726,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
       }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
-      MaybeIncrementInvalidConnectionCount(connect->node());
+      server_status_.MaybeIncrementInvalidConnectionCount(connect->node());
       return;
     }
 
@@ -762,7 +738,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
       }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
-      MaybeIncrementInvalidConnectionCount(connect->node());
+      server_status_.MaybeIncrementInvalidConnectionCount(connect->node());
       return;
     }
 
@@ -803,7 +779,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         }
         server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
-        MaybeIncrementInvalidConnectionCount(connect->node());
+        server_status_.MaybeIncrementInvalidConnectionCount(connect->node());
         return;
       }
       ++channel_index;

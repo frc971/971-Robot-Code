@@ -68,6 +68,7 @@ void EventScheduler::Shutdown() {
 
 void EventScheduler::Startup() {
   ++boot_count_;
+  cached_event_list_monotonic_time_ = kInvalidCachedTime();
   CHECK(!is_running_);
   MaybeRunOnStartup();
   CHECK(called_started_);

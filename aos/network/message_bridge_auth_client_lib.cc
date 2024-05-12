@@ -42,6 +42,7 @@ MessageBridgeAuthClient::MessageBridgeAuthClient(
       config_request_fetcher_(
           event_loop_->MakeFetcher<SctpConfigRequest>("/aos")),
       client_(SctpConfigService::NewStub(channel)) {
+  poll_timer_->set_name("poll");
   event_loop_->OnRun([this] {
     poll_timer_->Schedule(event_loop_->monotonic_now(),
                           std::chrono::milliseconds(1000));
@@ -69,7 +70,7 @@ std::vector<uint8_t> MessageBridgeAuthClient::GetSctpKey() {
   Status status = client_->GetActiveKey(&context, request, &response);
   if (!status.ok()) {
     LOG_EVERY_N(ERROR, 50)
-        << "Unable to retreive active SCTP authentication key from server";
+        << "Unable to retrieve active SCTP authentication key from server";
     return {};
   }
 

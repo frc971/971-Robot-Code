@@ -46,6 +46,45 @@ struct Param {
   bool shared;
 };
 
+class PiNode {
+ public:
+  PiNode(const std::string node_name, const std::string host_name,
+         const std::string app_name, const std::string config_filename);
+  // OnPi* sets the global state necessary to pretend that a ShmEventLoop is on
+  // the requisite system.
+  void OnPi();
+  void MakeServer(const std::string server_config_sha256 = "");
+  void RunServer(const chrono::nanoseconds duration);
+  void RunClient(const chrono::nanoseconds duration);
+  void StartServer();
+  void StopServer();
+  void MakeClient();
+  void StartClient();
+  void StopClient();
+  void MakeTest(const std::string test_app_name, const PiNode *other_node);
+  void StartTest();
+  void StopTest();
+
+  const UUID boot_uuid_;
+  const std::string node_name_;
+  const std::string host_name_;
+  const std::string app_name_;
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
+  std::string config_sha256_;
+
+  std::unique_ptr<aos::ShmEventLoop> server_event_loop_;
+  std::unique_ptr<MessageBridgeServer> message_bridge_server_;
+  std::unique_ptr<ThreadedEventLoopRunner> server_thread_;
+
+  std::unique_ptr<aos::ShmEventLoop> client_event_loop_;
+  std::unique_ptr<MessageBridgeClient> message_bridge_client_;
+  std::unique_ptr<ThreadedEventLoopRunner> client_thread_;
+
+  std::unique_ptr<aos::ShmEventLoop> test_event_loop_;
+  std::unique_ptr<ThreadedEventLoopRunner> test_thread_;
+};
+
 class MessageBridgeParameterizedTest
     : public ::testing::TestWithParam<struct Param> {
  protected:
@@ -53,83 +92,13 @@ class MessageBridgeParameterizedTest
 
   bool shared() const;
 
-  // OnPi* sets the global state necessary to pretend that a ShmEventLoop is on
-  // the requisite system.
-  void OnPi1();
-
-  void OnPi2();
-
-  void MakePi1Server(std::string server_config_sha256 = "");
-
-  void RunPi1Server(chrono::nanoseconds duration);
-
-  void StartPi1Server();
-
-  void StopPi1Server();
-
-  void MakePi1Client();
-
-  void StartPi1Client();
-
-  void StopPi1Client();
-
-  void MakePi1Test();
-
-  void StartPi1Test();
-
-  void StopPi1Test();
-
-  void MakePi2Server();
-
-  void RunPi2Server(chrono::nanoseconds duration);
-
-  void StartPi2Server();
-
-  void StopPi2Server();
-
-  void MakePi2Client();
-
-  void RunPi2Client(chrono::nanoseconds duration);
-
-  void StartPi2Client();
-
-  void StopPi2Client();
-
-  void MakePi2Test();
-
-  void StartPi2Test();
-
-  void StopPi2Test();
-
   gflags::FlagSaver flag_saver_;
 
-  aos::FlatbufferDetachedBuffer<aos::Configuration> config;
-  std::string config_sha256;
+  PiNode pi1_;
+  PiNode pi2_;
 
-  const UUID pi1_boot_uuid_;
-  const UUID pi2_boot_uuid_;
-
-  std::unique_ptr<aos::ShmEventLoop> pi1_server_event_loop;
-  std::unique_ptr<MessageBridgeServer> pi1_message_bridge_server;
-  std::unique_ptr<ThreadedEventLoopRunner> pi1_server_thread;
-
-  std::unique_ptr<aos::ShmEventLoop> pi1_client_event_loop;
-  std::unique_ptr<MessageBridgeClient> pi1_message_bridge_client;
-  std::unique_ptr<ThreadedEventLoopRunner> pi1_client_thread;
-
-  std::unique_ptr<aos::ShmEventLoop> pi1_test_event_loop;
-  std::unique_ptr<ThreadedEventLoopRunner> pi1_test_thread;
-
-  std::unique_ptr<aos::ShmEventLoop> pi2_server_event_loop;
-  std::unique_ptr<MessageBridgeServer> pi2_message_bridge_server;
-  std::unique_ptr<ThreadedEventLoopRunner> pi2_server_thread;
-
-  std::unique_ptr<aos::ShmEventLoop> pi2_client_event_loop;
-  std::unique_ptr<MessageBridgeClient> pi2_message_bridge_client;
-  std::unique_ptr<ThreadedEventLoopRunner> pi2_client_thread;
-
-  std::unique_ptr<aos::ShmEventLoop> pi2_test_event_loop;
-  std::unique_ptr<ThreadedEventLoopRunner> pi2_test_thread;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
+  std::string config_sha256_;
 };
 
 }  // namespace aos::message_bridge::testing

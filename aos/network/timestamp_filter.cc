@@ -25,6 +25,12 @@ std::string TimeString(const aos::monotonic_clock::time_point t,
   return ss.str();
 }
 
+std::string TimeString(const logger::BootTimestamp t, logger::BootDuration o) {
+  std::stringstream ss;
+  ss << "O(" << t << ") = " << o << ", remote " << t + o;
+  return ss.str();
+}
+
 std::string TimeString(const aos::monotonic_clock::time_point t_base, double t,
                        std::chrono::nanoseconds o_base, double o) {
   std::stringstream ss;
@@ -40,6 +46,11 @@ std::string TimeString(const aos::monotonic_clock::time_point t_base, double t,
 std::string TimeString(
     const std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
         t) {
+  return TimeString(std::get<0>(t), std::get<1>(t));
+}
+
+std::string TimeString(
+    const std::tuple<logger::BootTimestamp, logger::BootDuration> t) {
   return TimeString(std::get<0>(t), std::get<1>(t));
 }
 
@@ -529,6 +540,11 @@ NoncausalTimestampFilter::InterpolateWithOtherFilter(
     std::tuple<monotonic_clock::time_point, chrono::nanoseconds> t1) {
   if (!use_other) {
     return std::make_pair(pointer, std::make_pair(t0, t1));
+  }
+
+  VLOG(1) << "Other points are: " << pointer.other_points_.size();
+  for (const auto &x : pointer.other_points_) {
+    VLOG(1) << "  " << TimeString(x.second);
   }
 
   // The invariant of pointer is that other_points is bounded by t0, t1. Confirm
@@ -1266,36 +1282,39 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
 void NoncausalTimestampFilter::Sample(BootTimestamp monotonic_now_all,
                                       BootDuration sample_ns) {
   filter(monotonic_now_all.boot, sample_ns.boot)
-      ->filter.Sample(monotonic_now_all.time, sample_ns.duration);
+      ->filter.Sample(monotonic_now_all, sample_ns);
 }
 
 void NoncausalTimestampFilter::SingleFilter::Sample(
-    monotonic_clock::time_point monotonic_now, chrono::nanoseconds sample_ns) {
+    logger::BootTimestamp monotonic_now, logger::BootDuration sample_ns) {
   // The first sample is easy.  Just do it!
   if (timestamps_.size() == 0) {
     VLOG(1) << node_names_ << " Initial sample of "
             << TimeString(monotonic_now, sample_ns);
-    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns));
+    timestamps_.emplace_back(
+        std::make_tuple(monotonic_now.time, sample_ns.duration));
     CHECK(!fully_frozen_)
         << ": " << node_names_
         << " Returned a horizontal line previously and then "
            "got a new sample at "
         << monotonic_now << ", "
-        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+        << chrono::duration<double>(monotonic_now.time -
+                                    std::get<0>(timestamps_[0]))
                .count()
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
         << ".  Increase --time_estimation_buffer_seconds to greater than "
-        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+        << chrono::duration<double>(monotonic_now.time -
+                                    std::get<0>(timestamps_[0]))
                .count()
         << ", or set --force_timestamp_loading";
     return;
   }
-  CHECK_GT(monotonic_now, frozen_time_)
+  CHECK_GT(monotonic_now.time, frozen_time_)
       << ": " << node_names_ << " Tried to insert " << monotonic_now
       << " before the frozen time of " << frozen_time_
       << ".  Increase "
          "--time_estimation_buffer_seconds to greater than "
-      << chrono::duration<double>(frozen_time_ - monotonic_now).count()
+      << chrono::duration<double>(frozen_time_ - monotonic_now.time).count()
       << ", or set --force_timestamp_loading";
 
   // Future samples get quite a bit harder.  We want the line to track the
@@ -1303,12 +1322,13 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
   std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds> back =
       timestamps_.back();
 
-  aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
-  aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
+  aos::monotonic_clock::duration dt = monotonic_now.time - std::get<0>(back);
+  aos::monotonic_clock::duration doffset =
+      sample_ns.duration - std::get<1>(back);
 
   if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
     VLOG(1) << node_names_ << " Duplicate sample of O(" << monotonic_now
-            << ") = " << sample_ns.count() << ", remote time "
+            << ") = " << sample_ns << ", remote time "
             << monotonic_now + sample_ns;
 
     return;
@@ -1337,11 +1357,13 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         << " Returned a horizontal line previously and then got a new "
            "sample at "
         << monotonic_now << ", "
-        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+        << chrono::duration<double>(monotonic_now.time -
+                                    std::get<0>(timestamps_[0]))
                .count()
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
         << ".  Increase --time_estimation_buffer_seconds to greater than "
-        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+        << chrono::duration<double>(monotonic_now.time -
+                                    std::get<0>(timestamps_[0]))
                .count()
         << ", or set --force_timestamp_loading";
 
@@ -1364,10 +1386,12 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
           << ": " << node_names_ << " Can't pop an already frozen sample "
           << TimeString(back) << " while inserting "
           << TimeString(monotonic_now, sample_ns) << ", "
-          << chrono::duration<double>(monotonic_now - std::get<0>(back)).count()
+          << chrono::duration<double>(monotonic_now.time - std::get<0>(back))
+                 .count()
           << " seconds in the past.  Increase --time_estimation_buffer_seconds "
              "to greater than "
-          << chrono::duration<double>(monotonic_now - std::get<0>(back)).count()
+          << chrono::duration<double>(monotonic_now.time - std::get<0>(back))
+                 .count()
           << ", or set --force_timestamp_loading";
       VLOG(1) << node_names_
               << " Removing now invalid sample during back propegation of "
@@ -1375,13 +1399,14 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
       timestamps_.pop_back();
 
       back = timestamps_.back();
-      dt = monotonic_now - std::get<0>(back);
-      doffset = sample_ns - std::get<1>(back);
+      dt = monotonic_now.time - std::get<0>(back);
+      doffset = sample_ns.duration - std::get<1>(back);
     }
 
     VLOG(1) << node_names_ << " Added sample of "
             << TimeString(monotonic_now, sample_ns);
-    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns));
+    timestamps_.emplace_back(
+        std::make_tuple(monotonic_now.time, sample_ns.duration));
     return;
   }
 
@@ -1389,7 +1414,7 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
   // point.  lower_bound returns the element which we are supposed to insert
   // "before".
   auto it = std::lower_bound(
-      timestamps_.begin(), timestamps_.end(), monotonic_now,
+      timestamps_.begin(), timestamps_.end(), monotonic_now.time,
       [](const std::tuple<aos::monotonic_clock::time_point,
                           std::chrono::nanoseconds>
              x,
@@ -1403,9 +1428,9 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
   if (it == timestamps_.begin()) {
     // We are being asked to add at the beginning.
     {
-      const chrono::nanoseconds dt = std::get<0>(*it) - monotonic_now;
+      const chrono::nanoseconds dt = std::get<0>(*it) - monotonic_now.time;
       const chrono::nanoseconds original_offset = std::get<1>(*it);
-      const chrono::nanoseconds doffset = original_offset - sample_ns;
+      const chrono::nanoseconds doffset = original_offset - sample_ns.duration;
 
       if (dt == chrono::nanoseconds(0) && doffset >= chrono::nanoseconds(0)) {
         VLOG(1) << node_names_ << " Redundant timestamp "
@@ -1418,15 +1443,18 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
 
     VLOG(1) << node_names_ << " Added sample at beginning "
             << TimeString(monotonic_now, sample_ns);
-    timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns));
+    timestamps_.insert(it,
+                       std::make_tuple(monotonic_now.time, sample_ns.duration));
 
     while (true) {
       // First point was too positive, so we need to remove points after it
       // until we are valid.
       auto second = timestamps_.begin() + 1;
       if (second != timestamps_.end()) {
-        const chrono::nanoseconds dt = std::get<0>(*second) - monotonic_now;
-        const chrono::nanoseconds doffset = std::get<1>(*second) - sample_ns;
+        const chrono::nanoseconds dt =
+            std::get<0>(*second) - monotonic_now.time;
+        const chrono::nanoseconds doffset =
+            std::get<1>(*second) - sample_ns.duration;
 
         if (absl::int128(doffset.count()) *
                 absl::int128(MaxVelocityRatio::den) <
@@ -1477,10 +1505,12 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
             << " < " << monotonic_now << " < " << std::get<0>(*it);
 
     {
-      chrono::nanoseconds prior_dt = monotonic_now - std::get<0>(*(it - 1));
-      chrono::nanoseconds prior_doffset = sample_ns - std::get<1>(*(it - 1));
-      chrono::nanoseconds next_dt = std::get<0>(*it) - monotonic_now;
-      chrono::nanoseconds next_doffset = std::get<1>(*it) - sample_ns;
+      chrono::nanoseconds prior_dt =
+          monotonic_now.time - std::get<0>(*(it - 1));
+      chrono::nanoseconds prior_doffset =
+          sample_ns.duration - std::get<1>(*(it - 1));
+      chrono::nanoseconds next_dt = std::get<0>(*it) - monotonic_now.time;
+      chrono::nanoseconds next_doffset = std::get<1>(*it) - sample_ns.duration;
 
       // If we are worse than either the previous or next point, discard.
       if (absl::int128(prior_doffset.count()) *
@@ -1517,8 +1547,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
     // Now, insert and start propagating forwards and backwards anything we've
     // made invalid.  Do this simultaneously so we keep discovering anything
     // new.
-    auto middle_it =
-        timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns));
+    auto middle_it = timestamps_.insert(
+        it, std::make_tuple(monotonic_now.time, sample_ns.duration));
     VLOG(1) << node_names_ << " Inserted " << TimeString(*middle_it);
 
     while (middle_it != timestamps_.end() && middle_it != timestamps_.begin()) {
@@ -1602,20 +1632,16 @@ bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
       removed = true;
     }
 
-    if (timestamps_size == 2) {
+    if (timestamps_size <= 2) {
       if (pop_filter_ + 1u >= filters_.size()) {
         return removed;
       }
 
-      // There is 1 more filter, see if there is enough data in it to switch
-      // over to it.
-      if (filters_[pop_filter_ + 1]->filter.timestamps_size() < 2u) {
-        return removed;
-      }
       if (time <
-          BootTimestamp{.boot = static_cast<size_t>(boot_filter->boot.first),
+          BootTimestamp{.boot = static_cast<size_t>(
+                            filters_[pop_filter_ + 1]->boot.first),
                         .time = std::get<0>(
-                            filters_[pop_filter_ + 1]->filter.timestamp(1))}) {
+                            filters_[pop_filter_ + 1]->filter.timestamp(0))}) {
         return removed;
       }
     }
@@ -1661,14 +1687,78 @@ bool NoncausalTimestampFilter::SingleFilter::has_unobserved_line() const {
   return next_to_consume_ + 1 < timestamps_.size();
 }
 
+std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
+NoncausalTimestampFilter::Observe() const {
+  if (filters_.size() == 0u) {
+    return std::nullopt;
+  }
+
+  size_t current_filter = std::max(static_cast<ssize_t>(0), current_filter_);
+  while (true) {
+    const BootFilter &filter = *filters_[current_filter];
+    std::optional<
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+        result = filter.filter.Observe();
+    if (!result) {
+      if (current_filter + 1 == filters_.size()) {
+        return std::nullopt;
+      } else {
+        ++current_filter;
+        continue;
+      }
+    }
+    auto final_result = std::make_tuple(
+        logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
+                              std::get<0>(*result)},
+        logger::BootDuration{static_cast<size_t>(filter.boot.second),
+                             std::get<1>(*result)});
+    VLOG(1) << NodeNames() << " Observed sample of "
+            << TimeString(final_result);
+    return final_result;
+  }
+}
+
 std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
 NoncausalTimestampFilter::SingleFilter::Observe() const {
   if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
     return std::nullopt;
   }
-  VLOG(1) << node_names_ << " Observed sample of "
+  VLOG(2) << node_names_ << " Observed sample of "
           << TimeString(timestamp(next_to_consume_));
   return timestamp(next_to_consume_);
+}
+
+std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
+NoncausalTimestampFilter::Consume() {
+  if (filters_.size() == 0u) {
+    return std::nullopt;
+  }
+  DCHECK_LT(current_filter_, static_cast<ssize_t>(filters_.size()));
+
+  while (true) {
+    std::optional<
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+        result =
+            current_filter_ < 0 ? std::nullopt
+                                : filters_[current_filter_]->filter.Consume();
+    if (!result) {
+      if (static_cast<size_t>(current_filter_ + 1) == filters_.size()) {
+        return std::nullopt;
+      } else {
+        ++current_filter_;
+        continue;
+      }
+    }
+    BootFilter &filter = *filters_[current_filter_];
+    auto final_result = std::make_tuple(
+        logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
+                              std::get<0>(*result)},
+        logger::BootDuration{static_cast<size_t>(filter.boot.second),
+                             std::get<1>(*result)});
+    VLOG(1) << NodeNames() << " Consumed sample of "
+            << TimeString(final_result);
+    return final_result;
+  }
 }
 
 std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
@@ -1678,7 +1768,7 @@ NoncausalTimestampFilter::SingleFilter::Consume() {
   }
 
   auto result = timestamp(next_to_consume_);
-  VLOG(1) << node_names_ << " Consumed sample of " << TimeString(result);
+  VLOG(2) << node_names_ << " Consumed sample of " << TimeString(result);
   ++next_to_consume_;
   return result;
 }

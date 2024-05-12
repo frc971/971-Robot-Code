@@ -3,6 +3,7 @@
 
 #include <sched.h>
 
+#include <ostream>
 #include <string_view>
 
 #include "glog/logging.h"
@@ -27,6 +28,9 @@ void ExpandStackSize();
 // This will displayed by `top -H`, dump_rtprio, and show up in logs.
 // name can have a maximum of 16 characters.
 void SetCurrentThreadName(const std::string_view name);
+
+// Stringifies the cpu_set_t for streams.
+std::ostream &operator<<(std::ostream &stream, const cpu_set_t &cpuset);
 
 // Creates a cpu_set_t from a list of CPUs.
 inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {

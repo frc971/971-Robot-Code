@@ -1729,5 +1729,39 @@ aos::FlatbufferDetachedBuffer<Configuration> AddChannelToConfiguration(
   return MergeWithConfig(config, new_channel_config);
 }
 
+FlatbufferDetachedBuffer<Configuration> GetPartialConfiguration(
+    const Configuration &configuration,
+    std::function<bool(const Channel &)> should_include_channel) {
+  // create new_configuration1, containing everything except the `channels`
+  // field.
+  FlatbufferDetachedBuffer<Configuration> new_configuration1 =
+      RecursiveCopyFlatBuffer(&configuration);
+  new_configuration1.mutable_message()->clear_channels();
+
+  // create new_configuration2, containing only the `channels` field.
+  flatbuffers::FlatBufferBuilder fbb;
+  std::vector<flatbuffers::Offset<Channel>> new_channels_vec;
+  for (const auto &channel : *configuration.channels()) {
+    CHECK_NOTNULL(channel);
+    if (should_include_channel(*channel)) {
+      new_channels_vec.push_back(RecursiveCopyFlatBuffer(channel, &fbb));
+    }
+  }
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
+      new_channels_offset = fbb.CreateVector(new_channels_vec);
+  Configuration::Builder new_configuration2_builder(fbb);
+  new_configuration2_builder.add_channels(new_channels_offset);
+  fbb.Finish(new_configuration2_builder.Finish());
+  FlatbufferDetachedBuffer<Configuration> new_configuration2 = fbb.Release();
+
+  // Merge the configuration containing channels with the configuration
+  // containing everything else, creating a complete configuration.
+  const aos::FlatbufferDetachedBuffer<Configuration> raw_subset_configuration =
+      MergeFlatBuffers(&new_configuration1.message(),
+                       &new_configuration2.message());
+
+  // Use MergeConfiguration to clean up redundant schemas.
+  return configuration::MergeConfiguration(raw_subset_configuration);
+}
 }  // namespace configuration
 }  // namespace aos

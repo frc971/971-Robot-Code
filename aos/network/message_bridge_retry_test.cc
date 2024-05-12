@@ -38,25 +38,25 @@ void SendPing(aos::Sender<examples::Ping> *sender, int value) {
 TEST_P(MessageBridgeParameterizedTest, ReliableRetries) {
   // Set an absurdly small wmem max. This will help to trigger retries.
   FLAGS_force_wmem_max = 1024;
-  OnPi1();
+  pi1_.OnPi();
 
   FLAGS_application_name = "sender";
-  aos::ShmEventLoop send_event_loop(&config.message());
+  aos::ShmEventLoop send_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
   SendPing(&ping_sender, 1);
   aos::Fetcher<ServerStatistics> pi1_server_statistics_fetcher =
       send_event_loop.MakeFetcher<ServerStatistics>("/aos");
 
-  MakePi1Server();
-  MakePi1Client();
+  pi1_.MakeServer();
+  pi1_.MakeClient();
 
   // Now do it for "raspberrypi2", the client.
-  OnPi2();
+  pi2_.OnPi();
 
-  MakePi2Server();
+  pi2_.MakeServer();
 
-  aos::ShmEventLoop receive_event_loop(&config.message());
+  aos::ShmEventLoop receive_event_loop(&config_.message());
   aos::Fetcher<examples::Ping> ping_fetcher =
       receive_event_loop.MakeFetcher<examples::Ping>("/test");
   aos::Fetcher<ClientStatistics> pi2_client_statistics_fetcher =
@@ -66,15 +66,15 @@ TEST_P(MessageBridgeParameterizedTest, ReliableRetries) {
   EXPECT_FALSE(ping_fetcher.Fetch());
 
   // Spin up the persistent pieces.
-  StartPi1Server();
-  StartPi1Client();
-  StartPi2Server();
+  pi1_.StartServer();
+  pi1_.StartClient();
+  pi2_.StartServer();
 
   {
     constexpr size_t kNumPingMessages = 25;
     // Now, spin up a client for 2 seconds.
-    MakePi2Client();
-    StartPi2Client();
+    pi2_.MakeClient();
+    pi2_.StartClient();
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
@@ -85,7 +85,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableRetries) {
     // Give plenty of time for retries to succeed.
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    StopPi2Client();
+    pi2_.StopClient();
 
     // Confirm there is no detected duplicate packet.
     EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
@@ -124,9 +124,9 @@ TEST_P(MessageBridgeParameterizedTest, ReliableRetries) {
   }
 
   // Shut everyone else down.
-  StopPi1Client();
-  StopPi2Server();
-  StopPi1Server();
+  pi1_.StopClient();
+  pi2_.StopServer();
+  pi1_.StopServer();
 }
 
 INSTANTIATE_TEST_SUITE_P(MessageBridgeTests, MessageBridgeParameterizedTest,

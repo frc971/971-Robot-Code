@@ -90,7 +90,8 @@ ServerConnection *FindServerConnection(ServerStatistics *statistics,
 }  // namespace
 
 MessageBridgeServerStatus::MessageBridgeServerStatus(
-    aos::EventLoop *event_loop, std::function<void()> send_data)
+    aos::EventLoop *event_loop,
+    std::function<void(uint32_t, monotonic_clock::time_point)> send_data)
     : event_loop_(event_loop),
       sender_(event_loop_->MakeSender<ServerStatistics>("/aos")),
       statistics_(MakeServerStatistics(
@@ -100,7 +101,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       client_statistics_fetcher_(
           event_loop_->MakeFetcher<ClientStatistics>("/aos")),
       timestamp_sender_(event_loop_->MakeSender<Timestamp>("/aos")),
-      send_data_(send_data) {
+      send_data_(std::move(send_data)) {
   server_connection_offsets_.reserve(
       statistics_.message().connections()->size());
   client_offsets_.reserve(statistics_.message().connections()->size());
@@ -484,7 +485,8 @@ void MessageBridgeServerStatus::Tick() {
     // Since we are building up the timestamp to send here, we need to trigger
     // the SendData call ourselves.
     if (send_data_) {
-      send_data_();
+      send_data_(timestamp_sender_.sent_queue_index(),
+                 timestamp_sender_.monotonic_sent_time());
     }
   }
 }
@@ -504,6 +506,50 @@ void MessageBridgeServerStatus::EnableStatistics() {
   CHECK(timestamp_sender_.valid());
   statistics_timer_->Schedule(event_loop_->monotonic_now() + kPingPeriod,
                               kPingPeriod);
+}
+
+void MessageBridgeServerStatus::MaybeIncrementInvalidConnectionCount(
+    const Node *node) {
+  increment_invalid_connection_count();
+
+  if (node == nullptr) {
+    return;
+  }
+
+  if (!node->has_name()) {
+    return;
+  }
+
+  const aos::Node *client_node = configuration::GetNode(
+      event_loop_->configuration(), node->name()->string_view());
+
+  if (client_node == nullptr) {
+    return;
+  }
+
+  const int node_index =
+      configuration::GetNodeIndex(event_loop_->configuration(), client_node);
+
+  const std::vector<std::optional<MessageBridgeServerStatus::NodeState>>
+      &server_nodes = nodes();
+  // There is a chance that there is no server node for the given client
+  // `node_index`. This can happen if the other node has a different
+  // configuration such that it starts forwarding messages to the current node,
+  // but the current node's configuration does not expect messages from the
+  // other node. This is likely to happen during a multi-node software update
+  // where the other node has been updated with a different config, while the
+  // current node's update hasn't yet completed. In such cases, we want to
+  // ensure that a server node exists before attempting to access it.
+  if (!server_nodes[node_index]) {
+    return;
+  }
+  ServerConnection *connection =
+      server_nodes[node_index].value().server_connection;
+
+  if (connection != nullptr) {
+    connection->mutate_invalid_connection_count(
+        connection->invalid_connection_count() + 1);
+  }
 }
 
 }  // namespace aos::message_bridge

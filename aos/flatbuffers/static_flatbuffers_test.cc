@@ -1094,4 +1094,58 @@ TEST_F(StaticFlatbuffersTest, IncludeReflectionTypes) {
   VerifyJson<::aos::testing::UseSchemaStatic>("{\n\n}");
 }
 
+// Tests that we can use the move constructor on a Builder.
+TEST_F(StaticFlatbuffersTest, BuilderMoveConstructor) {
+  uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
+  aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
+  Builder<TestTableStatic> builder_from(&allocator);
+  Builder<TestTableStatic> builder(std::move(builder_from));
+  TestTableStatic *object = builder.get();
+  object->set_scalar(123);
+  {
+    auto vector = object->add_vector_of_scalars();
+    ASSERT_TRUE(vector->emplace_back(4));
+    ASSERT_TRUE(vector->emplace_back(5));
+  }
+  {
+    auto string = object->add_string();
+    string->SetString("Hello, World!");
+  }
+  {
+    auto vector_of_strings = object->add_vector_of_strings();
+    auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+    ASSERT_TRUE(sub_string->emplace_back('D'));
+  }
+  { object->set_substruct({971, 254}); }
+  {
+    auto subtable = object->add_subtable();
+    subtable->set_foo(1234);
+  }
+  {
+    auto vector = object->add_vector_of_structs();
+    ASSERT_TRUE(vector->emplace_back({48, 67}));
+    ASSERT_TRUE(vector->emplace_back({118, 148}));
+    ASSERT_TRUE(vector->emplace_back({971, 973}));
+    // Max vector size is three; this should fail.
+    ASSERT_FALSE(vector->emplace_back({1114, 2056}));
+    // We don't have any extra space available.
+    ASSERT_FALSE(vector->reserve(4));
+    ASSERT_FALSE(vector->emplace_back({1114, 2056}));
+  }
+  {
+    auto vector = object->add_vector_of_tables();
+    auto subobject = vector->emplace_back();
+    subobject->set_foo(222);
+  }
+  {
+    auto subtable = object->add_included_table();
+    subtable->set_foo(included::TestEnum::B);
+  }
+  ASSERT_TRUE(builder.AsFlatbufferSpan().Verify());
+  VLOG(1) << aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
+                                   {.multi_line = true});
+  VLOG(1) << AnnotateBinaries(test_schema_, builder.buffer());
+  TestMemory(builder.buffer());
+}
+
 }  // namespace aos::fbs::testing

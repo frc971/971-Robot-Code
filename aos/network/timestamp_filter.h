@@ -469,63 +469,11 @@ class NoncausalTimestampFilter {
   // because solving for them doesn't add any additional value.  We will already
   // be solving the other direction.
   std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
-  Observe() const {
-    if (filters_.size() == 0u) {
-      return std::nullopt;
-    }
-
-    size_t current_filter = std::max(static_cast<ssize_t>(0), current_filter_);
-    while (true) {
-      const BootFilter &filter = *filters_[current_filter];
-      std::optional<
-          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-          result = filter.filter.Observe();
-      if (!result) {
-        if (current_filter + 1 == filters_.size()) {
-          return std::nullopt;
-        } else {
-          ++current_filter;
-          continue;
-        }
-      }
-      return std::make_tuple(
-          logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
-                                std::get<0>(*result)},
-          logger::BootDuration{static_cast<size_t>(filter.boot.second),
-                               std::get<1>(*result)});
-    }
-  }
+  Observe() const;
   // Returns the next timestamp in the queue if available, incrementing the
   // pointer.
   std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
-  Consume() {
-    if (filters_.size() == 0u) {
-      return std::nullopt;
-    }
-    DCHECK_LT(current_filter_, static_cast<ssize_t>(filters_.size()));
-
-    while (true) {
-      std::optional<
-          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-          result =
-              current_filter_ < 0 ? std::nullopt
-                                  : filters_[current_filter_]->filter.Consume();
-      if (!result) {
-        if (static_cast<size_t>(current_filter_ + 1) == filters_.size()) {
-          return std::nullopt;
-        } else {
-          ++current_filter_;
-          continue;
-        }
-      }
-      BootFilter &filter = *filters_[current_filter_];
-      return std::make_tuple(
-          logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
-                                std::get<0>(*result)},
-          logger::BootDuration{static_cast<size_t>(filter.boot.second),
-                               std::get<1>(*result)});
-    }
-  }
+  Consume();
 
   // Public for testing.
   // Assuming that there are at least 2 points in timestamps_, finds the 2
@@ -736,8 +684,8 @@ class NoncausalTimestampFilter {
                           aos::monotonic_clock::time_point tb_base, double tb,
                           bool validate_popped, bool quiet) const;
 
-    void Sample(monotonic_clock::time_point monotonic_now,
-                std::chrono::nanoseconds sample_ns);
+    void Sample(logger::BootTimestamp monotonic_now,
+                logger::BootDuration sample_ns);
 
    private:
     std::string node_names_;

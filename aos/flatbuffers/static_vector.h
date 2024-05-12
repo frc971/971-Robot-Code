@@ -291,6 +291,9 @@ class Vector : public ResizeableObject {
   // if the allocation failed for some reason.
   // Note that reductions in size will not currently result in the allocated
   // size actually changing.
+  // For vectors of non-inline types (e.g., vectors of strings or vectors of
+  // tables), reserve() will allocate memory in an internal vector that we use
+  // for storing some metadata.
   [[nodiscard]] bool reserve(size_t new_length) {
     if (new_length > allocated_length_) {
       const size_t new_elements = new_length - allocated_length_;

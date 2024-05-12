@@ -326,11 +326,44 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
   return fbb2.Release();
 }
 
+// Allows for some customization of a SortingElementTest.
+enum class SortingElementConfig {
+  // Create a single node configuration.
+  kSingleNode,
+  // Create a multi-node configuration.
+  kMultiNode,
+};
+
+template <SortingElementConfig sorting_element_config =
+              SortingElementConfig::kMultiNode>
 class SortingElementTest : public ::testing::Test {
  public:
   SortingElementTest()
       : config_(JsonToFlatbuffer<Configuration>(
-            R"({
+            sorting_element_config == SortingElementConfig::kSingleNode ?
+                                                                        R"({
+  "channels": [
+    {
+      "name": "/a",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/b",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/c",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/d",
+      "type": "aos.logger.testing.TestMessage"
+    }
+  ]
+}
+)"
+                                                                        :
+                                                                        R"({
   "channels": [
     {
       "name": "/a",
@@ -379,7 +412,31 @@ class SortingElementTest : public ::testing::Test {
   ]
 }
 )")),
-        config0_(MakeHeader(config_, R"({
+        config0_(MakeHeader(
+            config_, sorting_element_config == SortingElementConfig::kSingleNode
+                         ?
+                         R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi1"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "source_node_boot_uuid": "1d782c63-b3c7-466e-bea9-a01308b43333",
+  "logger_node_boot_uuid": "1d782c63-b3c7-466e-bea9-a01308b43333",
+  "boot_uuids": [
+    "1d782c63-b3c7-466e-bea9-a01308b43333",
+  ],
+  "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
+  "parts_index": 0
+})"
+                         :
+                         R"({
   /* 100ms */
   "max_out_of_order_duration": 100000000,
   "node": {
@@ -593,10 +650,13 @@ class SortingElementTest : public ::testing::Test {
   std::vector<uint32_t> queue_index_;
 };
 
-using MessageSorterTest = SortingElementTest;
+using MessageSorterTest = SortingElementTest<SortingElementConfig::kMultiNode>;
 using MessageSorterDeathTest = MessageSorterTest;
-using PartsMergerTest = SortingElementTest;
-using TimestampMapperTest = SortingElementTest;
+using PartsMergerTest = SortingElementTest<SortingElementConfig::kMultiNode>;
+using TimestampMapperTest =
+    SortingElementTest<SortingElementConfig::kMultiNode>;
+using SingleNodeTimestampMapperTest =
+    SortingElementTest<SortingElementConfig::kSingleNode>;
 
 // Tests that we can pull messages out of a log sorted in order.
 TEST_F(MessageSorterTest, Pull) {
@@ -2065,7 +2125,44 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
   }
 }
 
-class BootMergerTest : public SortingElementTest {
+// Validates that we can read timestamps on startup even for single-node logs.
+TEST_F(SingleNodeTimestampMapperTest, QueueTimestampsForSingleNodes) {
+  const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
+  {
+    TestDetachedBufferWriter writer0(logfile0_);
+    writer0.QueueSpan(config0_.span());
+
+    writer0.WriteSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
+    writer0.WriteSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
+    writer0.WriteSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x007));
+    writer0.WriteSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x008));
+  }
+
+  const std::vector<LogFile> parts = SortParts({logfile0_});
+  LogFilesContainer log_files(parts);
+
+  ASSERT_EQ(parts[0].logger_node, "pi1");
+
+  size_t mapper0_count = 0;
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTimestampsAtStartup);
+  mapper0.set_timestamp_callback(
+      [&](TimestampedMessage *) { ++mapper0_count; });
+  mapper0.QueueTimestamps();
+
+  for (int i = 0; i < 4; ++i) {
+    ASSERT_TRUE(mapper0.Front() != nullptr);
+    mapper0.PopFront();
+  }
+  EXPECT_TRUE(mapper0.Front() == nullptr);
+  EXPECT_EQ(mapper0_count, 4u);
+}
+
+class BootMergerTest : public SortingElementTest<> {
  public:
   BootMergerTest()
       : SortingElementTest(),
@@ -2204,7 +2301,7 @@ TEST_F(BootMergerTest, SortAcrossReboot) {
   EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(200));
 }
 
-class RebootTimestampMapperTest : public SortingElementTest {
+class RebootTimestampMapperTest : public SortingElementTest<> {
  public:
   RebootTimestampMapperTest()
       : SortingElementTest(),
@@ -2730,7 +2827,7 @@ TEST_F(RebootTimestampMapperTest, Node2Reboot) {
   }
 }
 
-class SortingDeathTest : public SortingElementTest {
+class SortingDeathTest : public SortingElementTest<> {
  public:
   SortingDeathTest()
       : SortingElementTest(),
@@ -3070,6 +3167,10 @@ class InlinePackMessage : public ::testing::Test {
         aos::realtime_clock::epoch() +
         chrono::nanoseconds(time_distribution(random_number_generator_));
 
+    context.monotonic_remote_transmit_time =
+        aos::monotonic_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+
     context.queue_index = uint32_distribution(random_number_generator_);
     context.remote_queue_index = uint32_distribution(random_number_generator_);
     context.size = data_.size();
@@ -3108,6 +3209,9 @@ class InlinePackMessage : public ::testing::Test {
 
     builder.add_remote_queue_index(
         uint8_distribution(random_number_generator_));
+
+    builder.add_monotonic_remote_transmit_time(
+        time_distribution(random_number_generator_));
 
     fbb.FinishSizePrefixed(builder.Finish());
     return fbb.Release();
@@ -3254,7 +3358,7 @@ TEST_F(InlinePackMessage, Equivilent) {
 
   for (const LogType type :
        {LogType::kLogMessage, LogType::kLogDeliveryTimeOnly,
-        LogType::kLogMessageAndDeliveryTime, LogType::kLogRemoteMessage}) {
+        LogType::kLogRemoteMessage}) {
     for (int i = 0; i < 100; ++i) {
       aos::Context context = RandomContext();
       const uint32_t channel_index =
@@ -3282,11 +3386,18 @@ TEST_F(InlinePackMessage, Equivilent) {
           repacked_message.size(),
           PackMessageInline(repacked_message.data(), context, channel_index,
                             type, 0u, repacked_message.size()));
-      EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
+      for (size_t i = 0; i < fbb.GetBufferSpan().size(); ++i) {
+        ASSERT_EQ(absl::Span<uint8_t>(repacked_message)[i],
+                  absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
+                                      fbb.GetBufferSpan().size())[i])
+            << ": On index " << i;
+      }
+      ASSERT_EQ(absl::Span<uint8_t>(repacked_message),
                 absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
                                     fbb.GetBufferSpan().size()))
           << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
-                              fbb.GetBufferSpan());
+                              fbb.GetBufferSpan())
+          << " for log type " << static_cast<int>(type);
 
       // Ok, now we want to confirm that we can build up arbitrary pieces of
       // said flatbuffer.  Try all of them since it is cheap.

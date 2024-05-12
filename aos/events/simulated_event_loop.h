@@ -245,6 +245,10 @@ class NodeEventLoopFactory {
   template <class Main, class... Args>
   Main *AlwaysStart(std::string_view name, Args &&...args);
 
+  // Stops an application given the pointer to the application started.
+  template <class Main>
+  void Stop(Main *application);
+
   // Returns the simulated network delay for messages forwarded between nodes.
   std::chrono::nanoseconds network_delay() const {
     return factory_->network_delay();
@@ -341,6 +345,8 @@ class NodeEventLoopFactory {
         : event_loop(node_factory->MakeEventLoop(name)) {}
     virtual ~Application() {}
 
+    virtual void *application() = 0;
+
     std::unique_ptr<EventLoop> event_loop;
   };
 
@@ -364,6 +370,8 @@ class NodeEventLoopFactory {
               << name << "\"";
     }
     ~TypedApplication() override {}
+
+    void *application() override { return &main; }
 
     Main main;
   };
@@ -390,6 +398,16 @@ Main *NodeEventLoopFactory::AlwaysStart(std::string_view name, Args &&...args) {
   Main *main_ptr = &app->main;
   applications_.emplace_back(std::move(app));
   return main_ptr;
+}
+
+template <class Main>
+void NodeEventLoopFactory::Stop(Main *application) {
+  auto it = std::remove_if(
+      applications_.begin(), applications_.end(),
+      [application](const std::unique_ptr<Application> &app) {
+        return app->application() == static_cast<void *>(application);
+      });
+  applications_.erase(it, applications_.end());
 }
 
 inline monotonic_clock::time_point NodeEventLoopFactory::monotonic_now() const {

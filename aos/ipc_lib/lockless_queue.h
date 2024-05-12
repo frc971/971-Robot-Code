@@ -91,6 +91,7 @@ struct Message {
     // passed through.
     monotonic_clock::time_point monotonic_remote_time;
     realtime_clock::time_point realtime_remote_time;
+    monotonic_clock::time_point monotonic_remote_transmit_time;
 
     // Queue index from the remote node.
     uint32_t remote_queue_index;
@@ -326,6 +327,7 @@ class LocklessQueueSender {
   LocklessQueueSender::Result Send(
       size_t length, monotonic_clock::time_point monotonic_remote_time,
       realtime_clock::time_point realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
       uint32_t remote_queue_index, const UUID &source_boot_uuid,
       monotonic_clock::time_point *monotonic_sent_time = nullptr,
       realtime_clock::time_point *realtime_sent_time = nullptr,
@@ -336,6 +338,7 @@ class LocklessQueueSender {
       const char *data, size_t length,
       monotonic_clock::time_point monotonic_remote_time,
       realtime_clock::time_point realtime_remote_time,
+      monotonic_clock::time_point monotonic_remote_transmit_time,
       uint32_t remote_queue_index, const UUID &source_boot_uuid,
       monotonic_clock::time_point *monotonic_sent_time = nullptr,
       realtime_clock::time_point *realtime_sent_time = nullptr,
@@ -442,6 +445,7 @@ class LocklessQueueReader {
       uint32_t queue_index, monotonic_clock::time_point *monotonic_sent_time,
       realtime_clock::time_point *realtime_sent_time,
       monotonic_clock::time_point *monotonic_remote_time,
+      monotonic_clock::time_point *monotonic_remote_transmit_time,
       realtime_clock::time_point *realtime_remote_time,
       uint32_t *remote_queue_index, UUID *source_boot_uuid, size_t *length,
       char *data,

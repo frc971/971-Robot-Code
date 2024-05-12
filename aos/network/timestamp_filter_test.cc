@@ -797,9 +797,10 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tb, {0, monotonic_clock::min_time});
 
     EXPECT_DEATH({ filter.Sample(tb, oa); },
-                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "monotonic_now.time > frozen_time_ \\(0.100000000sec vs. "
                  "0.100000000sec\\) : test_a -> test_b Tried to insert "
-                 "0.100000000sec before the frozen time of 0.100000000sec.  "
+                 "\\{.boot=0, .time=0.100000000sec\\} before the frozen time "
+                 "of 0.100000000sec.  "
                  "Increase --time_estimation_buffer_seconds to greater than 0");
   }
 
@@ -816,7 +817,8 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
         { filter.Sample(tc, oc); },
         "test_a -> test_b Returned a horizontal line previously and then got a "
         "new sample at "
-        "0.200000000sec, 0.2 seconds after the last sample at 0.000000000sec");
+        "\\{.boot=0, .time=0.200000000sec\\}, 0.2 seconds after the last "
+        "sample at 0.000000000sec");
   }
 
   {
@@ -830,9 +832,10 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
 
     EXPECT_DEATH(
         { filter.Sample(tb, ob); },
-        "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+        "monotonic_now.time > frozen_time_ \\(0.100000000sec vs. "
         "0.200000000sec\\) : test_a -> test_b Tried to insert "
-        "0.100000000sec before the frozen time of 0.200000000sec.  "
+        "\\{.boot=0, .time=0.100000000sec\\} before the frozen time of "
+        "0.200000000sec.  "
         "Increase --time_estimation_buffer_seconds to greater than 0.1");
   }
 
@@ -848,9 +851,10 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tb, {0, monotonic_clock::min_time});
 
     EXPECT_DEATH({ filter.Sample(tb, oa); },
-                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "monotonic_now.time > frozen_time_ \\(0.100000000sec vs. "
                  "0.100000000sec\\) : test_a -> test_b Tried to insert "
-                 "0.100000000sec before the frozen time of 0.100000000sec.  "
+                 "\\{.boot=0, .time=0.100000000sec\\} before the frozen time "
+                 "of 0.100000000sec.  "
                  "Increase --time_estimation_buffer_seconds to greater than 0");
     EXPECT_DEATH({ filter.Sample(tb + chrono::nanoseconds(1), oa); },
                  "test_a -> test_b Can't pop an already frozen sample");

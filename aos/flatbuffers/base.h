@@ -99,13 +99,7 @@ class ResizeableObject {
   // Users do not end up using the move constructor; however, it is needed to
   // handle the fact that a ResizeableObject may be a member of an std::vector
   // in the various generated types.
-  ResizeableObject(ResizeableObject &&other)
-      : buffer_(other.buffer_),
-        owned_allocator_(std::move(other.owned_allocator_)),
-        allocator_(owned_allocator_.get()) {
-    other.buffer_ = {};
-    other.allocator_ = nullptr;
-  }
+  ResizeableObject(ResizeableObject &&other);
   // Required alignment of this object.
   virtual size_t Alignment() const = 0;
   // Offset from the start of buffer() to the actual start of the object in

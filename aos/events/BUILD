@@ -509,10 +509,11 @@ cc_test(
         ":multinode_pingpong_test_combined_config",
         ":multinode_pingpong_test_split_config",
     ],
-    shard_count = 4,
+    shard_count = 16,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",
+        ":function_scheduler",
         ":message_counter",
         ":ping_lib",
         ":pong_lib",
@@ -742,6 +743,17 @@ cc_binary(
         "//aos:init",
         "//aos/events/logging:log_reader",
     ],
+)
+
+cc_library(
+    name = "function_scheduler",
+    srcs = [
+        "function_scheduler.cc",
+    ],
+    hdrs = [
+        "function_scheduler.h",
+    ],
+    deps = [":event_loop"],
 )
 
 cc_binary(

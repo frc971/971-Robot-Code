@@ -83,9 +83,11 @@ RawSender::~RawSender() { event_loop_->DeleteSender(this); }
 RawSender::Error RawSender::DoSend(
     const SharedSpan data, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_transmit_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   return DoSend(data->data(), data->size(), monotonic_remote_time,
-                realtime_remote_time, remote_queue_index, source_boot_uuid);
+                realtime_remote_time, monotonic_remote_transmit_time,
+                remote_queue_index, source_boot_uuid);
 }
 
 void RawSender::RecordSendResult(const Error error, size_t message_size) {
@@ -113,6 +115,7 @@ RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
       timing_(event_loop_->ChannelIndex(channel)) {
   context_.monotonic_event_time = monotonic_clock::min_time;
   context_.monotonic_remote_time = monotonic_clock::min_time;
+  context_.monotonic_remote_transmit_time = monotonic_clock::min_time;
   context_.realtime_event_time = realtime_clock::min_time;
   context_.realtime_remote_time = realtime_clock::min_time;
   context_.queue_index = 0xffffffff;
@@ -628,6 +631,7 @@ EventLoopEvent *EventLoop::PopEvent() {
 void EventLoop::ClearContext() {
   context_.monotonic_event_time = monotonic_clock::min_time;
   context_.monotonic_remote_time = monotonic_clock::min_time;
+  context_.monotonic_remote_transmit_time = monotonic_clock::min_time;
   context_.realtime_event_time = realtime_clock::min_time;
   context_.realtime_remote_time = realtime_clock::min_time;
   context_.queue_index = 0xffffffffu;
@@ -642,6 +646,7 @@ void EventLoop::SetTimerContext(
     monotonic_clock::time_point monotonic_event_time) {
   context_.monotonic_event_time = monotonic_event_time;
   context_.monotonic_remote_time = monotonic_clock::min_time;
+  context_.monotonic_remote_transmit_time = monotonic_clock::min_time;
   context_.realtime_event_time = realtime_clock::min_time;
   context_.realtime_remote_time = realtime_clock::min_time;
   context_.queue_index = 0xffffffffu;

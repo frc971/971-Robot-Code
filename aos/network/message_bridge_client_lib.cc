@@ -97,6 +97,7 @@ MakeMessageHeaderReply() {
   message_header_builder.add_queue_index(0);
   message_header_builder.add_monotonic_remote_time(0);
   message_header_builder.add_realtime_remote_time(0);
+  message_header_builder.add_monotonic_remote_transmit_time(0);
   message_header_builder.add_remote_queue_index(0);
   fbb.Finish(message_header_builder.Finish());
 
@@ -323,12 +324,14 @@ void SctpClientConnection::HandleData(const Message *message) {
             chrono::nanoseconds(remote_data->monotonic_sent_time())),
         realtime_clock::time_point(
             chrono::nanoseconds(remote_data->realtime_sent_time())),
+        monotonic_clock::time_point(
+            chrono::nanoseconds(remote_data->monotonic_remote_transmit_time())),
         remote_data->queue_index(), remote_boot_uuid));
 
     client_status_->SampleFilter(
         client_index_,
         monotonic_clock::time_point(
-            chrono::nanoseconds(remote_data->monotonic_sent_time())),
+            chrono::nanoseconds(remote_data->monotonic_remote_transmit_time())),
         sender->monotonic_sent_time(), remote_boot_uuid);
 
     if (stream_reply_with_timestamp_[stream]) {
@@ -339,6 +342,8 @@ void SctpClientConnection::HandleData(const Message *message) {
           .queue_index = remote_data->queue_index(),
           .monotonic_remote_time =
               sender->monotonic_sent_time().time_since_epoch().count(),
+          .monotonic_remote_transmit_time =
+              remote_data->monotonic_remote_transmit_time(),
           .realtime_remote_time =
               sender->realtime_sent_time().time_since_epoch().count(),
           .remote_queue_index = sender->sent_queue_index(),
@@ -402,6 +407,9 @@ bool SctpClientConnection::SendTimestamp(SavedTimestamp timestamp) {
       timestamp.channel_index);
   message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
       timestamp.monotonic_sent_time);
+  message_reception_reply_.mutable_message()
+      ->mutate_monotonic_remote_transmit_time(
+          timestamp.monotonic_remote_transmit_time);
   message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
       timestamp.realtime_sent_time);
   message_reception_reply_.mutable_message()->mutate_queue_index(

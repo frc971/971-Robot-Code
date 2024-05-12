@@ -45,9 +45,9 @@ TEST_F(FlatbufferIntrospectionTest, IntegerTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out,
-            "{\"foo_bool\": true, \"foo_byte\": -5, \"foo_int\": -20, "
+            "{ \"foo_bool\": true, \"foo_byte\": -5, \"foo_int\": -20, "
             "\"foo_long\": -100, \"foo_short\": -10, \"foo_ubyte\": 5, "
-            "\"foo_uint\": 20, \"foo_ulong\": 100, \"foo_ushort\": 10}");
+            "\"foo_uint\": 20, \"foo_ulong\": 100, \"foo_ushort\": 10 }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, FloatTest) {
@@ -62,7 +62,7 @@ TEST_F(FlatbufferIntrospectionTest, FloatTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out,
-            "{\"foo_double\": 0.555555555555556, \"foo_float\": 0.333333}");
+            "{ \"foo_double\": 0.555555555555556, \"foo_float\": 0.333333 }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, NanFloatTest) {
@@ -76,7 +76,7 @@ TEST_F(FlatbufferIntrospectionTest, NanFloatTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"foo_double\": null, \"foo_float\": null}");
+  EXPECT_EQ(out, "{ \"foo_double\": nan, \"foo_float\": nan }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, VectorScalarTest) {
@@ -129,18 +129,18 @@ TEST_F(FlatbufferIntrospectionTest, VectorScalarTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(
-      out,
-      "{\"vector_foo_bool\": [true, false, true, false], \"vector_foo_byte\": "
-      "[-3, -2, -1, 0, 1, 2, 3], \"vector_foo_double\": [0, 0.111111111111111, "
-      "0.222222222222222, 0.333333333333333], \"vector_foo_float\": [0, "
-      "0.111111, 0.222222, 0.333333], \"vector_foo_int\": [-300, -200, -100, "
-      "0, 100, 200, 300], \"vector_foo_long\": [-3000, -2000, -1000, 0, 1000, "
-      "2000, 3000], \"vector_foo_short\": [-30, -20, -10, 0, 10, 20, 30], "
-      "\"vector_foo_ubyte\": [0, 1, 2, 3, 4, 5, 6], \"vector_foo_uint\": [0, "
-      "100, 200, 300, 400, 500, 600], \"vector_foo_ulong\": [0, 1000, 2000, "
-      "3000, 4000, 5000, 6000], \"vector_foo_ushort\": [0, 10, 20, 30, 40, 50, "
-      "60]}");
+  EXPECT_EQ(out,
+            "{ \"vector_foo_bool\": [ true, false, true, false ], "
+            "\"vector_foo_byte\": [ -3, -2, -1, 0, 1, 2, 3 ], "
+            "\"vector_foo_double\": [ 0, 0.111111111111111, 0.222222222222222, "
+            "0.333333333333333 ], \"vector_foo_float\": [ 0, 0.111111, "
+            "0.222222, 0.333333 ], \"vector_foo_int\": [ -300, -200, -100, 0, "
+            "100, 200, 300 ], \"vector_foo_long\": [ -3000, -2000, -1000, 0, "
+            "1000, 2000, 3000 ], \"vector_foo_short\": [ -30, -20, -10, 0, 10, "
+            "20, 30 ], \"vector_foo_ubyte\": [ 0, 1, 2, 3, 4, 5, 6 ], "
+            "\"vector_foo_uint\": [ 0, 100, 200, 300, 400, 500, 600 ], "
+            "\"vector_foo_ulong\": [ 0, 1000, 2000, 3000, 4000, 5000, 6000 ], "
+            "\"vector_foo_ushort\": [ 0, 10, 20, 30, 40, 50, 60 ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, StringTest) {
@@ -155,7 +155,7 @@ TEST_F(FlatbufferIntrospectionTest, StringTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"foo_string\": \"I <3 FlatBuffers!\"}");
+  EXPECT_EQ(out, "{ \"foo_string\": \"I <3 FlatBuffers!\" }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, EnumTest) {
@@ -168,7 +168,7 @@ TEST_F(FlatbufferIntrospectionTest, EnumTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"foo_enum\": \"UShort\"}");
+  EXPECT_EQ(out, "{ \"foo_enum\": \"UShort\" }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, EnumWithUnknownValueTest) {
@@ -183,7 +183,7 @@ TEST_F(FlatbufferIntrospectionTest, EnumWithUnknownValueTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"foo_enum\": 123}");
+  EXPECT_EQ(out, "{ \"foo_enum\": 123 }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, VectorStringTest) {
@@ -221,10 +221,11 @@ TEST_F(FlatbufferIntrospectionTest, VectorStringTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out,
-            "{\"vector_foo_string\": [\"abc\", \"acb\"], \"vov\": {\"v\": "
-            "[{\"str\": [\"abc\", \"acb\"]}, {\"str\": [\"bac\", \"bca\"]}, "
-            "{\"str\": [\"cab\", \"cba\"]}]}}");
+  EXPECT_EQ(
+      out,
+      "{ \"vector_foo_string\": [ \"abc\", \"acb\" ], \"vov\": { \"v\": "
+      "[ { \"str\": [ \"abc\", \"acb\" ] }, { \"str\": [ \"bac\", \"bca\" ] }, "
+      "{ \"str\": [ \"cab\", \"cba\" ] } ] } }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, TableTest) {
@@ -254,10 +255,10 @@ TEST_F(FlatbufferIntrospectionTest, TableTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out,
-            "{\"foo_byte\": 5, \"foo_string\": \"Root Config String\", "
-            "\"nested_config\": {\"foo_byte\": 10, \"foo_string\": \"Nested "
-            "Config String\", \"vector_foo_byte\": [6, 7, 8, 9, 10]}, "
-            "\"vector_foo_byte\": [0, 1, 2, 3, 4, 5]}");
+            "{ \"foo_byte\": 5, \"foo_string\": \"Root Config String\", "
+            "\"nested_config\": { \"foo_byte\": 10, \"foo_string\": \"Nested "
+            "Config String\", \"vector_foo_byte\": [ 6, 7, 8, 9, 10 ] }, "
+            "\"vector_foo_byte\": [ 0, 1, 2, 3, 4, 5 ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, StructTest) {
@@ -275,8 +276,8 @@ TEST_F(FlatbufferIntrospectionTest, StructTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out,
-            "{\"foo_struct\": {\"foo_byte\": 5, \"nested_struct\": "
-            "{\"foo_byte\": 10}}}");
+            "{ \"foo_struct\": { \"foo_byte\": 5, \"nested_struct\": "
+            "{ \"foo_byte\": 10 } } }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, VectorStructTest) {
@@ -295,9 +296,9 @@ TEST_F(FlatbufferIntrospectionTest, VectorStructTest) {
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
   EXPECT_EQ(out,
-            "{\"vector_foo_struct\": [{\"foo_byte\": 5, \"nested_struct\": "
-            "{\"foo_byte\": 1}}, {\"foo_byte\": 10, \"nested_struct\": "
-            "{\"foo_byte\": 1}}]}");
+            "{ \"vector_foo_struct\": [ { \"foo_byte\": 5, \"nested_struct\": "
+            "{ \"foo_byte\": 1 } }, { \"foo_byte\": 10, \"nested_struct\": "
+            "{ \"foo_byte\": 1 } } ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, VectorEnumTest) {
@@ -313,7 +314,7 @@ TEST_F(FlatbufferIntrospectionTest, VectorEnumTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"vector_foo_enum\": [\"UShort\", \"Obj\", \"UInt\"]}");
+  EXPECT_EQ(out, "{ \"vector_foo_enum\": [ \"UShort\", \"Obj\", \"UInt\" ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, StructEnumTest) {
@@ -328,7 +329,7 @@ TEST_F(FlatbufferIntrospectionTest, StructEnumTest) {
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
 
-  EXPECT_EQ(out, "{\"foo_struct_enum\": {\"foo_enum\": \"UShort\"}}");
+  EXPECT_EQ(out, "{ \"foo_struct_enum\": { \"foo_enum\": \"UShort\" } }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, StringEscapeTest) {
@@ -342,7 +343,7 @@ TEST_F(FlatbufferIntrospectionTest, StringEscapeTest) {
   builder.Finish(config_builder.Finish());
 
   std::string out = FlatbufferToJson(schema_, builder.GetBufferPointer());
-  EXPECT_EQ(out, "{\"foo_string\": \"\\\"\\\\\\b\\f\\n\\r\\t\"}");
+  EXPECT_EQ(out, "{ \"foo_string\": \"\\\"\\\\\\b\\f\\n\\r\\t\" }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
@@ -362,7 +363,7 @@ TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
   std::string out =
       FlatbufferToJson(schema_, builder.GetBufferPointer(),
                        {.multi_line = false, .max_vector_size = 100});
-  EXPECT_EQ(out, "{\"vector_foo_int\": [ \"... 101 elements ...\" ]}");
+  EXPECT_EQ(out, "{ \"vector_foo_int\": [ \"... 101 elements ...\" ] }");
 }
 
 TEST_F(FlatbufferIntrospectionTest, MultilineTest) {
@@ -402,7 +403,7 @@ TEST_F(FlatbufferIntrospectionTest, MultilineStructTest) {
             "{\n"
             "  \"foo_struct\": {\n"
             "    \"foo_byte\": 5,\n"
-            "    \"nested_struct\": {\"foo_byte\": 10}\n"
+            "    \"nested_struct\": { \"foo_byte\": 10 }\n"
             "  }\n"
             "}");
 }
@@ -428,11 +429,11 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorStructTest) {
             "  \"vector_foo_struct\": [\n"
             "    {\n"
             "      \"foo_byte\": 5,\n"
-            "      \"nested_struct\": {\"foo_byte\": 1}\n"
+            "      \"nested_struct\": { \"foo_byte\": 1 }\n"
             "    },\n"
             "    {\n"
             "      \"foo_byte\": 10,\n"
-            "      \"nested_struct\": {\"foo_byte\": 1}\n"
+            "      \"nested_struct\": { \"foo_byte\": 1 }\n"
             "    }\n"
             "  ]\n"
             "}");
@@ -464,10 +465,10 @@ TEST_F(FlatbufferIntrospectionTest, MultilineVectorScalarTest) {
 
   EXPECT_EQ(out,
             "{\n"
-            "  \"vector_foo_double\": [0, 0.111111111111111, "
-            "0.222222222222222, 0.333333333333333],\n"
-            "  \"vector_foo_float\": [0, 0.111111, 0.222222, 0.333333],\n"
-            "  \"vector_foo_int\": [-300, -200, -100, 0, 100, 200, 300]\n"
+            "  \"vector_foo_double\": [ 0, 0.111111111111111, "
+            "0.222222222222222, 0.333333333333333 ],\n"
+            "  \"vector_foo_float\": [ 0, 0.111111, 0.222222, 0.333333 ],\n"
+            "  \"vector_foo_int\": [ -300, -200, -100, 0, 100, 200, 300 ]\n"
             "}");
 }
 
