@@ -361,6 +361,13 @@ class NoncausalTimestampFilter {
                                Pointer pointer, logger::BootTimestamp ta_base,
                                double ta, logger::BootTimestamp tb_base,
                                double tb, size_t node_a, size_t node_b) const;
+  // Returns the string representation of the offset error at the provided
+  // point.
+  std::string DebugOffsetErrorPoints(const NoncausalTimestampFilter *other,
+                                     Pointer pointer,
+                                     logger::BootTimestamp ta_base, double ta,
+                                     logger::BootTimestamp tb_base,
+                                     double tb) const;
 
   // Confirms that the solution meets the constraints.  Returns true on success.
   bool ValidateSolution(const NoncausalTimestampFilter *other, Pointer pointer,
