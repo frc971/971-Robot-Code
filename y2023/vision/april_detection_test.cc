@@ -35,7 +35,9 @@ class AprilDetectionTest : public ::testing::Test {
         constants_sender_(receive_pose_event_loop_.get(),
                           "y2023/constants/constants.json", 7971, "/constants"),
         detector_(
-            AprilRoboticsDetector(send_pose_event_loop_.get(), "/camera")) {}
+            AprilRoboticsDetector(send_pose_event_loop_.get(), "/camera")) {
+    event_loop_factory_.RunFor(std::chrono::milliseconds(5));
+  }
 
   void SendImage(std::string path) {
     aos::FlatbufferVector<frc971::vision::CameraImage> image =
@@ -51,7 +53,7 @@ class AprilDetectionTest : public ::testing::Test {
 
   void TestDistanceAngle(std::string image_path, double expected_distance,
                          double expected_angle) {
-    receive_pose_event_loop_->OnRun([&]() { SendImage(image_path); });
+    SendImage(image_path);
     event_loop_factory_.RunFor(std::chrono::milliseconds(5));
 
     ASSERT_TRUE(april_pose_fetcher_.Fetch());

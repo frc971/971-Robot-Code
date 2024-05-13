@@ -114,8 +114,13 @@ class EventScheduler {
   // entered the running state. Callbacks are cleared after being called once.
   // Will not get called until a node starts (a node does not start until its
   // monotonic clock has reached at least monotonic_clock::epoch()).
-  void ScheduleOnRun(std::function<void()> callback) {
-    on_run_.emplace_back(std::move(callback));
+  void ScheduleOnRun(Event *callback) { on_run_.emplace_back(callback); }
+
+  // Removes an event from the OnRun list without running it.
+  void DeleteOnRun(Event *callback) {
+    auto it = std::find(on_run_.begin(), on_run_.end(), callback);
+    CHECK(it != on_run_.end());
+    on_run_.erase(it);
   }
 
   // Schedules a callback whenever the event scheduler starts, before we have
@@ -220,7 +225,7 @@ class EventScheduler {
   size_t boot_count_ = 0;
 
   // List of functions to run (once) when running.
-  std::vector<std::function<void()>> on_run_;
+  std::vector<Event *> on_run_;
   std::vector<std::function<void()>> on_startup_;
 
   // Multimap holding times to run functions.  These are stored in order, and

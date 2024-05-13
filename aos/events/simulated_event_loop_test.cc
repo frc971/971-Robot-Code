@@ -181,6 +181,66 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
   EXPECT_EQ(test_message_counter2.count(), 0u);
 }
 
+// Test that OnRun callbacks get deleted if the event loop gets deleted.
+TEST(SimulatedEventLoopTest, DestructEventLoopBeforeOnRun) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  {
+    ::std::unique_ptr<EventLoop> test_event_loop =
+        simulated_event_loop_factory.MakeEventLoop("test");
+    test_event_loop->OnRun([]() { LOG(FATAL) << "Don't run this"; });
+  }
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+}
+
+// Tests that the order event loops are created is the order that the OnRun
+// callbacks are run.
+TEST(SimulatedEventLoopTest, OnRunOrderFollowsConstructionOrder) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  int count = 0;
+
+  std::unique_ptr<EventLoop> test1_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("test1");
+  std::unique_ptr<EventLoop> test2_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("test2");
+  test2_event_loop->OnRun([&count]() {
+    EXPECT_EQ(count, 1u);
+    ++count;
+  });
+  test1_event_loop->OnRun([&count]() {
+    EXPECT_EQ(count, 0u);
+    ++count;
+  });
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+
+  EXPECT_EQ(count, 2u);
+}
+
+// Test that we can't register OnRun callbacks after starting.
+TEST(SimulatedEventLoopDeathTest, OnRunAfterRunning) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  std::unique_ptr<EventLoop> test_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("test");
+  test_event_loop->OnRun([]() {});
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+
+  EXPECT_DEATH(test_event_loop->OnRun([]() {}), "OnRun");
+}
+
 // Test that if we configure an event loop to be able to send too fast that we
 // do allow it to do so.
 TEST(SimulatedEventLoopTest, AllowSendTooFast) {

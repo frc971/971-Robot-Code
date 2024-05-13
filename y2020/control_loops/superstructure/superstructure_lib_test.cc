@@ -554,9 +554,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
               expected_voltage);
   }
 
-  void StartSendingFinisherGoals() {
+  void RegisterFinisherGoalsLoop() {
     test_event_loop_->AddPhasedLoop(
         [this](int) {
+          if (!send_finisher_goals_) return;
           auto builder = superstructure_goal_sender_.MakeBuilder();
           auto shooter_goal_builder = builder.MakeBuilder<ShooterGoal>();
           shooter_goal_builder.add_velocity_finisher(finisher_goal_);
@@ -568,6 +569,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         },
         dt());
   }
+
+  void StartSendingFinisherGoals() { send_finisher_goals_ = true; }
 
   // Sets the finisher velocity goal (radians/s)
   void SetFinisherGoalAfter(const double velocity_finisher,
@@ -619,6 +622,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
   double finisher_goal_ = 0;
   bool ball_in_finisher_ = false;
+
+  bool send_finisher_goals_ = false;
 };
 
 // Tests that the superstructure does nothing when the goal is to remain
@@ -1032,18 +1037,18 @@ TEST_F(SuperstructureTest, WhenShooting) {
 // Tests that we detect that a ball was shot whenever the  average angular
 // velocity is lower than a certain threshold compared to the goal.
 TEST_F(SuperstructureTest, BallsShot) {
-  SetEnabled(true);
-  WaitUntilZeroed();
+  bool run_test = false;
 
   int balls_shot = 0;
   // When there is a ball in the flywheel, the finisher velocity should drop
   // below the goal
   bool finisher_velocity_below_goal = false;
 
-  StartSendingFinisherGoals();
-
   test_event_loop_->AddPhasedLoop(
       [&](int) {
+        if (!run_test) {
+          return;
+        }
         ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
         const double finisher_velocity =
             superstructure_status_fetcher_->shooter()
@@ -1078,6 +1083,13 @@ TEST_F(SuperstructureTest, BallsShot) {
         }
       },
       dt());
+  RegisterFinisherGoalsLoop();
+
+  SetEnabled(true);
+
+  WaitUntilZeroed();
+
+  StartSendingFinisherGoals();
 
   constexpr int kFastShootingSpeed = 500;
   constexpr int kSlowShootingSpeed = 300;

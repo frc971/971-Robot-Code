@@ -101,9 +101,9 @@ void EventScheduler::CallOldestEvent() {
 void EventScheduler::RunOnRun() {
   CHECK(is_running_);
   while (!on_run_.empty()) {
-    std::function<void()> fn = std::move(*on_run_.begin());
+    Event *event = *on_run_.begin();
     on_run_.erase(on_run_.begin());
-    fn();
+    event->Handle();
   }
 }
 

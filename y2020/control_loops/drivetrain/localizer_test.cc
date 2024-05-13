@@ -113,6 +113,16 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
               BootTimestamp::epoch() + kPiTimeOffset, BootTimestamp::epoch()}}),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         pi1_(aos::configuration::GetNode(configuration(), "pi1")),
+        drivetrain_event_loop_(MakeEventLoop("drivetrain", roborio_)),
+        dt_config_(GetTest2020DrivetrainConfig()),
+        pi1_event_loop_(MakeEventLoop("test", pi1_)),
+        camera_sender_(
+            pi1_event_loop_->MakeSender<ImageMatchResult>("/pi1/camera")),
+        localizer_(drivetrain_event_loop_.get(), dt_config_),
+        drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
+        drivetrain_plant_event_loop_(MakeEventLoop("plant", roborio_)),
+        drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
+        last_frame_(monotonic_now()),
         test_event_loop_(MakeEventLoop("test", roborio_)),
         drivetrain_goal_sender_(
             test_event_loop_->MakeSender<Goal>("/drivetrain")),
@@ -129,17 +139,7 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
                 "/superstructure")),
         server_statistics_sender_(
             test_event_loop_->MakeSender<aos::message_bridge::ServerStatistics>(
-                "/aos")),
-        drivetrain_event_loop_(MakeEventLoop("drivetrain", roborio_)),
-        dt_config_(GetTest2020DrivetrainConfig()),
-        pi1_event_loop_(MakeEventLoop("test", pi1_)),
-        camera_sender_(
-            pi1_event_loop_->MakeSender<ImageMatchResult>("/pi1/camera")),
-        localizer_(drivetrain_event_loop_.get(), dt_config_),
-        drivetrain_(dt_config_, drivetrain_event_loop_.get(), &localizer_),
-        drivetrain_plant_event_loop_(MakeEventLoop("plant", roborio_)),
-        drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
-        last_frame_(monotonic_now()) {
+                "/aos")) {
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), roborio_), 6);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), pi1_), 1);
     set_team_id(frc971::control_loops::testing::kTeamNumber);
@@ -348,15 +348,6 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
   const aos::Node *const roborio_;
   const aos::Node *const pi1_;
 
-  std::unique_ptr<aos::EventLoop> test_event_loop_;
-  aos::Sender<Goal> drivetrain_goal_sender_;
-  aos::Fetcher<Goal> drivetrain_goal_fetcher_;
-  aos::Fetcher<frc971::control_loops::drivetrain::Status>
-      drivetrain_status_fetcher_;
-  aos::Sender<LocalizerControl> localizer_control_sender_;
-  aos::Sender<superstructure::Status> superstructure_status_sender_;
-  aos::Sender<aos::message_bridge::ServerStatistics> server_statistics_sender_;
-
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
@@ -369,6 +360,15 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
   std::unique_ptr<aos::EventLoop> drivetrain_plant_event_loop_;
   DrivetrainSimulation drivetrain_plant_;
   monotonic_clock::time_point last_frame_;
+
+  std::unique_ptr<aos::EventLoop> test_event_loop_;
+  aos::Sender<Goal> drivetrain_goal_sender_;
+  aos::Fetcher<Goal> drivetrain_goal_fetcher_;
+  aos::Fetcher<frc971::control_loops::drivetrain::Status>
+      drivetrain_status_fetcher_;
+  aos::Sender<LocalizerControl> localizer_control_sender_;
+  aos::Sender<superstructure::Status> superstructure_status_sender_;
+  aos::Sender<aos::message_bridge::ServerStatistics> server_statistics_sender_;
 
   // A queue of camera frames so that we can add a time delay to the data
   // coming from the cameras.
@@ -595,13 +595,14 @@ TEST_F(LocalizedDrivetrainTest, TooFastTurretDoesntAffectFixedCamera) {
 // Tests that we don't blow up if we stop getting updates for an extended period
 // of time and fall behind on fetching fron the cameras.
 TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
+  std::unique_ptr<aos::EventLoop> test = MakeEventLoop("test", roborio_);
+
   set_enable_cameras(false);
   set_send_delay(std::chrono::seconds(0));
   event_loop_factory()->set_network_delay(std::chrono::nanoseconds(1));
-  test_event_loop_
-      ->AddTimer([this]() { drivetrain_plant_.set_send_messages(false); })
-      ->Schedule(test_event_loop_->monotonic_now());
-  test_event_loop_->AddPhasedLoop(
+  test->AddTimer([this]() { drivetrain_plant_.set_send_messages(false); })
+      ->Schedule(test->monotonic_now());
+  test->AddPhasedLoop(
       [this](int) {
         auto builder = camera_sender_.MakeBuilder();
         ImageMatchResultT image;
@@ -609,12 +610,11 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
                   aos::RawSender::Error::kOk);
       },
       std::chrono::milliseconds(40));
-  test_event_loop_
-      ->AddTimer([this]() {
+  test->AddTimer([this]() {
         drivetrain_plant_.set_send_messages(true);
         SimulateSensorReset();
       })
-      ->Schedule(test_event_loop_->monotonic_now() + std::chrono::seconds(10));
+      ->Schedule(test->monotonic_now() + std::chrono::seconds(10));
 
   RunFor(chrono::seconds(20));
 }

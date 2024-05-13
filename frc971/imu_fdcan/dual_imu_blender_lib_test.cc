@@ -158,33 +158,10 @@ TEST_F(DualImuBlenderTest, Saturation) {
     dual_imu_builder.CheckOk(dual_imu_builder.Send());
   });
 
-  event_loop_factory_.RunFor(std::chrono::milliseconds(200));
-
-  ASSERT_TRUE(imu_values_batch_fetcher_.Fetch());
-  ASSERT_TRUE(dual_imu_blender_status_fetcher_.Fetch());
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_x(), 0.71,
-              0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_y(), 0.79,
-              0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_z(), 0.78,
-              0.0001);
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_x(),
-              1.3, 0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_y(),
-              1.1, 0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_z(),
-              1.1, 0.0001);
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->temperature(), 20,
-              0.0001);
-
-  CheckImuType(frc971::imu::ImuType::MURATA);
-
-  // Make sure we switch to TDK on saturation
+  bool enable_tdk_sender = false;
   dual_imu_blender_event_loop_->AddPhasedLoop(
-      [this](int) {
+      [this, &enable_tdk_sender](int) {
+        if (!enable_tdk_sender) return;
         aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder
             dual_imu_builder = dual_imu_sender_.MakeStaticBuilder();
 
@@ -221,33 +198,11 @@ TEST_F(DualImuBlenderTest, Saturation) {
       },
       std::chrono::milliseconds(1));
 
-  event_loop_factory_.RunFor(std::chrono::milliseconds(200));
-
-  ASSERT_TRUE(imu_values_batch_fetcher_.Fetch());
-  ASSERT_TRUE(dual_imu_blender_status_fetcher_.Fetch());
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_x(), 6.0,
-              0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_y(), 6.0,
-              0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_z(), 6.0,
-              0.0001);
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_x(),
-              6.2, 0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_y(),
-              6.3, 0.0001);
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_z(),
-              6.5, 0.0001);
-
-  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->temperature(), 20,
-              0.0001);
-
-  CheckImuType(frc971::imu::ImuType::TDK);
-
-  // Check negative values as well
+  bool send_negative = false;
   dual_imu_blender_event_loop_->AddPhasedLoop(
-      [this](int) {
+      [this, &send_negative](int) {
+        if (!send_negative) return;
+
         aos::Sender<frc971::imu::DualImuStatic>::StaticBuilder
             dual_imu_builder = dual_imu_sender_.MakeStaticBuilder();
 
@@ -283,6 +238,61 @@ TEST_F(DualImuBlenderTest, Saturation) {
         dual_imu_builder.CheckOk(dual_imu_builder.Send());
       },
       std::chrono::milliseconds(1));
+
+  event_loop_factory_.RunFor(std::chrono::milliseconds(200));
+
+  ASSERT_TRUE(imu_values_batch_fetcher_.Fetch());
+  ASSERT_TRUE(dual_imu_blender_status_fetcher_.Fetch());
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_x(), 0.71,
+              0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_y(), 0.79,
+              0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_z(), 0.78,
+              0.0001);
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_x(),
+              1.3, 0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_y(),
+              1.1, 0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_z(),
+              1.1, 0.0001);
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->temperature(), 20,
+              0.0001);
+
+  CheckImuType(frc971::imu::ImuType::MURATA);
+
+  // Make sure we switch to TDK on saturation
+  enable_tdk_sender = true;
+
+  event_loop_factory_.RunFor(std::chrono::milliseconds(200));
+
+  ASSERT_TRUE(imu_values_batch_fetcher_.Fetch());
+  ASSERT_TRUE(dual_imu_blender_status_fetcher_.Fetch());
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_x(), 6.0,
+              0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_y(), 6.0,
+              0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->gyro_z(), 6.0,
+              0.0001);
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_x(),
+              6.2, 0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_y(),
+              6.3, 0.0001);
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->accelerometer_z(),
+              6.5, 0.0001);
+
+  EXPECT_NEAR(imu_values_batch_fetcher_->readings()->Get(0)->temperature(), 20,
+              0.0001);
+
+  CheckImuType(frc971::imu::ImuType::TDK);
+
+  // Check negative values as well
+  enable_tdk_sender = false;
+  send_negative = true;
 
   event_loop_factory_.RunFor(std::chrono::milliseconds(200));
 

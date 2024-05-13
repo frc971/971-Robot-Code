@@ -264,7 +264,7 @@ TEST_P(EventSchedulerParamTest, NodeWaitsTillEpochToBoot) {
               schedulers_.at(0).monotonic_now());
     EXPECT_EQ(monotonic_clock::epoch(), schedulers_.at(1).monotonic_now());
   });
-  schedulers_.at(1).ScheduleOnRun([this, &observed_on_run_1]() {
+  FunctionEvent on_run_event([this, &observed_on_run_1]() {
     observed_on_run_1 = true;
     // Note that we do not *stop* execution on node zero just to get 1 started.
     EXPECT_TRUE(schedulers_.at(0).is_running());
@@ -275,6 +275,7 @@ TEST_P(EventSchedulerParamTest, NodeWaitsTillEpochToBoot) {
               schedulers_.at(0).monotonic_now());
     EXPECT_EQ(monotonic_clock::epoch(), schedulers_.at(1).monotonic_now());
   });
+  schedulers_.at(1).ScheduleOnRun(&on_run_event);
 
   FunctionEvent e([]() {});
   schedulers_.at(0).Schedule(monotonic_clock::epoch() + chrono::seconds(1), &e);
@@ -303,8 +304,9 @@ TEST_P(EventSchedulerParamTest, NodeNeverBootsIfAlwaysNegative) {
   });
   schedulers_.at(1).ScheduleOnStartup(
       []() { FAIL() << "Should never have hit startup handlers for node 1."; });
-  schedulers_.at(1).ScheduleOnRun(
+  FunctionEvent fail(
       []() { FAIL() << "Should never have hit OnRun handlers for node 1."; });
+  schedulers_.at(1).ScheduleOnRun(&fail);
   schedulers_.at(1).set_stopped(
       []() { FAIL() << "Should never have hit stopped handlers for node 1."; });
 
@@ -363,25 +365,25 @@ TEST_P(EventSchedulerParamTest, StartupShutdownHandlers) {
     ++startup_counter_b;
   };
 
-  auto on_run_handler_a = [this, &on_run_counter_a]() {
+  auto on_run_handler_a = FunctionEvent([this, &on_run_counter_a]() {
     EXPECT_TRUE(schedulers_.at(0).is_running());
     ++on_run_counter_a;
-  };
+  });
 
-  auto on_run_handler_b = [this, &on_run_counter_b]() {
+  auto on_run_handler_b = FunctionEvent([this, &on_run_counter_b]() {
     EXPECT_TRUE(schedulers_.at(0).is_running());
     ++on_run_counter_b;
-  };
+  });
 
   schedulers_.at(0).set_stopped([this, &stopped_counter]() {
     EXPECT_FALSE(schedulers_.at(0).is_running());
     ++stopped_counter;
   });
   schedulers_.at(0).set_on_shutdown(
-      [this, &shutdown_counter, startup_handler_a, on_run_handler_a]() {
+      [this, &shutdown_counter, startup_handler_a, &on_run_handler_a]() {
         EXPECT_FALSE(schedulers_.at(0).is_running());
         schedulers_.at(0).ScheduleOnStartup(startup_handler_a);
-        schedulers_.at(0).ScheduleOnRun(on_run_handler_a);
+        schedulers_.at(0).ScheduleOnRun(&on_run_handler_a);
         ++shutdown_counter;
       });
   schedulers_.at(0).ScheduleOnStartup(startup_handler_a);
@@ -389,7 +391,7 @@ TEST_P(EventSchedulerParamTest, StartupShutdownHandlers) {
     EXPECT_FALSE(schedulers_.at(0).is_running());
     ++started_counter;
   });
-  schedulers_.at(0).ScheduleOnRun(on_run_handler_a);
+  schedulers_.at(0).ScheduleOnRun(&on_run_handler_a);
 
   FunctionEvent e([]() {});
   schedulers_.at(0).Schedule(monotonic_clock::epoch() + chrono::seconds(1), &e);
@@ -405,12 +407,12 @@ TEST_P(EventSchedulerParamTest, StartupShutdownHandlers) {
   // In the middle, execute a TemporarilyStopAndRun. Use it to re-register the
   // startup handlers.
   schedulers_.at(0).ScheduleOnStartup(startup_handler_b);
-  schedulers_.at(0).ScheduleOnRun(on_run_handler_b);
-  FunctionEvent stop_and_run([this, startup_handler_a, on_run_handler_a]() {
+  schedulers_.at(0).ScheduleOnRun(&on_run_handler_b);
+  FunctionEvent stop_and_run([this, startup_handler_a, &on_run_handler_a]() {
     scheduler_scheduler_.TemporarilyStopAndRun(
-        [this, startup_handler_a, on_run_handler_a]() {
+        [this, startup_handler_a, &on_run_handler_a]() {
           schedulers_.at(0).ScheduleOnStartup(startup_handler_a);
-          schedulers_.at(0).ScheduleOnRun(on_run_handler_a);
+          schedulers_.at(0).ScheduleOnRun(&on_run_handler_a);
         });
   });
   schedulers_.at(1).Schedule(monotonic_clock::epoch() + chrono::seconds(2),
@@ -496,7 +498,8 @@ TEST_P(EventSchedulerParamTest, TemporarilyStopAndRunStaggeredStart) {
        BootTimestamp{0, monotonic_clock::epoch() - chrono::seconds(10)}});
   int counter = 0;
 
-  schedulers_[1].ScheduleOnRun([]() { FAIL(); });
+  FunctionEvent fail_event([]() { FAIL(); });
+  schedulers_[1].ScheduleOnRun(&fail_event);
   schedulers_[1].ScheduleOnStartup([]() { FAIL(); });
   schedulers_[1].set_on_shutdown([]() { FAIL(); });
   schedulers_[1].set_started([]() { FAIL(); });

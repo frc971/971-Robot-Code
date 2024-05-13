@@ -605,9 +605,17 @@ class SimulatedEventLoop : public EventLoop {
     });
 
     event_loops_->push_back(this);
+    scheduler_->ScheduleOnRun(&on_run_event_);
+    on_run_scheduled_ = true;
   }
 
   ~SimulatedEventLoop() override {
+    // Unregister any on_run callbacks to handle cleanup before they run
+    // correctly.
+    if (on_run_scheduled_) {
+      scheduler_->DeleteOnRun(&on_run_event_);
+    }
+
     // Trigger any remaining senders or fetchers to be cleared before destroying
     // the event loop so the book keeping matches.
     timing_report_sender_.reset();
@@ -683,18 +691,41 @@ class SimulatedEventLoop : public EventLoop {
             scheduler_, this, callback, interval, offset)));
   }
 
+  class OnRunEvent : public EventScheduler::Event {
+   public:
+    OnRunEvent(SimulatedEventLoop *loop) : loop_(loop) {}
+
+    virtual void Handle() noexcept { loop_->DoOnRun(); }
+
+   private:
+    SimulatedEventLoop *loop_;
+  };
+
   void OnRun(::std::function<void()> on_run) override {
     CHECK(!is_running()) << ": Cannot register OnRun callback while running.";
-    scheduler_->ScheduleOnRun([this, on_run = std::move(on_run)]() {
+    CHECK(on_run_scheduled_)
+        << "Registering OnRun callback after running on " << name();
+    on_run_.emplace_back(std::move(on_run));
+  }
+
+  // Called by OnRunEvent when we need to process OnRun callbacks.
+  void DoOnRun() {
+    VLOG(1) << distributed_now() << " " << NodeName(node()) << monotonic_now()
+            << " " << name() << " OnRun()";
+    on_run_scheduled_ = false;
+    while (!on_run_.empty()) {
+      std::function<void()> fn = std::move(*on_run_.begin());
+      on_run_.erase(on_run_.begin());
+
       logging::ScopedLogRestorer prev_logger;
       if (log_impl_) {
         prev_logger.Swap(log_impl_);
       }
       ScopedMarkRealtimeRestorer rt(runtime_realtime_priority() > 0);
       SetTimerContext(monotonic_now());
-      on_run();
+      fn();
       ClearContext();
-    });
+    }
   }
 
   const Node *node() const override { return node_; }
@@ -787,6 +818,15 @@ class SimulatedEventLoop : public EventLoop {
   std::shared_ptr<StartupTracker> startup_tracker_;
 
   EventLoopOptions options_;
+
+  // Event used by EventScheduler to run OnRun callbacks.
+  OnRunEvent on_run_event_{this};
+
+  // True if the on run callbacks have been scheduled in the scheduler, and
+  // false if they have been executed.
+  bool on_run_scheduled_;
+
+  std::vector<std::function<void()>> on_run_;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
@@ -1308,8 +1348,9 @@ SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
 void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
-  VLOG(1) << monotonic_now << " Phased loop " << simulated_event_loop_->name()
-          << ", " << name();
+  VLOG(1) << simulated_event_loop_->scheduler_->distributed_now() << " "
+          << NodeName(simulated_event_loop_->node()) << monotonic_now << " "
+          << simulated_event_loop_->name() << " Phased loop '" << name() << "'";
   logging::ScopedLogRestorer prev_logger;
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
