@@ -198,6 +198,9 @@ std::vector<std::string_view> SourceNodeNames(const Configuration *config,
 // Returns the source node index for each channel in a config.
 std::vector<size_t> SourceNodeIndex(const Configuration *config);
 
+// Returns the source node for a channel.
+const Node *SourceNode(const Configuration *config, const Channel *channel);
+
 // Returns the all nodes that are logging timestamps on our node.
 std::vector<const Node *> TimestampNodes(const Configuration *config,
                                          const Node *my_node);

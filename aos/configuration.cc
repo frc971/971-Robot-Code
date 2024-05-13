@@ -1636,6 +1636,13 @@ const Application *GetApplication(const Configuration *config,
   return nullptr;
 }
 
+const Node *SourceNode(const Configuration *config, const Channel *channel) {
+  if (!MultiNode(config)) {
+    return nullptr;
+  }
+  return GetNode(config, channel->source_node()->string_view());
+}
+
 std::vector<size_t> SourceNodeIndex(const Configuration *config) {
   CHECK(config->has_channels());
   std::vector<size_t> result;
