@@ -184,7 +184,7 @@ TEST(ConfigValidatorTest, FailOnInsufficientConfiguredTimestampData) {
       ]}})json");
         ConfigIsValid(&config.message(), &validator_config.message());
       },
-      R"json(Failed to log or replay any data on { "name": "/test", "type": "aos.examples.Ping" } from remote node pi2)json");
+      R"json(Failed to log or replay any data on { "name": "/test", "type": "aos.examples.Ping" } reading from pi2 with source node pi1)json");
 }
 
 }  // namespace aos::util::testing

@@ -8,6 +8,7 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_channel.h"
 #include "aos/testing/tmpdir.h"
+#include "aos/util/config_validator_config_static.h"
 #include "aos/util/simulation_logger.h"
 
 DECLARE_bool(validate_timestamp_logger_nodes);
@@ -42,10 +43,30 @@ bool NodeInList(
 }  // namespace
 
 void ConfigIsValid(const aos::Configuration *config,
-                   const ConfigValidatorConfig *validation_config) {
+                   const ConfigValidatorConfig *validation_config_raw) {
   ASSERT_TRUE(config->has_channels())
       << "An AOS config must have channels. If you have a valid use-case for "
          "channels with no channels, please write a design proposal.";
+
+  aos::fbs::Builder<ConfigValidatorConfigStatic> validation_config;
+  CHECK(validation_config->FromFlatbuffer(validation_config_raw));
+
+  if (validation_config_raw->has_logging() &&
+      validation_config_raw->logging()->validate_individual_node_loggers() &&
+      configuration::MultiNode(config)) {
+    if (!validation_config->logging()->has_logger_sets()) {
+      validation_config->mutable_logging()->add_logger_sets();
+    }
+    auto logger_sets =
+        validation_config->mutable_logging()->mutable_logger_sets();
+    for (const aos::Node *node : configuration::GetNodes(config)) {
+      CHECK(logger_sets->reserve(logger_sets->size() + 1));
+      auto logger_set = logger_sets->emplace_back();
+      CHECK(logger_set->add_loggers()->FromFlatbuffer({node->name()->str()}));
+      CHECK(logger_set->add_replay_nodes()->FromFlatbuffer(
+          {node->name()->str()}));
+    }
+  }
 
   // First, we do some sanity checks--these are likely to indicate a malformed
   // config, and so catching them early with a clear error message is likely to
@@ -72,7 +93,7 @@ void ConfigIsValid(const aos::Configuration *config,
 
     const bool check_for_not_logged_channels =
         !validation_config->has_logging() ||
-        validation_config->logging()->all_channels_logged();
+        validation_config->AsFlatbuffer().logging()->all_channels_logged();
     const bool channel_is_not_logged =
         channel->logger() == aos::LoggerConfig::NOT_LOGGED;
     if (check_for_not_logged_channels) {
@@ -184,15 +205,15 @@ void ConfigIsValid(const aos::Configuration *config,
     }
     // Send timing report when we are sending data.
     const bool do_skip_timing_report = !send_data_on_channels;
-    for (const LoggerNodeSetValidation *logger_set :
+    for (const LoggerNodeSetValidationStatic &logger_set :
          *validation_config->logging()->logger_sets()) {
-      SCOPED_TRACE(aos::FlatbufferToJson(logger_set));
+      SCOPED_TRACE(aos::FlatbufferToJson(&logger_set.AsFlatbuffer()));
       aos::SimulatedEventLoopFactory factory(config);
       std::vector<std::unique_ptr<LoggerState>> loggers;
-      if (logger_set->has_loggers() && logger_set->loggers()->size() > 0) {
+      if (logger_set.has_loggers() && logger_set.loggers()->size() > 0) {
         std::vector<std::string> logger_nodes;
-        for (const auto &node : *logger_set->loggers()) {
-          logger_nodes.push_back(node->str());
+        for (const auto &node : *logger_set.loggers()) {
+          logger_nodes.push_back(node.str());
         }
         loggers = MakeLoggersForNodes(&factory, logger_nodes, log_path,
                                       do_skip_timing_report);
@@ -247,47 +268,47 @@ void ConfigIsValid(const aos::Configuration *config,
       // Find every channel we deliberately sent data on, and if it is for a
       // node that we care about, confirm that we get it during replay.
       std::vector<std::unique_ptr<EventLoop>> replay_loops;
-      std::vector<std::unique_ptr<RawFetcher>> fetchers;
       for (const aos::Node *node :
            configuration::GetNodes(replay_factory.configuration())) {
         // If the user doesn't care about this node, don't check it.
-        if (!NodeInList(logger_set->replay_nodes(), node)) {
+        if (!NodeInList(logger_set.has_replay_nodes()
+                            ? logger_set.replay_nodes()->AsFlatbufferVector()
+                            : nullptr,
+                        node)) {
           continue;
         }
         replay_loops.emplace_back(replay_factory.MakeEventLoop("", node));
-        for (const auto &sender : test_senders[node->name()->str()]) {
-          const aos::Channel *channel = configuration::GetChannel(
-              replay_factory.configuration(), sender->channel(), "", node);
-          fetchers.emplace_back(replay_loops.back()->MakeRawFetcher(channel));
-        }
       }
 
       std::vector<std::pair<const aos::Node *, std::unique_ptr<RawFetcher>>>
-          remote_fetchers;
-      for (const auto &fetcher : fetchers) {
-        for (auto &loop : replay_loops) {
-          const Connection *connection =
-              configuration::ConnectionToNode(fetcher->channel(), loop->node());
-          if (connection != nullptr) {
-            remote_fetchers.push_back(std::make_pair(
-                loop->node(), loop->MakeRawFetcher(fetcher->channel())));
+          fetchers;
+      for (const auto &node_senders : test_senders) {
+        for (const auto &sender : node_senders.second) {
+          for (auto &loop : replay_loops) {
+            if (configuration::ChannelIsReadableOnNode(sender->channel(),
+                                                       loop->node())) {
+              fetchers.push_back(std::make_pair(
+                  loop->node(),
+                  loop->MakeRawFetcher(configuration::GetChannel(
+                      replay_factory.configuration(), sender->channel(),
+                      loop->name(), loop->node()))));
+            }
           }
         }
       }
 
       replay_factory.Run();
 
-      for (auto &fetcher : fetchers) {
-        EXPECT_TRUE(fetcher->Fetch())
-            << "Failed to log or replay any data on "
-            << configuration::StrippedChannelToString(fetcher->channel());
-      }
-
-      for (auto &pair : remote_fetchers) {
+      for (auto &pair : fetchers) {
         EXPECT_TRUE(pair.second->Fetch())
             << "Failed to log or replay any data on "
             << configuration::StrippedChannelToString(pair.second->channel())
-            << " from remote node " << logger::MaybeNodeName(pair.first) << ".";
+            << " reading from " << logger::MaybeNodeName(pair.first)
+            << " with source node "
+            << (pair.second->channel()->has_source_node()
+                    ? pair.second->channel()->source_node()->string_view()
+                    : "")
+            << ".";
       }
 
       reader.Deregister();

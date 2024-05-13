@@ -46,6 +46,10 @@ table LoggingConfigValidation {
   // should at least include an entry that says that "logs from all nodes should
   // combine to allow you to replay all nodes."
   logger_sets:[LoggerNodeSetValidation] (id: 1);
+  // This provides a shortcut that implicitly adds
+  // {"loggers": ["node_name"], "replay_nodes": ["node_name"]}
+  // to logger_sets for every node_name in the set of nodes for the config.
+  validate_individual_node_loggers:bool = false (id: 2);
 }
 
 table ConfigValidatorConfig {

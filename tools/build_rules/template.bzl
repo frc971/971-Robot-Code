@@ -3,13 +3,31 @@ def _jinja2_template_impl(ctx):
     parameters = dict(ctx.attr.parameters)
     parameters.update(ctx.attr.list_parameters)
 
-    ctx.actions.run_shell(
-        inputs = ctx.files.src + ctx.files.includes,
+    # For now we don't really want the user to worry about which configuration
+    # to pull the file from. We don't yet have a use case for pulling the same
+    # file from multiple configurations. We point Jinja at all the configuration
+    # roots.
+    include_dirs = depset([
+        file.root.path or "."
+        for file in ctx.files.includes
+    ]).to_list()
+
+    args = ctx.actions.args()
+    args.add(ctx.file.src)
+    args.add(json.encode(parameters))
+    args.add(out)
+    args.add_all(include_dirs, before_each = "--include_dir")
+    if ctx.file.parameters_file:
+        args.add("--replacements_file", ctx.file.parameters_file)
+    args.add_all(ctx.files.filter_srcs, before_each = "--filter_file")
+
+    ctx.actions.run(
+        inputs = ctx.files.src + ctx.files.includes + ctx.files.parameters_file + ctx.files.filter_srcs,
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
-        # TODO(james): Is the genfiles_dir the correct thing?
-        command = ctx.executable._jinja2.path + " " + ctx.files.src[0].path + " '" + str(parameters) + "' " + out.path + " " + ctx.genfiles_dir.path,
+        executable = ctx.executable._jinja2,
+        arguments = [args],
     )
 
     return [DefaultInfo(files = depset([out])), OutputGroupInfo(out = depset([out]))]
@@ -35,9 +53,18 @@ jinja2_template_rule = rule(
             default = {},
             doc = """The string list parameters to supply to Jinja2.""",
         ),
+        "parameters_file": attr.label(
+            allow_single_file = True,
+            doc = """A JSON file whose contents are supplied as parameters to Jinja2.""",
+        ),
         "includes": attr.label_list(
             allow_files = True,
             doc = """Files which are included by the template.""",
+        ),
+        "filter_srcs": attr.label_list(
+            allow_files = [".py"],
+            doc = """Files that are sourced for filters.
+Needs to have a register_filters function defined.""",
         ),
         "_jinja2": attr.label(
             default = "//tools/build_rules:jinja2_generator",
@@ -54,4 +81,11 @@ def jinja2_template(name, src, parameters = {}, list_parameters = {}, **kwargs):
     # differ from `out`, name the rule as the `name` plus a suffix
     rule_name = name + "_rule"
 
-    jinja2_template_rule(name = rule_name, out = name, src = src, parameters = parameters, list_parameters = list_parameters, **kwargs)
+    jinja2_template_rule(
+        name = rule_name,
+        out = name,
+        src = src,
+        parameters = parameters,
+        list_parameters = list_parameters,
+        **kwargs
+    )
