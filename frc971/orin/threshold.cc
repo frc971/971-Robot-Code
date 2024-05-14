@@ -14,14 +14,28 @@ namespace {
 // 1088 -> 2 * 32 * 17
 
 // Writes out the grayscale image and decimated image.
+template <InputFormat INPUT_FORMAT>
 __global__ void InternalCudaToGreyscaleAndDecimateHalide(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     size_t width, size_t height) {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   while (i < width * height) {
-//    uint8_t pixel = gray_image[i] = color_image[i * 2]; // Y CbCr input
-    // BGR input
-    const uint8_t pixel = gray_image[i] = 0.114 * color_image[i * 3] + 0.587 * color_image[i * 3 + 1] + 0.299 * color_image[i * 3 + 2];
+    uint8_t pixel;
+
+    if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+      pixel = gray_image[i] = color_image[i];  // Grayscale input
+    } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
+      pixel = gray_image[i] = color_image[i * 2];  // YUY input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
+      pixel = gray_image[i] = 0.114 * color_image[i * 3] +
+                              0.587 * color_image[i * 3 + 1] +
+                              0.299 * color_image[i * 3 + 2];  // BGR input
+    } else if constexpr (INPUT_FORMAT == InputFormat::Bayer_RGGB8) {
+      // TODO: fix me
+      // Simple approach is a b,g,r value for the output pixel and then convert to grayscale using 
+      // the equation for bgr8 above.
+      return;
+    }
 
     const size_t row = i / width;
     const size_t col = i - width * row;
@@ -151,6 +165,7 @@ __global__ void InternalThreshold(const uint8_t *decimated_image,
 
 }  // namespace
 
+template <InputFormat INPUT_FORMAT>
 void CudaToGreyscaleAndDecimateHalide(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
@@ -162,7 +177,7 @@ void CudaToGreyscaleAndDecimateHalide(
   {
     // Step one, convert to gray and decimate.
     size_t kBlocks = (width * height + kThreads - 1) / kThreads / 4;
-    InternalCudaToGreyscaleAndDecimateHalide<<<kBlocks, kThreads, 0,
+    InternalCudaToGreyscaleAndDecimateHalide<INPUT_FORMAT><<<kBlocks, kThreads, 0,
                                                stream->get()>>>(
         color_image, gray_image, decimated_image, width, height);
     MaybeCheckAndSynchronize();
@@ -203,4 +218,24 @@ void CudaToGreyscaleAndDecimateHalide(
   }
 }
 
+template void CudaToGreyscaleAndDecimateHalide<InputFormat::Mono8>(
+    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream);
+template void CudaToGreyscaleAndDecimateHalide<InputFormat::YCbCr422>(
+    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream);
+template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGR8>(
+    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream);
+template void CudaToGreyscaleAndDecimateHalide<InputFormat::Bayer_RGGB8>(
+    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream);
 }  // namespace frc971::apriltag

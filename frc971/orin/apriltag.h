@@ -7,6 +7,7 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "frc971/orin/apriltag_input_format.h"
 #include "frc971/orin/cuda.h"
 #include "frc971/orin/gpu_image.h"
 #include "frc971/orin/line_fit_filter.h"
@@ -74,7 +75,15 @@ struct DistCoeffs {
   double k3;
 };
 
+// Undistort pixels based on our camera model, using iterative algorithm
+// Returns false if we fail to converge
+// Make this a free function rather than a static member function to make
+// remove the need for callers to know the template arg from GpuDetector
+bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+               const DistCoeffs *distortion_coefficients);
+
 // GPU based april tag detector.
+template <InputFormat INPUT_FORMAT>
 class GpuDetector {
  public:
   // The number of blobs we will consider when counting april tags.
@@ -193,19 +202,12 @@ class GpuDetector {
     distortion_coefficients_ = distortion_coefficients;
   }
 
-  // Undistort pixels based on our camera model, using iterative algorithm
-  // Returns false if we fail to converge
-  static bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
-                        const DistCoeffs *distortion_coefficients);
-
  private:
   void UpdateFitQuads();
 
   void AdjustPixelCenters();
 
   void DecodeTags();
-
-  static void QuadDecodeTask(void *_u);
 
   // Creates a GPU image wrapped around the provided memory.
   template <typename T>
@@ -264,7 +266,6 @@ class GpuDetector {
   CudaEvent after_quad_fit_memcpy_;
 
   // TODO(austin): Remove this...
-  HostMemory<uint8_t> color_image_host_;
   HostMemory<uint8_t> gray_image_host_;
 
   // Starting color image.

@@ -113,16 +113,34 @@ static size_t DeviceScanInclusiveScanByKeyScratchSpace(size_t elements) {
 
 }  // namespace
 
-GpuDetector::GpuDetector(size_t width, size_t height,
+template <InputFormat INPUT_FORMAT>
+constexpr size_t InputFormatToChannels(void)
+{
+  if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+    return 1;
+  }
+  if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
+    return 2;
+  }
+  if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
+    return 3;
+  }
+  if constexpr (INPUT_FORMAT == InputFormat::Bayer_RGGB8) {
+    return 1; 
+  }
+  // TODO : Probably need a throw or assert here
+}
+
+template <InputFormat INPUT_FORMAT>
+GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
                          apriltag_detector_t *tag_detector,
                          CameraMatrix camera_matrix,
                          DistCoeffs distortion_coefficients)
     : width_(width),
       height_(height),
       tag_detector_(tag_detector),
-      color_image_host_(width * height * 3),
       gray_image_host_(width * height),
-      color_image_device_(width * height * 3),
+      color_image_device_(width * height * InputFormatToChannels<INPUT_FORMAT>()),
       gray_image_device_(width * height),
       decimated_image_device_(width / 2 * height / 2),
       unfiltered_minmax_image_device_((width / 2 / 4 * height / 2 / 4) * 2),
@@ -196,7 +214,8 @@ GpuDetector::GpuDetector(size_t width, size_t height,
   zarray_ensure_capacity(detections_, kMaxBlobs);
 }
 
-GpuDetector::~GpuDetector() {
+template <InputFormat INPUT_FORMAT>
+GpuDetector<INPUT_FORMAT>::~GpuDetector() {
   for (int i = 0; i < zarray_size(detections_); ++i) {
     apriltag_detection_t *det;
     zarray_get(detections_, i, &det);
@@ -669,7 +688,8 @@ struct MergePeakExtents {
 
 }  // namespace
 
-void GpuDetector::Detect(const uint8_t *image) {
+template <InputFormat INPUT_FORMAT>
+void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
   start_.Record(&stream_);
@@ -677,7 +697,7 @@ void GpuDetector::Detect(const uint8_t *image) {
   after_image_memcpy_to_device_.Record(&stream_);
 
   // Threshold the image.
-  CudaToGreyscaleAndDecimateHalide(
+  CudaToGreyscaleAndDecimateHalide<INPUT_FORMAT>(
       color_image_device_.get(), gray_image_device_.get(),
       decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
@@ -1108,5 +1128,10 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   first_ = false;
 }
+
+template class GpuDetector<InputFormat::Mono8>;
+template class GpuDetector<InputFormat::YCbCr422>;
+template class GpuDetector<InputFormat::BGR8>;
+template class GpuDetector<InputFormat::Bayer_RGGB8>;
 
 }  // namespace frc971::apriltag

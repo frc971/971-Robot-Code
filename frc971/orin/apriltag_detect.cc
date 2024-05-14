@@ -95,11 +95,13 @@ void HostFitLine(LineFitMoments moments, double *lineparam01,
 
 }  // namespace
 
-const std::vector<QuadCorners> &GpuDetector::FitQuads() const {
+template <InputFormat INPUT_FORMAT>
+const std::vector<QuadCorners> &GpuDetector<INPUT_FORMAT>::FitQuads() const {
   return quad_corners_host_;
 }
 
-void GpuDetector::UpdateFitQuads() {
+template <InputFormat INPUT_FORMAT>
+void GpuDetector<INPUT_FORMAT>::UpdateFitQuads() {
   quad_corners_host_.resize(0);
   VLOG(1) << "Considering " << fit_quads_host_.size();
   for (const FitQuad &quad : fit_quads_host_) {
@@ -244,7 +246,8 @@ void GpuDetector::UpdateFitQuads() {
   }
 }
 
-void GpuDetector::AdjustCenter(float corners[4][2]) const {
+template <InputFormat INPUT_FORMAT>
+void GpuDetector<INPUT_FORMAT>::AdjustCenter(float corners[4][2]) const {
   const float quad_decimate = tag_detector_->quad_decimate;
   if (tag_detector_->quad_decimate > 1) {
     if (tag_detector_->quad_decimate == 1.5) {
@@ -261,7 +264,8 @@ void GpuDetector::AdjustCenter(float corners[4][2]) const {
   }
 }
 
-void GpuDetector::AdjustPixelCenters() {
+template <InputFormat INPUT_FORMAT>
+void GpuDetector<INPUT_FORMAT>::AdjustPixelCenters() {
   const float quad_decimate = tag_detector_->quad_decimate;
 
   if (quad_decimate > 1) {
@@ -336,9 +340,8 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 
 // We're undistorting using math found from this github page
 // https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
-bool GpuDetector::UnDistort(double *u, double *v,
-                            const CameraMatrix *camera_matrix,
-                            const DistCoeffs *distortion_coefficients) {
+bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+               const DistCoeffs *distortion_coefficients) {
   bool converged = true;
   const double k1 = distortion_coefficients->k1;
   const double k2 = distortion_coefficients->k2;
@@ -504,8 +507,7 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       double bestx = x0 + n0 * nx;
       double besty = y0 + n0 * ny;
 
-      GpuDetector::UnDistort(&bestx, &besty, camera_matrix,
-                             distortion_coefficients);
+      UnDistort(&bestx, &besty, camera_matrix, distortion_coefficients);
 
       // update our line fit statistics
       Mx += bestx;
@@ -566,7 +568,7 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
   }
 }
 
-void GpuDetector::QuadDecodeTask(void *_u) {
+static void QuadDecodeTask(void *_u) {
   QuadDecodeTaskStruct *task = reinterpret_cast<QuadDecodeTaskStruct *>(_u);
   apriltag_detector_t *td = task->td;
   image_u8_t *im = task->im;
@@ -618,7 +620,8 @@ void GpuDetector::QuadDecodeTask(void *_u) {
   }
 }
 
-void GpuDetector::DecodeTags() {
+template <InputFormat INPUT_FORMAT>
+void GpuDetector<INPUT_FORMAT>::DecodeTags() {
   size_t chunksize =
       1 + quad_corners_host_.size() /
               (APRILTAG_TASKS_PER_THREAD_TARGET * tag_detector_->nthreads);
@@ -665,4 +668,11 @@ void GpuDetector::DecodeTags() {
   zarray_sort(detections_, detection_compare_function);
 }
 
+
+// TODO : perhaps a single file which implements GpuDetector so there's
+//        not a need for these explicit instantiations in two different files?
+template class GpuDetector<InputFormat::Mono8>;
+template class GpuDetector<InputFormat::YCbCr422>;
+template class GpuDetector<InputFormat::BGR8>;
+template class GpuDetector<InputFormat::Bayer_RGGB8>;
 }  // namespace frc971::apriltag
