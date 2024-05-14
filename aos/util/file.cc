@@ -202,9 +202,14 @@ std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path,
   return span;
 }
 
-FileReader::FileReader(std::string_view filename)
+FileReader::FileReader(std::string_view filename,
+                       FileReaderErrorType error_type)
     : file_(open(::std::string(filename).c_str(), O_RDONLY)) {
-  PCHECK(file_.get() != -1) << ": opening " << filename;
+  if (!is_open()) {
+    PLOG_IF(FATAL, error_type == FileReaderErrorType::kFatal)
+        << ": opening " << filename;
+    PLOG(ERROR) << "opening " << filename;
+  }
 }
 
 std::optional<absl::Span<char>> FileReader::ReadContents(

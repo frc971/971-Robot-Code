@@ -87,6 +87,7 @@ TEST(FileTest, ReadNormalFileNoMalloc) {
   ASSERT_EQ(0, system(("echo 123456789 > " + test_file).c_str()));
 
   FileReader reader(test_file);
+  EXPECT_TRUE(reader.is_open());
 
   aos::ScopedRealtime realtime;
   {
@@ -103,6 +104,30 @@ TEST(FileTest, ReadNormalFileNoMalloc) {
               std::string_view(read_result->data(), read_result->size()));
   }
   EXPECT_EQ(123456789, reader.ReadInt32());
+}
+
+// Test reading a non-existent file.
+TEST(FileDeathTest, ReadNonExistentFile) {
+  const ::std::string test_file = "/dne";
+
+  // If error_type flag is not set or set to kFatal, this should fail.
+  EXPECT_DEATH(FileReader reader(test_file),
+               "opening " + test_file + ": No such file or directory");
+
+  FileReaderErrorType error_type = FileReaderErrorType::kFatal;
+  EXPECT_DEATH(FileReader reader(test_file, error_type),
+               "opening " + test_file + ": No such file or directory");
+
+  // If warning flag is set to true, read should not fail, is_open() should
+  // return false, ReadContents() and ReadInt32() should fail.
+  error_type = FileReaderErrorType::kNonFatal;
+  FileReader reader(test_file, error_type);
+  EXPECT_FALSE(reader.is_open());
+  std::array<char, 16> contents;
+  EXPECT_DEATH(
+      reader.ReadContents(absl::Span<char>(contents.data(), contents.size())),
+      "Bad file descriptor");
+  EXPECT_DEATH(reader.ReadInt32(), "Bad file descriptor");
 }
 
 // Tests that we can write to a file without malloc'ing.

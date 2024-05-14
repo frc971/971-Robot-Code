@@ -52,6 +52,8 @@ void UnlinkRecursive(std::string_view path);
 
 enum class FileOptions { kReadable, kWriteable };
 
+enum class FileReaderErrorType { kFatal, kNonFatal };
+
 // Maps file from disk into memory
 std::shared_ptr<absl::Span<uint8_t>> MMapFile(
     const std::string &path, FileOptions options = FileOptions::kReadable);
@@ -61,7 +63,10 @@ std::shared_ptr<absl::Span<uint8_t>> MMapFile(
 // but where you still want to read a file.
 class FileReader {
  public:
-  FileReader(std::string_view filename);
+  // Opens the file for reading. Crashes if file does not open when flag is set
+  // to fatal (default). Logs error if file does not open and flag is non-fatal.
+  FileReader(std::string_view filename,
+             FileReaderErrorType error_type = FileReaderErrorType::kFatal);
   // Reads the entire contents of the file into the internal buffer and returns
   // a string_view of it.  Returns nullopt if we failed to read the contents
   // (currently only on EREMOTEIO). Note: The result may not be null-terminated.
@@ -88,6 +93,9 @@ class FileReader {
   // 32-bit integer. The value may start with 0x for a hex value, otherwise it
   // must be base 10.  Returns nullopt if we failed to read the file.
   std::optional<int32_t> ReadInt32();
+
+  // Checks if file could be opened.
+  bool is_open() const { return file_.get() != -1; }
 
  private:
   aos::ScopedFD file_;
