@@ -12,7 +12,7 @@ cc_library(
         ":swerve_module",
         "//aos/logging",
         "//frc971:can_configuration_fbs",
-        "//frc971/control_loops/drivetrain/swerve:swerve_drivetrain_output_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
         "//frc971/wpilib:loop_output_handler",
         "//frc971/wpilib:talonfx",
         "//third_party:phoenix6",
