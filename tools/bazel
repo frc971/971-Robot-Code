@@ -24,7 +24,7 @@ if [[ -n "${BAZEL_OVERRIDE+x}" ]]; then
   exec "${BAZEL_OVERRIDE}" "$@"
 fi
 
-readonly VERSION="7.1.1"
+readonly VERSION="7.2.0rc1"
 
 readonly DOWNLOAD_DIR="${HOME}/.cache/bazel"
 # Directory to unpack bazel into.  This must change whenever bazel changes.
@@ -40,8 +40,8 @@ if [[ ! -d "${DOWNLOAD_DIR}" ]]; then
   exit 1
 fi
 
-readonly INSTALLER_NAME="bazel_${VERSION}.xz"
-readonly DOWNLOAD_URL="https://software.frc971.org/Build-Dependencies/${INSTALLER_NAME}"
+readonly INSTALLER_NAME="bazel-${VERSION}-linux-x86_64"
+readonly DOWNLOAD_URL="https://software.frc971.org/Build-Dependencies/github.com/bazelbuild/bazel/releases/download/${VERSION}/${INSTALLER_NAME}"
 
 if [[ ! -d "${VERSION_DIR}" ]]; then
   echo "Downloading Bazel version ${VERSION} from ${DOWNLOAD_URL}..." >&2
@@ -72,9 +72,9 @@ if [[ ! -d "${VERSION_DIR}" ]]; then
   )
 
   ( cd "${TEMP_DIR}"
-    echo "Unpacking Bazel version ${VERSION}..." >&2
+    echo "Copying Bazel version ${VERSION}..." >&2
     mkdir -p extracted/usr/bin
-    xz -d ${HOME}/.cache/bazel/${INSTALLER_NAME} -c > extracted/usr/bin/bazel-real
+    cp ${HOME}/.cache/bazel/${INSTALLER_NAME} extracted/usr/bin/bazel-real
     chmod a+x extracted/usr/bin/bazel-real
   )
 
