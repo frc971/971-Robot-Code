@@ -1718,3 +1718,16 @@ cc_library(
     strip_prefix = "expected-1.1.0",
     url = "https://github.com/TartanLlama/expected/archive/refs/tags/v1.1.0.tar.gz",
 )
+
+http_archive(
+    name = "com_github_storypku_bazel_iwyu",
+    integrity = "sha256-R/rVwWn3SveoC8lAcicw6MOfdTqLLkubpaljT4qHjJg=",
+    strip_prefix = "bazel_iwyu-bb102395e553215abd66603bcdeb6e93c66ca6d7",
+    urls = [
+        "https://github.com/storypku/bazel_iwyu/archive/bb102395e553215abd66603bcdeb6e93c66ca6d7.zip",
+    ],
+)
+
+load("@com_github_storypku_bazel_iwyu//bazel:dependencies.bzl", "bazel_iwyu_dependencies")
+
+bazel_iwyu_dependencies()
