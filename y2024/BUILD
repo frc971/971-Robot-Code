@@ -63,7 +63,7 @@ robot_downloader(
         "//y2024/constants:constants_sender",
         "//y2024/localizer:localizer_main",
         "//y2024/localizer:localizer_logger",
-        "//y2024/vision:foxglove_image_converter",
+        "//frc971/vision:foxglove_image_converter",
     ],
     data = [
         ":aos_config",
@@ -87,7 +87,7 @@ robot_downloader(
         "//frc971/orin:argus_camera",
         "//y2024/orin:can_logger",
         "//y2024/vision:apriltag_detector",
-        "//y2024/vision:image_logger",
+        "//frc971/vision:image_logger",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",

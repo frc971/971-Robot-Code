@@ -5,17 +5,6 @@ filegroup(
 )
 
 cc_binary(
-    name = "foxglove_image_converter",
-    srcs = ["foxglove_image_converter.cc"],
-    visibility = ["//y2024:__subpackages__"],
-    deps = [
-        "//aos:init",
-        "//aos/events:shm_event_loop",
-        "//frc971/vision:foxglove_image_converter_lib",
-    ],
-)
-
-cc_binary(
     name = "target_mapping",
     srcs = [
         "target_mapping.cc",
@@ -44,26 +33,6 @@ cc_binary(
         "//third_party:opencv",
         "//y2024/constants:constants_fbs",
         "//y2024/constants:simulated_constants_sender",
-    ],
-)
-
-cc_binary(
-    name = "image_logger",
-    srcs = [
-        "image_logger.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:configuration",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
-        "//aos/events/logging:log_writer",
-        "//aos/logging:log_namer",
-        "//aos/util:filesystem_fbs",
-        "//frc971/input:joystick_state_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -146,41 +115,5 @@ cc_binary(
         "//y2024/constants:constants_fbs",
         "//y2024/constants:simulated_constants_sender",
         "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_binary(
-    name = "modify_extrinsics",
-    srcs = [
-        "modify_extrinsics.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2024:__subpackages__"],
-    deps = [
-        "//aos:configuration",
-        "//aos:init",
-        "//aos/events:event_loop",
-        "//frc971/vision:calibration_fbs",
-        "//frc971/vision:vision_util_lib",
-        "//y2024/constants:constants_fbs",
-        "@com_google_absl//absl/strings:str_format",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_binary(
-    name = "image_replay",
-    srcs = [
-        "image_replay.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2024:__subpackages__"],
-    deps = [
-        "//aos:configuration",
-        "//aos:init",
-        "//aos/events:simulated_event_loop",
-        "//aos/events/logging:log_reader",
-        "//frc971/vision:vision_fbs",
-        "//third_party:opencv",
     ],
 )

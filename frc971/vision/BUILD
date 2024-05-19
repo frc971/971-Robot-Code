@@ -3,6 +3,72 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
+cc_binary(
+    name = "modify_extrinsics",
+    srcs = [
+        "modify_extrinsics.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:event_loop",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:vision_util_lib",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_binary(
+    name = "image_replay",
+    srcs = [
+        "image_replay.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+    ],
+)
+
+cc_binary(
+    name = "image_logger",
+    srcs = [
+        "image_logger.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/events/logging:log_writer",
+        "//aos/logging:log_namer",
+        "//aos/util:filesystem_fbs",
+        "//frc971/input:joystick_state_fbs",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "foxglove_image_converter",
+    srcs = ["foxglove_image_converter.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:foxglove_image_converter_lib",
+    ],
+)
+
 static_flatbuffer(
     name = "vision_fbs",
     srcs = ["vision.fbs"],
@@ -348,6 +414,7 @@ cc_binary(
         "//y2022:__subpackages__",
         "//y2023:__subpackages__",
         "//y2024:__subpackages__",
+        "//y2024_swerve:__subpackages__",
     ],
     deps = [
         ":intrinsics_calibration_lib",
