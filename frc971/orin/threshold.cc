@@ -23,18 +23,13 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
     uint8_t pixel;
 
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
-      pixel = gray_image[i] = color_image[i];  // Grayscale input
+      pixel = color_image[i];  // Grayscale input - TODO, just alias color image data ptr in top-level code?
     } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
       pixel = gray_image[i] = color_image[i * 2];  // YUY input
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
       pixel = gray_image[i] = 0.114 * color_image[i * 3] +
                               0.587 * color_image[i * 3 + 1] +
                               0.299 * color_image[i * 3 + 2];  // BGR input
-    } else if constexpr (INPUT_FORMAT == InputFormat::Bayer_RGGB8) {
-      // TODO: fix me
-      // Simple approach is a b,g,r value for the output pixel and then convert to grayscale using 
-      // the equation for bgr8 above.
-      return;
     }
 
     const size_t row = i / width;
@@ -229,11 +224,6 @@ template void CudaToGreyscaleAndDecimateHalide<InputFormat::YCbCr422>(
     uint8_t *thresholded_image, size_t width, size_t height,
     size_t min_white_black_diff, CudaStream *stream);
 template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGR8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, size_t width, size_t height,
-    size_t min_white_black_diff, CudaStream *stream);
-template void CudaToGreyscaleAndDecimateHalide<InputFormat::Bayer_RGGB8>(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
     uint8_t *thresholded_image, size_t width, size_t height,

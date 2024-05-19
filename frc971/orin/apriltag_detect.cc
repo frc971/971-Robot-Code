@@ -674,5 +674,4 @@ void GpuDetector<INPUT_FORMAT>::DecodeTags() {
 template class GpuDetector<InputFormat::Mono8>;
 template class GpuDetector<InputFormat::YCbCr422>;
 template class GpuDetector<InputFormat::BGR8>;
-template class GpuDetector<InputFormat::Bayer_RGGB8>;
 }  // namespace frc971::apriltag

@@ -125,30 +125,41 @@ constexpr size_t InputFormatToChannels(void)
   if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
     return 3;
   }
-  if constexpr (INPUT_FORMAT == InputFormat::Bayer_RGGB8) {
-    return 1; 
-  }
   // TODO : Probably need a throw or assert here
+}
+
+template<size_t MULTIPLE> size_t roundUp(const size_t value)
+{
+  return ((value + MULTIPLE - 1) / MULTIPLE) * MULTIPLE;
 }
 
 template <InputFormat INPUT_FORMAT>
 GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
-                         apriltag_detector_t *tag_detector,
-                         CameraMatrix camera_matrix,
-                         DistCoeffs distortion_coefficients)
+                                       apriltag_detector_t *tag_detector,
+                                       CameraMatrix camera_matrix,
+                                       DistCoeffs distortion_coefficients)
     : width_(width),
-      height_(height),
+      height_(roundUp<8>(height)),
+      // Save actual input size. Round up everything else to have a height
+      // that's a multiple of 8.  The initial memcpy into the GPU color image
+      // will just copy the actual number of bytes in the input image. This
+      // could leave a few rows in the GPU color image uninitialized, but that
+      // is handled in the GpuMemory constructor which memsets the whole
+      // block to 0.  From there the extra rows are never written.
+      // From that point, hopefully the rest of the code thinks the image is
+      // the rounded up size, so the algorithm will work on any size image.
+      input_size_(width * height * InputFormatToChannels<INPUT_FORMAT>()),
       tag_detector_(tag_detector),
-      gray_image_host_(width * height),
-      color_image_device_(width * height * InputFormatToChannels<INPUT_FORMAT>()),
-      gray_image_device_(width * height),
-      decimated_image_device_(width / 2 * height / 2),
-      unfiltered_minmax_image_device_((width / 2 / 4 * height / 2 / 4) * 2),
-      minmax_image_device_((width / 2 / 4 * height / 2 / 4) * 2),
-      thresholded_image_device_(width / 2 * height / 2),
-      union_markers_device_(width / 2 * height / 2),
-      union_markers_size_device_(width / 2 * height / 2),
-      union_marker_pair_device_((width / 2 - 2) * (height / 2 - 2) * 4),
+      gray_image_host_(width * height_),
+      color_image_device_(width * height_ * InputFormatToChannels<INPUT_FORMAT>()),
+      gray_image_device_(width * height_),
+      decimated_image_device_(width / 2 * height_ / 2),
+      unfiltered_minmax_image_device_((width / 2 / 4 * height_ / 2 / 4) * 2),
+      minmax_image_device_((width / 2 / 4 * height_ / 2 / 4) * 2),
+      thresholded_image_device_(width / 2 * height_ / 2),
+      union_markers_device_(width / 2 * height_ / 2),
+      union_markers_size_device_(width / 2 * height_ / 2),
+      union_marker_pair_device_((width / 2 - 2) * (height_ / 2 - 2) * 4),
       compressed_union_marker_pair_device_(union_marker_pair_device_.size()),
       sorted_union_marker_pair_device_(union_marker_pair_device_.size()),
       extents_device_(union_marker_pair_device_.size()),
@@ -187,6 +198,12 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
       temp_storage_line_fit_scan_device_(
           DeviceScanInclusiveScanByKeyScratchSpace<uint32_t, LineFitPoint>(
               sorted_selected_blobs_device_.size())) {
+  // If the input image is grayscale, alias the gray image to the color image.
+  // InternalCudaToGreyscaleAndDecimateHalide will skip copying between the
+  // color and gray images as a result.
+  if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+    gray_image_device_ = color_image_device_;
+  }
   fit_quads_host_.reserve(kMaxBlobs);
   quad_corners_host_.reserve(kMaxBlobs);
 
@@ -693,7 +710,7 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
   start_.Record(&stream_);
-  color_image_device_.MemcpyAsyncFrom(image, &stream_);
+  color_image_device_.MemcpyAsyncFrom(image, input_size_, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
 
   // Threshold the image.
@@ -703,7 +720,6 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
       height_, tag_detector_->qtp.min_white_black_diff, &stream_);
   after_threshold_.Record(&stream_);
-
   gray_image_device_.MemcpyAsyncTo(&gray_image_host_, &stream_);
 
   after_memcpy_gray_.Record(&stream_);
@@ -1074,6 +1090,7 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
 
   // TODO(austin): Bring it back to the CPU and see how good we did.
 
+#if 0
   // Report out how long things took.
 
   VLOG(1) << "Found " << num_compressed_union_marker_pair_host << " items";
@@ -1125,6 +1142,7 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
             << float_milli(execution_duration_ / execution_count_).count()
             << "ms";
   }
+#endif
 
   first_ = false;
 }
@@ -1132,6 +1150,5 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
 template class GpuDetector<InputFormat::Mono8>;
 template class GpuDetector<InputFormat::YCbCr422>;
 template class GpuDetector<InputFormat::BGR8>;
-template class GpuDetector<InputFormat::Bayer_RGGB8>;
 
 }  // namespace frc971::apriltag

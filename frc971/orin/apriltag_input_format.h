@@ -7,7 +7,6 @@ enum class InputFormat {
   Mono8,
   YCbCr422,
   BGR8,
-  Bayer_RGGB8
 };
 
 } // namespace frc971::apriltag

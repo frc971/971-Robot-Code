@@ -28,6 +28,8 @@ class CudaStream {
 
   CudaStream(const CudaStream &) = delete;
   CudaStream &operator=(const CudaStream &) = delete;
+  CudaStream(const CudaStream &&) noexcept = delete;
+  CudaStream &operator=(const CudaStream &&) noexcept = delete;
 
   virtual ~CudaStream() { CHECK_CUDA(cudaStreamDestroy(stream_)); }
 
@@ -46,6 +48,8 @@ class CudaEvent {
 
   CudaEvent(const CudaEvent &) = delete;
   CudaEvent &operator=(const CudaEvent &) = delete;
+  CudaEvent(const CudaEvent &&) noexcept = delete;
+  CudaEvent &operator=(const CudaEvent &&) noexcept = delete;
 
   virtual ~CudaEvent() { CHECK_CUDA(cudaEventDestroy(event_)); }
 
@@ -83,6 +87,8 @@ class HostMemory {
   }
   HostMemory(const HostMemory &) = delete;
   HostMemory &operator=(const HostMemory &) = delete;
+  HostMemory(const HostMemory &&) noexcept = delete;
+  HostMemory &operator=(const HostMemory &&) noexcept = delete;
 
   virtual ~HostMemory() { CHECK_CUDA(cudaFreeHost(span_.data())); }
 
@@ -112,13 +118,35 @@ class GpuMemory {
  public:
   // Allocates a block of memory for holding up to size objects of type T in
   // device memory.
-  GpuMemory(size_t size) : size_(size) {
+  GpuMemory(size_t size) : size_(size), owns_memory_(true) {
     CHECK_CUDA(cudaMalloc((void **)(&memory_), size * sizeof(T)));
+    // Since we could be allocating extra rows to pad to a given alignment,
+    // make sure the padding is a known value.
+    CHECK_CUDA(cudaMemset(memory_, 0, size * sizeof(T)));
   }
   GpuMemory(const GpuMemory &) = delete;
-  GpuMemory &operator=(const GpuMemory &) = delete;
+  GpuMemory &operator=(const GpuMemory &other) {
+    // If we currently own our memory, free it.
+    if (owns_memory_) {
+      CHECK_CUDA(cudaFree(memory_));
+    }
 
-  virtual ~GpuMemory() { CHECK_CUDA(cudaFree(memory_)); }
+    // Copy the memory pointer and size, making
+    // this an alias to the input GpuMemory object's data.
+    memory_ = other.memory_;
+    size_ = other.size_;
+    owns_memory_ = false;
+
+    return *this;
+  }
+  GpuMemory(const GpuMemory &&) noexcept = delete;
+  GpuMemory &operator=(const GpuMemory &&) noexcept = delete;
+
+  virtual ~GpuMemory() {
+    if (owns_memory_) {
+      CHECK_CUDA(cudaFree(memory_));
+    }
+  }
 
   // Returns the device pointer to the memory.
   T *get() { return memory_; }
@@ -133,8 +161,13 @@ class GpuMemory {
     CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * size_,
                                cudaMemcpyHostToDevice, stream->get()));
   }
+  void MemcpyAsyncFrom(const T *host_memory, const size_t size, CudaStream *stream) {
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * size,
+                               cudaMemcpyHostToDevice, stream->get()));
+  }
   void MemcpyAsyncFrom(const HostMemory<T> *host_memory, CudaStream *stream) {
-    MemcpyAsyncFrom(host_memory->get(), stream);
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * host_memory->size(),
+                               cudaMemcpyHostToDevice, stream->get()));
   }
 
   // Copies data to host memory from this memory asynchronously on the provided
@@ -194,7 +227,8 @@ class GpuMemory {
 
  private:
   T *memory_;
-  const size_t size_;
+  size_t size_;
+  bool owns_memory_;
 };
 
 // Synchronizes and CHECKs for success the last CUDA operation.

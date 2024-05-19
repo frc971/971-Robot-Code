@@ -234,6 +234,7 @@ class GpuDetector {
   // Size of the image.
   const size_t width_;
   const size_t height_;
+  const size_t input_size_;
 
   // Detector parameters.
   apriltag_detector_t *tag_detector_;
@@ -340,6 +341,10 @@ class GpuDetector {
   GpuMemory<uint8_t> temp_storage_compressed_filtered_blobs_device_;
   GpuMemory<uint8_t> temp_storage_selected_extents_scan_device_;
   GpuMemory<uint8_t> temp_storage_line_fit_scan_device_;
+
+  bool graph_created_{false};
+  cudaGraph_t graph_;
+  cudaGraphExec_t graph_instance_;
 
   // Cumulative duration of april tag detection.
   std::chrono::nanoseconds execution_duration_{0};
