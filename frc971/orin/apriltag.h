@@ -9,6 +9,7 @@
 #include "device_launch_parameters.h"
 #include "frc971/orin/apriltag_input_format.h"
 #include "frc971/orin/cuda.h"
+#include "frc971/orin/cuda_event_timing.h"
 #include "frc971/orin/gpu_image.h"
 #include "frc971/orin/line_fit_filter.h"
 #include "frc971/orin/points.h"
@@ -345,6 +346,8 @@ class GpuDetector {
   bool graph_created_{false};
   cudaGraph_t graph_;
   cudaGraphExec_t graph_instance_;
+
+  Timings event_timings_;
 
   // Cumulative duration of april tag detection.
   std::chrono::nanoseconds execution_duration_{0};

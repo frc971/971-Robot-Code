@@ -23,7 +23,7 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
     uint8_t pixel;
 
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
-      pixel = color_image[i];  // Grayscale input - TODO, just alias color image data ptr in top-level code?
+      pixel = color_image[i];  // Grayscale input is already aliased to color device image 
     } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
       pixel = gray_image[i] = color_image[i * 2];  // YUY input
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
