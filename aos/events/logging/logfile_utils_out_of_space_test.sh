@@ -31,7 +31,7 @@ set -euo pipefail
 
 mount -t tmpfs tmpfs -o size=${SIZE} "${TMPFS}"
 
-exec "$(rlocation org_frc971/aos/events/logging/logfile_utils_out_of_space_test_runner)" -tmpfs "${TMPFS}"
+exec "${RUNNER}" -tmpfs "${TMPFS}"
 END
   echo "Finished test with ${SIZE}" >&2
 }

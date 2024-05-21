@@ -1,6 +1,7 @@
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//tools/build_rules:clean_dep.bzl", "aos_repo_name")
 load("//tools/build_rules:js.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
@@ -79,6 +80,7 @@ cc_library(
         ":plotter",
         "//aos/analysis/cpp_plot:cpp_plot_files",
     ],
+    local_defines = ["AOS_REPO_NAME=\\\"" + aos_repo_name() + "\\\""],
     deps = [
         ":plot_data_fbs",
         "//aos/events:simulated_event_loop",

@@ -1,3 +1,5 @@
+load("//tools/build_rules:clean_dep.bzl", "clean_dep")
+
 def cc_static_flatbuffer(name, target, function, bfbs_name = None, visibility = None):
     """Creates a cc_library which encodes a file as a Span.
 
@@ -9,10 +11,10 @@ def cc_static_flatbuffer(name, target, function, bfbs_name = None, visibility = 
     """
     native.genrule(
         name = name + "_gen",
-        tools = ["@org_frc971//aos:flatbuffers_static"],
+        tools = [clean_dep("//aos:flatbuffers_static")],
         srcs = [target],
         outs = [name + ".h"],
-        cmd = "$(location @org_frc971//aos:flatbuffers_static) '$(SRCS)' $(OUTS) '" + function + "' " + (bfbs_name if bfbs_name else "-"),
+        cmd = "$(location " + clean_dep("//aos:flatbuffers_static") + ") '$(SRCS)' $(OUTS) '" + function + "' " + (bfbs_name if bfbs_name else "-"),
     )
 
     native.cc_library(

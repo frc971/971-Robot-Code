@@ -12,8 +12,8 @@
 namespace aos::analysis {
 
 namespace {
-const char *kDataPath = "aos/analysis/cpp_plot";
-const char *kConfigPath = "aos/analysis/plotter.json";
+const char *kDataPath = "../" AOS_REPO_NAME "/aos/analysis/cpp_plot";
+const char *kConfigPath = "../" AOS_REPO_NAME "/aos/analysis/plotter.json";
 }  // namespace
 
 Plotter::Plotter()

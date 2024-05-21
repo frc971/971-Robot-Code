@@ -10,3 +10,10 @@ def clean_dep(target):
     # A repo-relative label is resolved relative to the file in which the
     # Label() call appears, i.e. @org_frc971.
     return str(Label(target))
+
+def aos_repo_name():
+    """Returns a string representing the current name of the @org_frc971/@aos repo."""
+
+    # Use an arbitrary target for our label
+    label_name = Label("//:fake_target").workspace_name
+    return label_name if label_name else "org_frc971"

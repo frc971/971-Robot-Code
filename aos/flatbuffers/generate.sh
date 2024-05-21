@@ -22,9 +22,9 @@ OUTPUTS=($OUT_FILES)
 LEN=${#INPUTS[@]}
 
 for ((i = 0; i < $LEN; i++)); do
-  $(rlocation org_frc971/aos/flatbuffers/generate) \
+  $(rlocation ${AOS_REPO_NAME}/aos/flatbuffers/generate) \
     --reflection_bfbs "${INPUTS[i]}" \
     --output_file "${OUTPUTS[i]}" \
     --base_file_name "$(basename ${SCHEMA_FILES[i]})"
-  $(rlocation llvm_k8/bin/clang-format) --style=file:"$(rlocation org_frc971/.clang-format)" -i "${OUTPUTS[i]}"
+  $(rlocation llvm_k8/bin/clang-format) --style=file:"$(rlocation ${AOS_REPO_NAME}/.clang-format)" -i "${OUTPUTS[i]}"
 done

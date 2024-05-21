@@ -1,5 +1,6 @@
 load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//tools/build_rules:clean_dep.bzl", "aos_repo_name", "clean_dep")
 
 def static_flatbuffer(name, visibility = None, deps = [], srcs = [], **kwargs):
     """Generates the code for the static C++ flatbuffer API for the specified fbs file.
@@ -36,10 +37,11 @@ def static_flatbuffer(name, visibility = None, deps = [], srcs = [], **kwargs):
 
     run_binary(
         name = name + "_gen",
-        tool = "@org_frc971//aos/flatbuffers:generate_wrapper",
+        tool = clean_dep("//aos/flatbuffers:generate_wrapper"),
         srcs = [reflection_out],
         outs = header_names,
         env = {
+            "AOS_REPO_NAME": aos_repo_name(),
             "BFBS_FILES": "$(execpaths %s)" % (reflection_out,),
             "BASE_FILES": " ".join(srcs),
             "OUT_FILES": " ".join(["$(execpath %s)" % (name,) for name in header_names]),
@@ -48,7 +50,7 @@ def static_flatbuffer(name, visibility = None, deps = [], srcs = [], **kwargs):
     native.cc_library(
         name = name,
         hdrs = header_names,
-        deps = ["@org_frc971//aos/flatbuffers:static_table", "@org_frc971//aos/flatbuffers:static_vector", name + fbs_suffix] + deps,
+        deps = [clean_dep("//aos/flatbuffers:static_table"), clean_dep("//aos/flatbuffers:static_vector"), name + fbs_suffix] + deps,
         visibility = visibility,
     )
     native.alias(

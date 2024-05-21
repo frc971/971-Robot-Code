@@ -1,3 +1,5 @@
+load("//tools/build_rules:clean_dep.bzl", "clean_dep")
+
 def _mkdocs_impl(ctx):
     output_file = ctx.actions.declare_file(ctx.attr.name + ".tar")
     build_args = ctx.actions.args()
@@ -30,7 +32,7 @@ _mkdocs = rule(
             allow_files = [".yaml"],
             mandatory = True,
         ),
-        "_mkdocs": attr.label(default = Label("@org_frc971//documentation:mkdocs_bin"), executable = True, cfg = "exec"),
+        "_mkdocs": attr.label(default = Label("//documentation:mkdocs_bin"), executable = True, cfg = "exec"),
     },
 )
 
@@ -53,7 +55,7 @@ def mkdocs(name, srcs, config, **kwargs):
     _mkdocs(name = name, srcs = srcs, config = config, **kwargs)
     native.py_binary(
         name = name + ".serve",
-        srcs = ["@org_frc971//documentation:mkdocs_bin.py"],
+        srcs = [clean_dep("//documentation:mkdocs_bin.py")],
         main = "mkdocs_bin.py",
         args = ["serve", "-f", "$(location %s)" % (config,)],
         deps = ["@pip//mkdocs"],

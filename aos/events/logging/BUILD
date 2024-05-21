@@ -233,6 +233,9 @@ sh_test(
     data = [
         ":logfile_utils_out_of_space_test_runner",
     ],
+    env = {
+        "RUNNER": "$(rootpath :logfile_utils_out_of_space_test_runner)",
+    },
     tags = [
         # This uses unclone to make a new mount namespace.  Turns out, this is
         # quite hard to figure out how to put in a remote cluster.  So just

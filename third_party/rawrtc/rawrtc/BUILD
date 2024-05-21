@@ -1,4 +1,4 @@
-load("@//tools/build_rules:select.bzl", "compiler_select")
+load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
 
 cc_library(
     name = "rawrtc",

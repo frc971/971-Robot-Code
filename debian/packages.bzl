@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//tools/build_rules:clean_dep.bzl", "clean_dep")
 
 # In order to use deb packages in the build you have to follow these steps.
 #
@@ -84,7 +85,7 @@ END""" % (force_includes, force_excludes, excludes_list, package_list, release),
             "@bazel_tools//tools/bash/runfiles",
         ],
         data = [
-            "//debian:download_packages",
+            clean_dep("//debian:download_packages"),
         ],
         target_compatible_with = target_compatible_with,
     )
