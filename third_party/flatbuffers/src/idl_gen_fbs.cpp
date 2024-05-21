@@ -129,6 +129,7 @@ std::string GenerateFBS(const Parser &parser, const std::string &file_name) {
     GenNameSpace(*struct_def.defined_namespace, &schema, &last_namespace);
     GenComment(struct_def.doc_comment, &schema, nullptr);
     schema += "table " + struct_def.name + " {\n";
+    size_t field_id = 0;
     for (auto field_it = struct_def.fields.vec.begin();
          field_it != struct_def.fields.vec.end(); ++field_it) {
       auto &field = **field_it;
@@ -138,6 +139,8 @@ std::string GenerateFBS(const Parser &parser, const std::string &file_name) {
         if (field.value.constant != "0") schema += " = " + field.value.constant;
         if (field.IsRequired()) schema += " (required)";
         if (field.key) schema += " (key)";
+        schema += " (id: " + NumToString(field_id) + ")";
+        ++field_id;
         schema += ";\n";
       }
     }
