@@ -150,6 +150,7 @@ table RobotConstants {
   extend_constants:PotAndAbsEncoderConstants (id: 5);
   disable_extend:bool (id: 6);
   disable_climber:bool (id: 7);
+  cameras:[CameraConfiguration] (id: 9);
 }
 
 table ShooterSetPoint {
@@ -223,9 +224,8 @@ table Common {
 }
 
 table Constants {
-  cameras:[CameraConfiguration] (id: 0);
-  robot:RobotConstants (id: 1);
-  common:Common (id: 2);
+  robot:RobotConstants (id: 0);
+  common:Common (id: 1);
 }
 
 root_type Constants;

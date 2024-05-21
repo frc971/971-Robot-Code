@@ -6,20 +6,6 @@
 {% from 'y2024/constants/common.jinja2' import extend_zero %}
 
 {
-  "cameras": [
-    {
-      "calibration": {% include 'y2024/constants/test_data/calibration_cam-1.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/test_data/calibration_cam-2.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/test_data/calibration_cam-3.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/test_data/calibration_cam-4.json' %}
-    }
-  ],
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
@@ -65,7 +51,21 @@
       "potentiometer_offset": 0.0
     },
     "disable_extend": false,
-    "disable_climber": false
+    "disable_climber": false,
+    "cameras": [
+      {
+        "calibration": {% include 'y2024/constants/test_data/calibration_cam-1.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/test_data/calibration_cam-2.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/test_data/calibration_cam-3.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/test_data/calibration_cam-4.json' %}
+      }
+    ]
   },
   {% include 'y2024/constants/common.json' %}
 }

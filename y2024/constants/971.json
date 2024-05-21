@@ -6,20 +6,6 @@
 {% from 'y2024/constants/common.jinja2' import extend_zero %}
 
 {
-  "cameras": [
-    {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_imu-971-1_cam-24-05_2024-03-24_14-54-27.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_orin1-971-0_cam-24-06_2024-03-24_14-54-27.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_orin1-971-1_cam-24-07_2024-03-24_14-54-27.json' %}
-    },
-    {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_imu-971-0_cam-24-08_2024-03-01_11-02-11.json' %}
-    }
-  ],
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
@@ -65,7 +51,21 @@
       "potentiometer_offset": {{ -0.2574404033256 + 0.0170793439542 - 0.177097393974999 + 0.3473623911879  - 0.1577 - 0.0214825988393}}
     },
     "disable_extend": false,
-    "disable_climber": false
+    "disable_climber": false,
+    "cameras": [
+      {
+        "calibration": {% include 'y2024/constants/calib_files/calibration_imu-971-1_cam-24-05_2024-03-24_14-54-27.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/calib_files/calibration_orin1-971-0_cam-24-06_2024-03-24_14-54-27.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/calib_files/calibration_orin1-971-1_cam-24-07_2024-03-24_14-54-27.json' %}
+      },
+      {
+        "calibration": {% include 'y2024/constants/calib_files/calibration_imu-971-0_cam-24-08_2024-03-01_11-02-11.json' %}
+      }
+    ]
   },
   {% include 'y2024/constants/common.json' %}
 }

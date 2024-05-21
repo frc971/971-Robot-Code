@@ -140,9 +140,9 @@ NominalCovariance() {
 
 std::array<Localizer::CameraState, Localizer::kNumCameras>
 Localizer::MakeCameras(const Constants &constants, aos::EventLoop *event_loop) {
-  CHECK(constants.has_cameras());
+  CHECK(constants.robot()->has_cameras());
   std::array<Localizer::CameraState, Localizer::kNumCameras> cameras;
-  for (const CameraConfiguration *camera : *constants.cameras()) {
+  for (const CameraConfiguration *camera : *constants.robot()->cameras()) {
     CHECK(camera->has_calibration());
     const frc971::vision::calibration::CameraCalibration *calibration =
         camera->calibration();
