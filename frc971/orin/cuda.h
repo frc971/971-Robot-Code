@@ -70,6 +70,9 @@ class CudaEvent {
   // Waits until the event has been triggered.
   void Synchronize() { CHECK_CUDA(cudaEventSynchronize(event_)); }
 
+  // Make a specific stream wait until the current event has been triggered
+  void Wait(CudaStream *stream) { CHECK_CUDA(cudaStreamWaitEvent(stream->get(), event_, 0)); }
+
  private:
   cudaEvent_t event_;
 };
