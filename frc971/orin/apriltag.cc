@@ -712,6 +712,11 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   ScopedEventTiming e2e_timing(event_timings_, "e2e", stream_.get());
   start_.Record(&stream_);
   event_timings_.start("image_memcpy_to_device", stream_.get());
+  // Note - since image isn't declared using host memory this
+  // memcpy will not truly be async.  Experiement with copying
+  // from the input image to a host memory buffer and then
+  // copying from the host memory buffer to the device memory
+  // buffer to see if there's a speedup.
   color_image_device_.MemcpyAsyncFrom(image, input_size_, &stream_);
   event_timings_.end("image_memcpy_to_device");
   after_image_memcpy_to_device_.Record(&stream_);
@@ -781,6 +786,8 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
 
   after_diff_.Record(&stream_);
 
+  // TODO - allocate this as HostMemory so we can do async copies of it
+  //        Same for all subsquent uses of this pattern
   int num_compressed_union_marker_pair_host;
   {
     event_timings_.start("IfUnionMarkerPair", stream_.get());
