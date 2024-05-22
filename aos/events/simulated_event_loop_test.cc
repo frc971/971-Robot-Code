@@ -1787,6 +1787,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   const UUID pi2_boot1 = UUID::Random();
   const UUID pi3_boot0 = UUID::Random();
   UUID expected_boot_uuid = pi2_boot0;
+  int boot_number = 0;
+  monotonic_clock::time_point expected_connection_time;
 
   message_bridge::TestingTimeConverter time(
       configuration::NodesCount(&config.message()));
@@ -1853,8 +1855,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
 
   int pi1_server_statistics_count = 0;
   bool first_pi1_server_statistics = true;
-  int boot_number = 0;
-  monotonic_clock::time_point expected_connection_time = pi1->monotonic_now();
+  expected_connection_time = pi1->monotonic_now();
   pi1_remote_timestamp->MakeWatcher(
       "/pi1/aos",
       [&pi1_server_statistics_count, &expected_boot_uuid,
