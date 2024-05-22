@@ -157,6 +157,30 @@ build:remote --grpc_keepalive_time=30s
 build:remote --remote_instance_name=fuse
 build:remote --verbose_failures
 
+# How to use IWYU - Include What You Use
+# Start by deleting any *.iwyu.txt files that you might have from a previous run:
+#  find -L bazel-bin/ -name "*.iwyu.txt" | xargs rm
+# Build desired target(s)
+#  bazel build --config=iwyu //my:target
+# run script to fix includes
+#  find -L bazel-bin/ -name "*.iwyu.txt" | \
+#  xargs -I % sh -c 'external/iwyu_prebuilt_pkg/bin/fix_includes.py --nosafe_headers < $1' sh %
+# run clang-format to get includes in the right order
+#  bazel run //tools/lint:clang_format
+# build targets, or ideally everything, to make sure that it still builds.
+#
+# If you are unhappy with the result, you have the following options:
+# Use pragmas or mappings.
+# https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/IWYUPragmas.md
+# https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/IWYUMappings.md
+# Our mapping files are in tools/iwyu.
+build:iwyu --aspects @com_github_storypku_bazel_iwyu//bazel/iwyu:iwyu.bzl%iwyu_aspect
+build:iwyu --@com_github_storypku_bazel_iwyu//:iwyu_mappings=//tools/iwyu:mappings
+build:iwyu --output_groups=report
+build:iwyu --@com_github_storypku_bazel_iwyu//:iwyu_opts=--no_fwd_decls,--cxx17ns,--verbose=3
+build:iwyu --strategy=iwyu=sandboxed,standalone
+
+
 # Load a local file that users can use to customize bazel invocations.  This
 # should stay the last line in this file so users can override things when they
 # want.

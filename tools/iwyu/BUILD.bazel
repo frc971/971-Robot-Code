@@ -1,0 +1,6 @@
+filegroup(
+    name = "mappings",
+    srcs = glob([
+        "*.imp",
+    ]),
+)
