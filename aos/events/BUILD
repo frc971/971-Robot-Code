@@ -250,7 +250,6 @@ rust_test(
         "//aos/testing:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
-        "@rules_rust//tools/runfiles",
     ],
 )
 
@@ -611,8 +610,8 @@ autocxx_library(
     test_deps = [
         ":ping_rust_fbs",
         "//aos:test_init_rs",
+        "//aos/testing:path_rs",
         "@crate_index//:futures",
-        "@rules_rust//tools/runfiles",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -644,8 +643,8 @@ autocxx_library(
     test_deps = [
         ":ping_rust_fbs",
         "//aos:test_init_rs",
+        "//aos/testing:path_rs",
         "@crate_index//:futures",
-        "@rules_rust//tools/runfiles",
     ],
     visibility = ["//visibility:public"],
     deps = [

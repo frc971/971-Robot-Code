@@ -168,10 +168,12 @@ mod tests {
     use super::*;
 
     use aos_flatbuffers::Flatbuffer;
+    use aos_testing_path::artifact_path;
 
     #[test]
     fn read_config() {
-        let config = read_config_from(Path::new("aos/testdata/config1.json")).unwrap();
+        let config =
+            read_config_from(&artifact_path(Path::new("aos/testdata/config1.json"))).unwrap();
         assert!(
             config
                 .message()

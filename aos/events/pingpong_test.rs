@@ -1,15 +1,16 @@
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
     use std::{cell::Cell, time::Duration};
 
     use aos::configuration::read_config_from;
     use aos::events::event_loop_runtime::{EventLoopRuntimeHolder, Watcher};
     use aos::events::simulated_event_loop::{SimulatedEventLoopFactory, SimulatedEventLoopHolder};
     use aos::testing::init::test_init;
+    use aos::testing::path::artifact_path;
     use ping_lib::PingTask;
     use ping_rust_fbs::aos::examples as ping;
     use pong_rust_fbs::aos::examples as pong;
-    use runfiles::Runfiles;
 
     // We use this trait to simplify leaking memory. For now, the event loop only allows
     // data with a `'static` lifetime. Until that restriction is lifted, we may leak
@@ -32,9 +33,8 @@ mod tests {
     impl PingPongTest {
         pub fn init() -> PingPongTest {
             test_init();
-            let r = Runfiles::create().unwrap();
             let config =
-                read_config_from(&r.rlocation("org_frc971/aos/events/pingpong_config.json"))
+                read_config_from(&artifact_path(Path::new("aos/events/pingpong_config.json")))
                     .unwrap()
                     .leak();
             let mut event_loop_factory = SimulatedEventLoopFactory::new(config);

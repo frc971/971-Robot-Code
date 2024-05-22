@@ -233,12 +233,12 @@ impl<'scope, 'env: 'scope, T: 'scope> DerefMut for Scoped<'scope, 'env, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use runfiles::Runfiles;
+    use std::path::Path;
 
     use aos_configuration::read_config_from;
     use aos_events_event_loop_runtime::{Sender, Watcher};
     use aos_test_init::test_init;
+    use aos_testing_path::artifact_path;
     use ping_rust_fbs::aos::examples as ping;
     use std::borrow::Borrow;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -249,9 +249,8 @@ mod tests {
     fn smoke_test() {
         test_init();
 
-        let r = Runfiles::create().unwrap();
         let config =
-            read_config_from(&r.rlocation("org_frc971/aos/events/pingpong_config.json")).unwrap();
+            read_config_from(&artifact_path(Path::new("aos/events/pingpong_config.json"))).unwrap();
 
         const VALUE: i32 = 971;
         let barrier = Barrier::new(2);

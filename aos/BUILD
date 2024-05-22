@@ -346,6 +346,9 @@ autocxx_library(
     test_data = [
         "//aos/testdata:test_configs",
     ],
+    test_deps = [
+        "//aos/testing:path_rs",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":configuration_rust_fbs",

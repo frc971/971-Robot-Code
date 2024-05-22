@@ -7,9 +7,7 @@ namespace aos::testing {
 // Returns the path to the provided artifact which works when built both as an
 // external target and in the repo.
 std::string ArtifactPath(std::string_view path) {
-  // TODO(austin): Don't hard-code the repo name here since it likely will
-  // change.
-  return absl::StrCat("../org_frc971/", path);
+  return absl::StrCat("../" AOS_REPO_NAME "/", path);
 }
 
 }  // namespace aos::testing

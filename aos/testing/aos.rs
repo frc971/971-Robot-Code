@@ -4,4 +4,5 @@ pub use aos::*;
 /// Utilities for testing an AOS application.
 pub mod testing {
     pub use aos_test_init as init;
+    pub use aos_testing_path as path;
 }

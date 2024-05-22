@@ -148,10 +148,11 @@ mod tests {
     use std::cell::RefCell;
 
     use futures::future::pending;
-    use runfiles::Runfiles;
+    use std::path::Path;
 
     use aos_configuration::read_config_from;
     use aos_test_init::test_init;
+    use aos_testing_path::artifact_path;
     use ping_rust_fbs::aos::examples::PingBuilder;
 
     // A really basic test of the functionality here.
@@ -166,10 +167,9 @@ mod tests {
         thread_local!(static GLOBAL_STATE: RefCell<GlobalState> = Default::default());
 
         test_init();
-        let r = Runfiles::create().unwrap();
-        let config = read_config_from(
-            &r.rlocation("org_frc971/aos/events/multinode_pingpong_test_combined_config.json"),
-        )
+        let config = read_config_from(&artifact_path(Path::new(
+            "aos/events/multinode_pingpong_test_combined_config.json",
+        )))
         .unwrap();
         let mut event_loop_factory = SimulatedEventLoopFactory::new(&config);
         {

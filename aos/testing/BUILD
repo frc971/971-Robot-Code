@@ -1,3 +1,4 @@
+load("//tools/build_rules:clean_dep.bzl", "aos_repo_name")
 load("//tools/rust:defs.bzl", "rust_library")
 
 cc_library(
@@ -127,11 +128,20 @@ cc_library(
     name = "path",
     srcs = ["path.cc"],
     hdrs = ["path.h"],
+    local_defines = ["AOS_REPO_NAME=\\\"" + aos_repo_name() + "\\\""],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
     ],
+)
+
+rust_library(
+    name = "path_rs",
+    srcs = ["path.rs"],
+    crate_name = "aos_testing_path",
+    rustc_env = {"AOS_REPO_NAME": aos_repo_name()},
+    visibility = ["//visibility:public"],
 )
 
 rust_library(
@@ -143,6 +153,7 @@ rust_library(
     gen_doctests = False,
     visibility = ["//visibility:public"],
     deps = [
+        ":path_rs",
         "//aos:aos_rs",
         "//aos:test_init_rs",
     ],
