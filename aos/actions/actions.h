@@ -1,13 +1,16 @@
 #ifndef AOS_ACTIONS_ACTIONS_H_
 #define AOS_ACTIONS_ACTIONS_H_
 
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <atomic>
 #include <cinttypes>
 #include <memory>
+#include <ostream>
+#include <string>
 #include <type_traits>
+
+#include "glog/logging.h"
 
 #include "aos/actions/actions_generated.h"
 #include "aos/events/event_loop.h"

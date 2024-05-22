@@ -1,5 +1,7 @@
 #include "aos/actions/actions.h"
 
+#include <utility>
+
 namespace aos::common::actions {
 
 void ActionQueue::EnqueueAction(::std::unique_ptr<Action> action) {

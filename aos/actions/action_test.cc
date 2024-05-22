@@ -1,17 +1,27 @@
-#include <unistd.h>
+#include <stdint.h>
 
 #include <chrono>
+#include <functional>
 #include <memory>
-#include <thread>
+#include <ostream>
+#include <string>
 
+#include "flatbuffers/buffer.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "aos/actions/actions.h"
 #include "aos/actions/actions_generated.h"
 #include "aos/actions/actor.h"
 #include "aos/actions/test_action_generated.h"
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers.h"
+#include "aos/json_to_flatbuffer.h"
+#include "aos/logging/implementations.h"
 #include "aos/testing/path.h"
+#include "aos/time/time.h"
 
 namespace aos::common::actions::testing {
 

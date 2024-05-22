@@ -3,11 +3,19 @@
 
 #include <chrono>
 #include <cinttypes>
-#include <cstdio>
+#include <compare>
 #include <functional>
+#include <ostream>
+#include <string>
+#include <type_traits>
+
+#include "flatbuffers/string.h"
+#include "glog/logging.h"
 
 #include "aos/actions/actions_generated.h"
+#include "aos/configuration_generated.h"
 #include "aos/events/event_loop.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
