@@ -2,10 +2,6 @@ load(":defs.bzl", "extract_numpy_headers")
 
 cc_library(
     name = "python",
-    deps = [
-        "@python3_9_x86_64-unknown-linux-gnu//:python_headers",
-        "@python3_9_x86_64-unknown-linux-gnu//:libpython",
-    ],
     defines = [
         "FRC971_UPSTREAM_BUNDLED_PYTHON",
         "FRC971_PYTHON_HOME=../python3_9_x86_64-unknown-linux-gnu/",
@@ -15,6 +11,10 @@ cc_library(
         "@platforms//os:linux",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "@python3_9_x86_64-unknown-linux-gnu//:libpython",
+        "@python3_9_x86_64-unknown-linux-gnu//:python_headers",
+    ],
 )
 
 filegroup(
@@ -31,8 +31,8 @@ filegroup(
 
 extract_numpy_headers(
     name = "numpy_headers",
-    numpy = "@pip//numpy",
     header_prefix = "numpy_headers",
+    numpy = "@pip//numpy",
     visibility = ["//visibility:private"],
 )
 
@@ -44,8 +44,8 @@ cc_library(
     includes = [
         "numpy_headers",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":python",
     ],
-    visibility = ["//visibility:public"],
 )
