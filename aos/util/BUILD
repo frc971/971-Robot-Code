@@ -608,3 +608,27 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "status",
+    srcs = ["status.cc"],
+    hdrs = ["status.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/containers:inlined_vector",
+        "@com_github_google_glog//:glog",
+        "@com_github_tartanllama_expected",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    deps = [
+        ":status",
+        "//aos:realtime",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
