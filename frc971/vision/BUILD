@@ -409,13 +409,7 @@ cc_binary(
         "intrinsics_calibration.cc",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = [
-        "//y2020:__subpackages__",
-        "//y2022:__subpackages__",
-        "//y2023:__subpackages__",
-        "//y2024:__subpackages__",
-        "//y2024_swerve:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":intrinsics_calibration_lib",
         "//aos:init",

@@ -1,0 +1,28 @@
+include "frc971/zeroing/constants.fbs";
+include "frc971/vision/calibration.fbs";
+
+namespace y2024_swerve;
+
+table CameraConfiguration {
+  calibration:frc971.vision.calibration.CameraCalibration (id: 0);
+}
+
+table Common {
+
+}
+
+table RobotConstants {
+    front_left_zeroing_constants:frc971.zeroing.ContinuousAbsoluteEncoderZeroingConstants (id: 0);
+    front_right_zeroing_constants:frc971.zeroing.ContinuousAbsoluteEncoderZeroingConstants (id: 1);
+    back_left_zeroing_constants:frc971.zeroing.ContinuousAbsoluteEncoderZeroingConstants (id: 2);
+    back_right_zeroing_constants:frc971.zeroing.ContinuousAbsoluteEncoderZeroingConstants (id: 3);
+    cameras:[CameraConfiguration] (id: 4);
+}
+
+table Constants{
+    cameras:[CameraConfiguration] (id: 0, deprecated);
+    robot:RobotConstants (id: 1);
+    common:Common (id: 2);
+}
+
+root_type Constants;
