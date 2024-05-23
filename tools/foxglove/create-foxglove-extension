@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+exec bazel run \
+    --run_under="//tools/foxglove:creation_wrapper" \
+    //tools/foxglove:create_foxglove_extension \
+    -- \
+    "$@"
