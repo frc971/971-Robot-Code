@@ -411,8 +411,15 @@ class ShmExitHandle : public ExitHandle {
     CHECK_GT(event_loop_->exit_handle_count_, 0);
     --event_loop_->exit_handle_count_;
   }
+  // Because of how we handle reference counting, we either need to implement
+  // reference counting in the copy/move constructors or just not support them.
+  // If we ever develop a need for this object to be movable/copyable,
+  // supporting it should be straightforwards.
+  DISALLOW_COPY_AND_ASSIGN(ShmExitHandle);
 
-  void Exit() override { event_loop_->Exit(); }
+  void Exit(Result<void> status) override {
+    event_loop_->ExitWithStatus(status);
+  }
 
  private:
   ShmEventLoop *const event_loop_;
@@ -1029,7 +1036,7 @@ class SignalHandler {
   struct sigaction old_action_term_;
 };
 
-void ShmEventLoop::Run() {
+Result<void> ShmEventLoop::Run() {
   CheckCurrentThread();
   SignalHandler::global()->Register(this);
 
@@ -1119,9 +1126,30 @@ void ShmEventLoop::Run() {
   // created the timing reporter.
   timing_report_sender_.reset();
   ClearContext();
+  std::unique_lock<aos::stl_mutex> locker(exit_status_mutex_);
+  std::optional<Result<void>> exit_status;
+  // Clear the stored exit_status_ and extract it to be returned.
+  exit_status_.swap(exit_status);
+  return exit_status.value_or(Result<void>{});
 }
 
-void ShmEventLoop::Exit() { epoll_.Quit(); }
+void ShmEventLoop::Exit() {
+  observed_exit_.test_and_set();
+  // Implicitly defaults exit_status_ to success by not setting it.
+
+  epoll_.Quit();
+}
+
+void ShmEventLoop::ExitWithStatus(Result<void> status) {
+  // Only set the exit status if no other Exit*() call got here first.
+  if (!observed_exit_.test_and_set()) {
+    std::unique_lock<aos::stl_mutex> locker(exit_status_mutex_);
+    exit_status_ = std::move(status);
+  } else {
+    VLOG(1) << "Exit status is already set; not setting it again.";
+  }
+  Exit();
+}
 
 std::unique_ptr<ExitHandle> ShmEventLoop::MakeExitHandle() {
   return std::make_unique<ShmExitHandle>(this);

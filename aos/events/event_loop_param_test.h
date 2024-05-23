@@ -68,7 +68,9 @@ class EventLoopTestFactory {
   virtual std::unique_ptr<EventLoop> MakePrimary(std::string_view name) = 0;
 
   // Runs the loops until they quit.
-  virtual void Run() = 0;
+  virtual Result<void> Run() = 0;
+
+  virtual std::unique_ptr<ExitHandle> MakeExitHandle() = 0;
 
   // Quits the loops.
   virtual void Exit() = 0;
@@ -350,7 +352,11 @@ class AbstractEventLoopTest
 
   void EnableNodes(std::string_view my_node) { factory_->EnableNodes(my_node); }
 
-  void Run() { return factory_->Run(); }
+  Result<void> Run() { return factory_->Run(); }
+
+  std::unique_ptr<ExitHandle> MakeExitHandle() {
+    return factory_->MakeExitHandle();
+  }
 
   void Exit() { return factory_->Exit(); }
 

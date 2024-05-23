@@ -42,7 +42,13 @@ class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
     return event_loop_factory_->MakeEventLoop(name, my_node());
   }
 
-  void Run() override { event_loop_factory_->Run(); }
+  Result<void> Run() override { return event_loop_factory_->Run(); }
+
+  std::unique_ptr<ExitHandle> MakeExitHandle() override {
+    MaybeMake();
+    return event_loop_factory_->MakeExitHandle();
+  }
+
   void Exit() override { event_loop_factory_->Exit(); }
 
   // TODO(austin): Implement this.  It's used currently for a phased loop test.

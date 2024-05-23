@@ -122,7 +122,9 @@ cc_library(
         "//aos/logging",
         "//aos/time",
         "//aos/util:phased_loop",
+        "//aos/util:status",
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_tartanllama_expected",
         "@com_google_absl//absl/container:btree",
     ],
 )

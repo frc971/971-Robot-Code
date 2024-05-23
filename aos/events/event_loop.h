@@ -1,6 +1,5 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_H_
 #define AOS_EVENTS_EVENT_LOOP_H_
-
 #include <sched.h>
 
 #include <atomic>
@@ -11,6 +10,7 @@
 #include "absl/container/btree_set.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
+#include "tl/expected.hpp"
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
@@ -26,6 +26,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
+#include "aos/util/status.h"
 #include "aos/uuid.h"
 
 DECLARE_bool(timing_reports);
@@ -1040,7 +1041,12 @@ class ExitHandle {
   //
   // This means no more events will be processed, but any currently being
   // processed will finish.
-  virtual void Exit() = 0;
+  virtual void Exit(Result<void> result) = 0;
+  // Overload for a successful exit---equivalent to if we specified a default
+  // parameter for Exit(), except that autocxx does not understand default
+  // arguments and so needs an explicit overload to keep rust happy
+  // (https://github.com/google/autocxx/issues/563).
+  void Exit() { Exit({}); }
 };
 
 }  // namespace aos
