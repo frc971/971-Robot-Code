@@ -1,8 +1,9 @@
 #ifndef AOS_CONTAINERS_PRIORITY_QUEUE_H_
 #define AOS_CONTAINERS_PRIORITY_QUEUE_H_
 
+#include <stddef.h>
+
 #include <array>
-#include <iterator>
 #include <optional>
 
 namespace aos {

@@ -1,9 +1,13 @@
 #ifndef AOS_CONTAINERS_ERROR_LIST_H_
 #define AOS_CONTAINERS_ERROR_LIST_H_
 
-#include <iostream>
+#include <stddef.h>
 
-#include "flatbuffers/flatbuffers.h"
+#include <algorithm>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/vector.h"
 
 #include "aos/containers/sized_array.h"
 

@@ -1,6 +1,7 @@
 #include "aos/containers/resizeable_buffer.h"
 
 #include <numeric>
+#include <vector>
 
 #include "absl/types/span.h"
 #include "gmock/gmock.h"

@@ -1,5 +1,8 @@
 #include "aos/containers/sized_array.h"
 
+#include <iterator>
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace aos::testing {

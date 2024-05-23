@@ -1,6 +1,8 @@
 #ifndef AOS_CONTAINERS_SIZED_ARRAY_H_
 #define AOS_CONTAINERS_SIZED_ARRAY_H_
 
+#include <cstddef>
+
 #include "absl/container/inlined_vector.h"
 
 namespace aos {

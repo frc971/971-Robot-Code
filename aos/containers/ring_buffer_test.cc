@@ -1,5 +1,8 @@
 #include "aos/containers/ring_buffer.h"
 
+#include <memory>
+#include <ostream>
+
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 

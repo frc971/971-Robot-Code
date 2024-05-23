@@ -1,5 +1,8 @@
 #include "aos/containers/priority_queue.h"
 
+#include <functional>
+#include <vector>
+
 #include "gtest/gtest.h"
 
 namespace aos::testing {
