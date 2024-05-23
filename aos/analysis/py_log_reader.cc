@@ -16,16 +16,29 @@
 #define PY_SSIZE_T_CLEAN
 // Note that Python.h needs to be included before anything else.
 #include <Python.h>
+#include <stddef.h>
+#include <stdint.h>
 
+#include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <memory>
+#include <string>
+#include <vector>
+
+#include "absl/types/span.h"
+#include "glog/logging.h"
 
 #include "aos/configuration.h"
+#include "aos/events/context.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/time/time.h"
 
 namespace aos::analysis {
 namespace {

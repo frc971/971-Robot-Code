@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 #include "aos/analysis/in_process_plotter.h"
 #include "aos/init.h"
 
