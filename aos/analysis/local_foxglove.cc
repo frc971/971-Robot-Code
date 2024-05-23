@@ -1,8 +1,11 @@
-#include "glog/logging.h"
+#include <memory>
+
+#include "gflags/gflags.h"
 
 #include "aos/init.h"
 #include "aos/seasocks/seasocks_logger.h"
 #include "internal/Embedded.h"
+#include "seasocks/Logger.h"
 #include "seasocks/Server.h"
 
 DEFINE_string(data_path, "external/foxglove_studio",

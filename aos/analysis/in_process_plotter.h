@@ -1,10 +1,21 @@
 #ifndef AOS_ANALYSIS_IN_PROCESS_PLOTTER_H_
 #define AOS_ANALYSIS_IN_PROCESS_PLOTTER_H_
 
+#include <stddef.h>
+
+#include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/string.h"
+
 #include "aos/analysis/plot_data_generated.h"
+#include "aos/configuration_generated.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/network/web_proxy.h"
 
 namespace aos::analysis {

@@ -1,5 +1,12 @@
 #include "aos/analysis/in_process_plotter.h"
 
+#include <algorithm>
+#include <ostream>
+
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/vector.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 
 namespace aos::analysis {
