@@ -1,3 +1,13 @@
+# IMPORTANT NOTE
+
+The contents of this directory are the result of:
+
+    $ cd aos/analysis/
+    $ ../../tools/foxglove/create-foxglove-extension foxglove_extension
+
+Future patches will change the contents of this directory to be actually useful
+for analysis of AOS systems.
+
 # foxglove_extension
 
 ## _A Foxglove Studio Extension_
