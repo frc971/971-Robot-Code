@@ -1,5 +1,9 @@
 #include "aos/containers/error_list.h"
 
+#include <stdint.h>
+
+#include <memory>
+
 #include "gtest/gtest.h"
 
 #include "aos/json_to_flatbuffer_generated.h"

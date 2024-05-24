@@ -3,6 +3,9 @@
 
 #include <array>
 #include <cstddef>
+#include <iterator>
+#include <new>
+#include <type_traits>
 
 namespace aos {
 

@@ -1,5 +1,6 @@
 #include "aos/containers/inlined_vector.h"
 
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 #include "aos/realtime.h"

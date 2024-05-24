@@ -1,6 +1,8 @@
 #ifndef AOS_CONTAINERS_INLINED_VECTOR_H_
 #define AOS_CONTAINERS_INLINED_VECTOR_H_
 
+#include <stddef.h>
+
 #include <vector>
 
 #include "absl/container/inlined_vector.h"

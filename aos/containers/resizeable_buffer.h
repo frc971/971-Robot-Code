@@ -1,6 +1,10 @@
 #ifndef AOS_CONTAINERS_RESIZEABLE_BUFFER_H_
 #define AOS_CONTAINERS_RESIZEABLE_BUFFER_H_
 
+#include <stdint.h>
+#include <string.h>
+
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
 
