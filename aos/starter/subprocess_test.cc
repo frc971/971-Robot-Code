@@ -1,13 +1,22 @@
 #include "aos/starter/subprocess.h"
 
 #include <signal.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
+#include <ostream>
+
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
+#include "aos/ipc_lib/shm_base.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"

@@ -1,17 +1,33 @@
+#include <ctype.h>
+#include <stdlib.h>
+
 #include <algorithm>
 #include <chrono>
+#include <compare>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
+#include "aos/configuration.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
-#include "aos/json_to_flatbuffer.h"
+#include "aos/starter/starter_generated.h"
+#include "aos/starter/starter_rpc_generated.h"
 #include "aos/starter/starter_rpc_lib.h"
 #include "aos/time/time.h"
 

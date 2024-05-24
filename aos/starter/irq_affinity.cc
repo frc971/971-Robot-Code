@@ -1,15 +1,36 @@
 #include <linux/securebits.h>
 #include <pwd.h>
+#include <sched.h>
+#include <stdint.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
-#include <sys/types.h>
+#include <unistd.h>
 
+#include <algorithm>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "absl/strings/str_cat.h"
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/starter/irq_affinity_lib.h"
 #include "aos/starter/kthread_generated.h"
+#include "aos/util/file.h"
 #include "aos/util/top.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");

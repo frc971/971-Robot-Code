@@ -1,10 +1,14 @@
+#include <chrono>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
+#include "aos/configuration_generated.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/starter/starter_generated.h"
-#include "aos/starter/starter_rpc_generated.h"
-#include "aos/starter/starterd_lib.h"
+#include "aos/time/time.h"
 
 namespace aos::starter {
 

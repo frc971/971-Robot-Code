@@ -2,17 +2,20 @@
 #define AOS_STARTER_STARTERD_LIB_H_
 
 #include <sys/signalfd.h>
-#include <sys/wait.h>
 
 #include <csignal>
-#include <cstdio>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "aos/configuration.h"
+#include "aos/events/event_loop.h"
+#include "aos/events/event_loop_generated.h"
+#include "aos/events/shm_event_loop.h"
+#include "aos/ftrace.h"
 #include "aos/ipc_lib/memory_mapped_queue.h"
-#include "aos/ipc_lib/signalfd.h"
 #include "aos/macros.h"
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"

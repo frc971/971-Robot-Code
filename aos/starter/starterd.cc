@@ -1,8 +1,15 @@
 #include <pwd.h>
-#include <sys/types.h>
+#include <unistd.h>
+
+#include <ostream>
+#include <string>
 
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/starter/starterd_lib.h"
 #include "aos/util/file.h"

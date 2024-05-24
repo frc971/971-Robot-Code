@@ -1,15 +1,23 @@
 #ifndef AOS_STARTER_STARTER_RPC_LIB_H_
 #define AOS_STARTER_STARTER_RPC_LIB_H_
 
+#include <stdint.h>
+
 #include <chrono>
+#include <functional>
 #include <map>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"
+#include "aos/time/time.h"
 
 namespace aos::starter {
 
