@@ -21,7 +21,6 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/logging/replay_channels.h"
 #include "aos/events/logging/replay_timing_generated.h"
-#include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/message_bridge_server_generated.h"
