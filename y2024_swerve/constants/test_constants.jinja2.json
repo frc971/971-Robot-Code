@@ -1,0 +1,8 @@
+{
+  "constants": [
+    {
+      "team": 6971,
+      "data": {% include 'y2024_swerve/constants/test_data/test_team.json' %}
+    }
+  ]
+}

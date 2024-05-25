@@ -1,0 +1,236 @@
+{
+/* Targets have positive Z axis pointing into the board, positive X to the right
+   when looking at the board, and positive Y is down when looking at the board.
+   This means that you will get an identity rotation from the camera to target
+   frame when the target is upright, flat, and centered in the camera's view.
+
+   The global frame as the origin at the center of the field, positive X points
+   at the red driver's station, and positive Z points straight up.
+   */
+    "target_poses": [
+        {
+            "id": 1,
+            "position": {
+                "x": 6.809,
+                "y": -3.860,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": 0.6830127,
+                "z": -0.6830127
+            }
+        },
+        {
+            "id": 2,
+            "position": {
+                "x": 7.915,
+                "y": -3.223,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": 0.6830127,
+                "z": -0.6830127
+            }
+        },
+        {
+            "id": 3,
+            "position": {
+                "x": 8.309,
+                "y": 0.877,
+                "z": 1.456
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5
+            }
+        },
+        {
+            "id": 4,
+            "position": {
+                "x": 8.309,
+                "y": 1.442,
+                "z": 1.456
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5
+            }
+        },
+        {
+            "id": 5,
+            "position": {
+                "x": 6.428,
+                "y": 4.099,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.7071068,
+                "x": -0.7071068,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 6,
+            "position": {
+                "x": -6.430,
+                "y": 4.099,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.7071068,
+                "x": -0.7071068,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 7,
+            "position": {
+                "x": -8.309,
+                "y": 1.442,
+                "z": 1.474
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
+            }
+        },
+        {
+            "id": 8,
+            "position": {
+                "x": -8.309,
+                "y": 0.877,
+                "z": 1.474
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
+            }
+        },
+        {
+            "id": 9,
+            "position": {
+                "x": -7.915,
+                "y": -3.223,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": -0.6830127,
+                "z": 0.6830127
+            }
+        },
+        {
+            "id": 10,
+            "position": {
+                "x": -6.809,
+                "y": -3.860,
+                "z": 1.361
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": -0.6830127,
+                "z": 0.6830127
+            }
+        },
+        {
+            "id": 11,
+            "position": {
+                "x": 3.629,
+                "y": -0.393,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.6830127,
+                "x": -0.6830127,
+                "y": -0.1830127,
+                "z": 0.1830127
+            }
+        },
+        {
+            "id": 12,
+            "position": {
+                "x": 3.630,
+                "y": 0.392,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": -0.6830127,
+                "z": 0.6830127
+            }
+        },
+        {
+            "id": 13,
+            "position": {
+                "x": 2.949,
+                "y": -0.000,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5
+            }
+        },
+        {
+            "id": 14,
+            "position": {
+                "x": -2.949,
+                "y": -0.000,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
+            }
+        },
+        {
+            "id": 15,
+            "position": {
+                "x": -3.629,
+                "y": 0.393,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.1830127,
+                "x": -0.1830127,
+                "y": 0.6830127,
+                "z": -0.6830127
+            }
+        },
+        {
+            "id": 16,
+            "position": {
+                "x": -3.630,
+                "y": -0.392,
+                "z": 1.326
+            },
+            "orientation": {
+                "w": 0.6830127,
+                "x": -0.6830127,
+                "y": 0.1830127,
+                "z": -0.1830127
+            }
+        }
+    ]
+}

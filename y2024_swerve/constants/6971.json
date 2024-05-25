@@ -1,0 +1,28 @@
+{% from 'y2024_swerve/constants/common.jinja2' import front_left_zero %}
+{% from 'y2024_swerve/constants/common.jinja2' import front_right_zero %}
+{% from 'y2024_swerve/constants/common.jinja2' import back_left_zero %}
+{% from 'y2024_swerve/constants/common.jinja2' import back_right_zero %}
+
+{
+  "robot": {
+    "front_left_zeroing_constants":  {{ front_left_zero | tojson(indent=2)}},
+    "front_right_zeroing_constants":  {{ front_right_zero | tojson(indent=2)}},
+    "back_left_zeroing_constants":  {{ back_left_zero | tojson(indent=2)}},
+    "back_right_zeroing_constants":  {{ back_right_zero | tojson(indent=2)}},
+    "cameras": [
+      {
+        "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_imu-9971-0_cam-24-10_2024-02-24_16-44-05.json' %}
+      },
+      {
+        "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_imu-9971-1_cam-24-12_2024-03-24_11-52-49.json' %}
+      },
+      {
+        "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_orin1-9971-0_cam-24-09_2024-03-24_11-52-49.json' %}
+      },
+      {
+        "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_orin1-9971-1_cam-24-11_2024-03-24_11-52-49.json' %}
+      }
+    ]
+  },
+  {% include 'y2024_swerve/constants/common.json' %}
+}
