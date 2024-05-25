@@ -31,13 +31,13 @@ exec "${RUNFILES_DIR}/xvfb_amd64/usr/bin/Xvfb" "$@"
 sh_binary(
     name = "wrapped_bin/Xvfb",
     srcs = ["wrapped_bin/Xvfb.sh"],
-    deps = [
-        "@bazel_tools//tools/bash/runfiles",
-    ],
     data = glob([
         "usr/lib/**/*",
         "lib/**/*",
         "usr/bin/*",
     ]),
     visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
 )
