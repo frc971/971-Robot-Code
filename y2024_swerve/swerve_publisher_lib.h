@@ -8,7 +8,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "frc971/control_loops/drivetrain/swerve/swerve_drivetrain_output_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
 
 namespace y2024_swerve {
 

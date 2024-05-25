@@ -4,7 +4,7 @@
 #include "ctre/phoenix6/TalonFX.hpp"
 
 #include "frc971/can_configuration_generated.h"
-#include "frc971/control_loops/drivetrain/swerve/swerve_drivetrain_output_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/swerve/swerve_module.h"
 #include "frc971/wpilib/talonfx.h"

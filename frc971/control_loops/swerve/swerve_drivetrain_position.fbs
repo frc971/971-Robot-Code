@@ -5,11 +5,6 @@ table SwerveModulePosition {
   rotation_encoder:double (id: 0);
   // Translation in meters
   translation_encoder:double (id: 1);
-
-  // Speed in radians/s
-  rotation_speed:double (id: 2);
-  // Speed in m/s
-  translation_speed:double (id: 3);
 }
 
 table Position {

@@ -109,7 +109,7 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/events:event_loop",
-        "//frc971/control_loops/drivetrain/swerve:swerve_drivetrain_output_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -141,6 +141,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
         "//frc971/wpilib:can_sensor_reader",
         "//frc971/wpilib:sensor_reader",
         "//frc971/wpilib:talonfx",
@@ -178,8 +179,8 @@ aos_config(
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
-        "//frc971/control_loops/drivetrain/swerve:swerve_drivetrain_output_fbs",
-        "//frc971/control_loops/drivetrain/swerve:swerve_drivetrain_position_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/can_logger:can_logging_fbs",
     ],

@@ -1,6 +1,7 @@
 #ifndef FRC971_WPILIB_SWERVE_SWERVE_MODULE_H_
 #define FRC971_WPILIB_SWERVE_SWERVE_MODULE_H_
 
+#include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
 #include "frc971/wpilib/talonfx.h"
 
 namespace frc971::wpilib::swerve {
