@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 
 #include "gtest/gtest.h"
 

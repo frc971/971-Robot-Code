@@ -1,6 +1,21 @@
+#include <algorithm>
+#include <memory>
+#include <optional>
+#include <ostream>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "flatbuffers/reflection_generated.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
-#include "aos/events/event_loop_generated.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
+#include "aos/events/logging/logfile_sorting.h"
+#include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/util/clock_publisher.h"
 #include "aos/util/clock_timepoints_schema.h"

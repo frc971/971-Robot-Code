@@ -1,5 +1,6 @@
 #ifndef AOS_UTIL_CLOCK_PUBLISHER_H_
 #define AOS_UTIL_CLOCK_PUBLISHER_H_
+#include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/util/clock_timepoints_generated.h"
 

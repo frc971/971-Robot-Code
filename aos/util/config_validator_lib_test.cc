@@ -1,7 +1,11 @@
 #include "aos/util/config_validator_lib.h"
 
-#include "gtest/gtest-spi.h"
+#include <memory>
 
+#include "gtest/gtest-spi.h"  // IWYU pragma: keep
+#include "gtest/gtest.h"
+
+#include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 

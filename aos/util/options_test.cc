@@ -1,5 +1,7 @@
 #include "aos/util/options.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace aos::testing {

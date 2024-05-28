@@ -41,5 +41,9 @@
   { "include": ["<grpcpp/impl/service_type.h>", "private", "\"grpcpp/impl/service_type.h\"", "public"] },
   { "include": ["<grpcpp/security/credentials.h>", "private", "\"grpcpp/security/credentials.h\"", "public"] },
   { "include": ["<grpcpp/server.h>", "private", "\"grpcpp/server.h\"", "public"] },
+
+  # nlohmann
+  { "include": ["<nlohmann/json.hpp>", "private", "\"nlohmann/json.hpp\"", "public"] },
+  { "include": ["<nlohmann/json_fwd.hpp>", "private", "\"nlohmann/json_fwd.hpp\"", "public"] },
 ]
 

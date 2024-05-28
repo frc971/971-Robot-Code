@@ -1,6 +1,10 @@
 #ifndef AOS_UTIL_BITPACKING_H_
 #define AOS_UTIL_BITPACKING_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <algorithm>
 #include <cassert>
 #include <type_traits>
 

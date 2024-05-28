@@ -1,12 +1,30 @@
 #include "aos/util/mcap_logger.h"
 
-#include "absl/strings/str_replace.h"
-#include "lz4/lz4.h"
+#include <algorithm>
+#include <chrono>
+#include <numeric>
+#include <ostream>
+#include <set>
+
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/detached_buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/reflection.h"
+#include "flatbuffers/reflection_generated.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+#include "glog/vlog_is_on.h"
 #include "lz4/lz4frame.h"
 #include "nlohmann/json.hpp"
 
+#include "aos/configuration.h"
 #include "aos/configuration_schema.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/json_to_flatbuffer.h"
 
 DEFINE_uint64(mcap_chunk_size, 10'000'000,
               "Size, in bytes, of individual MCAP chunks");

@@ -1,5 +1,17 @@
 #include "aos/util/clock_publisher.h"
 
+#include <algorithm>
+#include <chrono>
+#include <vector>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+
+#include "aos/configuration_generated.h"
+#include "aos/events/context.h"
+
 namespace aos {
 ClockPublisher::ClockPublisher(aos::SimulatedEventLoopFactory *factory,
                                aos::EventLoop *event_loop)

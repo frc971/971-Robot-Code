@@ -1,5 +1,9 @@
 #include "aos/util/threaded_queue.h"
 
+#include <atomic>
+#include <memory>
+#include <utility>
+
 #include "gtest/gtest.h"
 
 namespace aos::util {

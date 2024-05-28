@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 
+#include <algorithm>
 #include <array>
 #include <string>
 

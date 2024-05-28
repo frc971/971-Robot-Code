@@ -1,5 +1,8 @@
 #include "aos/util/error_counter.h"
 
+#include <algorithm>
+#include <memory>
+
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_generated.h"

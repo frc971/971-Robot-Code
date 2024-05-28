@@ -1,6 +1,8 @@
 #include "aos/util/phased_loop.h"
 
-#include "glog/logging.h"
+#include <memory>
+#include <ratio>
+
 #include "gtest/gtest.h"
 
 #include "aos/time/time.h"

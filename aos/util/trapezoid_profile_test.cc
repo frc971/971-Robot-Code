@@ -1,7 +1,11 @@
 #include "aos/util/trapezoid_profile.h"
 
-#include "Eigen/Dense"
-#include "glog/logging.h"
+#include <compare>
+#include <cstdlib>
+#include <memory>
+#include <ratio>
+
+#include "Eigen/Dense"  // IWYU pragma: keep
 #include "gtest/gtest.h"
 
 namespace aos::util::testing {

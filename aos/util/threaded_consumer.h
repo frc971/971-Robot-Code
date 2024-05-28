@@ -5,6 +5,8 @@
 #include <optional>
 #include <thread>
 
+#include "glog/logging.h"
+
 #include "aos/condition.h"
 #include "aos/containers/ring_buffer.h"
 #include "aos/mutex/mutex.h"
