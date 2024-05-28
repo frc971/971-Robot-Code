@@ -3,6 +3,7 @@
 #include <iosfwd>          // for ostream
 #include <map>             // for map
 #include <string>          // for string
+#include <vector>          // for vector
 #include "driver_types.h"  // for cudaStream_t, CUevent_st, cudaEvent_t
 
 class Timing
@@ -56,6 +57,7 @@ public:
 
 private:
     std::map<std::string, Timing> m_timings{};
+    std::vector<std::string> m_keys_in_insert_order_{};
     bool m_enabled{true};
 };
 

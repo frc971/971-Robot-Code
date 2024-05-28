@@ -52,7 +52,7 @@ void Timing::endFrame(void)
 {
     if (m_startEventSeen && m_endEventSeen)
     {
-        cudaSafeCall(cudaEventSynchronize(m_startEvent));
+        // cudaSafeCall(cudaEventSynchronize(m_startEvent)); Shouldn't need this one - if end has been seen, the corresponding start event has also occurred
         cudaSafeCall(cudaEventSynchronize(m_endEvent));
         m_startEventSeen = false;
         m_endEventSeen = false;
@@ -91,6 +91,10 @@ void Timings::start(const std::string &name, cudaStream_t cudaStream)
     if (m_enabled)
     {
         const auto &[it, placed] = m_timings.try_emplace(name, name);
+        if (placed)
+        {
+            m_keys_in_insert_order_.push_back(name);
+        }
         it->second.start(cudaStream);
     }
 }
@@ -131,9 +135,9 @@ void Timings::setEnabled(const bool enabled)
 
 std::ostream &operator<<(std::ostream &stream, const Timings &timings)
 {
-    for (const auto &[name, timing] : timings.m_timings)
+    for (const auto &name : timings.m_keys_in_insert_order_)
     {
-        stream << timing << std::endl;
+        stream << timings.m_timings.at(name) << std::endl;
     }
     return stream;
 }

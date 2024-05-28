@@ -210,6 +210,8 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
   CHECK_EQ(tag_detector_->quad_decimate, 2);
   CHECK(!tag_detector_->qtp.deglitch);
 
+  CHECK_CUDA(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
+
   for (int i = 0; i < zarray_size(tag_detector_->tag_families); i++) {
     apriltag_family_t *family;
     zarray_get(tag_detector_->tag_families, i, &family);
@@ -709,7 +711,7 @@ template <InputFormat INPUT_FORMAT>
 void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
-  ScopedEventTiming e2e_timing(event_timings_, "e2e", stream_.get());
+  event_timings_.start("e2e", stream_.get());
   start_.Record(&stream_);
   event_timings_.start("image_memcpy_to_device", stream_.get());
   // Note - since image isn't declared using host memory this
@@ -732,6 +734,8 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   after_threshold_.Record(&stream_);
   event_timings_.start("gray_image_memcpy_to_host", stream_.get());
   // TODO : maybe run me on separate stream
+  // TODO : special case for Mono8 inputs - just assign pointers
+  //        rather than copying data
   gray_image_device_.MemcpyAsyncTo(&gray_image_host_, &stream_);
   event_timings_.end("gray_image_memcpy_to_host");
 
@@ -974,7 +978,6 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
     size_t temp_storage_bytes = radix_sort_tmpstorage_device_.size();
     QuadIndexPointDecomposer decomposer;
 
-    after_filter_.Wait(&stream_);
     CHECK_CUDA(cub::DeviceRadixSort::SortKeys(
         radix_sort_tmpstorage_device_.get(), temp_storage_bytes,
         selected_blobs_device_.get(), sorted_selected_blobs_device_.get(),
@@ -1150,6 +1153,8 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   event_timings_.end("DecodeTags");
 
   const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+  event_timings_.end("e2e");
+  event_timings_.endFrame();
 
   // TODO(austin): Bring it back to the CPU and see how good we did.
 
