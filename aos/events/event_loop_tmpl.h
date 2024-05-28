@@ -39,6 +39,13 @@ template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
   using MessageType = typename event_loop_internal::watch_message_type_trait<
       decltype(&Watch::operator())>::message_type;
+  // Note: This could be done with SFINAE, but then you don't get as good an
+  // error message and the main benefit of SFINAE is to be able to make
+  // compilation *not* fail if we e.g. had another MakeWatcher overload that
+  // could take static flatbuffers.
+  static_assert(std::is_base_of<flatbuffers::Table, MessageType>::value,
+                "Watchers must be created with raw flatbuffer types---static "
+                "flatbuffers are currently not supported with watchers.");
   const Channel *channel = configuration::GetChannel(
       configuration_, channel_name, MessageType::GetFullyQualifiedName(),
       name(), node());

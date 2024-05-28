@@ -694,6 +694,13 @@ class EventLoop {
   // Fetcher before using it.
   template <typename T>
   Fetcher<T> TryMakeFetcher(const std::string_view channel_name) {
+    // Note: This could be done with SFINAE, but then you don't get as good an
+    // error message and the main benefit of SFINAE is to be able to make
+    // compilation *not* fail if we e.g. had another MakeFetcher overload that
+    // could take static flatbuffers.
+    static_assert(std::is_base_of<flatbuffers::Table, T>::value,
+                  "Fetchers must be created with raw flatbuffer types---static "
+                  "flatbuffers are currently not supported with fetchers.");
     const Channel *const channel = GetChannel<T>(channel_name);
     if (channel == nullptr) {
       return Fetcher<T>();
