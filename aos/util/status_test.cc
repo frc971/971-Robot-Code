@@ -64,9 +64,11 @@ TEST_F(StatusTest, RealtimeError) {
           line)));
 }
 
+// Malloc hooks don't work with asan/msan.
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
 // Tests that we do indeed malloc (and catch it) on an extra-long error message
 // (this is mostly intended to ensure that the test setup is working correctly).
-TEST(StatusDeatTest, BlowsUpOnRealtimeAllocation) {
+TEST(StatusDeathTest, BlowsUpOnRealtimeAllocation) {
   std::string message(" ", Status::kStaticMessageLength + 1);
   EXPECT_DEATH(
       {
@@ -77,8 +79,10 @@ TEST(StatusDeatTest, BlowsUpOnRealtimeAllocation) {
       "Malloced");
 }
 
+#endif
+
 // Tests that we can use arbitrarily-sized string literals for error messages.
-TEST(StatusDeatTest, StringLiteralError) {
+TEST_F(StatusTest, StringLiteralError) {
   std::optional<Status> error;
   const char *message =
       "Hellllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll"
