@@ -12,6 +12,7 @@ robot_downloader(
     binaries = [
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
+        "//y2024_swerve/constants:constants_sender",
         "//aos/events:aos_timing_report_streamer",
     ],
     data = [
@@ -21,6 +22,9 @@ robot_downloader(
         "@ctre_phoenix6_tools_athena//:shared_libraries",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
+    ],
+    dirs = [
+        "//y2024/www:www_files",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
@@ -36,24 +40,42 @@ robot_downloader(
 )
 
 robot_downloader(
-    name = "pi_download",
+    name = "orin_download",
     binaries = [
-        "//aos/util:foxglove_websocket",
         "//aos/events:aos_timing_report_streamer",
         "//aos/events/logging:log_cat",
-        "//y2023/rockpi:imu_main",
+        "//aos:aos_jitter",
+        "//aos/network:web_proxy_main",
+        "//aos/starter:irq_affinity",
+        "//aos/util:foxglove_websocket",
         "//frc971/image_streamer:image_streamer",
+        "//frc971/orin:hardware_monitor",
+        "//frc971/orin:argus_monitor",
+        "//frc971/vision:intrinsics_calibration",
+        "//aos/util:filesystem_monitor",
+        "//y2024_swerve/constants:constants_sender",
+        "//frc971/vision:foxglove_image_converter",
+    ],
+    data = [
+        ":aos_config",
+        "//frc971/orin:orin_irq_config.json",
+        "//y2024/www:www_files",
+        "//y2024_swerve/constants:constants.json",
+    ],
+    dirs = [
+        "//y2024/www:www_files",
+    ],
+    start_binaries = [
+        "//aos/events/logging:logger_main",
+        "//frc971/imu_fdcan:can_translator",
+        "//frc971/imu_fdcan:dual_imu_blender",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
-        "//aos/events/logging:logger_main",
-    ],
-    data = [
-        ":aos_config",
-        "//frc971/rockpi:rockpi_config.json",
-    ],
-    start_binaries = [
+        "//frc971/orin:argus_camera",
+        "//y2024_swerve/vision:apriltag_detector",
+        "//frc971/vision:image_logger",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",
@@ -75,8 +97,12 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
+        "//y2024_swerve/constants:constants_fbs",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
     ],
 )
 
@@ -157,12 +183,14 @@ aos_config(
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
         "//frc971/input:robot_state_fbs",
+        "//frc971/vision:vision_fbs",
+        "//frc971/vision:target_map_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":config_imu",
-        ":config_logger",
+        ":config_orin1",
         ":config_roborio",
     ],
 )
@@ -198,10 +226,20 @@ aos_config(
     src = "y2024_swerve_imu.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
+        "//y2024_swerve/constants:constants_fbs",
         "//aos/network:message_bridge_server_fbs",
+        "//frc971/imu_fdcan:dual_imu_fbs",
+        "//frc971/imu_fdcan:can_translator_status_fbs",
+        "//frc971/imu_fdcan:dual_imu_blender_status_fbs",
+        "//frc971/can_logger:can_logging_fbs",
+        "//frc971/orin:hardware_stats_fbs",
         "//aos/network:timestamp_fbs",
+        "//aos/util:filesystem_fbs",
         "//aos/network:remote_message_fbs",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
+        "//frc971/vision:vision_fbs",
+        "@com_github_foxglove_schemas//:schemas",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
@@ -212,15 +250,20 @@ aos_config(
 )
 
 aos_config(
-    name = "config_logger",
-    src = "y2024_swerve_logger.json",
+    name = "config_orin1",
+    src = "y2024_swerve_orin1.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
         "//aos/network:remote_message_fbs",
+        "//y2024_swerve/constants:constants_fbs",
+        "//frc971/orin:hardware_stats_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
+        "//frc971/vision:vision_fbs",
+        "//aos/util:filesystem_fbs",
+        "@com_github_foxglove_schemas//:schemas",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

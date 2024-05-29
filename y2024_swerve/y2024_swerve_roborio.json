@@ -2,9 +2,20 @@
     "channels": [
         {
             "name": "/roborio/aos",
-            "type": "aos.RobotState",
+            "type": "aos.JoystickState",
             "source_node": "roborio",
-            "frequency": 250
+            "frequency": 250,
+            "logger": "LOCAL_AND_REMOTE_LOGGER",
+            "logger_nodes": [
+                "imu"
+            ],
+            "destination_nodes": [
+                {
+                    "name": "imu",
+                    "priority": 5,
+                    "time_to_live": 50000000
+                }
+            ]
         },
         {
             "name": "/roborio/aos",
@@ -66,12 +77,6 @@
             "frequency": 20,
             "source_node": "roborio",
             "max_size": 208
-        },
-        {
-            "name": "/roborio/aos/remote_timestamps/logger/roborio/aos/aos-message_bridge-Timestamp",
-            "type": "aos.message_bridge.RemoteMessage",
-            "frequency": 300,
-            "source_node": "roborio"
         },
         {
             "name": "/roborio/aos",
@@ -342,9 +347,6 @@
         },
         {
             "name": "imu"
-        },
-        {
-            "name": "logger"
-        }
+        } 
     ]
 }
