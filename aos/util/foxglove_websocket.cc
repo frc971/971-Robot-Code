@@ -1,6 +1,10 @@
+#include <string>
+
 #include "gflags/gflags.h"
 
+#include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/util/foxglove_websocket_lib.h"
 

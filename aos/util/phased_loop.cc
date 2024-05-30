@@ -1,5 +1,8 @@
 #include "aos/util/phased_loop.h"
 
+#include <compare>
+#include <ratio>
+
 #include "glog/logging.h"
 
 namespace aos::time {

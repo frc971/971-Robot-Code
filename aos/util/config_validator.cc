@@ -1,4 +1,12 @@
+#include <memory>
+
+#include "gflags/gflags.h"
+#include "gtest/gtest.h"
+
+#include "aos/configuration.h"
+#include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/util/config_validator_config_generated.h"
 #include "aos/util/config_validator_lib.h"
 
 DEFINE_string(config, "", "Name of the config file to replay using.");

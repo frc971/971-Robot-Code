@@ -1,5 +1,7 @@
 #include "aos/util/math.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace aos::math::testing {

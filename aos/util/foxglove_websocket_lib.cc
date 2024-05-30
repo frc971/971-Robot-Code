@@ -1,9 +1,27 @@
 #include "aos/util/foxglove_websocket_lib.h"
 
-#include "absl/strings/escaping.h"
-#include "gflags/gflags.h"
+#include <chrono>
+#include <compare>
+#include <string>
+#include <utility>
 
+#include "absl/container/btree_set.h"
+#include "absl/strings/escaping.h"
+#include "absl/types/span.h"
+#include "flatbuffers/reflection_generated.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+#include "nlohmann/json.hpp"
+#include <foxglove/websocket/server.hpp>
+
+#include "aos/configuration.h"
+#include "aos/events/context.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/flatbuffers.h"
+#include "aos/json_to_flatbuffer.h"
+#include "aos/time/time.h"
 #include "aos/util/mcap_logger.h"
 
 DEFINE_uint32(sorting_buffer_ms, 100,

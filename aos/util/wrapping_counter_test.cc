@@ -1,6 +1,6 @@
 #include "aos/util/wrapping_counter.h"
 
-#include <climits>
+#include <memory>
 
 #include "gtest/gtest.h"
 

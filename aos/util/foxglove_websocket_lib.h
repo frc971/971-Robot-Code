@@ -1,6 +1,9 @@
 #ifndef AOS_UTIL_FOXGLOVE_WEBSOCKET_LIB_H_
 #define AOS_UTIL_FOXGLOVE_WEBSOCKET_LIB_H_
+#include <stdint.h>
+
 #include <map>
+#include <memory>
 #include <set>
 
 #include "foxglove/websocket/server.hpp"

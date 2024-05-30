@@ -1,18 +1,33 @@
 #include "aos/util/top.h"
 
+#include <pthread.h>
+#include <signal.h>
 #include <unistd.h>
 
-#include <array>
+#include <algorithm>
+#include <atomic>
+#include <limits>
+#include <ostream>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <vector>
 
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include <gmock/gmock.h>
 
+#include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
+#include "aos/ipc_lib/shm_base.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
+#include "aos/util/file.h"
 
 namespace aos::util::testing {
 

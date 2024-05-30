@@ -1,6 +1,10 @@
 #include "aos/util/scoped_pipe.h"
 
+#include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
+
+#include <ostream>
 
 #include "glog/logging.h"
 

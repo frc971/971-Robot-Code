@@ -1,12 +1,7 @@
 #ifndef AOS_UTIL_OPTIONS_H_
 #define AOS_UTIL_OPTIONS_H_
 
-#include <sys/types.h>
-
 namespace aos {
-
-template <class Owner>
-class Options;
 
 // An "option" that can be combined with other options and passed as one
 // argument. This class is designed to emulate integral constants (except be

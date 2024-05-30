@@ -1,10 +1,12 @@
 #ifndef AOS_UTIL_SCOPED_PIPE_H_
 #define AOS_UTIL_SCOPED_PIPE_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "absl/types/span.h"
 
@@ -14,6 +16,7 @@ namespace aos::util {
 class ScopedPipe {
  public:
   class ScopedReadPipe;
+
   class ScopedWritePipe;
 
   struct PipePair {

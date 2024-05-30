@@ -1,6 +1,12 @@
 #ifndef AOS_UTIL_ERROR_COUNTER_H_
 #define AOS_UTIL_ERROR_COUNTER_H_
-#include "flatbuffers/flatbuffers.h"
+#include <stddef.h>
+
+#include <array>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/vector.h"
 #include "glog/logging.h"
 
 namespace aos::util {

@@ -1,9 +1,8 @@
 #include "aos/util/mcap_logger.h"
 
-#include <iostream>
-
 #include "flatbuffers/reflection_generated.h"
 #include "gtest/gtest.h"
+#include "nlohmann/json.hpp"
 
 namespace aos::testing {
 // TODO(james): Write a proper test for the McapLogger itself. However, that

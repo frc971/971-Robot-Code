@@ -1,6 +1,14 @@
 #include "aos/util/simulation_logger.h"
 
+#include <algorithm>
+#include <chrono>
+#include <utility>
+
+#include "absl/strings/str_cat.h"
+
+#include "aos/configuration.h"
 #include "aos/events/logging/logfile_utils.h"
+#include "aos/time/time.h"
 
 namespace aos::util {
 LoggerState::LoggerState(aos::SimulatedEventLoopFactory *factory,

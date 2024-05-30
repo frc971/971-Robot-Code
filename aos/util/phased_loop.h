@@ -1,6 +1,7 @@
 #ifndef AOS_UTIL_PHASED_LOOP_H_
 #define AOS_UTIL_PHASED_LOOP_H_
 
+#include <chrono>
 #include <optional>
 
 #include "aos/time/time.h"

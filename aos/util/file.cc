@@ -1,17 +1,25 @@
 #include "aos/util/file.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <fts.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <iterator>
 #include <optional>
+#include <ostream>
 #include <string_view>
 #if __has_feature(memory_sanitizer)
 #include <sanitizer/msan_interface.h>
 #endif
+
+#include "flatbuffers/util.h"
 
 #include "aos/scoped/scoped_fd.h"
 

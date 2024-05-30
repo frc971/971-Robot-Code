@@ -1,11 +1,23 @@
 #ifndef AOS_UTIL_TOP_H_
 #define AOS_UTIL_TOP_H_
 
+#include <stdint.h>
+#include <sys/types.h>
+
+#include <chrono>
+#include <functional>
 #include <map>
+#include <optional>
+#include <set>
 #include <string>
+#include <utility>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/event_loop.h"
+#include "aos/time/time.h"
 #include "aos/util/process_info_generated.h"
 
 namespace aos::util {

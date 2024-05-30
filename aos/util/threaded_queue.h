@@ -94,5 +94,5 @@ class ThreadedQueue {
 
 }  // namespace aos::util
 
-#include "aos/util/threaded_queue_tmpl.h"
-#endif  // AOS_UTIL_THREADED_QUEUE_H_
+#include "aos/util/threaded_queue_tmpl.h"  // IWYU pragma: keep
+#endif                                     // AOS_UTIL_THREADED_QUEUE_H_

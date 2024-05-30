@@ -1,9 +1,26 @@
+#include <stddef.h>
 #include <sys/statvfs.h>
 
-#include "absl/strings/str_split.h"
-#include "gflags/gflags.h"
+#include <algorithm>
+#include <chrono>
+#include <istream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
+#include "absl/strings/str_split.h"
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/util/filesystem_generated.h"
 

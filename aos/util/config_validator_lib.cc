@@ -1,14 +1,39 @@
 #include "aos/util/config_validator_lib.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cstdlib>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/detached_buffer.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags_declare.h"
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
+#include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
-#include "aos/events/logging/log_writer.h"
+#include "aos/events/logging/logfile_sorting.h"
+#include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers/builder.h"
+#include "aos/flatbuffers/static_vector.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_channel.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/config_validator_config_static.h"
+#include "aos/util/file.h"
 #include "aos/util/simulation_logger.h"
 
 DECLARE_bool(validate_timestamp_logger_nodes);

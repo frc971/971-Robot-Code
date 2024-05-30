@@ -1,6 +1,14 @@
 #include "aos/util/trapezoid_profile.h"
 
+#include <math.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <ostream>
+
 #include "glog/logging.h"
+
+#include "aos/time/time.h"
 
 namespace aos::util {
 

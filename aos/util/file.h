@@ -1,18 +1,18 @@
 #ifndef AOS_UTIL_FILE_H_
 #define AOS_UTIL_FILE_H_
 
-#include <fcntl.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
-#include "absl/strings/numbers.h"
 #include "absl/types/span.h"
-#include "flatbuffers/util.h"
 #include "glog/logging.h"
 
 #include "aos/scoped/scoped_fd.h"

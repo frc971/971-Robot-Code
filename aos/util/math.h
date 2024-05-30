@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "Eigen/Dense"
+#include "Eigen/Core"
 
 namespace aos::math {
 

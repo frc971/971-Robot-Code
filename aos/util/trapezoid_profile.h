@@ -1,10 +1,11 @@
 #ifndef AOS_UTIL_TRAPEZOID_PROFILE_H_
 #define AOS_UTIL_TRAPEZOID_PROFILE_H_
 
-#include "Eigen/Dense"
+#include <chrono>
+
+#include "Eigen/Core"
 
 #include "aos/macros.h"
-#include "aos/time/time.h"
 
 namespace aos::util {
 

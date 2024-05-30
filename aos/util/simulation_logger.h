@@ -1,9 +1,16 @@
 #ifndef AOS_UTIL_SIMULATION_LOGGER_H_
 #define AOS_UTIL_SIMULATION_LOGGER_H_
+#include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 
+#include "aos/configuration_generated.h"
+#include "aos/events/event_loop.h"
+#include "aos/events/logging/log_namer.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
+
 namespace aos::util {
 
 class LoggerState {

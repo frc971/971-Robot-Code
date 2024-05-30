@@ -1,5 +1,11 @@
 #include "aos/util/threaded_consumer.h"
 
+#include <atomic>
+#include <chrono>
+#include <initializer_list>
+#include <memory>
+#include <ostream>
+
 #include "gtest/gtest.h"
 
 namespace aos::util {
