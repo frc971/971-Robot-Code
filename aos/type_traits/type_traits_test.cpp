@@ -1,5 +1,9 @@
 #include "aos/type_traits/type_traits.h"
 
+#include <stdint.h>
+#include <string.h>
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace aos {
