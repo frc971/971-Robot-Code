@@ -1,19 +1,35 @@
+#include <stdint.h>
+
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <future>
+#include <functional>
+#include <ostream>
+#include <string>
 #include <thread>
 
+#include "absl/strings/str_format.h"
+#include "flatbuffers/string.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/ping_generated.h"
-#include "aos/events/pong_generated.h"
+#include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/ipc_lib/event.h"
+#include "aos/ipc_lib/shm_base.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
+#include "aos/starter/starter_generated.h"
+#include "aos/starter/starter_rpc_generated.h"
 #include "aos/starter/starter_rpc_lib.h"
 #include "aos/starter/starterd_lib.h"
 #include "aos/testing/path.h"
-#include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
+#include "aos/util/process_info_generated.h"
 
 using aos::testing::ArtifactPath;
 

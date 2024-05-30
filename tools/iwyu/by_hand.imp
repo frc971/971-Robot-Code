@@ -30,6 +30,7 @@
 
   # glog
   { "include": ["\"glog/log_severity.h\"", "private", "\"glog/logging.h\"", "public"] },
+  { "include": ["\"glog/vlog_is_on.h\"", "private", "\"glog/logging.h\"", "public"] },
 
   # gtest
   { "include": ["<gtest/gtest.h>", "private", "\"gtest/gtest.h\"", "public"] },

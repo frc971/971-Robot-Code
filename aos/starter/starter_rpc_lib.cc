@@ -1,7 +1,15 @@
 #include "aos/starter/starter_rpc_lib.h"
 
+#include <algorithm>
+#include <ostream>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
 #include "glog/logging.h"
 
+#include "aos/events/context.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/starter/starterd_lib.h"

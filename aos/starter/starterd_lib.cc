@@ -1,12 +1,24 @@
 #include "aos/starter/starterd_lib.h"
 
+#include <string.h>
+
 #include <algorithm>
+#include <chrono>
+#include <functional>
+#include <ostream>
+#include <set>
+#include <string_view>
+#include <thread>
 #include <utility>
 
-#include "absl/strings/str_format.h"
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "gflags/gflags.h"
 #include "glog/logging.h"
-#include "glog/stl_logging.h"
 
+#include "aos/events/context.h"
 #include "aos/json_to_flatbuffer.h"
 
 // FLAGS_shm_base is defined elsewhere, declare it here so it can be used

@@ -1,5 +1,20 @@
 #include "aos/starter/mock_starter.h"
 
+#include <algorithm>
+#include <ostream>
+#include <string_view>
+#include <utility>
+
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "glog/logging.h"
+
+#include "aos/configuration.h"
+#include "aos/starter/starter_rpc_generated.h"
+#include "aos/starter/starterd_lib.h"
+
 namespace aos::starter {
 
 MockStarter::MockStarter(aos::EventLoop *event_loop)

@@ -1,15 +1,26 @@
 #include "aos/starter/subprocess.h"
 
+#include <errno.h>
 #include <grp.h>
 #include <pwd.h>
+#include <signal.h>
+#include <stdlib.h>
 #include <sys/prctl.h>
-#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
+#include <compare>
+#include <iterator>
+#include <ostream>
+#include <ratio>
+
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "glog/logging.h"
 
-#include "aos/flatbuffer_merge.h"
+#include "aos/util/file.h"
+#include "aos/util/process_info_generated.h"
 
 namespace aos::starter {
 

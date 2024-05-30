@@ -1,16 +1,37 @@
 #ifndef AOS_STARTER_SUBPROCESS_H_
 #define AOS_STARTER_SUBPROCESS_H_
 
-#include <filesystem>
+#include <stdint.h>
+#include <sys/signalfd.h>
+#include <sys/types.h>
+
+#include <algorithm>
+#include <chrono>
+#include <filesystem>  // IWYU pragma: keep
+#include <functional>
+#include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
-#include <tuple>
+#include <string_view>
+#include <utility>
 #include <vector>
 
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+
+#include "aos/configuration_generated.h"
+#include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
+#include "aos/events/event_loop_generated.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/ipc_lib/signalfd.h"
+#include "aos/macros.h"
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"
+#include "aos/time/time.h"
 #include "aos/util/scoped_pipe.h"
 #include "aos/util/top.h"
 

@@ -1,16 +1,27 @@
+#include <errno.h>
 #include <signal.h>
-#include <sys/types.h>
+#include <sys/wait.h>
 
+#include <chrono>
 #include <filesystem>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <thread>
 
+#include "absl/strings/str_cat.h"
+#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "aos/configuration.h"
+#include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/flatbuffers.h"
+#include "aos/starter/starter_generated.h"
 #include "aos/starter/subprocess.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
-#include "aos/util/file.h"
 
 namespace aos::starter::testing {
 

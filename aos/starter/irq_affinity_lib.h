@@ -1,10 +1,11 @@
 #ifndef AOS_STARTER_IRQ_AFFINITY_LIB_H_
 #define AOS_STARTER_IRQ_AFFINITY_LIB_H_
 
-#include <string>
-#include <vector>
+#include <stddef.h>
 
-#include "glog/logging.h"
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace aos {
 

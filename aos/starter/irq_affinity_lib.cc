@@ -1,10 +1,18 @@
 #include "aos/starter/irq_affinity_lib.h"
 
 #include <fcntl.h>
+#include <unistd.h>
 
-#include "absl/strings/escaping.h"
+#include <algorithm>
+#include <ostream>
+#include <utility>
+
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "glog/logging.h"
 
 #include "aos/scoped/scoped_fd.h"
 
