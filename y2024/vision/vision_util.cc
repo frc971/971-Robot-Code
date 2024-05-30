@@ -31,9 +31,9 @@ std::map<std::string, int> CreateOrderingMap(
 const frc971::vision::calibration::CameraCalibration *FindCameraCalibration(
     const y2024::Constants &calibration_data, std::string_view node_name,
     int camera_number) {
-  CHECK(calibration_data.robot()->has_cameras());
+  CHECK(calibration_data.has_cameras());
   for (const y2024::CameraConfiguration *candidate :
-       *calibration_data.robot()->cameras()) {
+       *calibration_data.cameras()) {
     CHECK(candidate->has_calibration());
     if (candidate->calibration()->node_name()->string_view() != node_name ||
         candidate->calibration()->camera_number() != camera_number) {

@@ -104,23 +104,20 @@ class LocalizerTest : public ::testing::Test {
       // Sanity check that the test calibration files look like what we
       // expect.
       CHECK_EQ("orin1", constants_fetcher_.constants()
-                            .robot()
-                            ->cameras()
+                            .cameras()
                             ->Get(0)
                             ->calibration()
                             ->node_name()
                             ->string_view());
       CHECK_EQ(0, constants_fetcher_.constants()
-                      .robot()
-                      ->cameras()
+                      .cameras()
                       ->Get(0)
                       ->calibration()
                       ->camera_number());
       const Eigen::Matrix<double, 4, 4> H_robot_camera =
           frc971::control_loops::drivetrain::FlatbufferToTransformationMatrix(
               *constants_fetcher_.constants()
-                   .robot()
-                   ->cameras()
+                   .cameras()
                    ->Get(0)
                    ->calibration()
                    ->fixed_extrinsics());
