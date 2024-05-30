@@ -1,11 +1,16 @@
 #include "aos/time/time.h"
 
+#include <ctype.h>
+#include <errno.h>
+#include <sys/time.h>
+
 #include <algorithm>
 #include <chrono>
-#include <cinttypes>
-#include <cstring>
+#include <compare>
+#include <cstdint>
 #include <ctime>
 #include <iomanip>
+#include <ratio>
 #include <sstream>
 
 #ifdef __linux__
