@@ -30,6 +30,10 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
       pixel = gray_image[i] = 0.114 * color_image[i * 3] +
                               0.587 * color_image[i * 3 + 1] +
                               0.299 * color_image[i * 3 + 2];  // BGR input
+    } else if constexpr (INPUT_FORMAT == InputFormat::BGRA8) {
+      pixel = gray_image[i] = 0.114 * color_image[i * 4] +
+                              0.587 * color_image[i * 4 + 1] +
+                              0.299 * color_image[i * 4 + 2];  // BGRA input, skip alpha channel
     }
 
     const size_t row = i / width;
@@ -224,6 +228,11 @@ template void CudaToGreyscaleAndDecimateHalide<InputFormat::YCbCr422>(
     uint8_t *thresholded_image, size_t width, size_t height,
     size_t min_white_black_diff, CudaStream *stream);
 template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGR8>(
+    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream);
+template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGRA8>(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
     uint8_t *thresholded_image, size_t width, size_t height,

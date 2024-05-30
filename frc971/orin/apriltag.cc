@@ -125,6 +125,9 @@ constexpr size_t InputFormatToChannels(void)
   if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
     return 3;
   }
+  if constexpr (INPUT_FORMAT == InputFormat::BGRA8) {
+    return 4;
+  }
   // TODO : Probably need a throw or assert here
 }
 
@@ -1218,5 +1221,6 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
 template class GpuDetector<InputFormat::Mono8>;
 template class GpuDetector<InputFormat::YCbCr422>;
 template class GpuDetector<InputFormat::BGR8>;
+template class GpuDetector<InputFormat::BGRA8>;
 
 }  // namespace frc971::apriltag
