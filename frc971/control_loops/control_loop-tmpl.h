@@ -20,9 +20,8 @@ template <class GoalType, class PositionType, class StatusType,
           class OutputType>
 void ControlLoop<GoalType, PositionType, StatusType,
                  OutputType>::ZeroOutputs() {
-  typename ::aos::Sender<OutputType>::Builder builder =
-      output_sender_.MakeBuilder();
-  builder.CheckOk(builder.Send(Zero(&builder)));
+  auto builder = BuilderType<OutputType>::MakeBuilder(&output_sender_);
+  BuilderType<OutputType>::SendZeroFlatbuffer(this, &builder);
 }
 
 template <class GoalType, class PositionType, class StatusType,
@@ -73,21 +72,20 @@ void ControlLoop<GoalType, PositionType, StatusType,
     outputs_enabled = false;
   }
 
-  typename ::aos::Sender<StatusType>::Builder status =
-      status_sender_.MakeBuilder();
+  StatusBuilder status = BuilderType<StatusType>::MakeBuilder(&status_sender_);
   if (outputs_enabled) {
-    typename ::aos::Sender<OutputType>::Builder output =
-        output_sender_.MakeBuilder();
+    OutputBuilder output =
+        BuilderType<OutputType>::MakeBuilder(&output_sender_);
     RunIteration(goal, &position, &output, &status);
 
-    output.CheckSent();
+    BuilderType<OutputType>::CheckSent(&output);
   } else {
     // The outputs are disabled, so pass nullptr in for the output.
     RunIteration(goal, &position, nullptr, &status);
     ZeroOutputs();
   }
 
-  status.CheckSent();
+  BuilderType<StatusType>::CheckSent(&status);
 }
 
 }  // namespace frc971::controls
