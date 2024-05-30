@@ -1,8 +1,6 @@
 #ifndef AOS_TESTING_TEST_LOGGING_H_
 #define AOS_TESTING_TEST_LOGGING_H_
 
-#include "aos/time/time.h"
-
 namespace aos::testing {
 
 // Enables the logging framework for use during a gtest test.

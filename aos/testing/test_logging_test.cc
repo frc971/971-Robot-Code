@@ -1,5 +1,6 @@
 #include "aos/testing/test_logging.h"
 
+#include <memory>
 #include <thread>
 
 #include "gtest/gtest.h"
