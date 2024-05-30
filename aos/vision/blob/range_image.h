@@ -1,6 +1,9 @@
 #ifndef _AOS_VISION_BLOB_RANGE_IMAGE_H_
 #define _AOS_VISION_BLOB_RANGE_IMAGE_H_
 
+#include <iosfwd>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "aos/vision/image/image_types.h"

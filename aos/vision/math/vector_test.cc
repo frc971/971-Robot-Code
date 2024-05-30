@@ -1,5 +1,7 @@
 #include "aos/vision/math/vector.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace aos::vision::testing {

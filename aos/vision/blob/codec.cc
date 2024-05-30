@@ -1,5 +1,10 @@
 #include "aos/vision/blob/codec.h"
 
+#include <stddef.h>
+
+#include <utility>
+#include <vector>
+
 namespace aos::vision {
 
 size_t CalculateSize(const BlobList &blob_list) {

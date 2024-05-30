@@ -1,6 +1,10 @@
 #include "aos/vision/blob/codec.h"
 
+#include <stddef.h>
+
 #include <algorithm>
+#include <utility>
+#include <vector>
 
 #include "gtest/gtest.h"
 

@@ -1,9 +1,6 @@
 #include "aos/vision/events/epoll_events.h"
 
-#include <fcntl.h>
 #include <sys/epoll.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 #include <cstring>
 #include <vector>

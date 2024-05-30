@@ -1,10 +1,17 @@
 #ifndef AOS_VISION_IMAGE_IMAGE_STREAM_H_
 #define AOS_VISION_IMAGE_IMAGE_STREAM_H_
 
+#include <chrono>
+#include <functional>
 #include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
 
+#include "aos/time/time.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"
+#include "aos/vision/image/image_types.h"
 #include "aos/vision/image/reader.h"
 
 namespace aos::vision {

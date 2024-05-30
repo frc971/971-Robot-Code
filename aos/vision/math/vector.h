@@ -1,9 +1,12 @@
 #ifndef AOS_VISION_MATH_VECTOR_H_
 #define AOS_VISION_MATH_VECTOR_H_
 
+#include <algorithm>
 #include <cmath>
+#include <utility>
 
-#include "Eigen/Dense"
+#include "Eigen/Core"
+#include "Eigen/Geometry"
 
 namespace aos::vision {
 

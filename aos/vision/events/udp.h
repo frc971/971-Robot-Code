@@ -1,13 +1,7 @@
 #ifndef AOS_VISION_EVENTS_UDP_H_
 #define AOS_VISION_EVENTS_UDP_H_
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#include <cmath>
 #include <string>
-#include <vector>
 
 #include "aos/macros.h"
 #include "aos/scoped/scoped_fd.h"

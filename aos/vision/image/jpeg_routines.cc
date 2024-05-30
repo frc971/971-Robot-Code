@@ -1,13 +1,8 @@
 #include "aos/vision/image/jpeg_routines.h"
 
-#include <sys/mman.h>
-#include <unistd.h>
-
-#include <cerrno>
 #include <csetjmp>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 
 #include "third_party/libjpeg/jpeglib.h"

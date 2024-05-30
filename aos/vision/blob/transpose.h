@@ -1,6 +1,8 @@
 #ifndef AOS_VISION_BLOB_TRANSPOSE_H_
 #define AOS_VISION_BLOB_TRANSPOSE_H_
 
+#include <vector>
+
 #include "aos/vision/blob/range_image.h"
 
 namespace aos::vision {

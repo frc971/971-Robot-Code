@@ -1,12 +1,13 @@
 #ifndef AOS_VISION_IMAGE_READER_H_
 #define AOS_VISION_IMAGE_READER_H_
 
+#include <linux/videodev2.h>
+
 #include <cinttypes>
 #include <functional>
 #include <string>
 
 #include "aos/time/time.h"
-#include "aos/vision/image/V4L2.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_types.h"
 
@@ -52,6 +53,7 @@ class Reader {
   // The number of buffers currently queued in v4l2.
   uint32_t queued_;
   struct Buffer;
+
   // TODO(parker): This should be a smart pointer, but it cannot
   // because the buffers are not ummapped.
   Buffer *buffers_;

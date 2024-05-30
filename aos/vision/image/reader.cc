@@ -1,20 +1,19 @@
 #include "aos/vision/image/reader.h"
 
 #include <fcntl.h>
-#include <malloc.h>
+#include <linux/v4l2-controls.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
 
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
+#include "aos/vision/image/V4L2.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

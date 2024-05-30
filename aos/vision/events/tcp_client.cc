@@ -4,14 +4,11 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <strings.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include "aos/logging/logging.h"
 
