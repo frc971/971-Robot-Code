@@ -928,7 +928,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":multinode_logger_test_lib",
-        "//aos/flatbuffers:aligned_allocator",
+        "//aos/flatbuffers:base",
     ],
 )
 

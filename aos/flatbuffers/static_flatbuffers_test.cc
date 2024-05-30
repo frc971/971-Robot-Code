@@ -108,7 +108,7 @@ class StaticFlatbuffersTest : public ::testing::Test {
 // Test that compiles the same code that is used by an example in
 // //aos/documentation/aos/docs/flatbuffers.md.
 TEST_F(StaticFlatbuffersTest, DocumentationExample) {
-  aos::fbs::VectorAllocator allocator;
+  aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
   object->set_scalar(123);
@@ -176,7 +176,7 @@ TEST_F(StaticFlatbuffersTest, PopulateMethodConversionExample) {
   aos::FlatbufferDetachedBuffer<TestTable> fbb_finished = fbb.Release();
 
   // Using the static flatbuffer API.
-  aos::fbs::VectorAllocator allocator;
+  aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> static_builder(&allocator);
   PopulateStatic(CHECK_NOTNULL(static_builder.get()->add_subtable()));
 
@@ -218,7 +218,7 @@ TEST_F(StaticFlatbuffersTest, UnsupportedSchema) {
 // it stays valid at all points.
 TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
   {
-    aos::fbs::VectorAllocator allocator;
+    aos::fbs::AlignedVectorAllocator allocator;
     Builder<SubTableStatic> builder(&allocator);
     SubTableStatic *object = builder.get();
     if (!builder.AsFlatbufferSpan().Verify()) {
@@ -241,9 +241,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     TestMemory(builder.buffer());
   }
   {
-    // aos::FixedAllocator
-    // allocator(TestTableStatic::kUnalignedBufferSize);
-    aos::fbs::VectorAllocator allocator;
+    aos::fbs::AlignedVectorAllocator allocator;
     Builder<TestTableStatic> builder(&allocator);
     TestTableStatic *object = builder.get();
     const aos::fbs::testing::TestTable &fbs = object->AsFlatbuffer();
@@ -673,7 +671,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
 
 // Tests that field clearing (and subsequent resetting) works properly.
 TEST_F(StaticFlatbuffersTest, ClearFields) {
-  aos::fbs::VectorAllocator allocator;
+  aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
   // For each field, we will confirm the following:
@@ -859,7 +857,7 @@ TEST_F(StaticFlatbuffersTest, MinimallyAlignedTable) {
 // Confirm that we can use the SpanAllocator with a span that provides exactly
 // the required buffer size.
 TEST_F(StaticFlatbuffersTest, ExactSizeSpanAllocator) {
-  uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
+  alignas(64) uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
   aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
@@ -922,7 +920,7 @@ TEST_F(StaticFlatbuffersTest, TooSmallSpanAllocator) {
 // Verify that if we create a span with extra headroom that that lets us
 // dynamically alter the size of vectors in the flatbuffers.
 TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
-  uint8_t buffer[Builder<TestTableStatic>::kBufferSize + 10000];
+  alignas(64) uint8_t buffer[Builder<TestTableStatic>::kBufferSize + 200 * 64];
   aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
@@ -951,7 +949,7 @@ TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
 
 // Tests that the iterators on the Vector type work.
 TEST_F(StaticFlatbuffersTest, IteratorTest) {
-  Builder<TestTableStatic> builder(std::make_unique<VectorAllocator>());
+  Builder<TestTableStatic> builder(std::make_unique<AlignedVectorAllocator>());
   {
     auto vector = builder->add_unspecified_length_vector();
     ASSERT_TRUE(vector->reserve(9000));
@@ -1019,7 +1017,8 @@ TEST_F(StaticFlatbuffersTest, IteratorTest) {
 
 // Confirm that we can use the FixedStackAllocator
 TEST_F(StaticFlatbuffersTest, FixedStackAllocator) {
-  aos::fbs::FixedStackAllocator<Builder<TestTableStatic>::kBufferSize>
+  aos::fbs::FixedStackAllocator<Builder<TestTableStatic>::kBufferSize,
+                                Builder<TestTableStatic>::kAlign>
       allocator;
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
@@ -1078,7 +1077,7 @@ TEST_F(StaticFlatbuffersTest, ObjectApiCopy) {
   object_t.vector_of_strings.push_back("971");
   object_t.vector_of_structs.push_back({1, 2});
   object_t.subtable = std::make_unique<SubTableT>();
-  aos::fbs::VectorAllocator allocator;
+  aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> builder(&allocator);
   ASSERT_TRUE(builder->FromFlatbuffer(object_t));
   ASSERT_TRUE(builder.AsFlatbufferSpan().Verify());
@@ -1123,7 +1122,7 @@ TEST_F(StaticFlatbuffersTest, IncludeReflectionTypes) {
 
 // Tests that we can use the move constructor on a Builder.
 TEST_F(StaticFlatbuffersTest, BuilderMoveConstructor) {
-  uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
+  alignas(64) uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
   aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
   Builder<TestTableStatic> builder_from(&allocator);
   Builder<TestTableStatic> builder(std::move(builder_from));

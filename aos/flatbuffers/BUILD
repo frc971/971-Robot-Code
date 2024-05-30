@@ -19,13 +19,21 @@ cc_library(
 
 cc_library(
     name = "base",
-    srcs = ["base.cc"],
-    hdrs = ["base.h"],
+    srcs = [
+        "base.cc",
+    ],
+    hdrs = [
+        "base.h",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/containers:resizeable_buffer",
+        "//aos/ipc_lib:data_alignment",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -33,7 +41,6 @@ cc_test(
     name = "base_test",
     srcs = ["base_test.cc"],
     deps = [
-        ":aligned_allocator",
         ":base",
         "//aos/testing:googletest",
     ],
@@ -165,18 +172,4 @@ filegroup(
     name = "test_static_file",
     srcs = ["test_static.h"],
     visibility = [":__subpackages__"],
-)
-
-cc_library(
-    name = "aligned_allocator",
-    srcs = ["aligned_allocator.cc"],
-    hdrs = ["aligned_allocator.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":base",
-        "//aos/containers:resizeable_buffer",
-        "//aos/events:event_loop",
-        "//aos/ipc_lib:data_alignment",
-        "@com_github_google_glog//:glog",
-    ],
 )

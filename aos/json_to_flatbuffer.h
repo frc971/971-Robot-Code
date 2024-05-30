@@ -43,7 +43,7 @@ template <typename T>
 inline fbs::Builder<T> JsonToStaticFlatbuffer(const std::string_view data) {
   const aos::FlatbufferDetachedBuffer<typename T::Flatbuffer> fbs =
       JsonToFlatbuffer<typename T::Flatbuffer>(data);
-  fbs::Builder<T> builder(std::make_unique<aos::fbs::VectorAllocator>());
+  fbs::Builder<T> builder(std::make_unique<aos::fbs::AlignedVectorAllocator>());
   CHECK(builder.get()->FromFlatbuffer(&fbs.message()));
   return builder;
 }

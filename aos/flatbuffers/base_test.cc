@@ -6,8 +6,6 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/flatbuffers/aligned_allocator.h"
-
 namespace aos::fbs::testing {
 // Tests that PaddedSize() behaves as expected.
 TEST(BaseTest, PaddedSize) {
@@ -23,19 +21,18 @@ template <typename T>
 class AllocatorTest : public ::testing::Test {
  protected:
   AllocatorTest() : allocator_(std::make_unique<T>()) {}
-  std::vector<uint8_t> buffer_;
+  alignas(64) std::array<uint8_t, kDefaultSize> buffer_;
   // unique_ptr so that we can destroy the allocator at will.
   std::unique_ptr<T> allocator_;
 };
 
 template <>
 AllocatorTest<SpanAllocator>::AllocatorTest()
-    : buffer_(kDefaultSize),
-      allocator_(std::make_unique<SpanAllocator>(
+    : allocator_(std::make_unique<SpanAllocator>(
           std::span<uint8_t>{buffer_.data(), buffer_.size()})) {}
 
-using AllocatorTypes =
-    ::testing::Types<SpanAllocator, VectorAllocator, AlignedVectorAllocator>;
+using AllocatorTypes = ::testing::Types<SpanAllocator, AlignedVectorAllocator,
+                                        FixedStackAllocator<kDefaultSize>>;
 TYPED_TEST_SUITE(AllocatorTest, AllocatorTypes);
 
 // Tests that we can create and not use a VectorAllocator.
@@ -78,6 +75,17 @@ TYPED_TEST(AllocatorTest, InsertBytes) {
     EXPECT_EQ(index - half_size + 1, span[index]);
   }
   this->allocator_->Deallocate(span);
+}
+
+// Tests that all allocators return data aligned to the requested alignment.
+TYPED_TEST(AllocatorTest, Alignment) {
+  for (size_t alignment : {4, 8, 16, 32, 64}) {
+    std::span<uint8_t> span =
+        this->allocator_->Allocate(kDefaultSize, alignment, SetZero::kYes)
+            .value();
+    EXPECT_EQ(reinterpret_cast<size_t>(span.data()) % alignment, 0);
+    this->allocator_->Deallocate(span);
+  }
 }
 
 // Tests that we can remove bytes from an arbitrary spot in the buffer.
@@ -142,7 +150,7 @@ TEST(SpanAllocatorTest, OverInsert) {
   std::vector<uint8_t> buffer(kDefaultSize);
   SpanAllocator allocator({buffer.data(), buffer.size()});
   std::span<uint8_t> span =
-      allocator.Allocate(kDefaultSize, 0, SetZero::kYes).value();
+      allocator.Allocate(kDefaultSize, 1, SetZero::kYes).value();
   EXPECT_EQ(kDefaultSize, span.size());
   EXPECT_FALSE(
       allocator.InsertBytes(span.data(), 1u, 0, SetZero::kYes).has_value());
@@ -209,7 +217,7 @@ class ResizeableObjectTest : public ::testing::Test {
       : object_(allocator_.Allocate(kInitialSize, 4, SetZero::kYes).value(),
                 &allocator_) {}
   ~ResizeableObjectTest() { allocator_.Deallocate(object_.buffer()); }
-  VectorAllocator allocator_;
+  AlignedVectorAllocator allocator_;
   TestResizeableObject object_;
 };
 

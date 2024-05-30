@@ -18,7 +18,8 @@ namespace aos::fbs {
 template <typename T>
 class Builder final : public ResizeableObject {
  public:
-  static constexpr size_t kBufferSize = T::kUnalignedBufferSize;
+  static constexpr size_t kBufferSize = T::kRootSize;
+  static constexpr size_t kAlign = T::kAlign;
   // Note on memory initialization: We zero-initialize all the memory that we
   // create at the start. While this can be overkill, it is simpler to manage
   // the alternatives, and we don't currently have a clear performance need for
@@ -48,7 +49,7 @@ class Builder final : public ResizeableObject {
     SetPrefix();
   }
   Builder(std::unique_ptr<Allocator> allocator =
-              std::make_unique<VectorAllocator>())
+              std::make_unique<AlignedVectorAllocator>())
       : ResizeableObject(
             allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kYes),
             std::move(allocator)),
