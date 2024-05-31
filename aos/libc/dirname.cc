@@ -1,5 +1,7 @@
 #include "aos/libc/dirname.h"
 
+#include <stddef.h>
+
 namespace aos::libc {
 namespace {
 

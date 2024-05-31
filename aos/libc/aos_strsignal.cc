@@ -1,5 +1,9 @@
 #include "aos/libc/aos_strsignal.h"
 
+#include <features.h>
+#include <stdio.h>
+#include <string.h>
+
 #include <csignal>
 
 #include "glog/logging.h"

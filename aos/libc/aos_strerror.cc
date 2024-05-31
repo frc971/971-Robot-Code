@@ -1,7 +1,5 @@
 #include "aos/libc/aos_strerror.h"
 
-#include <sys/types.h>
-
 #include <cassert>
 #include <cstdio>
 #include <cstring>
