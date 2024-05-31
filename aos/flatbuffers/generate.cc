@@ -1,4 +1,7 @@
+#include <stdlib.h>
+
 #include "flatbuffers/reflection_generated.h"
+#include "gflags/gflags.h"
 
 #include "aos/flatbuffers.h"
 #include "aos/flatbuffers/static_flatbuffers.h"

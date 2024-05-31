@@ -1,12 +1,11 @@
 #ifndef AOS_FLATBUFFERS_STATIC_FLATBUFFERS_H_
 #define AOS_FLATBUFFERS_STATIC_FLATBUFFERS_H_
-#include <map>
-#include <set>
+#include <set>  // IWYU pragma: keep
 #include <string>
 #include <string_view>
-#include <vector>
 
-#include "flatbuffers/reflection_generated.h"
+#include "flatbuffers/reflection_generated.h"  // IWYU pragma: keep
+
 namespace aos::fbs {
 
 // Raw C++ code needed to represent a single flatbuffer table.

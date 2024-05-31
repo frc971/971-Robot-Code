@@ -1,17 +1,42 @@
 #include "aos/flatbuffers/static_flatbuffers.h"
 
+#include <stdint.h>
+#include <string.h>
+
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <memory>
+#include <span>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "external/com_github_google_flatbuffers/src/annotated_binary_text_gen.h"
 #include "external/com_github_google_flatbuffers/src/binary_annotator.h"
-#include "gmock/gmock.h"
+#include "flatbuffers/base.h"
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
+#include "flatbuffers/stl_emulation.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "aos/flatbuffers.h"
+#include "aos/flatbuffers/base.h"
 #include "aos/flatbuffers/builder.h"
 #include "aos/flatbuffers/interesting_schemas.h"
+#include "aos/flatbuffers/static_vector.h"
+#include "aos/flatbuffers/test_dir/include_generated.h"
 #include "aos/flatbuffers/test_dir/include_reflection_static.h"
+#include "aos/flatbuffers/test_dir/include_static.h"
+#include "aos/flatbuffers/test_dir/type_coverage_generated.h"
 #include "aos/flatbuffers/test_dir/type_coverage_static.h"
+#include "aos/flatbuffers/test_generated.h"
 #include "aos/flatbuffers/test_schema.h"
 #include "aos/flatbuffers/test_static.h"
 #include "aos/json_to_flatbuffer.h"

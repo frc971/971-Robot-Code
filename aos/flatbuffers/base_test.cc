@@ -1,5 +1,9 @@
 #include "aos/flatbuffers/base.h"
 
+#include <stddef.h>
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
 
 namespace aos::fbs::testing {
