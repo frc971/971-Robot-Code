@@ -591,7 +591,12 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     {
       auto aligned_vector = object->mutable_vector_aligned();
       ASSERT_TRUE(aligned_vector->reserve(100));
-      EXPECT_EQ(100, aligned_vector->capacity());
+
+      VLOG(1) << AnnotateBinaries(test_schema_, builder.buffer());
+      // Since the allocator is going to allocate in blocks of 64, we end up
+      // with more capacity than we asked for.  Better to have it than to leave
+      // it as unusable padding.
+      EXPECT_EQ(115, aligned_vector->capacity());
       ASSERT_TRUE(builder.AsFlatbufferSpan().Verify())
           << aligned_vector->SerializationDebugString();
       EXPECT_EQ(expected_contents,
@@ -657,11 +662,16 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     {
       auto unspecified_vector = object->add_unspecified_length_vector();
       ASSERT_NE(nullptr, unspecified_vector);
-      ASSERT_EQ(0, unspecified_vector->capacity());
+      ASSERT_EQ(60, unspecified_vector->capacity());
+      for (size_t i = 0; i < 60; ++i) {
+        ASSERT_TRUE(unspecified_vector->emplace_back(0));
+      }
       ASSERT_FALSE(unspecified_vector->emplace_back(0));
-      ASSERT_TRUE(unspecified_vector->reserve(2));
-      ASSERT_TRUE(unspecified_vector->emplace_back(1));
-      ASSERT_TRUE(unspecified_vector->emplace_back(2));
+      ASSERT_TRUE(unspecified_vector->reserve(64));
+      ASSERT_EQ(124, unspecified_vector->capacity());
+      for (size_t i = 0; i < 64; ++i) {
+        ASSERT_TRUE(unspecified_vector->emplace_back(1));
+      }
       ASSERT_FALSE(unspecified_vector->emplace_back(3));
       ASSERT_TRUE(builder.AsFlatbufferSpan().Verify());
     }
@@ -927,10 +937,14 @@ TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
   {
     auto vector = object->add_unspecified_length_vector();
     // Confirm that the vector does indeed start out at zero length.
+    ASSERT_EQ(vector->capacity(), 60);
+    for (size_t i = 0; i < 60; ++i) {
+      ASSERT_TRUE(vector->emplace_back(i));
+    }
     ASSERT_FALSE(vector->emplace_back(4));
     ASSERT_TRUE(vector->reserve(9000));
     vector->resize(256);
-    for (size_t index = 0; index < 256; ++index) {
+    for (size_t index = 60; index < 256; ++index) {
       vector->at(index) = static_cast<uint8_t>(index);
     }
   }

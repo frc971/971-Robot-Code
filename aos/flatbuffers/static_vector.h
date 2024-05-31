@@ -26,10 +26,11 @@ namespace internal {
 //   FlatbufferType: The type used by flatbuffers::Vector to store this type.
 //   ConstFlatbufferType: The type used by a const flatbuffers::Vector to store
 //     this type.
-//   kDataAlign: Alignment required by the stored type.
-//   kDataSize: Nominal size required by each non-inline data member. This is
-//     what will be initially allocated; once created, individual members may
-//     grow to accommodate dynamically lengthed vectors.
+//   kDataElementAlign: Alignment required by the stored type.
+//   kDataElementSize: Nominal size required by each non-inline data member.
+//     This is what will be initially allocated; once created, individual
+//     members may grow to accommodate dynamically lengthed vectors.
+//   kDataElementAlignOffset: Alignment offset required by the stored type.
 template <typename T, bool kInline, class Enable = void>
 struct InlineWrapper;
 }  // namespace internal
@@ -92,15 +93,14 @@ struct InlineWrapper;
 //   To maintain general simplicity, we will use the second condition and eat
 //   the cost of the potential extra few bytes of padding.
 // * The layout of the buffer will thus be:
-//   [padding; element_count; inline_data; padding; offset_data]
-//   The first padding will be of size max(0, kAlign - 4).
+//   [element_count; inline_data; padding; offset_data]
 //   The element_count is of size 4.
 //   The inline_data is of size sizeof(InlineType) * kStaticLength.
-//   The second padding is of size
-//       (kAlign - ((sizeof(InlineType) * kStaticLength) % kAlign)).
+//   The padding is sized such that the sum of the size of inline_data and the
+//   padding adds up to the alignment if we have offset_data.
 //   The remaining data is only present if kInline is false.
-//   The offset data is of size T::kSize * kStaticLength. T::kSize % T::kAlign
-//   must be zero.
+//   The offset data is of size T::kSize * kStaticLength. T::kSize is rounded
+//   up to a multiple of T::kAlign.
 //   Note that no padding is required on the end because T::kAlign will always
 //   end up being equal to the alignment (this can only be violated if
 //   kForceAlign is used, but we do not allow that).
@@ -196,7 +196,7 @@ class Vector : public ResizeableObject {
   // Type stored inline in the serialized vector (offsets for tables/strings; T
   // otherwise).
   using InlineType = typename internal::InlineWrapper<T, kInline>::Type;
-  // OUt-of-line type for out-of-line T.
+  // Out-of-line type for out-of-line T.
   using ObjectType = typename internal::InlineWrapper<T, kInline>::ObjectType;
   // Type used as the template parameter to flatbuffers::Vector<>.
   using FlatbufferType =
@@ -216,52 +216,96 @@ class Vector : public ResizeableObject {
       std::max(kForceAlign, alignof(InlineType));
   // Type used for serializing the length of the vector.
   typedef uint32_t LengthType;
+  static constexpr size_t kDataElementAlign =
+      internal::InlineWrapper<T, kInline>::kDataElementAlign;
+  static constexpr size_t kDataElementAlignOffset =
+      internal::InlineWrapper<T, kInline>::kDataElementAlignOffset;
+  // Per-element size of any out-of-line data.
+  static constexpr size_t kDataElementSize =
+      internal::InlineWrapper<T, kInline>::kDataElementSize;
   // Overall alignment of this type, and required alignment of the buffer that
   // must be provided to the Vector.
   static constexpr size_t kAlign =
-      std::max({alignof(LengthType), kInlineAlign,
-                internal::InlineWrapper<T, kInline>::kDataAlign});
-  // Padding inserted prior to the length element of the vector (to manage
-  // alignment of the data properly; see class comment)
-  static constexpr size_t kPadding1 =
-      std::max<size_t>(0, kAlign - sizeof(LengthType));
+      std::max({alignof(LengthType), kInlineAlign, kDataElementAlign});
+  // Offset into the buffer of where things must be aligned to the specified
+  // alignment.
+  static constexpr size_t kAlignOffset = sizeof(LengthType);
+
   // Size of the vector length field.
   static constexpr size_t kLengthSize = sizeof(LengthType);
   // Size of all the inline vector data, including null termination (prior to
   // any dynamic increases in size).
   static constexpr size_t kInlineSize =
       sizeof(InlineType) * (kStaticLength + (kNullTerminate ? 1 : 0));
-  // Per-element size of any out-of-line data.
-  static constexpr size_t kDataElementSize =
-      internal::InlineWrapper<T, kInline>::kDataSize;
+
   // Padding between the inline data and any out-of-line data, to manage
   // mismatches in alignment between the two.
-  static constexpr size_t kPadding2 = kAlign - (kInlineSize % kAlign);
+  //
+  // For inline vectors, we don't want to add any extra padding.  The allocator
+  // will add extra padding if needed and communicate it to our constructor.
+  //
+  // For non-inline vectors, we need to pad out the offsets so that their end
+  // ends up kDataElementAlignOffset before the aligned start of the elements.
+  //
+  // This pads kInlineSize out to
+  static constexpr size_t kPadding1 =
+      kInline
+          ? 0
+          : ((kAlign - ((kInlineSize + kAlign /* Add kAlign to guarentee we
+                                                 don't mod a negative number */
+                         - kDataElementAlignOffset) %
+                        kAlign)) %
+             kAlign);
   // Total statically allocated space for any out-of-line data ("offset data")
   // (prior to any dynamic increases in size).
   static constexpr size_t kOffsetOffsetDataSize =
       kInline ? 0 : (kStaticLength * kDataElementSize);
   // Total nominal size of the Vector.
   static constexpr size_t kSize =
-      kPadding1 + kLengthSize + kInlineSize + kPadding2 + kOffsetOffsetDataSize;
-  // Offset from the start of the provided buffer to where the actual start of
-  // the vector is.
-  static constexpr size_t kOffset = kPadding1;
-  // Constructors; the provided buffer must be aligned to kAlign and be kSize in
-  // length. parent must be non-null.
+      kLengthSize + kInlineSize + kPadding1 + kOffsetOffsetDataSize;
+  // If this is 0, then the parent object will not plan to statically
+  // reserve any memory for this object and will only reserve memory when the
+  // user requests creation of this object. This makes it so that zero-length
+  // vectors (which would require dynamic allocation *anyways* to actually be
+  // helpful) do not use up memory when unpopulated.
+  static constexpr size_t kPreallocatedSize = (kStaticLength > 0) ? kSize : 0;
+
+  // Returns the buffer size (in bytes) needed to hold the largest number of
+  // elements that can fit fully in the provided length (in bytes).  This lets
+  // us compute how much of the padding we can fill with elements.
+  static constexpr size_t RoundedLength(size_t length) {
+    constexpr size_t overall_element_size =
+        sizeof(InlineType) + (kInline ? 0 : kDataElementSize);
+    return ((length - kLengthSize) / overall_element_size) *
+               overall_element_size +
+           kLengthSize;
+  }
+
+  // Constructors; the provided buffer must be aligned to kAlign and be kSize
+  // in length. parent must be non-null.
   Vector(std::span<uint8_t> buffer, ResizeableObject *parent)
       : ResizeableObject(buffer, parent) {
-    CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
-    CHECK_EQ(kSize, buffer.size());
+    CHECK_EQ(0u,
+             reinterpret_cast<size_t>(buffer.data() + kAlignOffset) % kAlign);
+    CHECK_LE(kSize, buffer.size());
+    if constexpr (kInline) {
+      // If everything is inline, it costs us nothing to consume the padding and
+      // use it for holding elements.  For something like a short string in 8
+      // byte aligned space, this saves a second 8 byte allocation for the data.
+      allocated_length_ = (buffer.size() - kLengthSize) / sizeof(InlineType) -
+                          (kNullTerminate ? 1 : 0);
+    }
     SetLength(0u);
     if (!kInline) {
       // Initialize the offsets for any sub-tables. These are used to track
       // where each table will get serialized in memory as memory gets
       // resized/moved around.
+      //
+      // We don't want to expand allocated_length_ here because that would then
+      // imply we have more memory for elements too, which we don't.
       for (size_t index = 0; index < kStaticLength; ++index) {
-        object_absolute_offsets_.emplace_back(kPadding1 + kLengthSize +
-                                              kInlineSize + kPadding2 +
-                                              index * kDataElementSize);
+        object_absolute_offsets_.emplace_back(
+            kLengthSize + kInlineSize + kPadding1 + index * kDataElementSize);
       }
     }
   }
@@ -298,9 +342,28 @@ class Vector : public ResizeableObject {
     if (new_length > allocated_length_) {
       const size_t new_elements = new_length - allocated_length_;
       // First, we must add space for our new inline elements.
-      if (!InsertBytes(
-              inline_data() + allocated_length_ + (kNullTerminate ? 1 : 0),
-              new_elements * sizeof(InlineType), SetZero::kYes)) {
+      std::optional<std::span<uint8_t>> inserted_bytes;
+
+      if (allocated_length_ == 0) {
+        // If we have padding and the padding is enough to hold the buffer, use
+        // it.  This only consumes the padding in the case where we have a
+        // non-inline object, but are allocating small enough data that the
+        // padding is big enough.
+        //
+        // TODO(austin): Use the padding when we are adding large numbers of
+        // elements too.
+        if (new_elements * sizeof(InlineType) <= kPadding1) {
+          inserted_bytes = internal::GetSubSpan(vector_buffer(), kLengthSize,
+                                                kPadding1 / sizeof(InlineType));
+        }
+      }
+
+      if (!inserted_bytes.has_value()) {
+        inserted_bytes = InsertBytes(
+            inline_data() + allocated_length_ + (kNullTerminate ? 1 : 0),
+            new_elements * sizeof(InlineType), SetZero::kYes);
+      }
+      if (!inserted_bytes.has_value()) {
         return false;
       }
       if (!kInline) {
@@ -319,6 +382,14 @@ class Vector : public ResizeableObject {
                                                 index * kDataElementSize);
         }
         objects_.reserve(new_length);
+      } else {
+        // If we allocated memory, and the elements are inline (so we don't have
+        // to deal with allocating elements too), consume any extra space
+        // allocated as extra elements.
+        if (new_elements * sizeof(InlineType) < inserted_bytes->size()) {
+          new_length +=
+              inserted_bytes->size() / sizeof(InlineType) - new_elements;
+        }
       }
       allocated_length_ = new_length;
     }
@@ -545,7 +616,7 @@ class Vector : public ResizeableObject {
     std::stringstream str;
     str << "Raw Size: " << kSize << " alignment: " << kAlign
         << " allocated length: " << allocated_length_ << " inline alignment "
-        << kInlineAlign << " kPadding1 " << kPadding1 << "\n";
+        << kInlineAlign << " \n";
     str << "Observed length " << GetLength() << " (expected " << length_
         << ")\n";
     str << "Inline Size " << kInlineSize << " Inline bytes/value:\n";
@@ -555,7 +626,7 @@ class Vector : public ResizeableObject {
         internal::GetSubSpan(vector_buffer(), kLengthSize,
                              sizeof(InlineType) * allocated_length_),
         str);
-    str << "kPadding2 " << kPadding2 << " offset data size "
+    str << "kPadding1 " << kPadding1 << " offset data size "
         << kOffsetOffsetDataSize << "\n";
     return str.str();
   }
@@ -567,17 +638,12 @@ class Vector : public ResizeableObject {
   Vector(Vector &&) = default;
 
  private:
-  // See kAlign and kOffset.
+  // See kAlign.
   size_t Alignment() const final { return kAlign; }
-  size_t AbsoluteOffsetOffset() const override { return kOffset; }
   // Returns a buffer that starts at the start of the vector itself (past any
   // padding).
-  std::span<uint8_t> vector_buffer() {
-    return internal::GetSubSpan(buffer(), kPadding1);
-  }
-  std::span<const uint8_t> vector_buffer() const {
-    return internal::GetSubSpan(buffer(), kPadding1);
-  }
+  std::span<uint8_t> vector_buffer() { return buffer(); }
+  std::span<const uint8_t> vector_buffer() const { return buffer(); }
 
   bool AddInlineElement(InlineType e) {
     if (length_ == allocated_length_) {
@@ -767,9 +833,11 @@ struct InlineWrapper<T, false, void> {
   typedef flatbuffers::Offset<typename T::Flatbuffer> FlatbufferType;
   typedef flatbuffers::Offset<typename T::Flatbuffer> ConstFlatbufferType;
   typedef T::FlatbufferObjectType FlatbufferObjectType;
-  static_assert((T::kSize % T::kAlign) == 0);
-  static constexpr size_t kDataAlign = T::kAlign;
-  static constexpr size_t kDataSize = T::kSize;
+  static constexpr size_t kDataElementAlign = T::kAlign;
+  static constexpr size_t kDataElementAlignOffset = T::kAlignOffset;
+  static constexpr size_t kDataElementSize =
+      ((T::kSize + T::kAlign - 1) / T::kAlign) * T::kAlign;
+  static_assert((kDataElementSize % kDataElementAlign) == 0);
   template <typename StaticVector>
   static bool FromFlatbuffer(
       StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
@@ -790,8 +858,9 @@ struct InlineWrapper<T, true,
   typedef T FlatbufferType;
   typedef T ConstFlatbufferType;
   typedef T *FlatbufferObjectType;
-  static constexpr size_t kDataAlign = alignof(T);
-  static constexpr size_t kDataSize = sizeof(T);
+  static constexpr size_t kDataElementAlign = alignof(T);
+  static constexpr size_t kDataElementAlignOffset = 0;
+  static constexpr size_t kDataElementSize = sizeof(T);
   template <typename StaticVector>
   static bool FromFlatbuffer(
       StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
@@ -810,8 +879,9 @@ struct InlineWrapper<bool, true, void> {
   typedef uint8_t FlatbufferType;
   typedef uint8_t ConstFlatbufferType;
   typedef uint8_t *FlatbufferObjectType;
-  static constexpr size_t kDataAlign = 1u;
-  static constexpr size_t kDataSize = 1u;
+  static constexpr size_t kDataElementAlign = 1u;
+  static constexpr size_t kDataElementAlignOffset = 0;
+  static constexpr size_t kDataElementSize = 1u;
   template <typename StaticVector>
   static bool FromFlatbuffer(
       StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
@@ -833,8 +903,9 @@ struct InlineWrapper<T, true,
   typedef T *FlatbufferType;
   typedef const T *ConstFlatbufferType;
   typedef T *FlatbufferObjectType;
-  static constexpr size_t kDataAlign = alignof(T);
-  static constexpr size_t kDataSize = sizeof(T);
+  static constexpr size_t kDataElementAlign = alignof(T);
+  static constexpr size_t kDataElementAlignOffset = 0;
+  static constexpr size_t kDataElementSize = sizeof(T);
   template <typename StaticVector>
   static bool FromFlatbuffer(
       StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {

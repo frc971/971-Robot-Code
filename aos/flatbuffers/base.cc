@@ -37,20 +37,17 @@ ResizeableObject::ResizeableObject(ResizeableObject &&other)
   }
 }
 
-bool ResizeableObject::InsertBytes(void *insertion_point, size_t bytes,
-                                   SetZero set_zero) {
+std::optional<std::span<uint8_t>> ResizeableObject::InsertBytes(
+    void *insertion_point, size_t bytes, SetZero set_zero) {
   // See comments on InsertBytes() declaration and in FixObjects()
   // implementation below.
-  CHECK_LT(buffer_.data(), reinterpret_cast<const uint8_t *>(insertion_point))
+  CHECK_LT(reinterpret_cast<const void *>(buffer_.data()),
+           reinterpret_cast<const void *>(insertion_point))
       << ": Insertion may not be prior to the start of the buffer.";
-  // Check that we started off with a properly aligned size.
-  // Doing this CHECK earlier is tricky because if done in the constructor then
-  // it executes prior to the Alignment() implementation being available.
-  CHECK_EQ(0u, buffer_.size() % Alignment());
   // Note that we will round up the size to the current alignment, so that we
   // ultimately end up only adjusting the buffer size by a multiple of its
   // alignment, to avoid having to do any more complicated bookkeeping.
-  const size_t aligned_bytes = PaddedSize(bytes, Alignment());
+  const size_t aligned_bytes = AlignOffset(bytes, Alignment());
   if (parent_ != nullptr) {
     return parent_->InsertBytes(insertion_point, aligned_bytes, set_zero);
   } else {
@@ -59,14 +56,16 @@ bool ResizeableObject::InsertBytes(void *insertion_point, size_t bytes,
             ->InsertBytes(insertion_point, aligned_bytes, Alignment(),
                           set_zero);
     if (!new_buffer.has_value()) {
-      return false;
+      return std::nullopt;
     }
-    UpdateBuffer(new_buffer.value(),
-                 new_buffer.value().data() +
-                     (reinterpret_cast<const uint8_t *>(insertion_point) -
-                      buffer_.data()),
-                 aligned_bytes);
-    return true;
+    std::span<uint8_t> inserted_data(
+        new_buffer.value().data() +
+            (reinterpret_cast<const uint8_t *>(insertion_point) -
+             buffer_.data()),
+        aligned_bytes);
+    UpdateBuffer(new_buffer.value(), inserted_data.data(),
+                 inserted_data.size());
+    return inserted_data;
   }
 }
 
@@ -78,16 +77,9 @@ void ResizeableObject::UpdateBuffer(std::span<uint8_t> new_buffer,
   ObserveBufferModification();
 }
 
-std::span<uint8_t> ResizeableObject::BufferForObject(
-    size_t absolute_offset, size_t size, size_t terminal_alignment) {
-  const size_t padded_size = PaddedSize(size, terminal_alignment);
-  std::span<uint8_t> padded_buffer =
-      internal::GetSubSpan(buffer_, absolute_offset, padded_size);
-  std::span<uint8_t> object_buffer =
-      internal::GetSubSpan(padded_buffer, 0, size);
-  std::span<uint8_t> padding = internal::GetSubSpan(padded_buffer, size);
-  internal::ClearSpan(padding);
-  return object_buffer;
+std::span<uint8_t> ResizeableObject::BufferForObject(size_t absolute_offset,
+                                                     size_t size) {
+  return internal::GetSubSpan(buffer_, absolute_offset, size);
 }
 
 void ResizeableObject::FixObjects(void *modification_point,
@@ -103,8 +95,7 @@ void ResizeableObject::FixObjects(void *modification_point,
         object.inline_entry < modification_point) {
       if (*object.inline_entry != 0) {
         CHECK_EQ(static_cast<const void *>(
-                     static_cast<const uint8_t *>(absolute_offset) +
-                     CHECK_NOTNULL(object.object)->AbsoluteOffsetOffset()),
+                     static_cast<const uint8_t *>(absolute_offset)),
                  DereferenceOffset(object.inline_entry));
         *object.inline_entry += bytes_inserted;
         CHECK_GE(DereferenceOffset(object.inline_entry), modification_point)
@@ -119,8 +110,7 @@ void ResizeableObject::FixObjects(void *modification_point,
     // We only need to update the object's buffer if it currently exists.
     if (object.object != nullptr) {
       std::span<uint8_t> subbuffer = BufferForObject(
-          *object.absolute_offset, object.object->buffer_.size(),
-          object.object->Alignment());
+          *object.absolute_offset, object.object->buffer_.size());
       // By convention (enforced in InsertBytes()), the modification_point shall
       // not be at the start of the subobjects data buffer; it may be the byte
       // just past the end of the buffer. This makes it so that is unambiguous

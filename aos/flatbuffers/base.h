@@ -26,13 +26,17 @@ using ::flatbuffers::soffset_t;
 using ::flatbuffers::uoffset_t;
 using ::flatbuffers::voffset_t;
 
-// Returns the smallest multiple of alignment that is greater than or equal to
-// size.
-constexpr size_t PaddedSize(size_t size, size_t alignment) {
+// Returns the offset into the buffer needed to provide 'alignment' alignment
+// 'aligned_offset' bytes after the returned offset.  This assumes that the
+// first 'starting_offset' bytes are spoken for.
+constexpr size_t AlignOffset(size_t starting_offset, size_t alignment,
+                             size_t aligned_offset = 0) {
   // We can be clever with bitwise operations by assuming that aligment is a
   // power of two. Or we can just be clearer about what we mean and eat a few
   // integer divides.
-  return (((size - 1) / alignment) + 1) * alignment;
+  return (((starting_offset + aligned_offset - 1) / alignment) + 1) *
+             alignment -
+         aligned_offset;
 }
 
 // Used as a parameter to methods where we are messing with memory and may or
@@ -116,11 +120,6 @@ class ResizeableObject {
   ResizeableObject(ResizeableObject &&other);
   // Required alignment of this object.
   virtual size_t Alignment() const = 0;
-  // Offset from the start of buffer() to the actual start of the object in
-  // question (this is important for vectors, where the vector itself cannot
-  // have internal padding, and so the start of the vector may be offset from
-  // the start of the buffer to handle alignment).
-  virtual size_t AbsoluteOffsetOffset() const = 0;
   // Causes bytes bytes to be inserted between insertion_point - 1 and
   // insertion_point.
   // If requested, the new bytes will be cleared to zero; otherwise they will be
@@ -130,9 +129,10 @@ class ResizeableObject {
   // implementation, and is merely a requirement that any buffer growth occur
   // only on the inside or past the end of the vector, and not prior to the
   // start of the vector.
-  // Returns true on success, false on failure (e.g., if the allocator has no
-  // memory available).
-  bool InsertBytes(void *insertion_point, size_t bytes, SetZero set_zero);
+  // Returns a span of the inserted bytes on success, nullopt on failure (e.g.,
+  // if the allocator has no memory available).
+  std::optional<std::span<uint8_t>> InsertBytes(void *insertion_point,
+                                                size_t bytes, SetZero set_zero);
   // Called *after* the internal buffer_ has been swapped out and *after* the
   // object tree has been traversed and fixed.
   virtual void ObserveBufferModification() {}
@@ -151,12 +151,9 @@ class ResizeableObject {
   const void *PointerForAbsoluteOffset(const size_t absolute_offset) {
     return buffer_.data() + absolute_offset;
   }
-  // Returns a span at the requested offset into the buffer. terminal_alignment
-  // does not align the start of the buffer; instead, it ensures that the memory
-  // from absolute_offset + size until the next multiple of terminal_alignment
-  // is set to all zeroes.
-  std::span<uint8_t> BufferForObject(size_t absolute_offset, size_t size,
-                                     size_t terminal_alignment);
+  // Returns a span at the requested offset into the buffer for the requested
+  // size.
+  std::span<uint8_t> BufferForObject(size_t absolute_offset, size_t size);
   // When memory has been inserted/removed, this iterates over the sub-objects
   // and notifies/adjusts them appropriately.
   // This will be called after buffer_ has been updated, and:

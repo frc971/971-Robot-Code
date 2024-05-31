@@ -17,7 +17,13 @@ namespace aos::fbs {
 // Every table will be aligned to the greatest alignment of all of its members
 // and its size will be equal to a multiple of the alignment. Each table shall
 // have the following layout: [vtable offset; inline data with padding; vtable;
-// padding; table/vector data with padding]
+// table/vector data with padding]
+//
+// Within the table/vector data with padding section, there will be a chunk of
+// memory for the data associated with each sub-table/vector of the table.
+// That memory will start with some padding and then the memory actually
+// allocated to the table/vector in question will start at said
+// sub-table/vector's individual alignment.
 class Table : public ResizeableObject {
  public:
   // Prints out a debug string of the raw flatbuffer memory. Does not currently
@@ -57,7 +63,6 @@ class Table : public ResizeableObject {
   virtual size_t VtableSize() const = 0;
   virtual size_t InlineTableSize() const = 0;
   virtual size_t OffsetDataStart() const = 0;
-  size_t AbsoluteOffsetOffset() const override { return 0; }
   void PopulateVtable() {
     // Zero out everything up to the start of the sub-messages/tables, which are
     // responsible for doing their own memory initialization.

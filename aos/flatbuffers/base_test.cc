@@ -7,13 +7,27 @@
 #include "gtest/gtest.h"
 
 namespace aos::fbs::testing {
-// Tests that PaddedSize() behaves as expected.
-TEST(BaseTest, PaddedSize) {
-  EXPECT_EQ(0, PaddedSize(0, 4));
-  EXPECT_EQ(4, PaddedSize(4, 4));
-  EXPECT_EQ(8, PaddedSize(5, 4));
-  EXPECT_EQ(8, PaddedSize(6, 4));
-  EXPECT_EQ(8, PaddedSize(7, 4));
+// Tests that AlignOffset() behaves as expected.
+TEST(BaseTest, AlignOffset) {
+  EXPECT_EQ(0, AlignOffset(0, 4));
+  EXPECT_EQ(4, AlignOffset(4, 4));
+  EXPECT_EQ(8, AlignOffset(5, 4));
+  EXPECT_EQ(8, AlignOffset(6, 4));
+  EXPECT_EQ(8, AlignOffset(7, 4));
+}
+
+// Tests that AlignOffset handles the alignment point being nonzero.  This shows
+// up when you want 8 byte alignment 4 bytes into the start of the buffer, and
+// don't want to pad out the front of the buffer.
+TEST(BaseTest, AlignOffsetWithOffset) {
+  EXPECT_EQ(4, AlignOffset(4, 4, 4));
+
+  EXPECT_EQ(4, AlignOffset(0, 8, 4));
+  EXPECT_EQ(4, AlignOffset(1, 8, 4));
+  EXPECT_EQ(4, AlignOffset(2, 8, 4));
+  EXPECT_EQ(4, AlignOffset(3, 8, 4));
+  EXPECT_EQ(4, AlignOffset(4, 8, 4));
+  EXPECT_EQ(12, AlignOffset(5, 8, 4));
 }
 
 inline constexpr size_t kDefaultSize = AlignedVectorAllocator::kAlignment * 2;
@@ -170,7 +184,8 @@ class TestResizeableObject : public ResizeableObject {
   virtual ~TestResizeableObject() {}
   using ResizeableObject::SubObject;
   bool InsertBytes(void *insertion_point, size_t bytes) {
-    return ResizeableObject::InsertBytes(insertion_point, bytes, SetZero::kYes);
+    return ResizeableObject::InsertBytes(insertion_point, bytes, SetZero::kYes)
+        .has_value();
   }
   TestResizeableObject(TestResizeableObject &&) = default;
 
@@ -204,7 +219,6 @@ class TestResizeableObject : public ResizeableObject {
   TestObject &GetObject(size_t index) { return objects_.at(index); }
 
   size_t Alignment() const override { return 64; }
-  size_t AbsoluteOffsetOffset() const override { return 0; }
 
  private:
   std::vector<TestObject> objects_;

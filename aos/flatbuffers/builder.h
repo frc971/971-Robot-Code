@@ -94,7 +94,6 @@ class Builder final : public ResizeableObject {
 
  private:
   size_t Alignment() const override { return flatbuffer_.t.Alignment(); }
-  size_t AbsoluteOffsetOffset() const override { return 0; }
   size_t NumberOfSubObjects() const override { return 1; }
   void SetPrefix() {
     // We can't do much if the provided buffer isn't at least 4-byte aligned,
@@ -103,13 +102,16 @@ class Builder final : public ResizeableObject {
     CHECK_EQ(reinterpret_cast<size_t>(buffer_.data()) % alignof(uoffset_t), 0u);
     *reinterpret_cast<uoffset_t *>(buffer_.data()) = flatbuffer_start_;
   }
-  // Because the allocator API doesn't provide a way for us to request a
-  // strictly aligned buffer, manually align the start of the actual flatbuffer
-  // data if needed.
+  // Manually aligns the start of the actual flatbuffer to handle the alignment
+  // offset.
   static size_t BufferStart(std::span<uint8_t> buffer) {
-    return aos::fbs::PaddedSize(
+    CHECK_EQ(reinterpret_cast<size_t>(buffer.data()) % T::kAlign, 0u)
+        << "Failed to allocate data of length " << buffer.size()
+        << " with alignment " << T::kAlign;
+
+    return aos::fbs::AlignOffset(
                reinterpret_cast<size_t>(buffer.data()) + sizeof(uoffset_t),
-               T::kAlign) -
+               T::kAlign, T::kAlignOffset) -
            reinterpret_cast<size_t>(buffer.data());
   }
 
