@@ -322,6 +322,8 @@ class LogReader {
 
   std::string_view name() const { return log_files_.name(); }
 
+  const LogFilesContainer &log_files() const { return log_files_; }
+
   // Set whether to exit the SimulatedEventLoopFactory when we finish reading
   // the logfile.
   void set_exit_on_finish(bool exit_on_finish) {
