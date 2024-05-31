@@ -1,12 +1,6 @@
 #include "aos/mutex/mutex.h"
 
-#include <cinttypes>
-#include <cstdio>
-#include <cstring>
-
 #include "glog/logging.h"
-
-#include "aos/type_traits/type_traits.h"
 
 namespace aos {
 

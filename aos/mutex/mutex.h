@@ -1,6 +1,8 @@
 #ifndef AOS_MUTEX_H_
 #define AOS_MUTEX_H_
 
+#include <ostream>
+
 #include "glog/logging.h"
 
 #include "aos/ipc_lib/aos_sync.h"
@@ -8,9 +10,6 @@
 #include "aos/type_traits/type_traits.h"
 
 namespace aos {
-
-class Condition;
-
 // An abstraction of a mutex that is easy to implement for environments other
 // than Linux too.
 // If there are multiple threads or processes contending for the mutex,
