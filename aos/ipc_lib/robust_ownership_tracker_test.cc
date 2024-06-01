@@ -1,5 +1,7 @@
 #include "aos/ipc_lib/robust_ownership_tracker.h"
 
+#include <errno.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 

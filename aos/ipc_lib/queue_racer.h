@@ -1,9 +1,18 @@
 #ifndef AOS_IPC_LIB_QUEUE_RACER_H_
 #define AOS_IPC_LIB_QUEUE_RACER_H_
 
-#include <cstring>
+#include <stdint.h>
 
+#include <atomic>
+#include <chrono>
+#include <cstring>
+#include <functional>
+#include <vector>
+
+#include "aos/ipc_lib/index.h"
 #include "aos/ipc_lib/lockless_queue.h"
+#include "aos/time/time.h"
+#include "aos/uuid.h"
 
 namespace aos::ipc_lib {
 

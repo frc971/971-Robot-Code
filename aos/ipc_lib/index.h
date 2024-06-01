@@ -2,10 +2,8 @@
 #define AOS_IPC_LIB_INDEX_H_
 
 #include <stdint.h>
-#include <sys/types.h>
 
-#include <atomic>
-#include <string>
+#include <limits>
 
 #include "glog/logging.h"
 
@@ -24,10 +22,6 @@
 #endif
 
 namespace aos::ipc_lib {
-
-struct AtomicQueueIndex;
-class AtomicIndex;
-class Index;
 
 namespace testing {
 class QueueIndexTest;

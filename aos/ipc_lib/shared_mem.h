@@ -2,8 +2,6 @@
 #define _SHARED_MEM_H_
 
 #include <stddef.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "aos/ipc_lib/shared_mem_types.h"
 

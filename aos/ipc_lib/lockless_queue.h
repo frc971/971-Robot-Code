@@ -1,14 +1,18 @@
 #ifndef AOS_IPC_LIB_LOCKLESS_QUEUE_H_
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_H_
 
-#include <sys/signalfd.h>
-#include <sys/types.h>
+#include <signal.h>
+#include <stdint.h>
 
-#include <csignal>
+#include <atomic>
+#include <functional>
+#include <iosfwd>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
+#include "glog/logging.h"
 
 #include "aos/events/context.h"
 #include "aos/ipc_lib/aos_sync.h"

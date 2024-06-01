@@ -1,6 +1,10 @@
 #include "aos/ipc_lib/event.h"
 
+#include <time.h>
+
 #include <chrono>
+#include <ostream>
+#include <ratio>
 
 #include "glog/logging.h"
 

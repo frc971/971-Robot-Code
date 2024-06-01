@@ -2,10 +2,8 @@
 #define AOS_IPC_LIB_LATENCY_LIB_H_
 
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#include <chrono>
+#include <string.h>
+#include <unistd.h>
 
 #include "glog/logging.h"
 

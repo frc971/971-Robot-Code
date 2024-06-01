@@ -1,8 +1,8 @@
 #ifndef AOS_IPC_LIB_SIGNALFD_H_
 #define AOS_IPC_LIB_SIGNALFD_H_
 
+#include <signal.h>
 #include <sys/signalfd.h>
-#include <sys/types.h>
 
 #include <initializer_list>
 

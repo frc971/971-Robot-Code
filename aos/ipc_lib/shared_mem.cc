@@ -1,8 +1,8 @@
 #include "aos/ipc_lib/shared_mem.h"
 
 #include <fcntl.h>
+#include <stdint.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <cassert>
@@ -10,11 +10,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ostream>
 
 #include "glog/logging.h"
 
 #include "aos/ipc_lib/aos_sync.h"
-#include "aos/ipc_lib/core_lib.h"
 
 // the path for the shared memory segment. see shm_open(3) for restrictions
 #define AOS_SHM_NAME "/aos_shared_mem"

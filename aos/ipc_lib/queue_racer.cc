@@ -1,11 +1,20 @@
 #include "aos/ipc_lib/queue_racer.h"
 
+#include <stdio.h>
+
+#include <algorithm>
 #include <cinttypes>
 #include <cstring>
 #include <limits>
+#include <optional>
+#include <ostream>
+#include <thread>
 
+#include "absl/types/span.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
+#include "aos/events/context.h"
 #include "aos/ipc_lib/event.h"
 
 namespace aos::ipc_lib {

@@ -1,11 +1,8 @@
 #ifndef AOS_IPC_LIB_SYNC_H_
 #define AOS_IPC_LIB_SYNC_H_
 
-#include <signal.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {

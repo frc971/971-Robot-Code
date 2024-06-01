@@ -1,8 +1,9 @@
 #include "aos/ipc_lib/latency_lib.h"
 
+#include <algorithm>
 #include <chrono>
+#include <compare>
 #include <random>
-#include <thread>
 
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"

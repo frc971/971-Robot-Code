@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/shared_mem_types.h"
 
 static uint8_t aos_8max(uint8_t l, uint8_t r) { return (l > r) ? l : r; }

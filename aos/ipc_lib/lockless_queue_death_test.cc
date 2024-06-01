@@ -1,31 +1,25 @@
-#include <dlfcn.h>
-#include <elf.h>
-#include <linux/futex.h>
+#include <stdio.h>
 #include <sys/mman.h>
-#include <sys/procfs.h>
-#include <sys/ptrace.h>
-#include <sys/syscall.h>
-#include <sys/uio.h>
-#include <unistd.h>
-#include <wait.h>
 
 #include <chrono>
 #include <cinttypes>
 #include <functional>
 #include <memory>
-#include <thread>
+#include <optional>
+#include <ostream>
 
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "aos/ipc_lib/aos_sync.h"
+#include "aos/events/context.h"
+#include "aos/ipc_lib/index.h"
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/ipc_lib/lockless_queue_stepping.h"
-#include "aos/ipc_lib/shm_observers.h"
-#include "aos/realtime.h"
+#include "aos/ipc_lib/robust_ownership_tracker.h"
 #include "aos/testing/test_logging.h"
+#include "aos/time/time.h"
+#include "aos/uuid.h"
 
 namespace aos::ipc_lib::testing {
 

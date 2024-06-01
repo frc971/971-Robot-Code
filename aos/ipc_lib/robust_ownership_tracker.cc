@@ -1,7 +1,5 @@
 #include "aos/ipc_lib/robust_ownership_tracker.h"
 
-#include "aos/ipc_lib/lockless_queue.h"
-
 namespace aos::ipc_lib {
 
 ::std::string RobustOwnershipTracker::DebugString() const {

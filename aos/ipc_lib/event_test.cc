@@ -1,6 +1,7 @@
 #include "aos/ipc_lib/event.h"
 
 #include <chrono>
+#include <memory>
 #include <thread>
 
 #include "gtest/gtest.h"

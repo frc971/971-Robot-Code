@@ -1,5 +1,7 @@
 #include "aos/ipc_lib/shm_base.h"
 
+#include <string>
+
 DEFINE_string(shm_base, "/dev/shm/aos",
               "Directory to place queue backing mmaped files in.");
 namespace aos::testing {

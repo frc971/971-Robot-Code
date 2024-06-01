@@ -1,24 +1,30 @@
 #include "aos/ipc_lib/lockless_queue_stepping.h"
 
-#include <dlfcn.h>
+#include <assert.h>
 #include <elf.h>
-#include <linux/futex.h>
+#include <errno.h>
+#include <signal.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/procfs.h>
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <sys/uio.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <wait.h>
 
-#include <memory>
+#include <atomic>
+#include <new>
+#include <optional>
+#include <ostream>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "aos/ipc_lib/aos_sync.h"
-#include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/ipc_lib/shm_observers.h"
 #include "aos/libc/aos_strsignal.h"
 #include "aos/testing/prevent_exit.h"

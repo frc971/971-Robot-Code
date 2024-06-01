@@ -1,6 +1,8 @@
 #ifndef AOS_IPC_LIB_SHM_BASE_H_
 #define AOS_IPC_LIB_SHM_BASE_H_
 
+#include <string_view>
+
 #include "gflags/gflags.h"
 
 DECLARE_string(shm_base);

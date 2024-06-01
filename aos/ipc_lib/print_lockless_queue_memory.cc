@@ -1,7 +1,11 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/types.h>
+#include <unistd.h>
+
+#include <ostream>
+
+#include "glog/logging.h"
 
 #include "aos/ipc_lib/lockless_queue.h"
 

@@ -1,11 +1,14 @@
 #ifndef AOS_IPC_LIB_LOCKLESS_QUEUE_STEPPING_H_
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_STEPPING_H_
 
+#include <stdlib.h>
+#include <unistd.h>
+
 #include <cinttypes>
 #include <functional>
+#include <tuple>
 
 #include "aos/ipc_lib/lockless_queue.h"
-#include "aos/ipc_lib/lockless_queue_memory.h"
 
 namespace aos::ipc_lib::testing {
 
