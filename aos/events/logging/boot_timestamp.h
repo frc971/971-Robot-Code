@@ -1,7 +1,13 @@
 #ifndef AOS_EVENTS_LOGGING_BOOT_TIMESTAMP_H_
 #define AOS_EVENTS_LOGGING_BOOT_TIMESTAMP_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <chrono>
+#include <compare>
 #include <iostream>
+#include <limits>
 
 #include "glog/logging.h"
 

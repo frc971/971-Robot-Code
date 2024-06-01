@@ -1,5 +1,8 @@
 #include "aos/events/logging/file_operations.h"
 
+#include <algorithm>
+#include <ostream>
+
 #include "absl/strings/match.h"
 #include "glog/logging.h"
 
