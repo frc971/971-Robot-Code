@@ -1,9 +1,12 @@
 #include "aos/logging/interface.h"
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
-#include <functional>
+#include <memory>
+#include <ostream>
+#include <string>
 #include <type_traits>
 
 #include "glog/logging.h"
@@ -11,6 +14,7 @@
 #include "aos/die.h"
 #include "aos/logging/context.h"
 #include "aos/logging/implementations.h"
+#include "aos/time/time.h"
 
 namespace aos::logging {
 namespace internal {

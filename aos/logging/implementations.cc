@@ -1,8 +1,6 @@
 #include "aos/logging/implementations.h"
 
-#include <algorithm>
 #include <chrono>
-#include <cinttypes>
 #include <cstdarg>
 
 #include "aos/logging/printf_formats.h"

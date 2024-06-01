@@ -1,5 +1,8 @@
 #include "aos/logging/implementations.h"
 
+#include <signal.h>
+#include <stdlib.h>
+
 #include <chrono>
 #include <cinttypes>
 #include <string>

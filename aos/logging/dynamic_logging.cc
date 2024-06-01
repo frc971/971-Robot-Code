@@ -1,5 +1,9 @@
 #include "aos/logging/dynamic_logging.h"
 
+#include <ostream>
+#include <string_view>
+
+#include "flatbuffers/string.h"
 #include "glog/logging.h"
 
 namespace aos::logging {

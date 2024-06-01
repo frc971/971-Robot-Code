@@ -1,9 +1,8 @@
 #include <string>
 
-#include "glog/logging.h"
-
 #include "aos/events/event_loop.h"
 #include "aos/logging/dynamic_log_command_generated.h"
+#include "aos/macros.h"
 
 // The purpose of this class is to listen for /aos aos.logging.DynamicLogCommand
 // and make changes to the log level of the current application based on that

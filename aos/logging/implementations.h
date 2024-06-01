@@ -2,18 +2,13 @@
 #define AOS_LOGGING_IMPLEMENTATIONS_H_
 
 #include <sys/types.h>
-#include <unistd.h>
 
-#include <atomic>
-#include <climits>
-#include <cstdarg>
 #include <cstdint>
-#include <cstdio>
-#include <cstring>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "aos/logging/context.h"
 #include "aos/logging/interface.h"

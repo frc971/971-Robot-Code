@@ -46,5 +46,8 @@
   # nlohmann
   { "include": ["<nlohmann/json.hpp>", "private", "\"nlohmann/json.hpp\"", "public"] },
   { "include": ["<nlohmann/json_fwd.hpp>", "private", "\"nlohmann/json_fwd.hpp\"", "public"] },
+
+  # aos
+  { "symbol": ["log_level", "private", "\"aos/logging/logging.h\"", "public"] },
 ]
 
