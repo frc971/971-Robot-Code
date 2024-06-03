@@ -1,9 +1,9 @@
 #include "aos/testing/test_shm.h"
 
+#include <stddef.h>
 #include <sys/mman.h>
 
-#include "gflags/gflags.h"
-
+#include "aos/ipc_lib/shared_mem.h"
 #include "aos/logging/logging.h"
 #include "aos/testing/test_logging.h"
 

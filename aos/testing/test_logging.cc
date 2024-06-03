@@ -1,6 +1,12 @@
 #include "aos/testing/test_logging.h"
 
+#include <string.h>
+
+#include <algorithm>
 #include <cstdio>
+#include <memory>
+#include <mutex>
+#include <string_view>
 #include <vector>
 
 #include "absl/base/call_once.h"
@@ -8,6 +14,7 @@
 
 #include "aos/logging/implementations.h"
 #include "aos/stl_mutex/stl_mutex.h"
+#include "aos/time/time.h"
 
 using ::aos::logging::LogMessage;
 
