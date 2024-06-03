@@ -1,6 +1,7 @@
 #include "aos/libc/dirname.h"
 
 #include <libgen.h>
+#include <string.h>
 
 #include "gtest/gtest.h"
 
