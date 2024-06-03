@@ -1,7 +1,13 @@
-#include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <string>
+
+#include "aos/time/time.h"
 #include "aos/vision/events/epoll_events.h"
+#include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
+#include "aos/vision/image/image_types.h"
 
 class ImageStream : public aos::vision::ImageStreamEvent {
  public:

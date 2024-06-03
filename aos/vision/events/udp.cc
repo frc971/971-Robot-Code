@@ -1,6 +1,11 @@
 #include "aos/vision/events/udp.h"
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #include <cstring>
+#include <ostream>
 
 #include "glog/logging.h"
 

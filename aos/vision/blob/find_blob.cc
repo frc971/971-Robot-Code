@@ -1,5 +1,8 @@
 #include "aos/vision/blob/find_blob.h"
 
+#include <utility>
+#include <vector>
+
 #include "aos/vision/blob/disjoint_set.h"
 
 namespace aos::vision {

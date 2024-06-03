@@ -1,7 +1,11 @@
 #include "aos/vision/blob/hierarchical_contour_merge.h"
 
+#include <stdint.h>
+
+#include <algorithm>
 #include <cmath>
 #include <queue>
+#include <utility>
 
 #include "aos/vision/blob/disjoint_set.h"
 

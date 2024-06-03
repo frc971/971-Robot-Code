@@ -1,5 +1,7 @@
 #include "aos/vision/blob/contour.h"
 
+#include <vector>
+
 namespace aos::vision {
 
 namespace {

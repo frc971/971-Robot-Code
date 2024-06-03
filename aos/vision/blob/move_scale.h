@@ -1,7 +1,6 @@
 #ifndef AOS_VISION_BLOB_MOVE_SCALE_H_
 #define AOS_VISION_BLOB_MOVE_SCALE_H_
 
-#include <limits>
 #include <vector>
 
 #include "aos/vision/blob/range_image.h"

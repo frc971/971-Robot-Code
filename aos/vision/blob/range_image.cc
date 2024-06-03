@@ -1,7 +1,9 @@
 #include "aos/vision/blob/range_image.h"
 
+#include <stdio.h>
+
 #include <algorithm>
-#include <cmath>
+#include <ostream>
 
 namespace aos::vision {
 namespace {

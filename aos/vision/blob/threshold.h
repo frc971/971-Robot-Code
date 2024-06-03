@@ -1,11 +1,16 @@
 #ifndef AOS_VISION_BLOB_THRESHOLD_H_
 #define AOS_VISION_BLOB_THRESHOLD_H_
 
+#include <stdint.h>
+
 #include <array>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/image/image_types.h"

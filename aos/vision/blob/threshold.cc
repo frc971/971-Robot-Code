@@ -1,5 +1,7 @@
 #include "aos/vision/blob/threshold.h"
 
+#include <string.h>
+
 #include "aos/logging/logging.h"
 
 namespace aos::vision {

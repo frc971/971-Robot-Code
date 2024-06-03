@@ -1,5 +1,8 @@
 #include "aos/vision/image/image_dataset.h"
 
+#include <stdlib.h>
+
+#include <cstdio>
 #include <fstream>
 
 #include "aos/vision/image/image_types.h"

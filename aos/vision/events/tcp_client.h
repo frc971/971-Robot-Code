@@ -1,7 +1,6 @@
 #ifndef _AOS_VISION_DEBUG_TCP_CLIENT_H_
 #define _AOS_VISION_DEBUG_TCP_CLIENT_H_
 
-#include <memory>
 #include <string>
 
 #include "aos/vision/events/epoll_events.h"

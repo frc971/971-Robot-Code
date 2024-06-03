@@ -1,6 +1,9 @@
 #ifndef _AOS_VISION_BLOB_CODEC_H_
 #define _AOS_VISION_BLOB_CODEC_H_
 
+#include <stdint.h>
+#include <string.h>
+
 #include <string>
 
 #include "aos/vision/blob/range_image.h"

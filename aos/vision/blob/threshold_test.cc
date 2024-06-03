@@ -1,9 +1,11 @@
 #include "aos/vision/blob/threshold.h"
 
+#include <stddef.h>
+
+#include <limits>
 #include <random>
 #include <vector>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "aos/vision/blob/range_image.h"

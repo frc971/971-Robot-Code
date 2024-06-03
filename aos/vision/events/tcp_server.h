@@ -2,19 +2,21 @@
 #define _AOS_VISION_EVENTS_TCP_SERVER_H_
 
 #include <memory>
-#include <vector>
 
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/events/intrusive_free_list.h"
 
 namespace aos::events {
 
+// IWYU pragma: begin_keep
 // Non-templatized base class of TCP server.
 // TCPServer implements Construct which specializes the client connection
 // based on the specific use-case.
 template <class T>
 class TCPServer;
+// IWYU pragma: end_keep
 class SocketConnection;
+
 class TCPServerBase : public EpollEvent {
  public:
   TCPServerBase(int fd) : EpollEvent(fd) {}

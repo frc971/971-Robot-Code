@@ -1,5 +1,8 @@
 #include "aos/vision/blob/move_scale.h"
 
+#include <algorithm>
+#include <utility>
+
 namespace aos::vision {
 
 RangeImage MoveScale(const RangeImage &img, int dx, int dy, int scale) {

@@ -1,5 +1,8 @@
 #include "aos/vision/blob/test_utils.h"
 
+#include <utility>
+#include <vector>
+
 namespace aos::vision {
 
 RangeImage LoadFromTestData(int mini, const char *data) {
