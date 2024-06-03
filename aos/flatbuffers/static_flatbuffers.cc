@@ -1,13 +1,28 @@
 #include "aos/flatbuffers/static_flatbuffers.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <algorithm>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <utility>
+#include <vector>
+
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
+#include "flatbuffers/base.h"
+#include "flatbuffers/string.h"
+#include "flatbuffers/vector.h"
 #include "glog/logging.h"
 
-#include "aos/flatbuffers/static_table.h"
+#include "aos/flatbuffers/base.h"
 #include "aos/json_to_flatbuffer.h"
+
 namespace aos::fbs {
 namespace {
 // Represents a given field within a type with all of the data that we actually

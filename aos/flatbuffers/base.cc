@@ -1,4 +1,9 @@
 #include "aos/flatbuffers/base.h"
+
+#include <string.h>
+
+#include <iomanip>
+
 namespace aos::fbs {
 
 namespace {

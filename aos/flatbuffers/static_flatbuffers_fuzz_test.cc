@@ -1,17 +1,15 @@
-#include "absl/strings/str_format.h"
+#include <functional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "absl/strings/str_join.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "aos/flatbuffers.h"
 #include "aos/flatbuffers/builder.h"
-#include "aos/flatbuffers/static_flatbuffers.h"
-#include "aos/flatbuffers/test_dir/type_coverage_static.h"
 #include "aos/flatbuffers/test_static.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/testing/path.h"
-#include "aos/testing/tmpdir.h"
-#include "aos/util/file.h"
 
 namespace aos::fbs::testing {
 

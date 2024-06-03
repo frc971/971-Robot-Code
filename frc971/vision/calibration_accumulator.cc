@@ -1,6 +1,7 @@
 #include "frc971/vision/calibration_accumulator.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <limits>
 
 #include "Eigen/Dense"

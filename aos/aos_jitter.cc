@@ -1,6 +1,7 @@
 #include <unistd.h>
 
-#include <iostream>
+#include <iomanip>
+#include <iostream>  // IWYU pragma: keep
 
 #include "gflags/gflags.h"
 

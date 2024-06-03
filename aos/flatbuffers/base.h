@@ -1,12 +1,19 @@
 #ifndef AOS_FLATBUFFERS_BASE_H_
 #define AOS_FLATBUFFERS_BASE_H_
-#include <iomanip>
+#include <stdint.h>
+#include <sys/types.h>
+
+#include <cstring>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <span>
+#include <utility>
+#include <vector>
 
 #include "flatbuffers/base.h"
 #include "glog/logging.h"
+
 namespace aos::fbs {
 using ::flatbuffers::soffset_t;
 using ::flatbuffers::uoffset_t;
