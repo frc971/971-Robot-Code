@@ -1,22 +1,18 @@
 #include "aos/logging/log_namer.h"
 
 #include <dirent.h>
-#include <fcntl.h>
 #include <mntent.h>
-#include <pwd.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
+#include <ostream>
 #include <string>
 
+#include "gflags/gflags.h"
 #include "glog/logging.h"
-
-#include "aos/configuration.h"
 
 #if defined(__clang)
 #pragma clang diagnostic ignored "-Wformat-nonliteral"

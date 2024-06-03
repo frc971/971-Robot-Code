@@ -1,9 +1,9 @@
 #ifndef AOS_LOGGING_INTERFACE_H_
 #define AOS_LOGGING_INTERFACE_H_
 
+#include <stddef.h>
+
 #include <cstdarg>
-#include <functional>
-#include <string>
 #include <string_view>
 
 #include "aos/logging/logging.h"
@@ -12,8 +12,6 @@
 // This file has the non-C-compatible parts of the logging client interface.
 
 namespace aos {
-
-struct MessageType;
 
 namespace logging {
 

@@ -8,19 +8,20 @@
 #include <sanitizer/msan_interface.h>
 #endif
 #include <sys/prctl.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-#include <cerrno>
+#include <algorithm>
+#include <cstddef>
 #include <cstring>
+#include <limits>
+#include <optional>
+#include <ostream>
 #include <string>
 
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
 #include "glog/logging.h"
-
-#include "aos/logging/implementations.h"
 
 namespace aos::logging::internal {
 namespace {

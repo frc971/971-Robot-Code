@@ -1,12 +1,18 @@
 #include "aos/logging/dynamic_logging.h"
 
-#include <sys/stat.h>
+#include <chrono>
+#include <memory>
+#include <ostream>
 
+#include "flatbuffers/buffer.h"
+#include "flatbuffers/flatbuffer_builder.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
+#include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/flatbuffers.h"
 #include "aos/testing/path.h"
 
 using aos::testing::ArtifactPath;
