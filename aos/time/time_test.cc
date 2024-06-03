@@ -1,12 +1,10 @@
 #include "aos/time/time.h"
 
-#include <thread>
+#include <sys/time.h>
 
-#include "glog/logging.h"
+#include <memory>
+
 #include "gtest/gtest.h"
-
-#include "aos/macros.h"
-#include "aos/util/death_test_log_implementation.h"
 
 namespace aos::time::testing {
 

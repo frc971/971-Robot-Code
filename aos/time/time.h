@@ -1,14 +1,14 @@
 #ifndef AOS_TIME_H_
 #define AOS_TIME_H_
 
-#include <sys/time.h>
-
 #include <chrono>
-#include <cstdint>
 #include <ctime>
+#include <limits>
 #include <optional>
 #include <ostream>
-#include <thread>
+#include <string>
+#include <string_view>
+#include <thread>  // IWYU pragma: keep
 
 namespace aos {
 
