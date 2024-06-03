@@ -1,5 +1,7 @@
 #include "aos/ipc_lib/index.h"
 
+#include <ostream>
+
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 

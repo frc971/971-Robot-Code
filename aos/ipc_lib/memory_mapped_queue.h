@@ -1,6 +1,12 @@
 #ifndef AOS_IPC_LIB_MEMORY_MAPPED_QUEUE_H_
 #define AOS_IPC_LIB_MEMORY_MAPPED_QUEUE_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <string>
+#include <string_view>
+
 #include "absl/types/span.h"
 
 #include "aos/configuration.h"

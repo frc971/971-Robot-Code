@@ -1,23 +1,30 @@
+#include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <mqueue.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/eventfd.h>
+#include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/sem.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <chrono>
+#include <compare>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include "gflags/gflags.h"
 
@@ -25,7 +32,6 @@
 #include "aos/init.h"
 #include "aos/ipc_lib/event.h"
 #include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"

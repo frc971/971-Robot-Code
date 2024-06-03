@@ -1,9 +1,8 @@
 #ifndef _AOS_CORE_LIB_H_
 #define _AOS_CORE_LIB_H_
 
+#include <stddef.h>
 #include <stdint.h>
-
-#include "aos/ipc_lib/aos_sync.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,6 +1,7 @@
 #ifndef AOS_IPC_LIB_LOCKLESS_QUEUE_MEMORY_H_
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_MEMORY_H_
 
+#include <stdint.h>
 #include <sys/types.h>
 
 #include <cstddef>
@@ -8,7 +9,6 @@
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/index.h"
 #include "aos/ipc_lib/lockless_queue.h"
-#include "aos/time/time.h"
 
 namespace aos::ipc_lib {
 

@@ -1,10 +1,19 @@
 #ifndef AOS_IPC_LIB_ROBUST_OWNERSHIP_TRACKER_H_
 #define AOS_IPC_LIB_ROBUST_OWNERSHIP_TRACKER_H_
 
+#include <assert.h>
 #include <linux/futex.h>
+#include <stdint.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 
+#include <atomic>
+#include <limits>
+#include <optional>
+#include <ostream>
 #include <string>
+
+#include "glog/logging.h"
 
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/util/top.h"

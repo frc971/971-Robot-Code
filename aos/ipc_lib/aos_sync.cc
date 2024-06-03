@@ -7,27 +7,22 @@
 
 #include <linux/futex.h>
 #include <pthread.h>
-#include <sched.h>
+#include <signal.h>
+#include <stdio.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <cassert>
 #include <cerrno>
 #include <cinttypes>
 #include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <ostream>
 
 #include "aos/ipc_lib/shm_observers.h"
 
 #ifdef AOS_SANITIZER_thread
 #include <sanitizer/tsan_interface_atomic.h>
 #endif
-
-#include <algorithm>
-#include <type_traits>
 
 #include "absl/base/call_once.h"
 #include "glog/logging.h"

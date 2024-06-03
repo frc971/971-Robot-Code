@@ -1,21 +1,26 @@
 #include "aos/ipc_lib/lockless_queue.h"
 
-#include <sys/mman.h>
-#include <unistd.h>
-#include <wait.h>
+#include <sched.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/signalfd.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cinttypes>
+#include <compare>
 #include <csignal>
-#include <memory>
+#include <new>
+#include <ostream>
 #include <random>
+#include <ratio>
 #include <thread>
+#include <type_traits>
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/epoll.h"
-#include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/event.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/ipc_lib/lockless_queue_stepping.h"

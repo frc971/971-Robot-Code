@@ -1,5 +1,8 @@
 #include "aos/ipc_lib/signalfd.h"
 
+#include <memory>
+#include <thread>
+
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 

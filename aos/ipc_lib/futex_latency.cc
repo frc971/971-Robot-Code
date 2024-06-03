@@ -1,18 +1,19 @@
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <inttypes.h>
+#include <signal.h>
 
+#include <algorithm>
 #include <chrono>
+#include <compare>
 #include <random>
+#include <ratio>
 #include <thread>
 
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
 #include "aos/condition.h"
-#include "aos/init.h"
 #include "aos/ipc_lib/latency_lib.h"
 #include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"

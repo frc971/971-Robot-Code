@@ -1,10 +1,22 @@
 #include "aos/ipc_lib/memory_mapped_queue.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
+#include <chrono>
+#include <limits>
+#include <ostream>
+#include <thread>
+
 #include "absl/strings/str_cat.h"
+#include "flatbuffers/string.h"
+#include "glog/logging.h"
+
+#include "aos/ipc_lib/index.h"
+#include "aos/util/file.h"
 
 namespace aos::ipc_lib {
 

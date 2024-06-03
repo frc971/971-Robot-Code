@@ -2,21 +2,25 @@
 
 #include <linux/futex.h>
 #include <pwd.h>
+#include <sched.h>
+#include <string.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
-#include <syscall.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <chrono>
+#include <compare>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
+#include <string>
+#include <string_view>
 
 #include "absl/strings/escaping.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
 #include "aos/ipc_lib/lockless_queue_memory.h"
-#include "aos/realtime.h"
 #include "aos/util/compiler_memory_barrier.h"
 
 DEFINE_bool(dump_lockless_queue_data, false,
