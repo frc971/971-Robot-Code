@@ -1,6 +1,10 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_EVENT_H
 #define AOS_EVENTS_EVENT_LOOP_EVENT_H
 
+#include <stddef.h>
+
+#include <chrono>
+
 #include "glog/logging.h"
 
 #include "aos/time/time.h"

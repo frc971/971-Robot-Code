@@ -1,13 +1,12 @@
 #ifndef AOS_EVENTS_EPOLL_H_
 #define AOS_EVENTS_EPOLL_H_
 
-#include <fcntl.h>
+#include <stdint.h>
 #include <sys/epoll.h>
-#include <sys/timerfd.h>
-#include <unistd.h>
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "aos/time/time.h"

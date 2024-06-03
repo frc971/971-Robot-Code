@@ -1,8 +1,11 @@
 #ifndef AOS_EVENTS_LOGGING_FILE_OPERATIONS_H_
 #define AOS_EVENTS_LOGGING_FILE_OPERATIONS_H_
 
+#include <stddef.h>
+
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace aos::logger::internal {
