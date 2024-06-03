@@ -1,5 +1,7 @@
 #include "aos/stl_mutex/stl_mutex.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 
 #include "aos/die.h"

@@ -1,5 +1,9 @@
 #include "aos/scoped/scoped_fd.h"
 
+#include <unistd.h>
+
+#include <ostream>
+
 #include "glog/logging.h"
 
 namespace aos {

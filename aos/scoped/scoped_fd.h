@@ -1,10 +1,6 @@
 #ifndef AOS_SCOPED_SCOPED_FD_H_
 #define AOS_SCOPED_SCOPED_FD_H_
 
-#include <unistd.h>
-
-#include "aos/macros.h"
-
 namespace aos {
 
 // Smart "pointer" (container) for a file descriptor.

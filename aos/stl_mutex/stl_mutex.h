@@ -2,6 +2,7 @@
 #define AOS_STL_MUTEX_H_
 
 #include <mutex>
+#include <ostream>
 
 #include "glog/logging.h"
 
