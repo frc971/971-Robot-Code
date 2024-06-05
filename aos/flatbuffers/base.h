@@ -279,6 +279,8 @@ class AlignedVectorAllocator : public fbs::Allocator {
 
   void Deallocate(std::span<uint8_t>) override;
 
+  // Releases the data which has been allocated from this allocator to the
+  // caller.  This is needed because Deallocate actually frees the memory.
   aos::SharedSpan Release();
 
  private:
@@ -290,7 +292,12 @@ class AlignedVectorAllocator : public fbs::Allocator {
 
   aos::AllocatorResizeableBuffer<aos::AlignedReallocator<kAlignment>> buffer_;
 
+  // The size of the data that has been returned from Allocate.  This counts
+  // from the end of buffer_.
   size_t allocated_size_ = 0u;
+  // If true, the data has been released from buffer_, and we don't own it
+  // anymore.  This enables Deallocate to properly handle the case when the user
+  // releases the memory, but the Builder still needs to clean up.
   bool released_ = false;
 };
 
