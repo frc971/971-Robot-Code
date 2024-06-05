@@ -850,3 +850,12 @@ rust_library(
         "//aos/events:simulated_event_loop_rs",
     ],
 )
+
+cc_library(
+    name = "shared_span",
+    hdrs = ["shared_span.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
+)

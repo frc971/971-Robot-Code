@@ -116,6 +116,7 @@ cc_library(
         "//aos:flatbuffers",
         "//aos:ftrace",
         "//aos:realtime",
+        "//aos:shared_span",
         "//aos:uuid",
         "//aos/flatbuffers:builder",
         "//aos/ipc_lib:data_alignment",

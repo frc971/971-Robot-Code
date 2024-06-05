@@ -18,11 +18,9 @@
 
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/ipc_lib/data_alignment.h"
+#include "aos/shared_span.h"
 
-namespace aos {
-using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
-
-namespace fbs {
+namespace aos::fbs {
 
 using ::flatbuffers::soffset_t;
 using ::flatbuffers::uoffset_t;
@@ -343,7 +341,6 @@ struct TableMover {
   T t;
 };
 }  // namespace internal
-}  // namespace fbs
-}  // namespace aos
+}  // namespace aos::fbs
 
 #endif  // AOS_FLATBUFFERS_BASE_H_

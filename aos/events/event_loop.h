@@ -24,6 +24,7 @@
 #include "aos/ftrace.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/shared_span.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/status.h"
@@ -90,8 +91,6 @@ class RawFetcher {
   Ftrace ftrace_;
 };
 
-using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
-
 // Holds storage for a span object and the data referenced by that span for
 // compatibility with SharedSpan users. If constructed with MakeSharedSpan, span
 // points to only the aligned segment of the entire data.
@@ -113,8 +112,6 @@ std::pair<SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(size_t size);
 // and as a building block to implement typed senders.
 class RawSender {
  public:
-  using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
-
   enum class [[nodiscard]] Error {
     // Represents success and no error
     kOk,

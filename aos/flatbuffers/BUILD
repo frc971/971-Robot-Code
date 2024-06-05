@@ -28,6 +28,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos:shared_span",
         "//aos/containers:resizeable_buffer",
         "//aos/ipc_lib:data_alignment",
         "@com_github_google_flatbuffers//:flatbuffers",
