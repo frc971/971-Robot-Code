@@ -16,8 +16,7 @@ class SwervePublisherTest : public ::testing::Test {
             event_loop_factory_.MakeEventLoop("swerve_publisher", roborio_)),
         exit_handle_(event_loop_factory_.MakeExitHandle()),
         drivetrain_swerve_output_fetcher_(
-            event_loop_->MakeFetcher<
-                frc971::control_loops::drivetrain::swerve::Output>(
+            event_loop_->MakeFetcher<frc971::control_loops::swerve::Output>(
                 "/drivetrain")),
         swerve_publisher_(event_loop_.get(), exit_handle_.get(),
                           "y2024_swerve/swerve_drivetrain_output.json", 100) {}
@@ -39,7 +38,7 @@ class SwervePublisherTest : public ::testing::Test {
   std::unique_ptr<aos::EventLoop> event_loop_;
   std::unique_ptr<aos::ExitHandle> exit_handle_;
 
-  aos::Fetcher<frc971::control_loops::drivetrain::swerve::Output>
+  aos::Fetcher<frc971::control_loops::swerve::Output>
       drivetrain_swerve_output_fetcher_;
 
   y2024_swerve::SwervePublisher swerve_publisher_;
