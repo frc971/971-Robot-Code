@@ -1,5 +1,18 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
+package(default_visibility = ["//visibility:public"])
+
+static_flatbuffer(
+    name = "swerve_drivetrain_goal_fbs",
+    srcs = ["swerve_drivetrain_goal.fbs"],
+)
+
+static_flatbuffer(
+    name = "swerve_drivetrain_status_fbs",
+    srcs = ["swerve_drivetrain_status.fbs"],
+    deps = ["//frc971/control_loops:profiled_subsystem_fbs"],
+)
+
 static_flatbuffer(
     name = "swerve_drivetrain_output_fbs",
     srcs = ["swerve_drivetrain_output.fbs"],
