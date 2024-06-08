@@ -1,0 +1,32 @@
+namespace frc971.control_loops.swerve;
+
+// States what translation control type goal we will care about
+// SPEED means we will control translation with speed (m/s)
+// CURRENT mean we will control translation with current (amps)
+enum TranslationControlTypeGoal : ubyte {
+  SPEED,
+  CURRENT,
+}
+
+// Takes in either current or speed
+// Uses current if both are given
+table SwerveModuleGoal {
+  // Angle in radians.
+  rotation_angle:double (id: 0);
+  // Tells us whether we use current
+  // or speed to control translation
+  translation_control_type_goal: TranslationControlTypeGoal (id: 1);
+  // Current in amps.
+  translation_current:double (id: 2);
+  // Speed in meters per second.
+  translation_speed:double (id: 3);
+}
+
+table Goal {
+    front_left_goal:SwerveModuleGoal (id: 0);
+    front_right_goal:SwerveModuleGoal (id: 1);
+    back_left_goal:SwerveModuleGoal (id: 2);
+    back_right_goal:SwerveModuleGoal (id: 3);
+}
+
+root_type Goal;

@@ -1,0 +1,21 @@
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace frc971.control_loops.swerve;
+
+table SwerveModuleStatus {
+    // Goal speed in meters per second.
+    goal_translation_speed:double (id: 0);
+    // Absolute encoder for rotation
+    rotation:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 1);
+    // Translation speed in meters per second.
+    translation_speed:double (id: 2);
+}
+
+table Status {
+    front_left_status:SwerveModuleStatus (id: 0);
+    front_right_status:SwerveModuleStatus (id: 1);
+    back_left_status:SwerveModuleStatus (id: 2);
+    back_right_status:SwerveModuleStatus (id: 3);
+}
+
+root_type Status;
