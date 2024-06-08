@@ -1,4 +1,4 @@
-namespace frc971.control_loops.drivetrain.swerve;
+namespace frc971.control_loops.swerve;
 
 table SwerveModuleOutput {
   // Current in Amps.

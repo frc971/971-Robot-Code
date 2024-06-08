@@ -4,14 +4,14 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_can_position_static.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
 #include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024_swerve/constants.h"
-#include "y2024_swerve/drivetrain_can_position_static.h"
-#include "y2024_swerve/drivetrain_position_generated.h"
 
 DEFINE_bool(ctre_diag_server, false,
             "If true, enable the diagnostics server for interacting with "
@@ -33,24 +33,6 @@ T value_or_exit(std::optional<T> optional) {
   return optional.value();
 }
 
-flatbuffers::Offset<frc971::AbsolutePosition> module_offset(
-    frc971::AbsolutePosition::Builder builder,
-    frc971::wpilib::AbsoluteEncoder *module) {
-  builder.add_encoder(module->ReadRelativeEncoder());
-  builder.add_absolute_encoder(module->ReadAbsoluteEncoder());
-
-  return builder.Finish();
-}
-
-void populate_can_module(SwerveModuleCANPositionStatic *can_position,
-                         std::shared_ptr<SwerveModule> module) {
-  auto rotation = can_position->add_rotation();
-  module->rotation->SerializePosition(rotation, 1.0);
-
-  auto translation = can_position->add_translation();
-  module->translation->SerializePosition(translation, 1.0);
-}
-
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     constants::Values::kMaxDrivetrainEncoderPulsesPerSecond(),
 });
@@ -61,105 +43,68 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(aos::ShmEventLoop *event_loop,
-               std::shared_ptr<const constants::Values> values)
+               std::shared_ptr<const constants::Values> values,
+               frc971::wpilib::swerve::SwerveModules modules)
       : ::frc971::wpilib::SensorReader(event_loop),
         values_(values),
         drivetrain_position_sender_(
-            event_loop->MakeSender<AbsoluteDrivetrainPosition>("/drivetrain")) {
+            event_loop
+                ->MakeSender<frc971::control_loops::swerve::PositionStatic>(
+                    "/drivetrain")),
+        modules_(modules) {
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
   }
 
   void RunIteration() override {
     {
-      auto builder = drivetrain_position_sender_.MakeBuilder();
+      auto builder = drivetrain_position_sender_.MakeStaticBuilder();
 
-      auto front_left_offset =
-          module_offset(builder.MakeBuilder<frc971::AbsolutePosition>(),
-                        &front_left_encoder_);
-      auto front_right_offset =
-          module_offset(builder.MakeBuilder<frc971::AbsolutePosition>(),
-                        &front_right_encoder_);
-      auto back_left_offset = module_offset(
-          builder.MakeBuilder<frc971::AbsolutePosition>(), &back_left_encoder_);
-      auto back_right_offset =
-          module_offset(builder.MakeBuilder<frc971::AbsolutePosition>(),
-                        &back_right_encoder_);
+      modules_.front_left->PopulatePosition(builder->add_front_left());
+      modules_.front_right->PopulatePosition(builder->add_front_right());
+      modules_.back_left->PopulatePosition(builder->add_back_left());
+      modules_.back_right->PopulatePosition(builder->add_back_right());
 
-      AbsoluteDrivetrainPosition::Builder drivetrain_position_builder =
-          builder.MakeBuilder<AbsoluteDrivetrainPosition>();
-
-      drivetrain_position_builder.add_follower_wheel_one_position(
-          follower_wheel_one_encoder_->GetRaw());
-      drivetrain_position_builder.add_follower_wheel_two_position(
-          follower_wheel_two_encoder_->GetRaw());
-
-      drivetrain_position_builder.add_front_left_position(front_left_offset);
-      drivetrain_position_builder.add_front_right_position(front_right_offset);
-      drivetrain_position_builder.add_back_left_position(back_left_offset);
-      drivetrain_position_builder.add_back_right_position(back_right_offset);
-
-      builder.CheckOk(builder.Send(drivetrain_position_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
   }
 
-  void set_follower_wheel_one_encoder(std::unique_ptr<frc::Encoder> encoder) {
+  void set_front_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(encoder.get());
-    follower_wheel_one_encoder_ = std::move(encoder);
-    follower_wheel_one_encoder_->SetMaxPeriod(0.005);
-  }
-  void set_follower_wheel_two_encoder(std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    follower_wheel_two_encoder_ = std::move(encoder);
-    follower_wheel_two_encoder_->SetMaxPeriod(0.005);
+    modules_.front_left->set_rotation_encoder(std::move(encoder),
+                                              std::move(absolute_pwm));
   }
 
-  void set_front_left_encoder(std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    front_left_encoder_.set_encoder(std::move(encoder));
-  }
-  void set_front_left_absolute_pwm(
+  void set_front_right_encoder(
+      std::unique_ptr<frc::Encoder> encoder,
       std::unique_ptr<frc::DigitalInput> absolute_pwm) {
-    front_left_encoder_.set_absolute_pwm(std::move(absolute_pwm));
+    fast_encoder_filter_.Add(encoder.get());
+    modules_.front_right->set_rotation_encoder(std::move(encoder),
+                                               std::move(absolute_pwm));
   }
 
-  void set_front_right_encoder(std::unique_ptr<frc::Encoder> encoder) {
+  void set_back_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                             std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(encoder.get());
-    front_right_encoder_.set_encoder(std::move(encoder));
-  }
-  void set_front_right_absolute_pwm(
-      std::unique_ptr<frc::DigitalInput> absolute_pwm) {
-    front_right_encoder_.set_absolute_pwm(std::move(absolute_pwm));
+    modules_.back_left->set_rotation_encoder(std::move(encoder),
+                                             std::move(absolute_pwm));
   }
 
-  void set_back_left_encoder(std::unique_ptr<frc::Encoder> encoder) {
+  void set_back_right_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(encoder.get());
-    back_left_encoder_.set_encoder(std::move(encoder));
-  }
-  void set_back_left_absolute_pwm(
-      std::unique_ptr<frc::DigitalInput> absolute_pwm) {
-    back_left_encoder_.set_absolute_pwm(std::move(absolute_pwm));
-  }
-
-  void set_back_right_encoder(std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    back_right_encoder_.set_encoder(std::move(encoder));
-  }
-  void set_back_right_absolute_pwm(
-      std::unique_ptr<frc::DigitalInput> absolute_pwm) {
-    back_right_encoder_.set_absolute_pwm(std::move(absolute_pwm));
+    modules_.back_right->set_rotation_encoder(std::move(encoder),
+                                              std::move(absolute_pwm));
   }
 
  private:
   std::shared_ptr<const constants::Values> values_;
 
-  aos::Sender<AbsoluteDrivetrainPosition> drivetrain_position_sender_;
+  aos::Sender<frc971::control_loops::swerve::PositionStatic>
+      drivetrain_position_sender_;
 
-  std::unique_ptr<frc::Encoder> follower_wheel_one_encoder_,
-      follower_wheel_two_encoder_;
-
-  frc971::wpilib::AbsoluteEncoder front_left_encoder_, front_right_encoder_,
-      back_left_encoder_, back_right_encoder_;
+  frc971::wpilib::swerve::SwerveModules modules_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -179,70 +124,62 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::vector<std::shared_ptr<TalonFX>> falcons;
 
     // TODO(max): Change the CanBus names with TalonFX software.
-    std::shared_ptr<SwerveModule> front_left = std::make_shared<SwerveModule>(
-        frc971::wpilib::TalonFXParams{6, false},
-        frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
-        &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<SwerveModule> front_right = std::make_shared<SwerveModule>(
-        frc971::wpilib::TalonFXParams{3, false},
-        frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
-        &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<SwerveModule> back_left = std::make_shared<SwerveModule>(
-        frc971::wpilib::TalonFXParams{8, false},
-        frc971::wpilib::TalonFXParams{7, false}, "Drivetrain Bus",
-        &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<SwerveModule> back_right = std::make_shared<SwerveModule>(
-        frc971::wpilib::TalonFXParams{2, false},
-        frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
-        &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
+    frc971::wpilib::swerve::SwerveModules modules{
+        .front_left = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{6, false},
+            frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
+            &signals_registry,
+            constants::Values::kDrivetrainStatorCurrentLimit(),
+            constants::Values::kDrivetrainSupplyCurrentLimit()),
+        .front_right = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{3, false},
+            frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
+            &signals_registry,
+            constants::Values::kDrivetrainStatorCurrentLimit(),
+            constants::Values::kDrivetrainSupplyCurrentLimit()),
+        .back_left = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{8, false},
+            frc971::wpilib::TalonFXParams{7, false}, "Drivetrain Bus",
+            &signals_registry,
+            constants::Values::kDrivetrainStatorCurrentLimit(),
+            constants::Values::kDrivetrainSupplyCurrentLimit()),
+        .back_right = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{2, false},
+            frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
+            &signals_registry,
+            constants::Values::kDrivetrainStatorCurrentLimit(),
+            constants::Values::kDrivetrainSupplyCurrentLimit())};
 
     // Thread 1
     aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
 
-    falcons.push_back(front_left->rotation);
-    falcons.push_back(front_left->translation);
+    modules.PopulateFalconsVector(&falcons);
 
-    falcons.push_back(front_right->rotation);
-    falcons.push_back(front_right->translation);
-
-    falcons.push_back(back_left->rotation);
-    falcons.push_back(back_left->translation);
-
-    falcons.push_back(back_right->rotation);
-    falcons.push_back(back_right->translation);
-
-    aos::Sender<AbsoluteCANPositionStatic> can_position_sender =
-        can_sensor_reader_event_loop.MakeSender<AbsoluteCANPositionStatic>(
-            "/drivetrain");
+    aos::Sender<frc971::control_loops::swerve::CanPositionStatic>
+        can_position_sender =
+            can_sensor_reader_event_loop
+                .MakeSender<frc971::control_loops::swerve::CanPositionStatic>(
+                    "/drivetrain");
 
     CANSensorReader can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(signals_registry), falcons,
-        [this, falcons, front_left, front_right, back_left, back_right,
+        [this, falcons, modules,
          &can_position_sender](ctre::phoenix::StatusCode status) {
           // TODO(max): use status properly in the flatbuffer.
           (void)status;
 
-          aos::Sender<AbsoluteCANPositionStatic>::StaticBuilder builder =
-              can_position_sender.MakeStaticBuilder();
+          aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
+              StaticBuilder builder = can_position_sender.MakeStaticBuilder();
 
           for (auto falcon : falcons) {
             falcon->RefreshNontimesyncedSignals();
           }
 
-          auto front_left_flatbuffer = builder->add_front_left();
-          auto front_right_flatbuffer = builder->add_front_right();
-          auto back_left_flatbuffer = builder->add_back_left();
-          auto back_right_flatbuffer = builder->add_back_right();
-
-          populate_can_module(front_left_flatbuffer, front_left);
-          populate_can_module(front_right_flatbuffer, front_right);
-          populate_can_module(back_left_flatbuffer, back_left);
-          populate_can_module(back_right_flatbuffer, back_right);
+          modules.front_left->PopulateCanPosition(builder->add_front_left());
+          modules.front_right->PopulateCanPosition(builder->add_front_right());
+          modules.back_left->PopulateCanPosition(builder->add_back_left());
+          modules.back_right->PopulateCanPosition(builder->add_back_right());
 
           builder.CheckOk(builder.Send());
         });
@@ -268,34 +205,26 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &drivetrain_writer_event_loop,
         constants::Values::kDrivetrainWriterPriority, 12);
 
-    drivetrain_writer.set_talonfxs(front_left, front_right, back_left,
-                                   back_right);
+    drivetrain_writer.set_talonfxs(modules);
 
     AddLoop(&drivetrain_writer_event_loop);
 
     // Thread 3
     aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     sensor_reader_event_loop.set_name("SensorReader");
-    SensorReader sensor_reader(&sensor_reader_event_loop, values);
+    SensorReader sensor_reader(&sensor_reader_event_loop, values, modules);
 
-    sensor_reader.set_follower_wheel_one_encoder(make_encoder(4));
-    sensor_reader.set_follower_wheel_two_encoder(make_encoder(5));
+    sensor_reader.set_front_left_encoder(
+        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
 
-    sensor_reader.set_front_left_encoder(make_encoder(1));
-    sensor_reader.set_front_left_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_front_right_encoder(
+        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
 
-    sensor_reader.set_front_right_encoder(make_encoder(0));
-    sensor_reader.set_front_right_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_back_left_encoder(make_encoder(2),
+                                        std::make_unique<frc::DigitalInput>(2));
 
-    sensor_reader.set_back_left_encoder(make_encoder(2));
-    sensor_reader.set_back_left_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(2));
-
-    sensor_reader.set_back_right_encoder(make_encoder(3));
-    sensor_reader.set_back_right_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_back_right_encoder(
+        make_encoder(3), std::make_unique<frc::DigitalInput>(3));
 
     AddLoop(&sensor_reader_event_loop);
 

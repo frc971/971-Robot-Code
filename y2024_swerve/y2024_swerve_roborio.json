@@ -103,7 +103,7 @@
         },
         {
             "name": "/drivetrain",
-            "type": "y2024_swerve.AbsoluteDrivetrainPosition",
+            "type": "frc971.control_loops.swerve.Position",
             "source_node": "roborio",
             "frequency": 250,
             "num_senders": 1,
@@ -111,7 +111,7 @@
         },
         {
             "name": "/drivetrain",
-            "type": "y2024_swerve.AbsoluteCANPosition",
+            "type": "frc971.control_loops.swerve.CanPosition",
             "source_node": "roborio",
             "frequency": 250,
             "num_senders": 1,
@@ -148,15 +148,7 @@
         },
         {
             "name": "/drivetrain",
-            "type": "frc971.control_loops.drivetrain.swerve.Position",
-            "source_node": "roborio",
-            "frequency": 400,
-            "max_size": 112,
-            "num_senders": 2
-        },
-        {
-            "name": "/drivetrain",
-            "type": "frc971.control_loops.drivetrain.swerve.Output",
+            "type": "frc971.control_loops.swerve.Output",
             "source_node": "roborio",
             "frequency": 400,
             "max_size": 200,

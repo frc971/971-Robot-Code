@@ -5,16 +5,18 @@ y2024_swerve::SwervePublisher::SwervePublisher(aos::EventLoop *event_loop,
                                                const std::string &filename,
                                                double duration)
     : drivetrain_output_sender_(
-          event_loop->MakeSender<drivetrain::swerve::Output>("/drivetrain")) {
+          event_loop->MakeSender<frc971::control_loops::swerve::Output>(
+              "/drivetrain")) {
   event_loop
       ->AddTimer([this, filename]() {
         auto output_builder = drivetrain_output_sender_.MakeBuilder();
 
         auto drivetrain_output =
-            aos::JsonFileToFlatbuffer<drivetrain::swerve::Output>(filename);
+            aos::JsonFileToFlatbuffer<frc971::control_loops::swerve::Output>(
+                filename);
 
         auto copied_flatbuffer =
-            aos::CopyFlatBuffer<drivetrain::swerve::Output>(
+            aos::CopyFlatBuffer<frc971::control_loops::swerve::Output>(
                 drivetrain_output, output_builder.fbb());
         CHECK(drivetrain_output.Verify());
 
@@ -26,16 +28,18 @@ y2024_swerve::SwervePublisher::SwervePublisher(aos::EventLoop *event_loop,
   event_loop
       ->AddTimer([this, exit_handle]() {
         auto builder = drivetrain_output_sender_.MakeBuilder();
-        drivetrain::swerve::SwerveModuleOutput::Builder swerve_module_builder =
-            builder.MakeBuilder<drivetrain::swerve::SwerveModuleOutput>();
+        frc971::control_loops::swerve::SwerveModuleOutput::Builder
+            swerve_module_builder = builder.MakeBuilder<
+                frc971::control_loops::swerve::SwerveModuleOutput>();
 
         swerve_module_builder.add_rotation_current(0.0);
         swerve_module_builder.add_translation_current(0.0);
 
         auto swerve_module_offset = swerve_module_builder.Finish();
 
-        drivetrain::swerve::Output::Builder drivetrain_output_builder =
-            builder.MakeBuilder<drivetrain::swerve::Output>();
+        frc971::control_loops::swerve::Output::Builder
+            drivetrain_output_builder =
+                builder.MakeBuilder<frc971::control_loops::swerve::Output>();
 
         drivetrain_output_builder.add_front_left_output(swerve_module_offset);
         drivetrain_output_builder.add_front_right_output(swerve_module_offset);

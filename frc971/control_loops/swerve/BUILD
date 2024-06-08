@@ -8,6 +8,13 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
+    name = "swerve_drivetrain_can_position_fbs",
+    srcs = ["swerve_drivetrain_can_position.fbs"],
+    visibility = ["//visibility:public"],
+    deps = ["//frc971/control_loops:can_talonfx_fbs"],
+)
+
+static_flatbuffer(
     name = "swerve_drivetrain_position_fbs",
     srcs = ["swerve_drivetrain_position.fbs"],
     visibility = ["//visibility:public"],

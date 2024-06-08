@@ -13,32 +13,26 @@ namespace frc971::wpilib::swerve {
 
 // Reads from the swerve output flatbuffer and uses wpilib to set the current
 // for each motor.
-class DrivetrainWriter
-    : public ::frc971::wpilib::LoopOutputHandler<
-          ::frc971::control_loops::drivetrain::swerve::Output> {
+class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
+                             ::frc971::control_loops::swerve::Output> {
  public:
   DrivetrainWriter(::aos::EventLoop *event_loop, int drivetrain_writer_priority,
                    double max_voltage);
 
-  void set_talonfxs(std::shared_ptr<SwerveModule> front_left,
-                    std::shared_ptr<SwerveModule> front_right,
-                    std::shared_ptr<SwerveModule> back_left,
-                    std::shared_ptr<SwerveModule> back_right);
+  void set_talonfxs(SwerveModules modules);
 
   void HandleCANConfiguration(const CANConfiguration &configuration);
 
  private:
   void WriteConfigs();
 
-  void Write(const ::frc971::control_loops::drivetrain::swerve::Output &output)
-      override;
+  void Write(const ::frc971::control_loops::swerve::Output &output) override;
 
   void Stop() override;
 
   double SafeSpeed(double voltage);
 
-  std::shared_ptr<SwerveModule> front_left_, front_right_, back_left_,
-      back_right_;
+  SwerveModules modules_;
 
   double max_voltage_;
 };

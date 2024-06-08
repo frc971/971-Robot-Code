@@ -1,5 +1,4 @@
 load("//aos:config.bzl", "aos_config")
-load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
 load("//frc971:downloader.bzl", "robot_downloader")
 
@@ -106,18 +105,6 @@ cc_library(
     ],
 )
 
-static_flatbuffer(
-    name = "drivetrain_position_fbs",
-    srcs = ["drivetrain_position.fbs"],
-    deps = ["//frc971/control_loops:control_loops_fbs"],
-)
-
-static_flatbuffer(
-    name = "drivetrain_can_position_fbs",
-    srcs = ["drivetrain_can_position.fbs"],
-    deps = ["//frc971/control_loops:can_talonfx_fbs"],
-)
-
 cc_binary(
     name = "swerve_publisher",
     srcs = ["swerve_publisher_main.cc"],
@@ -162,11 +149,10 @@ cc_binary(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":constants",
-        ":drivetrain_can_position_fbs",
-        ":drivetrain_position_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
         "//frc971/wpilib:can_sensor_reader",
         "//frc971/wpilib:sensor_reader",
@@ -200,8 +186,6 @@ aos_config(
     name = "config_roborio",
     src = "y2024_swerve_roborio.json",
     flatbuffers = [
-        ":drivetrain_position_fbs",
-        ":drivetrain_can_position_fbs",
         "//frc971:can_configuration_fbs",
         "//aos/network:remote_message_fbs",
         "//aos/network:message_bridge_client_fbs",
@@ -209,6 +193,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/can_logger:can_logging_fbs",
     ],

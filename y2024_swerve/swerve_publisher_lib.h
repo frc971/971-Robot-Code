@@ -12,16 +12,13 @@
 
 namespace y2024_swerve {
 
-namespace drivetrain = frc971::control_loops::drivetrain;
-
 class SwervePublisher {
  public:
   SwervePublisher(aos::EventLoop *event_loop, aos::ExitHandle *exit_handle,
                   const std::string &filename, double duration);
 
  private:
-  aos::Sender<frc971::control_loops::drivetrain::swerve::Output>
-      drivetrain_output_sender_;
+  aos::Sender<frc971::control_loops::swerve::Output> drivetrain_output_sender_;
 };
 
 }  // namespace y2024_swerve
