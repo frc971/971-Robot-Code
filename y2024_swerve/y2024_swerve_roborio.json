@@ -27,6 +27,14 @@
         },
         {
             "name": "/roborio/aos",
+            "type": "aos.RobotState",
+            "source_node": "roborio",
+            "frequency": 50,
+            "num_senders": 20,
+            "max_size": 192
+        },
+        {
+            "name": "/roborio/aos",
             "type": "aos.logging.LogMessageFbs",
             "source_node": "roborio",
             "frequency": 500,
@@ -39,7 +47,7 @@
             "source_node": "roborio",
             "frequency": 50,
             "num_senders": 20,
-            "max_size": 2000
+            "max_size": 3000
         },
         {
             "name": "/roborio/aos",
@@ -115,7 +123,7 @@
             "source_node": "roborio",
             "frequency": 250,
             "num_senders": 1,
-            "max_size": 480
+            "max_size": 656
         },
         {
             "name": "/can",
