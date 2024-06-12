@@ -102,7 +102,7 @@ class LogReader {
   LogReader(LogFilesContainer log_files,
             const Configuration *replay_configuration = nullptr,
             const ReplayChannels *replay_channels = nullptr);
-  ~LogReader();
+  virtual ~LogReader();
 
   // Registers all the callbacks to send the log file data out on an event loop
   // created in event_loop_factory.  This also updates time to be at the start
@@ -115,7 +115,8 @@ class LogReader {
   // Registers all the callbacks to send the log file data out to an event loop
   // factory.  This does not start replaying or change the current distributed
   // time of the factory.  It does change the monotonic clocks to be right.
-  void RegisterWithoutStarting(SimulatedEventLoopFactory *event_loop_factory);
+  virtual void RegisterWithoutStarting(
+      SimulatedEventLoopFactory *event_loop_factory);
   // Runs the log until the last start time.  Register above is defined as:
   // Register(...) {
   //   RegisterWithoutStarting
