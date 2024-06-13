@@ -1,20 +1,17 @@
 #include "aos/mutex/mutex.h"
 
-#include <pthread.h>
-#include <sched.h>
-
 #include <chrono>
-#include <cmath>
+#include <memory>
+#include <new>
 #include <thread>
 
 #include "gtest/gtest.h"
 
 #include "aos/die.h"
-#include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/core_lib.h"
+#include "aos/logging/implementations.h"
 #include "aos/testing/test_logging.h"
 #include "aos/testing/test_shm.h"
-#include "aos/time/time.h"
 #include "aos/util/death_test_log_implementation.h"
 
 namespace aos::testing {
