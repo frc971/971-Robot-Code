@@ -14,7 +14,7 @@ DrivetrainWriter::DrivetrainWriter(::aos::EventLoop *event_loop,
 }
 
 void DrivetrainWriter::set_talonfxs(SwerveModules modules) {
-  modules = std::move(modules);
+  modules_ = std::move(modules);
 }
 
 void DrivetrainWriter::HandleCANConfiguration(

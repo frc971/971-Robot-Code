@@ -1,0 +1,27 @@
+{
+    "channels": [
+        {
+            "name": "/swerve",
+            "type": "frc971.control_loops.swerve.Goal"
+        },
+        {
+            "name": "/swerve",
+            "type": "frc971.control_loops.swerve.Output"
+        },
+        {
+            "name": "/swerve",
+            "type": "frc971.control_loops.swerve.CanPosition"
+        },
+        {
+            "name": "/swerve",
+            "type": "frc971.control_loops.swerve.Position"
+        },
+        {
+            "name": "/swerve",
+            "type": "frc971.control_loops.swerve.Status"
+        }
+    ],
+    "imports": [
+        "../../../frc971/input/robot_state_config.json"
+    ]
+}
