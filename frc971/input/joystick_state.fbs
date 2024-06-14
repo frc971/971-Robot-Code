@@ -3,7 +3,7 @@ namespace aos;
 enum MatchType : byte { kNone, kPractice, kQualification, kElimination }
 
 table Joystick {
-  // A bitmask of the butotn state.
+  // A bitmask of the button state.
   buttons:ushort (id: 0);
 
   // The 6 joystick axes.
