@@ -18,6 +18,7 @@
 #include "aos/logging/logging.h"
 #endif
 #include "aos/macros.h"
+#include "frc971/zeroing/wrap.h"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
           typename PlantType, typename ObserverType, typename Scalar>
@@ -46,7 +47,8 @@ struct StateFeedbackPlantCoefficients final {
         U_limit_coefficient(other.U_limit_coefficient),
         U_limit_constant(other.U_limit_constant),
         dt(other.dt),
-        delayed_u(other.delayed_u) {}
+        delayed_u(other.delayed_u),
+        wrap_point(other.wrap_point) {}
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A,
@@ -58,7 +60,8 @@ struct StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
           &U_limit_coefficient,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_limit_constant,
-      const std::chrono::nanoseconds dt, size_t delayed_u)
+      const std::chrono::nanoseconds dt, size_t delayed_u,
+      const Eigen::Matrix<Scalar, number_of_outputs, 1> &wrap_point)
       : A(A),
         B(B),
         C(C),
@@ -68,7 +71,8 @@ struct StateFeedbackPlantCoefficients final {
         U_limit_coefficient(U_limit_coefficient),
         U_limit_constant(U_limit_constant),
         dt(dt),
-        delayed_u(delayed_u) {}
+        delayed_u(delayed_u),
+        wrap_point(wrap_point) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A;
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B;
@@ -79,6 +83,7 @@ struct StateFeedbackPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
       U_limit_coefficient;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_limit_constant;
+
   const std::chrono::nanoseconds dt;
 
   // If true, this adds a single cycle output delay model to the plant.  This is
@@ -86,6 +91,11 @@ struct StateFeedbackPlantCoefficients final {
   // then queue the outputs to be ready to be executed when the next cycle
   // happens.
   const size_t delayed_u;
+
+  // We will assume that each element of the Y vector wraps at the
+  // specified point. For any given element that is zero, we will
+  // assume no wrapping.
+  const Eigen::Matrix<Scalar, number_of_outputs, 1> wrap_point;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -248,6 +258,23 @@ class StateFeedbackPlant {
       const Eigen::Matrix<Scalar, number_of_states, 1> X,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U) const {
     return A() * X + B() * U;
+  }
+
+  // Takes the provided state and wraps all the individual values such that,
+  // for any given i in [0, number_of_states), the wrapped X[i] will be in
+  // the range [-wrap_point[i] / 2, wrap_point[i] / 2] if wrap_point[i] > 0.
+  Eigen::Matrix<Scalar, number_of_outputs, 1> HandleWrapping(
+      const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) const {
+    Eigen::Matrix<Scalar, number_of_outputs, 1> wrapped;
+    for (int index = 0; index < number_of_outputs; ++index) {
+      const Scalar wrap_point = coefficients().wrap_point[index];
+      wrapped[index] =
+          wrap_point > 0
+              ? frc971::zeroing::Wrap(/*nearest=*/static_cast<Scalar>(0.0),
+                                      Y(index), wrap_point)
+              : Y(index);
+    }
+    return wrapped;
   }
 
  protected:
@@ -438,7 +465,9 @@ class StateFeedbackObserver {
                                         number_of_outputs, Scalar> &plant,
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
                const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) {
-    mutable_X_hat() += KalmanGain() * (Y - plant.C() * X_hat() - plant.D() * U);
+    mutable_X_hat() +=
+        KalmanGain() *
+        plant.HandleWrapping(Y - plant.C() * X_hat() - plant.D() * U);
   }
 
   // Sets the current controller to be index, clamped to be within range.

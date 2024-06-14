@@ -353,6 +353,7 @@ class ControlLoop(object):
         self.X_hat = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
         self.last_U = numpy.matrix(
             numpy.zeros((self.B.shape[1], max(1, self.delayed_u))))
+        self.wrap_point = numpy.matrix(numpy.zeros(self.Y.shape))
 
     def PlaceControllerPoles(self, poles):
         """Places the controller poles.
@@ -451,7 +452,8 @@ class ControlLoop(object):
             "u_max": MatrixToJson(self.U_max),
             "u_limit_coefficient": MatrixToJson(self.U_limit_coefficient),
             "u_limit_constant": MatrixToJson(self.U_limit_constant),
-            "delayed_u": self.delayed_u
+            "delayed_u": self.delayed_u,
+            "wrap_point": MatrixToJson(self.wrap_point)
         }
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
             result["a"] = MatrixToJson(self.A)
@@ -502,11 +504,13 @@ class ControlLoop(object):
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
             ans.append(self._DumpMatrix('A', self.A, scalar_type))
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
+            ans.append(
+                self._DumpMatrix('wrap_point', self.wrap_point, scalar_type))
             ans.append('  const std::chrono::nanoseconds dt(%d);\n' %
                        (self.dt * 1e9))
             ans.append(
                 '  return %s'
-                '(A, B, C, D, U_max, U_min, U_limit_coefficient, U_limit_constant, dt, %s);\n'
+                '(A, B, C, D, U_max, U_min, U_limit_coefficient, U_limit_constant, dt, %s, wrap_point);\n'
                 % (plant_coefficient_type, delayed_u_string))
         elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
             ans.append(
