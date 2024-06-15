@@ -44,24 +44,16 @@ void SwerveControlLoops::RunIteration(
     StatusStatic *status = status_builder->get();
 
     auto front_left_status = status->add_front_left_status();
-    front_left_status->set_goal_translation_speed(0);
-    front_left_status->set_translation_speed(0);
-    front_left_status->add_rotation();
+    PopulateSwerveModuleRotation(front_left_status);
 
     auto front_right_status = status->add_front_right_status();
-    front_right_status->set_goal_translation_speed(0);
-    front_right_status->set_translation_speed(0);
-    front_right_status->add_rotation();
+    PopulateSwerveModuleRotation(front_right_status);
 
     auto back_left_status = status->add_back_left_status();
-    back_left_status->set_goal_translation_speed(0);
-    back_left_status->set_translation_speed(0);
-    back_left_status->add_rotation();
+    PopulateSwerveModuleRotation(back_left_status);
 
     auto back_right_status = status->add_back_right_status();
-    back_right_status->set_goal_translation_speed(0);
-    back_right_status->set_translation_speed(0);
-    back_right_status->add_rotation();
+    PopulateSwerveModuleRotation(back_right_status);
 
     // Ignore the return value of Send
     status_builder->CheckOk(status_builder->Send());
