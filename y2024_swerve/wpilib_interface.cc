@@ -215,16 +215,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop, values, modules);
 
     sensor_reader.set_front_left_encoder(
-        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
+        make_encoder(3), std::make_unique<frc::DigitalInput>(3));
 
     sensor_reader.set_front_right_encoder(
-        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
+        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
 
-    sensor_reader.set_back_left_encoder(make_encoder(2),
-                                        std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_back_left_encoder(make_encoder(4),
+                                        std::make_unique<frc::DigitalInput>(4));
 
     sensor_reader.set_back_right_encoder(
-        make_encoder(3), std::make_unique<frc::DigitalInput>(3));
+        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
 
     AddLoop(&sensor_reader_event_loop);
 
