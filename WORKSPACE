@@ -1739,3 +1739,11 @@ http_archive(
     sha256 = "ee8dfe664ac8c1d066bab64f71bd076a021875581b3cc47dac4a14a475f50b15",
     url = "http://software.frc971.org/Build-Dependencies/m4.tar.gz",
 )
+
+http_archive(
+    name = "symengine",
+    build_file = "@//debian:symengine.BUILD",
+    sha256 = "1b5c3b0bc6a9f187635f93585649f24a18e9c7f2167cebcd885edeaaf211d956",
+    strip_prefix = "symengine-0.12.0",
+    url = "http://software.frc971.org/Build-Dependencies/github.com/symengine/symengine/releases/download/v0.12.0/symengine-0.12.0.tar.gz",
+)
