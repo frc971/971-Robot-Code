@@ -1732,3 +1732,10 @@ http_archive(
 load("@com_github_storypku_bazel_iwyu//bazel:dependencies.bzl", "bazel_iwyu_dependencies")
 
 bazel_iwyu_dependencies()
+
+http_archive(
+    name = "m4_v1.4.18",
+    build_file = "@//debian:m4.BUILD",
+    sha256 = "ee8dfe664ac8c1d066bab64f71bd076a021875581b3cc47dac4a14a475f50b15",
+    url = "http://software.frc971.org/Build-Dependencies/m4.tar.gz",
+)
