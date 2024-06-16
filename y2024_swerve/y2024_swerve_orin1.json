@@ -27,7 +27,7 @@
       "source_node": "orin1",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4096
+      "max_size": 6144
     },
     {
       "name": "/orin1/aos",
@@ -389,25 +389,6 @@
         "orin1"
       ]
     },
-    {
-      "name": "image_streamer",
-      "executable_name": "image_streamer",
-      "args": [
-        "--device=/dev/uvcvideo",
-        "--height=480",
-        "--width=640",
-        "--nopublish_images",
-        "--exposure=0",
-        "--framerate=30",
-        "--streaming_port=1181",
-        "--bitrate=2000000",
-        "--data_dir=/home/pi/bin/image_streamer_www"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    }
   ],
   "maps": [
     {
@@ -453,6 +434,7 @@
       "hostname": "orin1",
       "hostnames": [
         "orin-971-1",
+        "orin-6971-1",
         "orin-7971-1",
         "orin-8971-1",
         "orin-9971-1"
