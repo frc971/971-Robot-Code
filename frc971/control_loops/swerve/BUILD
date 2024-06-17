@@ -1,3 +1,4 @@
+load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
 load("//aos:config.bzl", "aos_config")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
@@ -95,4 +96,53 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//frc971/input:aos_config"],
+)
+
+cc_library(
+    name = "motors",
+    hdrs = [
+        "motors.h",
+    ],
+    deps = [
+        "@symengine",
+    ],
+)
+
+cc_binary(
+    name = "generate_physics",
+    srcs = [
+        "generate_physics.cc",
+    ],
+    deps = [
+        ":motors",
+        "//aos:init",
+        "//aos/util:file",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@symengine",
+    ],
+)
+
+run_binary(
+    name = "dynamics_codegen",
+    outs = [
+        "dynamics.cc",
+        "dynamics.h",
+    ],
+    args = [
+        "--output_base=$(BINDIR)/",
+        "--cc_output_path=$(location :dynamics.cc)",
+        "--h_output_path=$(location :dynamics.h)",
+    ],
+    tool = ":generate_physics",
+)
+
+cc_library(
+    name = "dynamics",
+    srcs = ["dynamics.cc"],
+    hdrs = ["dynamics.h"],
+    deps = [
+        "@org_tuxfamily_eigen//:eigen",
+    ],
 )
