@@ -1,6 +1,6 @@
 {
  "node_name": "imu",
- "team_number": 9971,
+ "team_number": 6971,
  "intrinsics": [
   647.19928,
   0.0,
@@ -41,6 +41,6 @@
  ],
  "calibration_timestamp": 1711306369592332476,
  "camera_id": "24-12",
- "camera_number": 1,
+ "camera_number": 0,
  "reprojection_error": 1.23409
 }
