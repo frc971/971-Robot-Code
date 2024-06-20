@@ -90,4 +90,28 @@ TEST(RungeKuttaTest, RungeKuttaTimeVaryingSteps) {
   EXPECT_NEAR(y1(0, 0), RungeKuttaTimeVaryingSolution(6.0)(0, 0), 1e-7);
 }
 
+// Tests that integrating dx/dt = e^x works with RK45
+TEST(RungeKuttaTest, RungeKuttaTimeVaryingAdaptive) {
+  ::Eigen::Matrix<double, 1, 1> y0 = RungeKuttaTimeVaryingSolution(5.0);
+
+  size_t count = 0;
+
+  ::Eigen::Matrix<double, 1, 1> y1 = AdaptiveRungeKutta(
+      [&](double t, ::Eigen::Matrix<double, 1, 1> x) {
+        ++count;
+        return (::Eigen::Matrix<double, 1, 1>()
+                << x(0, 0) * (2.0 / (::std::exp(t) + 1.0) - 1.0))
+            .finished();
+      },
+      y0, 5.0, 1.0, 1e-6, 1e-9);
+  EXPECT_NEAR(y1(0, 0), RungeKuttaTimeVaryingSolution(6.0)(0, 0), 1e-7);
+
+  // Using sympy as a benchmark, we should expect to see the function called 38
+  // times.
+  EXPECT_EQ(count, 38);
+
+  LOG(INFO) << "Got " << y1(0, 0) << " vs expected "
+            << RungeKuttaTimeVaryingSolution(6.0)(0, 0);
+}
+
 }  // namespace frc971::control_loops::testing

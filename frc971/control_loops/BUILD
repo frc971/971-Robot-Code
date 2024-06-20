@@ -382,9 +382,11 @@ cc_library(
     name = "runge_kutta",
     hdrs = [
         "runge_kutta.h",
+        "runge_kutta_helpers.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
