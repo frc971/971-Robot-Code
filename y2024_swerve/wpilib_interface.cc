@@ -163,25 +163,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // TODO(max): Change the CanBus names with TalonFX software.
     frc971::wpilib::swerve::SwerveModules modules{
         .front_left = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{6, false},
+            frc971::wpilib::TalonFXParams{6, true},
             frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
             &signals_registry,
             constants::Values::kDrivetrainStatorCurrentLimit(),
             constants::Values::kDrivetrainSupplyCurrentLimit()),
         .front_right = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{3, false},
+            frc971::wpilib::TalonFXParams{3, true},
             frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
             &signals_registry,
             constants::Values::kDrivetrainStatorCurrentLimit(),
             constants::Values::kDrivetrainSupplyCurrentLimit()),
         .back_left = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{8, false},
-            frc971::wpilib::TalonFXParams{7, false}, "Drivetrain Bus",
+            frc971::wpilib::TalonFXParams{7, true},
+            frc971::wpilib::TalonFXParams{8, false}, "Drivetrain Bus",
             &signals_registry,
             constants::Values::kDrivetrainStatorCurrentLimit(),
             constants::Values::kDrivetrainSupplyCurrentLimit()),
         .back_right = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{2, false},
+            frc971::wpilib::TalonFXParams{2, true},
             frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
             &signals_registry,
             constants::Values::kDrivetrainStatorCurrentLimit(),
