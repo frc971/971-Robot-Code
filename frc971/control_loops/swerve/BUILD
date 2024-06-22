@@ -67,7 +67,10 @@ cc_library(
         ":swerve_drivetrain_output_fbs",
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_status_fbs",
+        ":swerve_zeroing_fbs",
         "//frc971/control_loops:control_loop",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/zeroing:continuous_absolute_encoder",
     ],
 )
 
@@ -76,6 +79,7 @@ cc_test(
     srcs = ["swerve_control_test.cc"],
     data = [
         ":aos_config",
+        "//frc971/control_loops/swerve/test_module:rotation_json",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

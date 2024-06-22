@@ -4,15 +4,16 @@
 #include <memory>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/swerve/swerve_control_loops.h"
-#include "frc971/control_loops/swerve/swerve_drivetrain_can_position_generated.h"
-#include "frc971/control_loops/swerve/swerve_drivetrain_goal_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_can_position_static.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_goal_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
-#include "frc971/control_loops/swerve/swerve_drivetrain_position_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_status_generated.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 
@@ -27,7 +28,7 @@ class SwerveControlSimulation {
  public:
   SwerveControlSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
       : event_loop_(event_loop),
-        position_sender_(event_loop_->MakeSender<Position>("/swerve")),
+        position_sender_(event_loop_->MakeSender<PositionStatic>("/swerve")),
         can_position_sender_(event_loop_->MakeSender<CanPosition>("/swerve")),
         goal_fetcher_(event_loop_->MakeFetcher<Goal>("/swerve")),
         status_fetcher_(event_loop_->MakeFetcher<Status>("/swerve")),
@@ -45,12 +46,14 @@ class SwerveControlSimulation {
 
   // Sends a queue message with the position data.
   void SendPositionMessage() {
-    auto builder = position_sender_.MakeBuilder();
+    auto builder = position_sender_.MakeStaticBuilder();
 
-    Position::Builder position_builder = builder.MakeBuilder<Position>();
+    builder->add_front_left()->add_rotation_position();
+    builder->add_front_right()->add_rotation_position();
+    builder->add_back_left()->add_rotation_position();
+    builder->add_back_right()->add_rotation_position();
 
-    EXPECT_EQ(builder.Send(position_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(), aos::RawSender::Error::kOk);
   }
 
   void VerifyNearGoal() {
@@ -88,7 +91,7 @@ class SwerveControlSimulation {
  private:
   ::aos::EventLoop *event_loop_;
 
-  ::aos::Sender<Position> position_sender_;
+  ::aos::Sender<PositionStatic> position_sender_;
   ::aos::Sender<CanPosition> can_position_sender_;
   ::aos::Sender<Goal> goal_sender_;
 
@@ -112,7 +115,57 @@ class SwerveControlLoopTest : public ::frc971::testing::ControlLoopTest {
         goal_sender_(swerve_test_event_loop_->MakeSender<Goal>("/swerve")),
 
         swerve_control_event_loop_(MakeEventLoop("swerve_control")),
-        swerve_control_loops_(swerve_control_event_loop_.get(), "/swerve"),
+        subsystem_params_(
+            aos::JsonToFlatbuffer<
+                frc971::control_loops::
+                    StaticZeroingSingleDOFProfiledSubsystemCommonParams>(
+                absl::StrFormat(R"json({
+                    "zeroing_voltage": 3.0,
+                    "operating_voltage": 12.0,
+                    "zeroing_profile_params": {
+                      "max_velocity": 0.5,
+                      "max_acceleration": 3.0
+                    },
+                    "default_profile_params":{
+                      "max_velocity": 12.0,
+                      "max_acceleration": 55.0
+                    },
+                    "range": {
+                        "lower_hard": -inf,
+                        "upper_hard": inf,
+                        "lower": -inf,
+                        "upper": inf
+                    },
+                    "loop": %s
+                    })json",
+                                aos::util::ReadFileToStringOrDie(
+                                    "frc971/control_loops/swerve/test_module/"
+                                    "integral_rotation_plant.json")))),
+        zeroing_params_(aos::JsonToFlatbuffer<SwerveZeroing>(R"json({
+        "front_left": {
+          "average_filter_size": 10,
+          "one_revolution_distance": 6,
+          "moving_buffer_size": 10
+        },
+        "front_right": {
+          "average_filter_size": 10,
+          "one_revolution_distance": 6,
+          "moving_buffer_size": 10
+        },
+        "back_left": {
+          "average_filter_size": 10,
+          "one_revolution_distance": 6,
+          "moving_buffer_size": 10
+        },
+        "back_right": {
+          "average_filter_size": 10,
+          "one_revolution_distance": 6,
+          "moving_buffer_size": 10
+        }
+        })json")),
+        swerve_control_loops_(swerve_control_event_loop_.get(),
+                              &subsystem_params_.message(),
+                              &zeroing_params_.message(), "/swerve"),
 
         swerve_control_simulation_event_loop_(MakeEventLoop("simulation")),
         swerve_control_simulation_(swerve_control_simulation_event_loop_.get(),
@@ -125,6 +178,11 @@ class SwerveControlLoopTest : public ::frc971::testing::ControlLoopTest {
   ::aos::Sender<Goal> goal_sender_;
 
   ::std::unique_ptr<::aos::EventLoop> swerve_control_event_loop_;
+  aos::FlatbufferDetachedBuffer<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemCommonParams>
+      subsystem_params_;
+  aos::FlatbufferDetachedBuffer<SwerveZeroing> zeroing_params_;
   SwerveControlLoops swerve_control_loops_;
 
   ::std::unique_ptr<::aos::EventLoop> swerve_control_simulation_event_loop_;

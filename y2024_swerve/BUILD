@@ -32,6 +32,7 @@ robot_downloader(
         "//aos/starter:irq_affinity",
         ":wpilib_interface",
         ":swerve_publisher",
+        "//y2024_swerve/control_loops:swerve_control_loops",
         "//frc971/can_logger",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
