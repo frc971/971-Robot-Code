@@ -69,6 +69,7 @@ robot_downloader(
         "//frc971/imu_fdcan:can_translator",
         "//frc971/imu_fdcan:dual_imu_blender",
         "//frc971/can_logger",
+        "//frc971/wpilib:joystick_republish",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",

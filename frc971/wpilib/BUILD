@@ -557,3 +557,20 @@ cc_library(
         "//aos/events:shm_event_loop",
     ],
 )
+
+cc_binary(
+    name = "joystick_republish",
+    srcs = [
+        "joystick_republish.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "//aos:flatbuffer_merge",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/input:joystick_state_fbs",
+        "@com_github_google_glog//:glog",
+    ],
+)
