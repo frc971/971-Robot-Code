@@ -154,22 +154,3 @@ cc_binary(
         "//y2024/control_loops/drivetrain:drivetrain_base",
     ],
 )
-
-cc_binary(
-    name = "localizer_logger",
-    srcs = [
-        "localizer_logger.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:configuration",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
-        "//aos/events/logging:log_writer",
-        "//aos/events/logging:snappy_encoder",
-        "//aos/logging:log_namer",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-    ],
-)

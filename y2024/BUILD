@@ -62,7 +62,7 @@ robot_downloader(
         "//y2024/vision:viewer",
         "//y2024/constants:constants_sender",
         "//y2024/localizer:localizer_main",
-        "//y2024/localizer:localizer_logger",
+        "//frc971/orin:localizer_logger",
         "//frc971/vision:foxglove_image_converter",
     ],
     data = [

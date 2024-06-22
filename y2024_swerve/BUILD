@@ -68,6 +68,7 @@ robot_downloader(
         "//aos/events/logging:logger_main",
         "//frc971/imu_fdcan:can_translator",
         "//frc971/imu_fdcan:dual_imu_blender",
+        "//frc971/orin:localizer_logger",
         "//frc971/can_logger",
         "//frc971/wpilib:joystick_republish",
         "//aos/network:message_bridge_client",
