@@ -162,6 +162,8 @@ cc_binary(
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
         "//frc971/wpilib:can_sensor_reader",
+        "//frc971/wpilib:joystick_sender",
+        "//frc971/wpilib:pdp_fetcher",
         "//frc971/wpilib:sensor_reader",
         "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",

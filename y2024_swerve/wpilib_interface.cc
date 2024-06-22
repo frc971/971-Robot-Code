@@ -9,6 +9,8 @@
 #include "frc971/control_loops/swerve/swerve_drivetrain_can_position_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
 #include "frc971/wpilib/can_sensor_reader.h"
+#include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
 #include "frc971/wpilib/talonfx.h"
@@ -145,6 +147,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     const Constants *robot_constants = &constants_fetcher.constants();
 
     AddLoop(&constant_fetcher_event_loop);
+
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
+
+    ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
+    ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
+    AddLoop(&pdp_fetcher_event_loop);
 
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
     std::vector<std::shared_ptr<TalonFX>> falcons;
