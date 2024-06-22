@@ -24,12 +24,12 @@ struct Values {
   static constexpr double kDrivetrainStatorCurrentLimit() { return 35.0; }
   static constexpr double kDrivetrainSupplyCurrentLimit() { return 60.0; }
 
-  // TODO (maxwell): Make this the real value
-  static constexpr double kFollowerWheelCountsPerRevolution() { return 512.0; }
-  static constexpr double kFollowerWheelEncoderRatio() { return 1.0; }
-  static constexpr double kFollowerWheelRadius() { return 3.25 / 2 * 0.0254; }
-  static constexpr double kDrivetrainEncoderCountsPerRevolution() {
-    return 2048.0;
+  static constexpr double kRotationModuleRatio() {
+    return 9.0 / 24.0 * 14.0 / 72.0;
+  }
+
+  static constexpr double kTranslationModuleRatio() {
+    return 1.0 / 6.75 * 2.0 * .0254;
   }
 
   static constexpr double kMaxDrivetrainEncoderPulsesPerSecond() {
