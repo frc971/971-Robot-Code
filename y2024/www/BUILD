@@ -62,7 +62,7 @@ aos_downloader_dir(
         ":field_main_bundle.min.js",
         ":files",
         "//frc971/analysis:plot_index_bundle.min.js",
-        "//frc971/www:starter_main_bundle.min.js",
+        "//frc971/www:starter_files",
     ],
     dir = "www",
     target_compatible_with = ["@platforms//os:linux"],
