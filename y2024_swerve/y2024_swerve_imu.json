@@ -220,7 +220,7 @@
       "max_size": 200
     },
     {
-      "name": "/can/cana",
+      "name": "/imu/can/cana",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "imu",
       "frequency": 9000,
@@ -237,7 +237,7 @@
       "max_size": 65536
     },
     {
-      "name": "/localizer",
+      "name": "/imu/localizer",
       "type": "frc971.IMUValuesBatch",
       "source_node": "imu",
       "frequency": 2200,
@@ -519,11 +519,29 @@
     },
     {
       "match": {
+        "name": "/can*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/can"
+      }
+    },
+    {
+      "match": {
         "name": "/hardware_monitor*",
         "source_node": "imu"
       },
       "rename": {
         "name": "/imu/hardware_monitor"
+      }
+    },
+    {
+      "match": {
+        "name": "/localizer*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/localizer"
       }
     }
   ],
