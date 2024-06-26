@@ -54,7 +54,6 @@ cc_library(
         "//third_party/apriltag",
         "@com_github_google_glog//:glog",
         "@com_github_nvidia_cccl//:cccl",
-        "@com_github_nvidia_cuco//:cuco",
     ],
 )
 

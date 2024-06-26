@@ -1645,18 +1645,6 @@ http_archive(
 )
 
 http_archive(
-    name = "com_github_nvidia_cuco",
-    build_file = "//third_party/cuco:cuco.BUILD",
-    patch_args = ["-p1"],
-    patches = [
-        "//third_party/cuco:template.patch",
-    ],
-    sha256 = "eecc9a111956a195f28ebc4b4fd23ac6991d072f5c1d7c68a59d059e05d7ad78",
-    strip_prefix = "cuCollections-b7514d2010967fdfe4a1d414894bb945bc09fddc",
-    url = "https://github.com/NVIDIA/cuCollections/archive/b7514d2010967fdfe4a1d414894bb945bc09fddc.zip",
-)
-
-http_archive(
     name = "com_github_nvidia_cccl",
     build_file = "//third_party/cccl:cccl.BUILD",
     sha256 = "38160c628a9e32b7cd55553f299768f72b24074cc9c1a993ba40a177877b3421",
