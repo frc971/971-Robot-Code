@@ -368,16 +368,6 @@ register_toolchains(
 )
 
 http_archive(
-    name = "com_github_stevengj_nlopt",
-    build_file = "@//debian:nlopt.BUILD",
-    patch_args = ["-p1"],
-    patches = ["//debian:nlopt.patch"],
-    sha256 = "2d65815b21c30813499fe19c63947f7da56b10c0d4a459dce05417899b43e461",
-    strip_prefix = "nlopt-496be736b8b249273838b891f4c8ca3669551127",
-    url = "https://software.frc971.org/Build-Dependencies/nlopt-496be736b8b249273838b891f4c8ca3669551127.zip",
-)
-
-http_archive(
     name = "com_google_absl",
     patch_args = ["-p1"],
     patches = ["//third_party/abseil:abseil.patch"],
