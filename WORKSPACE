@@ -414,11 +414,8 @@ local_repository(
 # C++ rules for Bazel.
 http_archive(
     name = "rules_cc",
-    sha256 = "ed36cc7a6f46b7c28ab4009db4a37e350e1ba367446b0886bcc9cdc1df92752e",
-    strip_prefix = "rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab",
-    urls = [
-        "https://software.frc971.org/Build-Dependencies/rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab.zip",
-    ],
+    sha256 = "d75a040c32954da0d308d3f2ea2ba735490f49b3a7aa3e4b40259ca4b814f825",
+    urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.10-rc1/rules_cc-0.0.10-rc1.tar.gz"],
 )
 
 new_local_repository(
