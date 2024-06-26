@@ -1,6 +1,9 @@
 #include "aos/network/message_bridge_test_lib.h"
 
-DECLARE_string(boot_uuid);
+#include "absl/flags/flag.h"
+#include "absl/log/log.h"
+
+ABSL_DECLARE_FLAG(std::string, boot_uuid);
 
 namespace aos::message_bridge::testing {
 
@@ -69,14 +72,14 @@ PiNode::PiNode(const std::string node_name, const std::string host_name,
 
 void PiNode::OnPi() {
   DoSetShmBase(node_name_);
-  FLAGS_override_hostname = host_name_;
-  FLAGS_boot_uuid = boot_uuid_.ToString();
+  absl::SetFlag(&FLAGS_override_hostname, host_name_);
+  absl::SetFlag(&FLAGS_boot_uuid, boot_uuid_.ToString());
 }
 
 void PiNode::MakeServer(const std::string server_config_sha256) {
   OnPi();
   LOG(INFO) << "Making " << node_name_ << " server";
-  FLAGS_application_name = app_name_;
+  absl::SetFlag(&FLAGS_application_name, app_name_);
   server_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
   server_event_loop_->SetRuntimeRealtimePriority(1);
   message_bridge_server_ = std::make_unique<MessageBridgeServer>(
@@ -114,7 +117,7 @@ void PiNode::StopServer() {
 void PiNode::MakeClient() {
   OnPi();
   LOG(INFO) << "Making " << node_name_ << " client";
-  FLAGS_application_name = app_name_;
+  absl::SetFlag(&FLAGS_application_name, app_name_);
   client_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
   client_event_loop_->SetRuntimeRealtimePriority(1);
   message_bridge_client_ = std::make_unique<MessageBridgeClient>(
@@ -138,7 +141,7 @@ void PiNode::MakeTest(const std::string test_app_name,
                       const PiNode *other_node) {
   OnPi();
   LOG(INFO) << "Making " << node_name_ << " test";
-  FLAGS_application_name = test_app_name;
+  absl::SetFlag(&FLAGS_application_name, test_app_name);
   test_event_loop_ = std::make_unique<aos::ShmEventLoop>(&config_.message());
 
   std::string channel_name = "/" + node_name_ + "/aos";

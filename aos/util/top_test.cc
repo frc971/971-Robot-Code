@@ -13,10 +13,12 @@
 #include <thread>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include <gmock/gmock.h>
 
@@ -40,7 +42,7 @@ constexpr std::string_view kTestCPUConsumer = "TestCPUConsumer";
 class TopTest : public ::testing::Test {
  protected:
   TopTest()
-      : shm_dir_(aos::testing::TestTmpDir() + "/aos"),
+      : shm_dir_(aos::testing::TestTmpDir()),
         cpu_consumer_([this]() {
           SetThreadName(std::string(kTestCPUConsumer));
           while (!stop_flag_.load()) {
@@ -50,18 +52,18 @@ class TopTest : public ::testing::Test {
             aos::testing::ArtifactPath("aos/events/pingpong_config.json")),
         config_(aos::configuration::ReadConfig(config_file_)),
         event_loop_(&config_.message()) {
-    FLAGS_shm_base = shm_dir_;
+    aos::testing::SetShmBase(shm_dir_);
 
     // Nuke the shm dir, to ensure we aren't being affected by any preexisting
     // tests.
-    aos::util::UnlinkRecursive(shm_dir_);
+    aos::util::UnlinkRecursive(shm_dir_ + "/aos");
   }
   ~TopTest() {
     stop_flag_ = true;
     cpu_consumer_.join();
   }
 
-  gflags::FlagSaver flag_saver_;
+  absl::FlagSaver flag_saver_;
   std::string shm_dir_;
 
   std::thread cpu_consumer_;

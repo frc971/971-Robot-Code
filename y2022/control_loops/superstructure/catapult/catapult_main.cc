@@ -109,8 +109,6 @@ void OSQPSolve() {
 
 int Main(int /*argc*/, char ** /*argv*/) {
   OSQPSolve();
-
-  gflags::ShutDownCommandLineFlags();
   return 0;
 }
 

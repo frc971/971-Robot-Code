@@ -1,5 +1,18 @@
+diff --git a/absl/base/attributes.h b/absl/base/attributes.h
+index d4f67a12..e10f3957 100644
+--- a/absl/base/attributes.h
++++ b/absl/base/attributes.h
+@@ -196,7 +196,7 @@
+ //
+ // Tells the compiler that a given function never returns.
+ #if ABSL_HAVE_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
+-#define ABSL_ATTRIBUTE_NORETURN __attribute__((noreturn))
++#define ABSL_ATTRIBUTE_NORETURN [[noreturn]]
+ #elif defined(_MSC_VER)
+ #define ABSL_ATTRIBUTE_NORETURN __declspec(noreturn)
+ #else
 diff --git a/absl/copts/GENERATED_AbseilCopts.cmake b/absl/copts/GENERATED_AbseilCopts.cmake
-index 04e7b444..81884a6d 100644
+index 430916f7..ebc876f2 100644
 --- a/absl/copts/GENERATED_AbseilCopts.cmake
 +++ b/absl/copts/GENERATED_AbseilCopts.cmake
 @@ -49,6 +49,13 @@ list(APPEND ABSL_GCC_FLAGS
@@ -30,7 +43,7 @@ index 04e7b444..81884a6d 100644
      "-Wvarargs"
      "-Wvla"
      "-Wwrite-strings"
-@@ -95,8 +109,8 @@ list(APPEND ABSL_LLVM_FLAGS
+@@ -96,8 +110,8 @@ list(APPEND ABSL_LLVM_FLAGS
      "-Woverlength-strings"
      "-Wpointer-arith"
      "-Wself-assign"
@@ -40,7 +53,7 @@ index 04e7b444..81884a6d 100644
      "-Wsign-conversion"
      "-Wstring-conversion"
      "-Wtautological-overlap-compare"
-@@ -114,6 +128,12 @@ list(APPEND ABSL_LLVM_FLAGS
+@@ -115,6 +129,12 @@ list(APPEND ABSL_LLVM_FLAGS
      "-Wno-implicit-int-float-conversion"
      "-Wno-unknown-warning-option"
      "-DNOMINMAX"
@@ -51,9 +64,9 @@ index 04e7b444..81884a6d 100644
 +    "-Wno-shorten-64-to-32"
 +    "-Wno-stringop-overflow"
  )
-
+ 
  list(APPEND ABSL_LLVM_TEST_FLAGS
-@@ -133,7 +153,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+@@ -134,7 +154,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
      "-Woverlength-strings"
      "-Wpointer-arith"
      "-Wself-assign"
@@ -62,7 +75,7 @@ index 04e7b444..81884a6d 100644
      "-Wstring-conversion"
      "-Wtautological-overlap-compare"
      "-Wtautological-unsigned-zero-compare"
-@@ -150,6 +170,12 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+@@ -151,6 +171,12 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
      "-Wno-implicit-int-float-conversion"
      "-Wno-unknown-warning-option"
      "-DNOMINMAX"
@@ -76,7 +89,7 @@ index 04e7b444..81884a6d 100644
      "-Wno-implicit-int-conversion"
      "-Wno-missing-prototypes"
 diff --git a/absl/copts/GENERATED_copts.bzl b/absl/copts/GENERATED_copts.bzl
-index 84f4bffc..21f487a1 100644
+index 011d8a98..beb94fa7 100644
 --- a/absl/copts/GENERATED_copts.bzl
 +++ b/absl/copts/GENERATED_copts.bzl
 @@ -50,6 +50,13 @@ ABSL_GCC_FLAGS = [
@@ -107,7 +120,7 @@ index 84f4bffc..21f487a1 100644
      "-Wvarargs",
      "-Wvla",
      "-Wwrite-strings",
-@@ -96,8 +110,8 @@ ABSL_LLVM_FLAGS = [
+@@ -97,8 +111,8 @@ ABSL_LLVM_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -117,7 +130,7 @@ index 84f4bffc..21f487a1 100644
      "-Wsign-conversion",
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
-@@ -115,6 +129,12 @@ ABSL_LLVM_FLAGS = [
+@@ -116,6 +130,12 @@ ABSL_LLVM_FLAGS = [
      "-Wno-implicit-int-float-conversion",
      "-Wno-unknown-warning-option",
      "-DNOMINMAX",
@@ -128,9 +141,9 @@ index 84f4bffc..21f487a1 100644
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-stringop-overflow",
  ]
-
+ 
  ABSL_LLVM_TEST_FLAGS = [
-@@ -134,7 +154,7 @@ ABSL_LLVM_TEST_FLAGS = [
+@@ -135,7 +155,7 @@ ABSL_LLVM_TEST_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -139,7 +152,7 @@ index 84f4bffc..21f487a1 100644
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
      "-Wtautological-unsigned-zero-compare",
-@@ -151,6 +171,12 @@ ABSL_LLVM_TEST_FLAGS = [
+@@ -152,6 +172,12 @@ ABSL_LLVM_TEST_FLAGS = [
      "-Wno-implicit-int-float-conversion",
      "-Wno-unknown-warning-option",
      "-DNOMINMAX",
@@ -152,8 +165,28 @@ index 84f4bffc..21f487a1 100644
      "-Wno-deprecated-declarations",
      "-Wno-implicit-int-conversion",
      "-Wno-missing-prototypes",
+diff --git a/absl/copts/configure_copts.bzl b/absl/copts/configure_copts.bzl
+index ca5f26da..d9303c6b 100644
+--- a/absl/copts/configure_copts.bzl
++++ b/absl/copts/configure_copts.bzl
+@@ -46,13 +46,8 @@ ABSL_DEFAULT_LINKOPTS = select({
+ # environment to build an accelerated RandenHwAes library.
+ ABSL_RANDOM_RANDEN_COPTS = select({
+     # APPLE
+-    ":cpu_darwin_x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_darwin": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_x64_windows_msvc": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
+-    ":cpu_x64_windows": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
+-    ":cpu_k8": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_ppc": ["-mcrypto"],
+-    ":cpu_aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
++    "@platforms//cpu:x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
++    "@platforms//cpu:aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
+ 
+     # Supported by default or unsupported.
+     "//conditions:default": [],
 diff --git a/absl/copts/copts.py b/absl/copts/copts.py
-index 06eeb67b..d2a3e74f 100644
+index e6e11949..ea3e9e9a 100644
 --- a/absl/copts/copts.py
 +++ b/absl/copts/copts.py
 @@ -23,6 +23,13 @@ ABSL_GCC_FLAGS = [
@@ -170,7 +203,7 @@ index 06eeb67b..d2a3e74f 100644
      "-Wvarargs",
      "-Wvla",  # variable-length array
      "-Wwrite-strings",
-@@ -56,8 +63,8 @@ ABSL_LLVM_FLAGS = [
+@@ -57,8 +64,8 @@ ABSL_LLVM_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -180,7 +213,7 @@ index 06eeb67b..d2a3e74f 100644
      "-Wsign-conversion",
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
-@@ -80,6 +87,12 @@ ABSL_LLVM_FLAGS = [
+@@ -81,6 +88,12 @@ ABSL_LLVM_FLAGS = [
      "-Wno-unknown-warning-option",
      # Don't define min and max macros (Build on Windows using clang)
      "-DNOMINMAX",
@@ -191,13 +224,89 @@ index 06eeb67b..d2a3e74f 100644
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-stringop-overflow",
  ]
-
+ 
  ABSL_LLVM_TEST_ADDITIONAL_FLAGS = [
+diff --git a/absl/log/internal/check_op.cc b/absl/log/internal/check_op.cc
+index f4b67647..09d65386 100644
+--- a/absl/log/internal/check_op.cc
++++ b/absl/log/internal/check_op.cc
+@@ -28,6 +28,17 @@
+ #include "absl/base/config.h"
+ #include "absl/strings/str_cat.h"
+ 
++namespace aos {
++void FatalUnsetRealtimePriority() __attribute__((weak));
++}
++
++static void MaybeUnsetRealtime() {
++  if (&aos::FatalUnsetRealtimePriority != nullptr) {
++    aos::FatalUnsetRealtimePriority();
++  }
++}
++
++
+ namespace absl {
+ ABSL_NAMESPACE_BEGIN
+ namespace log_internal {
+@@ -50,6 +61,7 @@ ABSL_LOGGING_INTERNAL_DEFINE_MAKE_CHECK_OP_STRING(const void*);
+ #undef ABSL_LOGGING_INTERNAL_DEFINE_MAKE_CHECK_OP_STRING
+ 
+ CheckOpMessageBuilder::CheckOpMessageBuilder(const char* exprtext) {
++  MaybeUnsetRealtime();
+   stream_ << exprtext << " (";
+ }
+ 
+diff --git a/absl/log/internal/log_message.cc b/absl/log/internal/log_message.cc
+index 10ac2453..30a4909c 100644
+--- a/absl/log/internal/log_message.cc
++++ b/absl/log/internal/log_message.cc
+@@ -60,6 +60,16 @@ extern "C" ABSL_ATTRIBUTE_WEAK void ABSL_INTERNAL_C_SYMBOL(
+   // Default - Do nothing
+ }
+ 
++namespace aos {
++void FatalUnsetRealtimePriority() __attribute__((weak));
++}
++
++static void MaybeUnsetRealtime() {
++  if (&aos::FatalUnsetRealtimePriority != nullptr) {
++    aos::FatalUnsetRealtimePriority();
++  }
++}
++
+ namespace absl {
+ ABSL_NAMESPACE_BEGIN
+ namespace log_internal {
+@@ -215,15 +225,21 @@ void LogMessage::LogMessageData::FinalizeEncodingAndFormat() {
+   }
+   auto chars_written =
+       static_cast<size_t>(string_remaining.data() - string_buf.data());
+-    string_buf[chars_written++] = '\n';
++  string_buf[chars_written++] = '\n';
+   string_buf[chars_written++] = '\0';
+   entry.text_message_with_prefix_and_newline_and_nul_ =
+       absl::MakeSpan(string_buf).subspan(0, chars_written);
+ }
+ 
+ LogMessage::LogMessage(const char* file, int line, absl::LogSeverity severity)
+-    : data_(absl::make_unique<LogMessageData>(file, line, severity,
+-                                              absl::Now())) {
++    : data_([&]() {
++        if (severity == absl::LogSeverity::kFatal &&
++            absl::log_internal::ExitOnDFatal()) {
++          MaybeUnsetRealtime();
++        }
++        return absl::make_unique<LogMessageData>(file, line, severity,
++                                                 absl::Now());
++      }()) {
+   data_->first_fatal = false;
+   data_->is_perror = false;
+   data_->fail_quietly = false;
 diff --git a/absl/random/internal/BUILD.bazel b/absl/random/internal/BUILD.bazel
-index 81ca669b..e839860e 100644
+index 71a742ee..4809b2d0 100644
 --- a/absl/random/internal/BUILD.bazel
 +++ b/absl/random/internal/BUILD.bazel
-@@ -665,6 +665,7 @@ cc_test(
+@@ -692,6 +692,7 @@ cc_test(
  cc_library(
      name = "nanobenchmark",
      srcs = ["nanobenchmark.cc"],
@@ -206,10 +315,10 @@ index 81ca669b..e839860e 100644
      textual_hdrs = ["nanobenchmark.h"],
      deps = [
 diff --git a/absl/strings/BUILD.bazel b/absl/strings/BUILD.bazel
-index ed330f26..5f1c44b6 100644
+index 8e8371b3..b34d1487 100644
 --- a/absl/strings/BUILD.bazel
 +++ b/absl/strings/BUILD.bazel
-@@ -653,6 +653,7 @@ cc_test(
+@@ -788,6 +788,7 @@ cc_test(
      srcs = [
          "internal/cordz_info_statistics_test.cc",
      ],
@@ -218,13 +327,13 @@ index ed330f26..5f1c44b6 100644
          ":cord",
          ":cord_internal",
 diff --git a/absl/time/internal/cctz/BUILD.bazel b/absl/time/internal/cctz/BUILD.bazel
-index edeabd81..49674f5f 100644
+index 0b43bb12..920c8b9c 100644
 --- a/absl/time/internal/cctz/BUILD.bazel
 +++ b/absl/time/internal/cctz/BUILD.bazel
-@@ -16,6 +16,13 @@ package(features = ["-parse_headers"])
-
+@@ -20,6 +20,13 @@ package(features = [
+ 
  licenses(["notice"])
-
+ 
 +load(
 +    "//absl:copts/configure_copts.bzl",
 +    "ABSL_DEFAULT_COPTS",
@@ -233,9 +342,9 @@ index edeabd81..49674f5f 100644
 +)
 +
  ### libraries
-
+ 
  cc_library(
-@@ -24,6 +31,8 @@ cc_library(
+@@ -28,6 +35,8 @@ cc_library(
      hdrs = [
          "include/cctz/civil_time.h",
      ],
@@ -244,23 +353,3 @@ index edeabd81..49674f5f 100644
      textual_hdrs = ["include/cctz/civil_time_detail.h"],
      visibility = ["//visibility:public"],
      deps = ["//absl/base:config"],
-diff --git a/absl/copts/configure_copts.bzl b/absl/copts/configure_copts.bzl
-index ca5f26da..0b10dc0b 100644
---- a/absl/copts/configure_copts.bzl
-+++ b/absl/copts/configure_copts.bzl
-@@ -46,13 +46,8 @@ ABSL_DEFAULT_LINKOPTS = select({
- # environment to build an accelerated RandenHwAes library.
- ABSL_RANDOM_RANDEN_COPTS = select({
-     # APPLE
--    ":cpu_darwin_x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
--    ":cpu_darwin": ABSL_RANDOM_HWAES_X64_FLAGS,
--    ":cpu_x64_windows_msvc": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
--    ":cpu_x64_windows": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
--    ":cpu_k8": ABSL_RANDOM_HWAES_X64_FLAGS,
--    ":cpu_ppc": ["-mcrypto"],
--    ":cpu_aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
-+    "@platforms//cpu:x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
-+    "@platforms//cpu:aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
-
-     # Supported by default or unsupported.
-     "//conditions:default": [],

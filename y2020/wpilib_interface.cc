@@ -20,8 +20,8 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
+#include "absl/flags/flag.h"
 #include "ctre/phoenix6/TalonFX.hpp"
-#include "gflags/gflags.h"
 
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
@@ -55,9 +55,9 @@
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_static.h"
 
-DEFINE_bool(shooter_tuning, true,
-            "If true, reads from ball beambreak sensors and sends shooter "
-            "tuning readings");
+ABSL_FLAG(bool, shooter_tuning, true,
+          "If true, reads from ball beambreak sensors and sends shooter "
+          "tuning readings");
 
 using ::aos::monotonic_clock;
 using ::y2020::constants::Values;
@@ -258,7 +258,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void Start() override {
-    if (FLAGS_shooter_tuning) {
+    if (absl::GetFlag(FLAGS_shooter_tuning)) {
       AddToDMA(&ball_beambreak_reader_);
     }
   }
@@ -344,7 +344,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       builder.CheckOk(builder.Send(auto_mode_builder.Finish()));
     }
 
-    if (FLAGS_shooter_tuning) {
+    if (absl::GetFlag(FLAGS_shooter_tuning)) {
       // Distance between beambreak sensors, in meters.
       constexpr double kDistanceBetweenBeambreaks = 0.4813;
 
@@ -606,7 +606,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_ball_intake_beambreak(make_unique<frc::DigitalInput>(4));
 
-    if (FLAGS_shooter_tuning) {
+    if (absl::GetFlag(FLAGS_shooter_tuning)) {
       sensor_reader.set_ball_beambreak_inputs(
           make_unique<frc::DigitalInput>(6), make_unique<frc::DigitalInput>(7));
     }

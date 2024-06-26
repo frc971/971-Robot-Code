@@ -19,7 +19,8 @@
 
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"

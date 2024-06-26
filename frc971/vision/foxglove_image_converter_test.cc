@@ -1,3 +1,5 @@
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/simulated_event_loop.h"
@@ -6,7 +8,7 @@
 #include "aos/testing/tmpdir.h"
 #include "frc971/vision/foxglove_image_converter_lib.h"
 
-DECLARE_int32(jpeg_quality);
+ABSL_DECLARE_FLAG(int32_t, jpeg_quality);
 
 namespace frc971::vision {
 std::ostream &operator<<(std::ostream &os, ImageCompression compression) {
@@ -34,7 +36,7 @@ class ImageConverterTest : public ::testing::TestWithParam<ImageCompression> {
     // Because our test image for comparison was generated with a JPEG quality
     // of 95, we need to use that for the test to work. This also protects the
     // tests against future changes to the default JPEG quality.
-    FLAGS_jpeg_quality = 95;
+    absl::SetFlag(&FLAGS_jpeg_quality, 95);
     test_event_loop_->OnRun(
         [this]() { image_sender_.CheckOk(image_sender_.Send(camera_image_)); });
     test_event_loop_->MakeWatcher(

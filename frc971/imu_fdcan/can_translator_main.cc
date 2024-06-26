@@ -1,8 +1,10 @@
+#include "absl/flags/flag.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "frc971/imu_fdcan/can_translator_lib.h"
 
-DEFINE_string(channel, "/can", "The CAN channel to use");
+ABSL_FLAG(std::string, channel, "/can", "The CAN channel to use");
 
 using frc971::imu_fdcan::CANTranslator;
 
@@ -14,7 +16,7 @@ int main(int argc, char **argv) {
 
   ::aos::ShmEventLoop event_loop(&config.message());
 
-  CANTranslator translator(&event_loop, FLAGS_channel);
+  CANTranslator translator(&event_loop, absl::GetFlag(FLAGS_channel));
 
   event_loop.Run();
 

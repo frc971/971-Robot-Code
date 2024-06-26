@@ -2,30 +2,32 @@
 #include <string>
 #include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logfile_validator.h"
 #include "aos/init.h"
 
-DECLARE_bool(timestamps_to_csv);
-DEFINE_bool(skip_order_validation, false,
-            "If true, ignore any out of orderness in replay");
+ABSL_DECLARE_FLAG(bool, timestamps_to_csv);
+ABSL_FLAG(bool, skip_order_validation, false,
+          "If true, ignore any out of orderness in replay");
 
 namespace aos::logger {
 
 int Main(int argc, char **argv) {
   const LogFilesContainer log_files(SortParts(FindLogs(argc, argv)));
-  CHECK(MultiNodeLogIsReadable(log_files, FLAGS_skip_order_validation));
+  CHECK(MultiNodeLogIsReadable(log_files,
+                               absl::GetFlag(FLAGS_skip_order_validation)));
   return 0;
 }
 
 }  // namespace aos::logger
 
 int main(int argc, char **argv) {
-  FLAGS_timestamps_to_csv = true;
-  gflags::SetUsageMessage(
+  absl::SetFlag(&FLAGS_timestamps_to_csv, true);
+  absl::SetProgramUsageMessage(
       "Usage:\n"
       "  timestamp_extractor [args] logfile1 logfile2 ...\n\nThis program "
       "dumps out all the timestamps from a set of log files for plotting.  Use "

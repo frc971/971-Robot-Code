@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/init.h"
 #include "aos/seasocks/seasocks_logger.h"
@@ -8,9 +8,9 @@
 #include "seasocks/Logger.h"
 #include "seasocks/Server.h"
 
-DEFINE_string(data_path, "external/foxglove_studio",
-              "Path to foxglove studio files to serve.");
-DEFINE_uint32(port, 8000, "Port to serve files at.");
+ABSL_FLAG(std::string, data_path, "external/foxglove_studio",
+          "Path to foxglove studio files to serve.");
+ABSL_FLAG(uint32_t, port, 8000, "Port to serve files at.");
 
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
@@ -18,5 +18,6 @@ int main(int argc, char *argv[]) {
   findEmbeddedContent("");
   ::seasocks::Server server(std::make_shared<aos::seasocks::SeasocksLogger>(
       ::seasocks::Logger::Level::Info));
-  server.serve(FLAGS_data_path.c_str(), FLAGS_port);
+  server.serve(absl::GetFlag(FLAGS_data_path).c_str(),
+               absl::GetFlag(FLAGS_port));
 }

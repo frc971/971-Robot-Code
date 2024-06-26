@@ -9,8 +9,9 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/string.h"
-#include "glog/logging.h"
 
 #include "aos/actions/actions_generated.h"
 #include "aos/configuration_generated.h"

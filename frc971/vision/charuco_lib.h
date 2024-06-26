@@ -15,7 +15,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "frc971/vision/calibration_generated.h"
 
-DECLARE_bool(visualize);
+ABSL_DECLARE_FLAG(bool, visualize);
 
 namespace frc971::vision {
 

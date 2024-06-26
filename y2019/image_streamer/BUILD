@@ -8,6 +8,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":flip_image",
+        "//aos:init",
         "//aos/logging",
         "//aos/vision/blob:codec",
         "//aos/vision/events:epoll_events",
@@ -16,7 +17,7 @@ cc_binary(
         "//aos/vision/image:image_stream",
         "//aos/vision/image:reader",
         "//y2019:vision_proto",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

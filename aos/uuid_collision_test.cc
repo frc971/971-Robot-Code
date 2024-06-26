@@ -1,7 +1,8 @@
 #include <set>
 #include <unordered_set>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/uuid.h"

@@ -15,7 +15,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
     ],

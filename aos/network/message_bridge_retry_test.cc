@@ -1,6 +1,7 @@
 #include <chrono>
 #include <thread>
 
+#include "absl/flags/declare.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 
@@ -16,7 +17,7 @@
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
 
-DECLARE_int32(force_wmem_max);
+ABSL_DECLARE_FLAG(int32_t, force_wmem_max);
 
 namespace aos::message_bridge::testing {
 
@@ -37,10 +38,10 @@ void SendPing(aos::Sender<examples::Ping> *sender, int value) {
 // message_bridge_test, so we kept it separate.
 TEST_P(MessageBridgeParameterizedTest, ReliableRetries) {
   // Set an absurdly small wmem max. This will help to trigger retries.
-  FLAGS_force_wmem_max = 1024;
+  absl::SetFlag(&FLAGS_force_wmem_max, 1024);
   pi1_.OnPi();
 
-  FLAGS_application_name = "sender";
+  absl::SetFlag(&FLAGS_application_name, "sender");
   aos::ShmEventLoop send_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");

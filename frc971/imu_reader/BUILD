@@ -17,7 +17,8 @@ cc_library(
         "//aos/util:crc32",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )

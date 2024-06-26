@@ -3,8 +3,9 @@
 #include <aws/core/Aws.h>
 #include <aws/s3/model/ListObjectsV2Request.h>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 
 // When we first start reading a log folder, we end up reading the first part of
 // each file twice. We could speed this up by restructuring the API so all the

@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/math.h"
@@ -12,11 +14,11 @@
 #include "y2022/constants.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(rapid_react, true,
-            "If true, run the main rapid react autonomous mode");
-DEFINE_bool(rapid_react_two, false,
-            "If true, run the two ball rapid react autonomous mode");
+ABSL_FLAG(bool, spline_auto, false, "If true, define a spline autonomous mode");
+ABSL_FLAG(bool, rapid_react, true,
+          "If true, run the main rapid react autonomous mode");
+ABSL_FLAG(bool, rapid_react_two, false,
+          "If true, run the two ball rapid react autonomous mode");
 
 namespace y2022::actors {
 namespace {
@@ -96,14 +98,14 @@ void AutonomousActor::Replan() {
     return;
   }
   sent_starting_position_ = false;
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     test_spline_ =
         PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
                              std::placeholders::_1, alliance_),
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
-  } else if (FLAGS_rapid_react) {
+  } else if (absl::GetFlag(FLAGS_rapid_react)) {
     rapid_react_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -116,7 +118,7 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward)};
     starting_position_ = rapid_react_splines_.value()[0].starting_position();
     CHECK(starting_position_);
-  } else if (FLAGS_rapid_react_two) {
+  } else if (absl::GetFlag(FLAGS_rapid_react_two)) {
     rapid_react_two_spline_ = {
         PlanSpline(std::bind(&AutonomousSplines::SplineTwoBall1, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -172,11 +174,11 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     SplineAuto();
-  } else if (FLAGS_rapid_react) {
+  } else if (absl::GetFlag(FLAGS_rapid_react)) {
     RapidReact();
-  } else if (FLAGS_rapid_react_two) {
+  } else if (absl::GetFlag(FLAGS_rapid_react_two)) {
     RapidReactTwo();
   }
 

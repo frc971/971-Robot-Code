@@ -228,8 +228,9 @@ cc_library(
         "//y2024/control_loops/superstructure/extend:extend_plants",
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_plants",
         "//y2024/control_loops/superstructure/turret:turret_plants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

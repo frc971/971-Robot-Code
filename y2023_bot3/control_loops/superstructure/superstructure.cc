@@ -6,8 +6,8 @@
 #include "frc971/shooter_interpolation/interpolation.h"
 #include "frc971/zeroing/wrap.h"
 
-DEFINE_bool(ignore_distance, false,
-            "If true, ignore distance when shooting and obay joystick_reader");
+ABSL_FLAG(bool, ignore_distance, false,
+          "If true, ignore distance when shooting and obay joystick_reader");
 
 namespace y2023_bot3::control_loops::superstructure {
 

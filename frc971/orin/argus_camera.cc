@@ -4,7 +4,9 @@
 #include <filesystem>
 #include <thread>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "Argus/Argus.h"
 #include "Argus/EGLStream.h"
@@ -25,21 +27,22 @@
 #include "frc971/vision/vision_generated.h"
 #include "nvbufsurface.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
 
-DEFINE_int32(colorformat, NVBUF_COLOR_FORMAT_NV16,
-             "Mode to use.  Don't change unless you know what you are doing.");
-DEFINE_int32(camera, 0, "Camera number");
-DEFINE_int32(mode, 0, "Mode number to use.");
-DEFINE_int32(exposure, 100, "Exposure number to use.");
-DEFINE_int32(gain, 5, "gain number to use.");
-DEFINE_int32(width, 1456, "Image width");
-DEFINE_int32(height, 1088, "Image height");
-DEFINE_double(rgain, 1.0, "R gain");
-DEFINE_double(g1gain, 1.0, "G gain");
-DEFINE_double(g2gain, 1.0, "G gain");
-DEFINE_double(bgain, 1.0, "B gain");
-DEFINE_string(channel, "/camera", "Channel name for the image.");
+ABSL_FLAG(int32_t, colorformat, NVBUF_COLOR_FORMAT_NV16,
+          "Mode to use.  Don't change unless you know what you are doing.");
+ABSL_FLAG(int32_t, camera, 0, "Camera number");
+ABSL_FLAG(int32_t, mode, 0, "Mode number to use.");
+ABSL_FLAG(int32_t, exposure, 100, "Exposure number to use.");
+ABSL_FLAG(int32_t, gain, 5, "gain number to use.");
+ABSL_FLAG(int32_t, width, 1456, "Image width");
+ABSL_FLAG(int32_t, height, 1088, "Image height");
+ABSL_FLAG(double, rgain, 1.0, "R gain");
+ABSL_FLAG(double, g1gain, 1.0, "G gain");
+ABSL_FLAG(double, g2gain, 1.0, "G gain");
+ABSL_FLAG(double, bgain, 1.0, "B gain");
+ABSL_FLAG(std::string, channel, "/camera", "Channel name for the image.");
 
 namespace frc971 {
 
@@ -221,7 +224,8 @@ class ArgusCamera {
     CHECK_GT(sensor_modes.size(), 0u);
 
     Argus::ISensorMode *i_sensor_mode =
-        Argus::interface_cast<Argus::ISensorMode>(sensor_modes[FLAGS_mode]);
+        Argus::interface_cast<Argus::ISensorMode>(
+            sensor_modes[absl::GetFlag(FLAGS_mode)]);
     CHECK(i_sensor_mode);
 
     {
@@ -264,10 +268,11 @@ class ArgusCamera {
 
     // Build the DmaBuffers
     for (size_t i = 0; i < native_buffers_.size(); ++i) {
-      native_buffers_[i] = DmaBuffer::Create(
-          i_sensor_mode->getResolution(),
-          static_cast<NvBufSurfaceColorFormat>(FLAGS_colorformat),
-          NVBUF_LAYOUT_PITCH);
+      native_buffers_[i] =
+          DmaBuffer::Create(i_sensor_mode->getResolution(),
+                            static_cast<NvBufSurfaceColorFormat>(
+                                absl::GetFlag(FLAGS_colorformat)),
+                            NVBUF_LAYOUT_PITCH);
     }
 
     // Create EGLImages from the native buffers
@@ -350,18 +355,19 @@ class ArgusCamera {
 
     i_source_settings->setFrameDurationRange(
         i_sensor_mode->getFrameDurationRange().min());
-    CHECK_EQ(i_source_settings->setSensorMode(sensor_modes[FLAGS_mode]),
+    CHECK_EQ(i_source_settings->setSensorMode(
+                 sensor_modes[absl::GetFlag(FLAGS_mode)]),
              Argus::STATUS_OK);
 
     Argus::Range<float> sensor_mode_analog_gain_range;
-    sensor_mode_analog_gain_range.min() = FLAGS_gain;
-    sensor_mode_analog_gain_range.max() = FLAGS_gain;
+    sensor_mode_analog_gain_range.min() = absl::GetFlag(FLAGS_gain);
+    sensor_mode_analog_gain_range.max() = absl::GetFlag(FLAGS_gain);
     CHECK_EQ(i_source_settings->setGainRange(sensor_mode_analog_gain_range),
              Argus::STATUS_OK);
 
     Argus::Range<uint64_t> limit_exposure_time_range;
-    limit_exposure_time_range.min() = FLAGS_exposure * 1000;
-    limit_exposure_time_range.max() = FLAGS_exposure * 1000;
+    limit_exposure_time_range.min() = absl::GetFlag(FLAGS_exposure) * 1000;
+    limit_exposure_time_range.max() = absl::GetFlag(FLAGS_exposure) * 1000;
     CHECK_EQ(i_source_settings->setExposureTimeRange(limit_exposure_time_range),
              Argus::STATUS_OK);
 
@@ -412,9 +418,9 @@ class ArgusCamera {
                 << nvbuf_surf_->surfaceList->planeParams.bytesPerPix[i];
       }
       CHECK_EQ(nvbuf_surf_->surfaceList->planeParams.width[0],
-               static_cast<size_t>(FLAGS_width));
+               static_cast<size_t>(absl::GetFlag(FLAGS_width)));
       CHECK_EQ(nvbuf_surf_->surfaceList->planeParams.height[0],
-               static_cast<size_t>(FLAGS_height));
+               static_cast<size_t>(absl::GetFlag(FLAGS_height)));
     }
     MappedBuffer(const MappedBuffer &other) = delete;
     MappedBuffer &operator=(const MappedBuffer &other) = delete;
@@ -524,10 +530,11 @@ class ArgusCamera {
 };
 
 int Main() {
-  std::this_thread::sleep_for(std::chrono::seconds(FLAGS_camera + 1));
+  std::this_thread::sleep_for(
+      std::chrono::seconds(absl::GetFlag(FLAGS_camera) + 1));
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
@@ -535,7 +542,8 @@ int Main() {
   event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({2, 3, 4}));
 
   aos::Sender<frc971::vision::CameraImage> sender =
-      event_loop.MakeSender<frc971::vision::CameraImage>(FLAGS_channel);
+      event_loop.MakeSender<frc971::vision::CameraImage>(
+          absl::GetFlag(FLAGS_channel));
 
   LOG(INFO) << "Started";
   // Initialize the Argus camera provider.
@@ -565,7 +573,8 @@ int Main() {
   }
 
   {
-    ArgusCamera camera(i_camera_provider, camera_devices[FLAGS_camera]);
+    ArgusCamera camera(i_camera_provider,
+                       camera_devices[absl::GetFlag(FLAGS_camera)]);
 
     aos::monotonic_clock::time_point last_time = aos::monotonic_clock::epoch();
 
@@ -586,18 +595,20 @@ int Main() {
             sender.MakeBuilder();
 
         uint8_t *data_pointer = nullptr;
-        builder.fbb()->StartIndeterminateVector(FLAGS_width * FLAGS_height * 2,
-                                                1, 64, &data_pointer);
+        builder.fbb()->StartIndeterminateVector(
+            absl::GetFlag(FLAGS_width) * absl::GetFlag(FLAGS_height) * 2, 1, 64,
+            &data_pointer);
 
         YCbCr422(buffer.nvbuf_surf(), data_pointer);
         flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
             builder.fbb()->EndIndeterminateVector(
-                FLAGS_width * FLAGS_height * 2, 1);
+                absl::GetFlag(FLAGS_width) * absl::GetFlag(FLAGS_height) * 2,
+                1);
 
         auto image_builder = builder.MakeBuilder<frc971::vision::CameraImage>();
         image_builder.add_data(data_offset);
-        image_builder.add_rows(FLAGS_height);
-        image_builder.add_cols(FLAGS_width);
+        image_builder.add_rows(absl::GetFlag(FLAGS_height));
+        image_builder.add_cols(absl::GetFlag(FLAGS_width));
         {
           aos::ScopedNotRealtime nrt;
           image_builder.add_monotonic_timestamp_ns(

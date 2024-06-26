@@ -1,12 +1,14 @@
 #include "y2022/localizer/localizer.h"
 
+#include "absl/flags/flag.h"
+
 #include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/constants.h"
 
-DEFINE_bool(ignore_accelerometer, false,
-            "If set, ignores the accelerometer readings.");
+ABSL_FLAG(bool, ignore_accelerometer, false,
+          "If set, ignores the accelerometer readings.");
 
 namespace frc971::controls {
 
@@ -377,7 +379,7 @@ void ModelBasedLocalizer::HandleImu(
   constexpr size_t kShareStates = kNModelStates;
   static_assert(kUseModelThreshold < kUseAccelThreshold);
   if (using_model_) {
-    if (!FLAGS_ignore_accelerometer &&
+    if (!absl::GetFlag(FLAGS_ignore_accelerometer) &&
         filtered_residual_ > kUseAccelThreshold) {
       hysteresis_count_++;
     } else {

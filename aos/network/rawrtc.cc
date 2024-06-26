@@ -9,13 +9,15 @@ extern "C" {
 #include <functional>
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
-DEFINE_int32(min_ice_port, -1,
-             "Minimum port number to use for ICE candidates.");
-DEFINE_int32(max_ice_port, -1,
-             "Maximum port number to use for ICE candidates.");
+ABSL_FLAG(int32_t, min_ice_port, -1,
+          "Minimum port number to use for ICE candidates.");
+ABSL_FLAG(int32_t, max_ice_port, -1,
+          "Maximum port number to use for ICE candidates.");
 
 namespace aos::web_proxy {
 namespace {
@@ -198,11 +200,14 @@ void RawRTCConnection::Open() {
   CHECK_RAWRTC(rawrtc_peer_connection_configuration_set_sctp_buffer_length(
       configuration, TRANSPORT_BUFFER_LENGTH, TRANSPORT_BUFFER_LENGTH));
 
-  if (FLAGS_min_ice_port >= 0 && FLAGS_max_ice_port >= 0) {
-    CHECK_LT(FLAGS_min_ice_port, FLAGS_max_ice_port);
+  if (absl::GetFlag(FLAGS_min_ice_port) >= 0 &&
+      absl::GetFlag(FLAGS_max_ice_port) >= 0) {
+    CHECK_LT(absl::GetFlag(FLAGS_min_ice_port),
+             absl::GetFlag(FLAGS_max_ice_port));
     // Set the port range to use for ICE candidates.
     CHECK_RAWRTC(rawrtc_peer_connection_configuration_set_ice_udp_port_range(
-        configuration, FLAGS_min_ice_port, FLAGS_max_ice_port));
+        configuration, absl::GetFlag(FLAGS_min_ice_port),
+        absl::GetFlag(FLAGS_max_ice_port)));
   }
 
   // Create peer connection

@@ -1,22 +1,24 @@
 #include <iostream>
 #include <map>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_bool(all, false,
-            "If true, print out the channels for all nodes in the config file, "
-            "not just the channels which are visible on this node.");
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
-DEFINE_bool(short_types, true,
-            "Whether to show a shortened version of the type name");
+ABSL_FLAG(bool, all, false,
+          "If true, print out the channels for all nodes in the config file, "
+          "not just the channels which are visible on this node.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
+ABSL_FLAG(bool, short_types, true,
+          "Whether to show a shortened version of the type name");
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "\nCreates graph of nodes and message channels based on the robot config "
       "file.  \n\n"
       "To save to file, run as: \n"
@@ -38,13 +40,12 @@ int main(int argc, char **argv) {
   std::map<std::string, std::string> color_map;
 
   if (argc > 1) {
-    LOG(ERROR) << "ERROR: Got unexpected arguments\n\n";
-    gflags::ShowUsageWithFlagsRestrict(argv[0], "aos/aos_graph_nodes.cc");
+    LOG(ERROR) << "ERROR: Got unexpected arguments";
     return -1;
   }
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   const aos::Configuration *config_msg = &config.message();
   aos::ShmEventLoop event_loop(config_msg);
@@ -57,10 +58,10 @@ int main(int argc, char **argv) {
 
   for (const aos::Channel *channel : *config_msg->channels()) {
     VLOG(1) << "Found channel " << channel->type()->string_view();
-    if (FLAGS_all || aos::configuration::ChannelIsReadableOnNode(
-                         channel, event_loop.node())) {
+    if (absl::GetFlag(FLAGS_all) || aos::configuration::ChannelIsReadableOnNode(
+                                        channel, event_loop.node())) {
       flatbuffers::string_view type_name = channel->type()->string_view();
-      if (FLAGS_short_types) {
+      if (absl::GetFlag(FLAGS_short_types)) {
         // Strip down to just the top level of the message type
         type_name = channel->type()->string_view().substr(
             channel->type()->string_view().rfind(".") + 1, std::string::npos);

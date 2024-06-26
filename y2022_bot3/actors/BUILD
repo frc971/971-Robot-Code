@@ -57,6 +57,7 @@ cc_library(
         "//y2022_bot3/control_loops/drivetrain:drivetrain_base",
         "//y2022_bot3/control_loops/superstructure:superstructure_goal_fbs",
         "//y2022_bot3/control_loops/superstructure:superstructure_status_fbs",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

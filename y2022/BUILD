@@ -230,8 +230,9 @@ cc_library(
         "//y2022/control_loops/superstructure/climber:climber_plants",
         "//y2022/control_loops/superstructure/intake:intake_plants",
         "//y2022/control_loops/superstructure/turret:turret_plants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

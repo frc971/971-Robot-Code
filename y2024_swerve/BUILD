@@ -103,8 +103,9 @@ cc_library(
         "//aos/network:team_number",
         "//frc971:constants",
         "//y2024_swerve/constants:constants_fbs",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -114,7 +115,7 @@ cc_binary(
     deps = [
         ":swerve_publisher_lib",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -126,7 +127,8 @@ cc_library(
         "//aos:init",
         "//aos/events:event_loop",
         "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

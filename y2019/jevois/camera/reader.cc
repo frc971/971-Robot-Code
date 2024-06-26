@@ -13,7 +13,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/time/time.h"
 

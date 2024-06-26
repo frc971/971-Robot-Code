@@ -11,7 +11,8 @@
 #include "third_party/cddlib/lib-src/cdd.h"
 // clang-format on
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #endif  // __linux__
 
 namespace frc971::controls {

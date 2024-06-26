@@ -3,8 +3,9 @@
 
 #include <deque>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logger_generated.h"

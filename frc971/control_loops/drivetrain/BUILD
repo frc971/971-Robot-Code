@@ -330,7 +330,7 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//third_party/matplotlib-cpp",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -624,7 +624,7 @@ cc_test(
         ":spline",
         "//aos/analysis:in_process_plotter",
         "//aos/testing:googletest",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -640,7 +640,8 @@ cc_library(
         "//aos/logging",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:fixed_quadrature",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
         "@org_tuxfamily_eigen//:eigen",
     ],
@@ -665,7 +666,7 @@ cc_test(
         "//aos:flatbuffers",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ] + cpu_select({
         "amd64": [
             "//third_party/matplotlib-cpp",
@@ -721,7 +722,7 @@ cc_binary(
         "//aos/network:team_number",
         "//third_party/matplotlib-cpp",
         "//y2019/control_loops/drivetrain:drivetrain_base",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -774,7 +775,8 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:quaternion_utils",
         "//frc971/control_loops:runge_kutta",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

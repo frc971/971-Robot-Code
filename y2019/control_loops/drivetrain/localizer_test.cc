@@ -3,7 +3,7 @@
 #include <queue>
 #include <random>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/testing/random_seed.h"
 #include "aos/testing/test_shm.h"
@@ -17,7 +17,7 @@
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(plot, false, "If true, plot");
+ABSL_FLAG(bool, plot, false, "If true, plot");
 
 namespace y2019::control_loops::testing {
 
@@ -210,7 +210,7 @@ class ParameterizedLocalizerTest
     printf("Each iteration of the simulation took on average %f seconds.\n",
            avg_time_.count());
 #if defined(SUPPORT_PLOT)
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       matplotlibcpp::figure();
       matplotlibcpp::plot(simulation_t_, simulation_vl_, {{"label", "Vl"}});
       matplotlibcpp::plot(simulation_t_, simulation_vr_, {{"label", "Vr"}});

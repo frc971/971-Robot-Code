@@ -1,5 +1,6 @@
 #include "y2022/localizer/localizer.h"
 
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/log_writer.h"
@@ -10,8 +11,8 @@
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/vision/target_estimate_generated.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_folder, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace frc971::controls::testing {
 typedef ModelBasedLocalizer::ModelState ModelState;
@@ -496,11 +497,11 @@ class EventLoopLocalizerTest : public ::testing::Test {
     CHECK(status_fetcher_.Fetch());
     CHECK(status_fetcher_->zeroed());
 
-    if (!FLAGS_output_folder.empty()) {
+    if (!absl::GetFlag(FLAGS_output_folder).empty()) {
       logger_event_loop_ =
           event_loop_factory_.MakeEventLoop("logger", imu_node_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_folder);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
     }
   }
 

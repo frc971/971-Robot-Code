@@ -2,12 +2,12 @@
 
 #include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/analysis/in_process_plotter.h"
 
-DEFINE_bool(plot, false, "If true, plot");
+ABSL_FLAG(bool, plot, false, "If true, plot");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -21,13 +21,13 @@ std::string TestName() {
 class SplineTest : public ::testing::Test {
  public:
   static void SetUpTestSuite() {
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       plotter_ = std::make_unique<aos::analysis::Plotter>();
     }
   }
 
   static void TearDownTestSuite() {
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       plotter_->Spin();
     }
   }
@@ -39,7 +39,7 @@ class SplineTest : public ::testing::Test {
                             .finished()),
         spline4_(control_points_),
         spline6_(Spline4To6(control_points_)) {
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       CHECK(plotter_);
       plotter_->Title(TestName());
     }
@@ -47,7 +47,7 @@ class SplineTest : public ::testing::Test {
   ~SplineTest() {}
 
   void TearDown() override {
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       plotter_->Publish();
     }
   }
@@ -115,7 +115,7 @@ TEST_F(SplineTest, XYIntegral) {
   }
 
   // Conditionally plot the functions and their integrals to aid debugging.
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     plotter_->AddFigure("Spline Attributes Over Alpha");
     plotter_->AddLine(alphas_plot, x_plot, "X");
     plotter_->AddLine(alphas_plot, ix_plot, "Integrated X");
@@ -175,7 +175,7 @@ TEST_F(SplineTest, ThetaIntegral) {
   }
 
   // Conditionally plot the functions and their integrals to aid debugging.
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     plotter_->AddFigure("Heading Plot");
     plotter_->AddLine(alphas_plot, theta_plot, "theta");
     plotter_->AddLine(alphas_plot, itheta_plot, "Integrated theta");
@@ -226,7 +226,7 @@ TEST_F(SplineTest, FourToSixSpline) {
   }
 
   // Conditionally plot the functions and their integrals to aid debugging.
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     plotter_->AddFigure("Spline X/Y");
     plotter_->AddLine(alphas_plot, x_plot, "X");
     plotter_->AddLine(alphas_plot, y_plot, "Y");

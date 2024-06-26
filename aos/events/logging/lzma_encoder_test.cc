@@ -1,5 +1,7 @@
 #include "aos/events/logging/lzma_encoder.h"
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -7,14 +9,14 @@
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
 
-DECLARE_int32(lzma_threads);
+ABSL_DECLARE_FLAG(int32_t, lzma_threads);
 
 namespace aos::logger::testing {
 
 INSTANTIATE_TEST_SUITE_P(
     MtLzma, BufferEncoderTest,
     ::testing::Combine(::testing::Values([](size_t max_message_size) {
-                         FLAGS_lzma_threads = 3;
+                         absl::SetFlag(&FLAGS_lzma_threads, 3);
                          return std::make_unique<LzmaEncoder>(max_message_size,
                                                               2, 4096);
                        }),
@@ -26,7 +28,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     MtLzmaThreaded, BufferEncoderTest,
     ::testing::Combine(::testing::Values([](size_t max_message_size) {
-                         FLAGS_lzma_threads = 3;
+                         absl::SetFlag(&FLAGS_lzma_threads, 3);
                          return std::make_unique<LzmaEncoder>(max_message_size,
                                                               5, 4096);
                        }),
@@ -38,7 +40,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     Lzma, BufferEncoderTest,
     ::testing::Combine(::testing::Values([](size_t max_message_size) {
-                         FLAGS_lzma_threads = 1;
+                         absl::SetFlag(&FLAGS_lzma_threads, 1);
                          return std::make_unique<LzmaEncoder>(max_message_size,
                                                               2, 4096);
                        }),
@@ -50,7 +52,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     LzmaThreaded, BufferEncoderTest,
     ::testing::Combine(::testing::Values([](size_t max_message_size) {
-                         FLAGS_lzma_threads = 1;
+                         absl::SetFlag(&FLAGS_lzma_threads, 1);
                          return std::make_unique<LzmaEncoder>(max_message_size,
                                                               5, 4096);
                        }),

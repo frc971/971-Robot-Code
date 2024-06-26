@@ -3,18 +3,20 @@
 
 #include <iostream>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/log.h"
 
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_double(rate, -1, "Rate at which to send the message (-1 to send once).");
+ABSL_FLAG(double, rate, -1,
+          "Rate at which to send the message (-1 to send once).");
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Sends messages on arbitrary channels.\n"
       "Typical Usage: aos_send [--config path_to_config.json]"
       " channel_name message_type '{\"foo\": \"bar\"}'\n"
@@ -67,7 +69,7 @@ int main(int argc, char **argv) {
 
   fbb.Finish(msg_offset);
 
-  if (FLAGS_rate < 0) {
+  if (absl::GetFlag(FLAGS_rate) < 0) {
     sender->CheckOk(sender->Send(fbb.GetSize()));
   } else {
     cli_info.event_loop
@@ -76,7 +78,8 @@ int main(int argc, char **argv) {
         })
         ->Schedule(cli_info.event_loop->monotonic_now(),
                    std::chrono::duration_cast<std::chrono::nanoseconds>(
-                       std::chrono::duration<double>(1.0 / FLAGS_rate)));
+                       std::chrono::duration<double>(
+                           1.0 / absl::GetFlag(FLAGS_rate))));
     cli_info.event_loop->Run();
   }
 

@@ -173,7 +173,9 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -203,7 +205,9 @@ cc_library(
     deps = [
         "//aos:unique_malloc_ptr",
         "//aos/util:file",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -290,8 +294,9 @@ cc_library(
         ":remote_message_fbs",
         "//aos:configuration",
         "//aos/events:event_loop",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -353,6 +358,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -713,8 +719,9 @@ cc_library(
         "//aos/mutex",
         "//aos/seasocks:seasocks_logger",
         "//third_party/seasocks",
-        "@com_github_google_glog//:glog",
         "@com_github_rawrtc_rawrtc//:rawrtc",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -926,5 +933,7 @@ cc_binary(
         ":sctp_server",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:usage",
     ],
 )

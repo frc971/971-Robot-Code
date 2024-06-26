@@ -3,8 +3,9 @@
 #include <chrono>
 #include <string_view>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/shm_event_loop.h"
@@ -24,7 +25,7 @@
 #pragma clang diagnostic ignored "-Wcast-align"
 #endif
 
-DECLARE_bool(use_sctp_authentication);
+ABSL_DECLARE_FLAG(bool, use_sctp_authentication);
 
 // This application receives messages from another node and re-publishes them on
 // this node.

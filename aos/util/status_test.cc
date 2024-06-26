@@ -8,8 +8,6 @@
 #include "aos/realtime.h"
 #include "aos/testing/path.h"
 
-DECLARE_bool(die_on_malloc);
-
 namespace aos::testing {
 class ErrorTest : public ::testing::Test {
  protected:

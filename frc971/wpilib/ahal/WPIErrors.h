@@ -9,7 +9,8 @@
 
 #include <cstdint>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #ifdef WPI_ERRORS_DEFINE_STRINGS
 #define S(label, offset, message)            \

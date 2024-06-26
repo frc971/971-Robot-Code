@@ -1,9 +1,9 @@
 #include "frc971/imu_fdcan/dual_imu_blender_lib.h"
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
-DEFINE_bool(murata_only, false,
-            "If true then only use the murata value and ignore the tdk.");
+ABSL_FLAG(bool, murata_only, false,
+          "If true then only use the murata value and ignore the tdk.");
 
 // Saturation for the gyro is measured in +- radians/s
 static constexpr double kMurataGyroSaturation = (300.0 * M_PI) / 180;
@@ -124,7 +124,7 @@ void DualImuBlender::HandleDualImu(const frc971::imu::DualImu *dual_imu) {
     imu_values->set_accelerometer_z(dual_imu->murata()->accelerometer_z());
   }
 
-  if (FLAGS_murata_only) {
+  if (absl::GetFlag(FLAGS_murata_only)) {
     imu_values->set_gyro_x(dual_imu->murata()->gyro_x());
     imu_values->set_gyro_y(dual_imu->murata()->gyro_y());
     imu_values->set_gyro_z(dual_imu->murata()->gyro_z());

@@ -6,7 +6,6 @@
 
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/reflection_generated.h"
-#include "glog/logging.h"
 
 namespace aos {
 

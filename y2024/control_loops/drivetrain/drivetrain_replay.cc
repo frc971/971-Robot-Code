@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -17,31 +17,32 @@
 #include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(config, "y2024/aos_config.json",
-              "Name of the config file to replay using.");
-DEFINE_bool(override_config, false,
-            "If set, override the logged config with --config.");
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
-DEFINE_string(output_folder, "/tmp/replayed",
-              "Name of the folder to write replayed logs to.");
-DEFINE_string(constants_path, "y2024/constants/constants.json",
-              "Path to the constant file");
+ABSL_FLAG(std::string, config, "y2024/aos_config.json",
+          "Name of the config file to replay using.");
+ABSL_FLAG(bool, override_config, false,
+          "If set, override the logged config with --config.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(std::string, output_folder, "/tmp/replayed",
+          "Name of the folder to write replayed logs to.");
+ABSL_FLAG(std::string, constants_path, "y2024/constants/constants.json",
+          "Path to the constant file");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   // sort logfiles
   const std::vector<aos::logger::LogFile> logfiles =
       aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
   // open logfiles
-  aos::logger::LogReader reader(
-      logfiles, FLAGS_override_config ? &config.message() : nullptr);
+  aos::logger::LogReader reader(logfiles, absl::GetFlag(FLAGS_override_config)
+                                              ? &config.message()
+                                              : nullptr);
 
   reader.RemapLoggedChannel("/imu/constants", "y2024.Constants");
   reader.RemapLoggedChannel("/roborio/constants", "y2024.Constants");
@@ -58,8 +59,9 @@ int main(int argc, char **argv) {
 
   reader.RegisterWithoutStarting(factory.get());
 
-  y2024::SendSimulationConstants(reader.event_loop_factory(), FLAGS_team,
-                                 FLAGS_constants_path, {"roborio"});
+  y2024::SendSimulationConstants(
+      reader.event_loop_factory(), absl::GetFlag(FLAGS_team),
+      absl::GetFlag(FLAGS_constants_path), {"roborio"});
 
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
         std::make_unique<frc971::control_loops::drivetrain::DrivetrainLoop>(
             drivetrain_config, drivetrain_event_loop.get(), localizer.get());
     loggers.push_back(std::make_unique<aos::util::LoggerState>(
-        factory.get(), node, FLAGS_output_folder));
+        factory.get(), node, absl::GetFlag(FLAGS_output_folder)));
     // The Trajectory information is NOT_LOGGED, so we need to rerun it against
     // the SplineGoals that we have in the log.
     node_factory

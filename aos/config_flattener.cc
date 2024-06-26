@@ -1,21 +1,21 @@
 #include <string>
 #include <vector>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/file.h"
 
-DEFINE_string(full_output, "",
-              "If provided, the path to write the full json configuration to.");
-DEFINE_string(
-    stripped_output, "",
-    "If provided, the path to write the stripped json configuration to.");
-DEFINE_string(
-    binary_output, "",
+ABSL_FLAG(std::string, full_output, "",
+          "If provided, the path to write the full json configuration to.");
+ABSL_FLAG(std::string, stripped_output, "",
+          "If provided, the path to write the stripped json configuration to.");
+ABSL_FLAG(
+    std::string, binary_output, "",
     "If provided, the path to write the binary flatbuffer configuration to.");
 
 namespace aos {
@@ -67,16 +67,18 @@ int Main(int argc, char **argv) {
   // TODO(austin): Figure out how to squash the schemas onto 1 line so it is
   // easier to read?
   VLOG(1) << "Flattened config is " << merged_config_json;
-  if (!FLAGS_full_output.empty()) {
-    util::WriteStringToFileOrDie(FLAGS_full_output, merged_config_json);
+  if (!absl::GetFlag(FLAGS_full_output).empty()) {
+    util::WriteStringToFileOrDie(absl::GetFlag(FLAGS_full_output),
+                                 merged_config_json);
   }
-  if (!FLAGS_stripped_output.empty()) {
+  if (!absl::GetFlag(FLAGS_stripped_output).empty()) {
     util::WriteStringToFileOrDie(
-        FLAGS_stripped_output,
+        absl::GetFlag(FLAGS_stripped_output),
         FlatbufferToJson(&config.message(), {.multi_line = true}));
   }
-  if (!FLAGS_binary_output.empty()) {
-    aos::WriteFlatbufferToFile(FLAGS_binary_output, merged_config);
+  if (!absl::GetFlag(FLAGS_binary_output).empty()) {
+    aos::WriteFlatbufferToFile(absl::GetFlag(FLAGS_binary_output),
+                               merged_config);
   }
   return 0;
 }

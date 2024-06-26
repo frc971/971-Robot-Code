@@ -1,8 +1,10 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
@@ -11,15 +13,15 @@
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
 
-DEFINE_string(config, "aos_config.json", "Config file to use.");
+ABSL_FLAG(std::string, config, "aos_config.json", "Config file to use.");
 
-DEFINE_double(rotate_every, 30.0,
-              "If set, rotate the logger after this many seconds");
+ABSL_FLAG(double, rotate_every, 30.0,
+          "If set, rotate the logger after this many seconds");
 
-DECLARE_int32(flush_size);
+ABSL_DECLARE_FLAG(int32_t, flush_size);
 
 int main(int argc, char *argv[]) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "This program provides a simple logger binary that logs all SHMEM data "
       "directly to a file specified at the command line. It does not manage "
       "filenames, so it will just crash if you attempt to overwrite an "
@@ -28,7 +30,7 @@ int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
@@ -40,8 +42,8 @@ int main(int argc, char *argv[]) {
 
   log_namer->set_extension(aos::logger::SnappyDecoder::kExtension);
   log_namer->set_encoder_factory([](size_t max_message_size) {
-    return std::make_unique<aos::logger::SnappyEncoder>(max_message_size,
-                                                        FLAGS_flush_size);
+    return std::make_unique<aos::logger::SnappyEncoder>(
+        max_message_size, absl::GetFlag(FLAGS_flush_size));
   });
 
   aos::monotonic_clock::time_point last_rotation_time =
@@ -53,11 +55,11 @@ int main(int argc, char *argv[]) {
         return (channel->max_size() * channel->frequency()) < 10e6;
       });
 
-  if (FLAGS_rotate_every != 0.0) {
+  if (absl::GetFlag(FLAGS_rotate_every) != 0.0) {
     logger.set_on_logged_period(
         [&logger, &last_rotation_time](aos::monotonic_clock::time_point t) {
-          if (t > last_rotation_time +
-                      std::chrono::duration<double>(FLAGS_rotate_every)) {
+          if (t > last_rotation_time + std::chrono::duration<double>(
+                                           absl::GetFlag(FLAGS_rotate_every))) {
             logger.Rotate();
             last_rotation_time = t;
           }

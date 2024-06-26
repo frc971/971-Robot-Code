@@ -8,8 +8,10 @@
 #include <string_view>
 
 #include "absl/container/btree_set.h"
+#include "absl/flags/declare.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 #include "tl/expected.hpp"
 
 #include "aos/configuration.h"
@@ -30,8 +32,8 @@
 #include "aos/util/status.h"
 #include "aos/uuid.h"
 
-DECLARE_bool(timing_reports);
-DECLARE_int32(timing_report_ms);
+ABSL_DECLARE_FLAG(bool, timing_reports);
+ABSL_DECLARE_FLAG(int32_t, timing_report_ms);
 
 namespace aos {
 

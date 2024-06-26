@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
@@ -10,8 +10,8 @@
 #include "aos/logging/log_message_generated.h"
 #include "frc971/vision/vision_generated.h"
 
-DEFINE_string(node, "orin1", "The node to view the log from");
-DEFINE_string(channel, "/camera0", "The channel to view the log from");
+ABSL_FLAG(std::string, node, "orin1", "The node to view the log from");
+ABSL_FLAG(std::string, channel, "/camera0", "The channel to view the log from");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -23,11 +23,12 @@ int main(int argc, char **argv) {
   aos::SimulatedEventLoopFactory factory(reader.configuration());
   reader.Register(&factory);
 
-  aos::NodeEventLoopFactory *node = factory.GetNodeEventLoopFactory(FLAGS_node);
+  aos::NodeEventLoopFactory *node =
+      factory.GetNodeEventLoopFactory(absl::GetFlag(FLAGS_node));
 
   std::unique_ptr<aos::EventLoop> image_loop = node->MakeEventLoop("image");
   image_loop->MakeWatcher(
-      "/" + FLAGS_node + "/" + FLAGS_channel,
+      "/" + absl::GetFlag(FLAGS_node) + "/" + absl::GetFlag(FLAGS_channel),
       [](const frc971::vision::CameraImage &msg) {
         cv::Mat color_image(cv::Size(msg.cols(), msg.rows()), CV_8UC2,
                             (void *)msg.data()->data());

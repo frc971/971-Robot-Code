@@ -2,8 +2,9 @@
 #include <iostream>
 #include <queue>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -11,23 +12,23 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 
-DEFINE_string(
-    name, "",
+ABSL_FLAG(
+    std::string, name, "",
     "Name to match for printing out channels. Empty means no name filter.");
 
-DEFINE_string(node, "", "Node to print stats out for.");
+ABSL_FLAG(std::string, node, "", "Node to print stats out for.");
 
-DEFINE_bool(excessive_size_only, false,
-            "Only print channels that have a set max message size that is more "
-            "than double of the max message size.");
+ABSL_FLAG(bool, excessive_size_only, false,
+          "Only print channels that have a set max message size that is more "
+          "than double of the max message size.");
 
-DEFINE_double(
-    run_for, 0.0,
+ABSL_FLAG(
+    double, run_for, 0.0,
     "If set to a positive value, only process the log for this many seconds. "
     "Otherwise, process the log until the end of the log.");
 
-DEFINE_bool(
-    print_repack_size_diffs, false,
+ABSL_FLAG(
+    bool, print_repack_size_diffs, false,
     "Analyze how many bytes could be saved in each message when converted to "
     "JSON and back. This can be helpful to identify code that is generating "
     "inefficiently packed flatbuffer messages.");
@@ -340,7 +341,7 @@ class LogStatsApplication {
         continue;
       }
 
-      if (channel->name()->string_view().find(FLAGS_name) ==
+      if (channel->name()->string_view().find(absl::GetFlag(FLAGS_name)) ==
           std::string::npos) {
         continue;
       }
@@ -354,7 +355,7 @@ class LogStatsApplication {
       auto watcher = [this, channel_stats_index](const aos::Context &context) {
         this->UpdateStats(context, channel_stats_index);
       };
-      if (FLAGS_print_repack_size_diffs) {
+      if (absl::GetFlag(FLAGS_print_repack_size_diffs)) {
         event_loop_->MakeRawWatcher(
             channel, std::bind(watcher, ::std::placeholders::_1));
       } else {
@@ -376,7 +377,7 @@ class LogStatsApplication {
   void PrintStats() {
     // Print out the stats per channel and for the logfile.
     for (size_t i = 0; i != channel_stats_.size(); i++) {
-      if (!FLAGS_excessive_size_only ||
+      if (!absl::GetFlag(FLAGS_excessive_size_only) ||
           (channel_stats_[i].max_message_size() * 2) <
               static_cast<size_t>(channel_stats_[i].channel()->max_size())) {
         if (channel_stats_[i].total_num_messages() > 0) {
@@ -390,7 +391,7 @@ class LogStatsApplication {
               std::max(logfile_stats_.logfile_end_time,
                        channel_stats_[i].channel_end_time());
 
-          if (!FLAGS_excessive_size_only) {
+          if (!absl::GetFlag(FLAGS_excessive_size_only)) {
             std::cout << "   " << channel_stats_[i].total_num_messages()
                       << " msgs, " << channel_stats_[i].avg_messages_per_sec()
                       << "hz avg, " << channel_stats_[i].max_messages_per_sec()
@@ -406,7 +407,7 @@ class LogStatsApplication {
                     << channel_stats_[i].Percentile() << ", "
                     << channel_stats_[i].AvgLatency();
           std::cout << std::endl;
-          if (FLAGS_print_repack_size_diffs) {
+          if (absl::GetFlag(FLAGS_print_repack_size_diffs)) {
             std::cout << "   " << channel_stats_[i].avg_packed_size_reduction()
                       << " bytes packed reduction avg, "
                       << channel_stats_[i].max_packed_size_reduction()
@@ -441,7 +442,7 @@ class LogStatsApplication {
 };
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Usage: \n"
       "  log_stats [args] logfile1 logfile2 ...\n"
       "This program provides statistics on a given log file. Supported "
@@ -470,7 +471,7 @@ int main(int argc, char **argv) {
   const aos::Node *node = nullptr;
 
   if (aos::configuration::MultiNode(reader.configuration())) {
-    if (FLAGS_node.empty()) {
+    if (absl::GetFlag(FLAGS_node).empty()) {
       LOG(INFO) << "Need a --node specified.  The log file has:";
       for (const aos::Node *node : reader.LoggedNodes()) {
         LOG(INFO) << "  " << node->name()->string_view();
@@ -478,7 +479,8 @@ int main(int argc, char **argv) {
       reader.Deregister();
       return 1;
     } else {
-      node = aos::configuration::GetNode(reader.configuration(), FLAGS_node);
+      node = aos::configuration::GetNode(reader.configuration(),
+                                         absl::GetFlag(FLAGS_node));
     }
   }
 
@@ -498,10 +500,10 @@ int main(int argc, char **argv) {
     log_stats_application = nullptr;
   });
 
-  if (FLAGS_run_for > 0.0) {
+  if (absl::GetFlag(FLAGS_run_for) > 0.0) {
     event_loop_factory.RunFor(
         std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::duration<double>(FLAGS_run_for)));
+            std::chrono::duration<double>(absl::GetFlag(FLAGS_run_for))));
   } else {
     event_loop_factory.Run();
   }

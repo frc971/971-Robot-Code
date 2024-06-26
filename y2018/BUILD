@@ -63,7 +63,8 @@ cc_library(
         "//y2018/control_loops/drivetrain:polydrivetrain_plants",
         "//y2018/control_loops/superstructure/arm:arm_constants",
         "//y2018/control_loops/superstructure/intake:intake_plants",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

@@ -1,5 +1,6 @@
 #include "y2022/vision/target_estimator.h"
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "ceres/ceres.h"
 #include "opencv2/core/core.hpp"
@@ -13,20 +14,20 @@
 #include "frc971/vision/geometry.h"
 #include "y2022/constants.h"
 
-DEFINE_bool(freeze_roll, false, "If true, don't solve for roll");
-DEFINE_bool(freeze_pitch, false, "If true, don't solve for pitch");
-DEFINE_bool(freeze_yaw, false, "If true, don't solve for yaw");
-DEFINE_bool(freeze_camera_height, true,
-            "If true, don't solve for camera height");
-DEFINE_bool(freeze_angle_to_camera, true,
-            "If true, don't solve for polar angle to camera");
+ABSL_FLAG(bool, freeze_roll, false, "If true, don't solve for roll");
+ABSL_FLAG(bool, freeze_pitch, false, "If true, don't solve for pitch");
+ABSL_FLAG(bool, freeze_yaw, false, "If true, don't solve for yaw");
+ABSL_FLAG(bool, freeze_camera_height, true,
+          "If true, don't solve for camera height");
+ABSL_FLAG(bool, freeze_angle_to_camera, true,
+          "If true, don't solve for polar angle to camera");
 
-DEFINE_uint64(max_solver_iterations, 200,
-              "Maximum number of iterations for the ceres solver");
-DEFINE_bool(solver_output, false,
-            "If true, log the solver progress and results");
-DEFINE_bool(draw_projected_hub, true,
-            "If true, draw the projected hub when drawing an estimate");
+ABSL_FLAG(uint64_t, max_solver_iterations, 200,
+          "Maximum number of iterations for the ceres solver");
+ABSL_FLAG(bool, solver_output, false,
+          "If true, log the solver progress and results");
+ABSL_FLAG(bool, draw_projected_hub, true,
+          "If true, draw the projected hub when drawing an estimate");
 
 namespace y2022::vision {
 
@@ -231,26 +232,28 @@ void TargetEstimator::Solve(
 
   // Constrain the rotation to be around the localizer's, otherwise there can be
   // multiple solutions. There shouldn't be too much roll or pitch
-  if (FLAGS_freeze_roll) {
+  if (absl::GetFlag(FLAGS_freeze_roll)) {
     roll_ = roll_seed;
   }
   constexpr double kMaxRollDelta = 0.1;
-  SetBoundsOrFreeze(&roll_, FLAGS_freeze_roll, roll_seed - kMaxRollDelta,
-                    roll_seed + kMaxRollDelta, &problem);
+  SetBoundsOrFreeze(&roll_, absl::GetFlag(FLAGS_freeze_roll),
+                    roll_seed - kMaxRollDelta, roll_seed + kMaxRollDelta,
+                    &problem);
 
-  if (FLAGS_freeze_pitch) {
+  if (absl::GetFlag(FLAGS_freeze_pitch)) {
     pitch_ = pitch_seed;
   }
   constexpr double kMaxPitchDelta = 0.15;
-  SetBoundsOrFreeze(&pitch_, FLAGS_freeze_pitch, pitch_seed - kMaxPitchDelta,
-                    pitch_seed + kMaxPitchDelta, &problem);
+  SetBoundsOrFreeze(&pitch_, absl::GetFlag(FLAGS_freeze_pitch),
+                    pitch_seed - kMaxPitchDelta, pitch_seed + kMaxPitchDelta,
+                    &problem);
   // Constrain the yaw to where the target would be visible
   constexpr double kMaxYawDelta = M_PI / 4.0;
-  SetBoundsOrFreeze(&yaw_, FLAGS_freeze_yaw, M_PI - kMaxYawDelta,
+  SetBoundsOrFreeze(&yaw_, absl::GetFlag(FLAGS_freeze_yaw), M_PI - kMaxYawDelta,
                     M_PI + kMaxYawDelta, &problem);
 
   constexpr double kMaxHeightDelta = 0.1;
-  SetBoundsOrFreeze(&camera_height_, FLAGS_freeze_camera_height,
+  SetBoundsOrFreeze(&camera_height_, absl::GetFlag(FLAGS_freeze_camera_height),
                     camera_height_ - kMaxHeightDelta,
                     camera_height_ + kMaxHeightDelta, &problem);
 
@@ -261,15 +264,16 @@ void TargetEstimator::Solve(
 
   // Keep the angle between +/- half of the angle between piece of tape
   constexpr double kMaxAngle = ((2.0 * M_PI) / kNumPiecesOfTape) / 2.0;
-  SetBoundsOrFreeze(&angle_to_camera_, FLAGS_freeze_angle_to_camera, -kMaxAngle,
+  SetBoundsOrFreeze(&angle_to_camera_,
+                    absl::GetFlag(FLAGS_freeze_angle_to_camera), -kMaxAngle,
                     kMaxAngle, &problem);
 
   ceres::Solver::Options options;
-  options.minimizer_progress_to_stdout = FLAGS_solver_output;
+  options.minimizer_progress_to_stdout = absl::GetFlag(FLAGS_solver_output);
   options.gradient_tolerance = 1e-12;
   options.function_tolerance = 1e-16;
   options.parameter_tolerance = 1e-12;
-  options.max_num_iterations = FLAGS_max_solver_iterations;
+  options.max_num_iterations = absl::GetFlag(FLAGS_max_solver_iterations);
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 
@@ -302,7 +306,7 @@ void TargetEstimator::Solve(
       kSigmoidCapacity /
       (1.0 + kSigmoidScalar * std::exp(-kSigmoidGrowthRate * std_dev));
 
-  if (FLAGS_solver_output) {
+  if (absl::GetFlag(FLAGS_solver_output)) {
     LOG(INFO) << summary.FullReport();
 
     LOG(INFO) << "roll: " << roll_;
@@ -608,7 +612,7 @@ void TargetEstimator::DrawProjectedHub(
 }
 
 void TargetEstimator::DrawEstimate(cv::Mat view_image) const {
-  if (FLAGS_draw_projected_hub) {
+  if (absl::GetFlag(FLAGS_draw_projected_hub)) {
     // Draw projected hub
     const auto H_hub_camera = ComputeHubCameraTransform(
         roll_, pitch_, yaw_, distance_, angle_to_camera_, camera_height_);

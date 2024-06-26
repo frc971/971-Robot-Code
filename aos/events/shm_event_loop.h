@@ -12,7 +12,7 @@
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/stl_mutex/stl_mutex.h"
 
-DECLARE_string(application_name);
+ABSL_DECLARE_FLAG(std::string, application_name);
 
 namespace aos {
 namespace shm_event_loop_internal {

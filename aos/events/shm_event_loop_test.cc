@@ -2,7 +2,9 @@
 
 #include <string_view>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_param_test.h"
@@ -18,20 +20,26 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
  public:
   ShmEventLoopTestFactory() {
     // Clean up anything left there before.
-    unlink((FLAGS_shm_base + "/test/aos.TestMessage.v7").c_str());
-    unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v7").c_str());
-    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v7").c_str());
-    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v7").c_str());
-    unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v7").c_str());
-    unlink((FLAGS_shm_base + "/aos/aos.logging.LogMessageFbs.v7").c_str());
+    unlink(
+        (absl::GetFlag(FLAGS_shm_base) + "/test/aos.TestMessage.v7").c_str());
+    unlink(
+        (absl::GetFlag(FLAGS_shm_base) + "/test1/aos.TestMessage.v7").c_str());
+    unlink(
+        (absl::GetFlag(FLAGS_shm_base) + "/test2/aos.TestMessage.v7").c_str());
+    unlink(
+        (absl::GetFlag(FLAGS_shm_base) + "/test2/aos.TestMessage.v7").c_str());
+    unlink(
+        (absl::GetFlag(FLAGS_shm_base) + "/aos/aos.timing.Report.v7").c_str());
+    unlink((absl::GetFlag(FLAGS_shm_base) + "/aos/aos.logging.LogMessageFbs.v7")
+               .c_str());
   }
 
-  ~ShmEventLoopTestFactory() { FLAGS_override_hostname = ""; }
+  ~ShmEventLoopTestFactory() { absl::SetFlag(&FLAGS_override_hostname, ""); }
 
   ::std::unique_ptr<EventLoop> Make(std::string_view name) override {
     if (configuration()->has_nodes()) {
-      FLAGS_override_hostname =
-          std::string(my_node()->hostname()->string_view());
+      absl::SetFlag(&FLAGS_override_hostname,
+                    std::string(my_node()->hostname()->string_view()));
     }
     ::std::unique_ptr<ShmEventLoop> loop(new ShmEventLoop(configuration()));
     loop->set_name(name);
@@ -40,8 +48,8 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
 
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
     if (configuration()->has_nodes()) {
-      FLAGS_override_hostname =
-          std::string(my_node()->hostname()->string_view());
+      absl::SetFlag(&FLAGS_override_hostname,
+                    std::string(my_node()->hostname()->string_view()));
     }
     ::std::unique_ptr<ShmEventLoop> loop =
         ::std::unique_ptr<ShmEventLoop>(new ShmEventLoop(configuration()));

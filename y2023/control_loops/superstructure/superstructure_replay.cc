@@ -3,7 +3,7 @@
 // replayed, so that it can then be run through the plotting tool or analyzed
 // in some other way. The original superstructure status data will be on the
 // /original/superstructure channel.
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -15,16 +15,16 @@
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/superstructure.h"
 
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
-DEFINE_string(output_folder, "/tmp/superstructure_replay/",
-              "Logs all channels to the provided logfile.");
-DEFINE_string(arm_trajectories, "arm/arm_trajectories_generated.bfbs",
-              "The path to the generated arm trajectories bfbs file.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(std::string, output_folder, "/tmp/superstructure_replay/",
+          "Logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, arm_trajectories, "arm/arm_trajectories_generated.bfbs",
+          "The path to the generated arm trajectories bfbs file.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
 
   // open logfiles
   aos::logger::LogReader reader(
@@ -42,15 +42,15 @@ int main(int argc, char **argv) {
   aos::NodeEventLoopFactory *roborio =
       factory.GetNodeEventLoopFactory("roborio");
 
-  unlink(FLAGS_output_folder.c_str());
+  unlink(absl::GetFlag(FLAGS_output_folder).c_str());
   std::unique_ptr<aos::EventLoop> logger_event_loop =
       roborio->MakeEventLoop("logger");
   auto logger = std::make_unique<aos::logger::Logger>(logger_event_loop.get());
-  logger->StartLoggingOnRun(FLAGS_output_folder);
+  logger->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
 
   auto trajectories =
       y2023::control_loops::superstructure::Superstructure::GetArmTrajectories(
-          FLAGS_arm_trajectories);
+          absl::GetFlag(FLAGS_arm_trajectories));
 
   roborio->OnStartup([roborio, &trajectories]() {
     roborio->AlwaysStart<y2023::control_loops::superstructure::Superstructure>(

@@ -192,8 +192,9 @@ cc_test(
         "//aos/testing:googletest",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
         "//frc971/control_loops/drivetrain:trajectory_schema",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -216,8 +217,9 @@ cc_binary(
         "//frc971/control_loops/drivetrain:trajectory_generator",
         "//y2020:constants",
         "//y2020/control_loops/superstructure:superstructure_lib",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

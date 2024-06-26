@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <string>
 
+#include "absl/flags/flag.h"
+
 #include "aos/ipc_lib/shm_base.h"
 
 namespace aos::testing {
@@ -19,6 +21,8 @@ std::string TestTmpDirOr(std::string fallback) {
 
 std::string TestTmpDir() { return TestTmpDirOr("/tmp"); }
 
-void SetTestShmBase() { SetShmBase(TestTmpDirOr(FLAGS_shm_base)); }
+void SetTestShmBase() {
+  SetShmBase(TestTmpDirOr(absl::GetFlag(FLAGS_shm_base)));
+}
 
 }  // namespace aos::testing

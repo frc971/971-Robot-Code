@@ -9,6 +9,9 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 
 #include "aos/containers/error_list.h"
@@ -24,8 +27,8 @@
 #include "aos/events/logging/s3_file_operations.h"
 #endif
 
-DEFINE_bool(quiet_sorting, false,
-            "If true, sort with minimal messages about truncated files.");
+ABSL_FLAG(bool, quiet_sorting, false,
+          "If true, sort with minimal messages about truncated files.");
 
 namespace aos::logger {
 namespace {
@@ -388,7 +391,7 @@ void PartsSorter::PopulateFromFiles(
     std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
         ReadHeader(reader);
     if (!log_header) {
-      if (!FLAGS_quiet_sorting) {
+      if (!absl::GetFlag(FLAGS_quiet_sorting)) {
         LOG(WARNING) << "Skipping " << part.name << " without a header";
       }
       corrupted.emplace_back(part.name);
@@ -519,7 +522,7 @@ void PartsSorter::PopulateFromFiles(
       std::optional<SizePrefixedFlatbufferVector<MessageHeader>> first_message =
           ReadNthMessage(part.name, 0);
       if (!first_message) {
-        if (!FLAGS_quiet_sorting) {
+        if (!absl::GetFlag(FLAGS_quiet_sorting)) {
           LOG(WARNING) << "Skipping " << part.name << " without any messages";
         }
         corrupted.emplace_back(part.name);

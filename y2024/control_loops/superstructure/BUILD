@@ -136,8 +136,9 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/functional:bind_front",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

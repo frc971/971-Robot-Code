@@ -2,6 +2,7 @@
 #include <map>
 #include <random>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
@@ -18,23 +19,25 @@
 #include "y2022/vision/target_estimate_generated.h"
 #include "y2022/vision/target_estimator.h"
 
-DEFINE_string(capture, "",
-              "If set, capture a single image and save it to this filename.");
-DEFINE_string(channel, "/camera", "Channel name for the image.");
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-DEFINE_string(png_dir, "", "Path to a set of images to display.");
-DEFINE_string(png_pattern, "*", R"(Pattern to match pngs using '*'/'?'.)");
-DEFINE_string(calibration_node, "",
-              "If reading locally, use the calibration for this node");
-DEFINE_int32(
-    calibration_team_number, 971,
+ABSL_FLAG(std::string, capture, "",
+          "If set, capture a single image and save it to this filename.");
+ABSL_FLAG(std::string, channel, "/camera", "Channel name for the image.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
+ABSL_FLAG(std::string, png_dir, "", "Path to a set of images to display.");
+ABSL_FLAG(std::string, png_pattern, "*",
+          R"(Pattern to match pngs using '*'/'?'.)");
+ABSL_FLAG(std::string, calibration_node, "",
+          "If reading locally, use the calibration for this node");
+ABSL_FLAG(
+    int32_t, calibration_team_number, 971,
     "If reading locally, use the calibration for a node with this team number");
-DEFINE_uint64(skip, 0,
-              "Number of images to skip if doing local reading (png_dir set).");
-DEFINE_bool(show_features, true, "Show the blobs.");
-DEFINE_bool(display_estimation, false,
-            "If true, display the target estimation graphically");
-DEFINE_bool(sort_by_time, true, "If true, sort the images by time");
+ABSL_FLAG(uint64_t, skip, 0,
+          "Number of images to skip if doing local reading (png_dir set).");
+ABSL_FLAG(bool, show_features, true, "Show the blobs.");
+ABSL_FLAG(bool, display_estimation, false,
+          "If true, display the target estimation graphically");
+ABSL_FLAG(bool, sort_by_time, true, "If true, sort the images by time");
 
 namespace y2022::vision {
 namespace {
@@ -121,8 +124,8 @@ bool DisplayLoop() {
   cv::Mat bgr_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
   cv::cvtColor(image_color_mat, bgr_image, cv::COLOR_YUV2BGR_YUYV);
 
-  if (!FLAGS_capture.empty()) {
-    cv::imwrite(FLAGS_capture, bgr_image);
+  if (!absl::GetFlag(FLAGS_capture).empty()) {
+    cv::imwrite(absl::GetFlag(FLAGS_capture), bgr_image);
     return false;
   }
 
@@ -157,15 +160,16 @@ bool DisplayLoop() {
 
 void ViewerMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  image_fetcher =
-      event_loop.MakeFetcher<frc971::vision::CameraImage>(FLAGS_channel);
+  image_fetcher = event_loop.MakeFetcher<frc971::vision::CameraImage>(
+      absl::GetFlag(FLAGS_channel));
 
   target_estimate_fetcher =
-      event_loop.MakeFetcher<y2022::vision::TargetEstimate>(FLAGS_channel);
+      event_loop.MakeFetcher<y2022::vision::TargetEstimate>(
+          absl::GetFlag(FLAGS_channel));
 
   // Run the display loop
   event_loop.AddPhasedLoop(
@@ -199,11 +203,12 @@ size_t FindImageTimestamp(std::string_view filename) {
 
 void ViewerLocal() {
   std::vector<cv::String> file_list;
-  cv::glob(absl::StrFormat("%s/%s.png", FLAGS_png_dir, FLAGS_png_pattern),
+  cv::glob(absl::StrFormat("%s/%s.png", absl::GetFlag(FLAGS_png_dir),
+                           absl::GetFlag(FLAGS_png_pattern)),
            file_list, false);
 
   // Sort the images by timestamp
-  if (FLAGS_sort_by_time) {
+  if (absl::GetFlag(FLAGS_sort_by_time)) {
     std::sort(file_list.begin(), file_list.end(),
               [](std::string_view filename_1, std::string_view filename_2) {
                 return (FindImageTimestamp(filename_1) <
@@ -215,9 +220,9 @@ void ViewerLocal() {
       CalibrationData());
 
   const calibration::CameraCalibration *calibration =
-      CameraReader::FindCameraCalibration(&calibration_data.message(),
-                                          FLAGS_calibration_node,
-                                          FLAGS_calibration_team_number);
+      CameraReader::FindCameraCalibration(
+          &calibration_data.message(), absl::GetFlag(FLAGS_calibration_node),
+          absl::GetFlag(FLAGS_calibration_team_number));
   const auto intrinsics = CameraReader::CameraIntrinsics(calibration);
   const auto extrinsics = CameraReader::CameraExtrinsics(calibration);
   const auto dist_coeffs = CameraReader::CameraDistCoeffs(calibration);
@@ -228,7 +233,8 @@ void ViewerLocal() {
 
   TargetEstimator estimator(intrinsics, extrinsics);
 
-  for (auto it = file_list.begin() + FLAGS_skip; it < file_list.end(); it++) {
+  for (auto it = file_list.begin() + absl::GetFlag(FLAGS_skip);
+       it < file_list.end(); it++) {
     LOG(INFO) << "Reading file " << (it - file_list.begin()) << ": " << *it;
     cv::Mat image_mat =
         CameraReader::UndistortImage(cv::imread(it->c_str()), undistort_maps);
@@ -249,8 +255,9 @@ void ViewerLocal() {
               << ")";
 
     estimator.Solve(blob_result.filtered_stats,
-                    FLAGS_display_estimation ? std::make_optional(ret_image)
-                                             : std::nullopt);
+                    absl::GetFlag(FLAGS_display_estimation)
+                        ? std::make_optional(ret_image)
+                        : std::nullopt);
     if (blob_result.filtered_blobs.size() > 0) {
       estimator.DrawEstimate(ret_image);
       LOG(INFO) << "Read file " << (it - file_list.begin()) << ": " << *it;
@@ -277,7 +284,7 @@ void ViewerLocal() {
 // Quick and lightweight viewer for images
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  if (FLAGS_png_dir != "")
+  if (absl::GetFlag(FLAGS_png_dir) != "")
     y2022::vision::ViewerLocal();
   else
     y2022::vision::ViewerMain();

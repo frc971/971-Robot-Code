@@ -3,16 +3,18 @@
 #include <cstdarg>
 #include <cstdio>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 
-DEFINE_bool(enable_ftrace, false,
-            "If false, disable logging to /sys/kernel/tracing/trace_marker");
+ABSL_FLAG(bool, enable_ftrace, false,
+          "If false, disable logging to /sys/kernel/tracing/trace_marker");
 
 namespace aos {
 
 namespace {
 int MaybeCheckOpen(const char *file) {
-  if (!FLAGS_enable_ftrace) return -1;
+  if (!absl::GetFlag(FLAGS_enable_ftrace)) return -1;
   int result =
       open(absl::StrCat("/sys/kernel/tracing/", file).c_str(), O_WRONLY);
   if (result == -1) {
@@ -40,6 +42,13 @@ Ftrace::~Ftrace() {
   if (message_fd_ != -1) {
     PCHECK(close(on_fd_) == 0);
   }
+}
+
+void Ftrace::TurnOffOrDie() {
+  CHECK(on_fd_ != -1)
+      << ": Failed to open tracing_on earlier, cannot turn off tracing";
+  char zero = '0';
+  CHECK_EQ(write(on_fd_, &zero, 1), 1) << ": Failed to turn tracing off";
 }
 
 void Ftrace::FormatMessage(const char *format, ...) {

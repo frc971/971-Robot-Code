@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
@@ -9,9 +9,9 @@
 #include "aos/util/config_validator_config_generated.h"
 #include "aos/util/config_validator_lib.h"
 
-DEFINE_string(config, "", "Name of the config file to replay using.");
-DEFINE_string(validation_config, "{}",
-              "JSON config to use to validate the config.");
+ABSL_FLAG(std::string, config, "", "Name of the config file to replay using.");
+ABSL_FLAG(std::string, validation_config, "{}",
+          "JSON config to use to validate the config.");
 /* This binary is used to validate that all of the
    needed remote timestamps channels are in the config
    to log the timestamps.
@@ -23,14 +23,14 @@ DEFINE_string(validation_config, "{}",
    each one
    Reference superstructure_lib_test.cc*/
 TEST(ConfigValidatorTest, ReadConfig) {
-  ASSERT_TRUE(!FLAGS_config.empty());
+  ASSERT_TRUE(!absl::GetFlag(FLAGS_config).empty());
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   const aos::FlatbufferDetachedBuffer<aos::util::ConfigValidatorConfig>
       validator_config =
           aos::JsonToFlatbuffer<aos::util::ConfigValidatorConfig>(
-              FLAGS_validation_config);
+              absl::GetFlag(FLAGS_validation_config));
   aos::util::ConfigIsValid(&config.message(), &validator_config.message());
 }
 

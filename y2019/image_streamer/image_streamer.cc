@@ -4,8 +4,9 @@
 #include <fstream>
 #include <string>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
+#include "aos/init.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
@@ -24,13 +25,13 @@ using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
 using ::y2019::VisionControl;
 
-DEFINE_string(roborio_ip, "10.9.71.2", "RoboRIO IP Address");
-DEFINE_string(log, "",
-              "If non-empty, log images to the specified prefix with the image "
-              "index appended to the filename");
-DEFINE_bool(single_camera, true, "If true, only use video0");
-DEFINE_int32(camera0_exposure, 600, "Exposure for video0");
-DEFINE_int32(camera1_exposure, 600, "Exposure for video1");
+ABSL_FLAG(std::string, roborio_ip, "10.9.71.2", "RoboRIO IP Address");
+ABSL_FLAG(std::string, log, "",
+          "If non-empty, log images to the specified prefix with the image "
+          "index appended to the filename");
+ABSL_FLAG(bool, single_camera, true, "If true, only use video0");
+ABSL_FLAG(int32_t, camera0_exposure, 600, "Exposure for video0");
+ABSL_FLAG(int32_t, camera1_exposure, 600, "Exposure for video1");
 
 aos::vision::DataRef mjpg_header =
     "HTTP/1.0 200 OK\r\n"
@@ -252,7 +253,7 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
         tcp_server_(tcp_server),
         frame_callback_(frame_callback) {
     if (log) {
-      log_.reset(new BlobLog(FLAGS_log.c_str(), ".dat"));
+      log_.reset(new BlobLog(absl::GetFlag(FLAGS_log).c_str(), ".dat"));
     }
   }
 
@@ -307,30 +308,31 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
 };
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, false);
+  aos::InitGoogle(&argc, &argv);
+
   TCPServer<MjpegDataSocket> tcp_server_(80);
   aos::vision::CameraParams params0;
-  params0.set_exposure(FLAGS_camera0_exposure);
+  params0.set_exposure(absl::GetFlag(FLAGS_camera0_exposure));
   params0.set_brightness(-40);
   params0.set_width(320);
   // params0.set_fps(10);
   params0.set_height(240);
 
   aos::vision::CameraParams params1 = params0;
-  params1.set_exposure(FLAGS_camera1_exposure);
+  params1.set_exposure(absl::GetFlag(FLAGS_camera1_exposure));
 
   ::y2019::VisionStatus vision_status;
   AOS_LOG(INFO,
           "The UDP socket should be on port 5001 to 10.9.71.2 for "
           "the competition robot.\n");
   AOS_LOG(INFO, "Starting UDP socket on port 5001 to %s\n",
-          FLAGS_roborio_ip.c_str());
+          absl::GetFlag(FLAGS_roborio_ip).c_str());
   ::aos::events::ProtoTXUdpSocket<::y2019::VisionStatus> status_socket(
-      FLAGS_roborio_ip.c_str(), 5001);
+      absl::GetFlag(FLAGS_roborio_ip).c_str(), 5001);
 
   ::std::unique_ptr<CameraStream> camera1;
   ::std::unique_ptr<CameraStream> camera0(new CameraStream(
-      params0, "/dev/video0", &tcp_server_, !FLAGS_log.empty(),
+      params0, "/dev/video0", &tcp_server_, !absl::GetFlag(FLAGS_log).empty(),
       [&camera0, &status_socket, &vision_status]() {
         vision_status.set_low_frame_count(vision_status.low_frame_count() + 1);
         AOS_LOG(INFO, "Got a frame cam0\n");
@@ -338,7 +340,7 @@ int main(int argc, char **argv) {
           status_socket.Send(vision_status);
         }
       }));
-  if (!FLAGS_single_camera) {
+  if (!absl::GetFlag(FLAGS_single_camera)) {
     camera1.reset(new CameraStream(
         params1, "/dev/video1", &tcp_server_, false,
         [&camera1, &status_socket, &vision_status]() {

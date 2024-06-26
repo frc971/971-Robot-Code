@@ -10,7 +10,9 @@
 #include <iterator>
 #include <stdexcept>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/aos_logging.h"
 #include "aos/events/epoll.h"
@@ -46,12 +48,12 @@ const char *Filename(const char *path) {
 // groups or others).
 // See https://man7.org/linux/man-pages/man2/umask.2.html for more details.
 // WITH THE DEFAULT UMASK YOU WONT ACTUALLY GET THESE PERMISSIONS :)
-DEFINE_uint32(permissions, 0770,
-              "Permissions to make shared memory files and folders, "
-              "affected by the process's umask. "
-              "See shm_event_loop.cc for more details.");
-DEFINE_string(application_name, Filename(program_invocation_name),
-              "The application name");
+ABSL_FLAG(uint32_t, permissions, 0770,
+          "Permissions to make shared memory files and folders, "
+          "affected by the process's umask. "
+          "See shm_event_loop.cc for more details.");
+ABSL_FLAG(std::string, application_name, Filename(program_invocation_name),
+          "The application name");
 
 namespace aos {
 
@@ -80,8 +82,8 @@ void IgnoreWakeupSignal() {
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
     : EventLoop(configuration),
       boot_uuid_(UUID::BootUUID()),
-      shm_base_(FLAGS_shm_base),
-      name_(FLAGS_application_name),
+      shm_base_(absl::GetFlag(FLAGS_shm_base)),
+      name_(absl::GetFlag(FLAGS_application_name)),
       node_(MaybeMyNode(configuration)) {
   // Ignore the wakeup signal by default. Otherwise, we have race conditions on
   // shutdown where a wakeup signal will uncleanly terminate the process.
@@ -103,7 +105,7 @@ class SimpleShmFetcher {
                             const Channel *channel)
       : event_loop_(event_loop),
         channel_(channel),
-        lockless_queue_memory_(shm_base, FLAGS_permissions,
+        lockless_queue_memory_(shm_base, absl::GetFlag(FLAGS_permissions),
                                event_loop->configuration(), channel),
         reader_(lockless_queue_memory_.queue()) {
     context_.data = nullptr;
@@ -430,7 +432,7 @@ class ShmSender : public RawSender {
   explicit ShmSender(std::string_view shm_base, EventLoop *event_loop,
                      const Channel *channel)
       : RawSender(event_loop, channel),
-        lockless_queue_memory_(shm_base, FLAGS_permissions,
+        lockless_queue_memory_(shm_base, absl::GetFlag(FLAGS_permissions),
                                event_loop->configuration(), channel),
         lockless_queue_sender_(
             VerifySender(ipc_lib::LocklessQueueSender::Make(

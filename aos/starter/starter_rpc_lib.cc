@@ -3,11 +3,12 @@
 #include <algorithm>
 #include <ostream>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #include "aos/events/context.h"
 #include "aos/events/shm_event_loop.h"

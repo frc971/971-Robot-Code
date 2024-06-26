@@ -152,8 +152,9 @@ cc_library(
         ":superstructure_status_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/functional:bind_front",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

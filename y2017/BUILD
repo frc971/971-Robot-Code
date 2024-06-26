@@ -21,8 +21,9 @@ cc_library(
         "//y2017/control_loops/superstructure/hood:hood_plants",
         "//y2017/control_loops/superstructure/intake:intake_plants",
         "//y2017/control_loops/superstructure/shooter:shooter_plants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

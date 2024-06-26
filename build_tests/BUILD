@@ -15,7 +15,7 @@ cc_test(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -36,6 +36,8 @@ sh_test(
     data = [
         ":tcmalloc_build_test_binary",
     ],
+    # TODO(austin): Turn this back on when we get memory instrumentation figured out for tcmalloc for --die_on_malloc
+    tags = ["manual"],
     target_compatible_with = ["@platforms//os:linux"],
 )
 

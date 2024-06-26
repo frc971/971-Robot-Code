@@ -1,8 +1,9 @@
 #ifndef FRC971_CONSTANTS_CONSTANTS_SENDER_H_
 #define FRC971_CONSTANTS_CONSTANTS_SENDER_H_
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"

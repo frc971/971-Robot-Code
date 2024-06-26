@@ -6,6 +6,9 @@
 #include <ostream>
 #include <set>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "flatbuffers/buffer.h"
@@ -15,9 +18,6 @@
 #include "flatbuffers/reflection_generated.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
-#include "glog/vlog_is_on.h"
 #include "lz4/lz4frame.h"
 #include "nlohmann/json.hpp"
 
@@ -26,14 +26,14 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_uint64(mcap_chunk_size, 10'000'000,
-              "Size, in bytes, of individual MCAP chunks");
-DEFINE_bool(fetch, false,
-            "Whether to fetch most recent messages at start of logfile. Turn "
-            "this on if there are, e.g., one-time messages sent before the "
-            "start of the logfile that you need access to. Turn it off if you "
-            "don't want to deal with having messages that have timestamps that "
-            "may be arbitrarily far before any other interesting messages.");
+ABSL_FLAG(uint64_t, mcap_chunk_size, 10'000'000,
+          "Size, in bytes, of individual MCAP chunks");
+ABSL_FLAG(bool, fetch, false,
+          "Whether to fetch most recent messages at start of logfile. Turn "
+          "this on if there are, e.g., one-time messages sent before the "
+          "start of the logfile that you need access to. Turn it off if you "
+          "don't want to deal with having messages that have timestamps that "
+          "may be arbitrarily far before any other interesting messages.");
 
 namespace aos {
 
@@ -246,13 +246,13 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
             ChunkStatus *chunk = &current_chunks_[id];
             WriteMessage(id, channel, context, chunk);
             if (static_cast<uint64_t>(chunk->data.tellp()) >
-                FLAGS_mcap_chunk_size) {
+                absl::GetFlag(FLAGS_mcap_chunk_size)) {
               WriteChunk(chunk);
             }
           });
       fetchers_[id] = event_loop_->MakeRawFetcher(channel);
       event_loop_->OnRun([this, id, channel]() {
-        if (FLAGS_fetch && fetchers_[id]->Fetch()) {
+        if (absl::GetFlag(FLAGS_fetch) && fetchers_[id]->Fetch()) {
           WriteMessage(id, channel, fetchers_[id]->context(),
                        &current_chunks_[id]);
         }

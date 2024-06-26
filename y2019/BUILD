@@ -50,8 +50,9 @@ cc_library(
         "//y2019/control_loops/superstructure/stilts:stilts_plants",
         "//y2019/control_loops/superstructure/wrist:wrist_plants",
         "//y2019/vision:constants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

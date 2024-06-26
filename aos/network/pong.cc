@@ -1,19 +1,19 @@
 #include <chrono>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/log.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/network/sctp_client.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config.");
-DEFINE_uint32(port, 1323, "Port to pingpong on");
-DEFINE_string(target, "vpu0-0a", "Host to connect to");
-DEFINE_uint32(rx_size, 1000000,
-              "RX buffer size to set the max size to be in bytes.");
-DEFINE_uint32(size, 1000, "Size of data to send in bytes");
-DEFINE_uint32(ttl, 0, "TTL in milliseconds");
+ABSL_FLAG(std::string, config, "aos_config.json", "Path to the config.");
+ABSL_FLAG(uint32_t, port, 1323, "Port to pingpong on");
+ABSL_FLAG(std::string, target, "vpu0-0a", "Host to connect to");
+ABSL_FLAG(uint32_t, rx_size, 1000000,
+          "RX buffer size to set the max size to be in bytes.");
+ABSL_FLAG(uint32_t, size, 1000, "Size of data to send in bytes");
+ABSL_FLAG(uint32_t, ttl, 0, "TTL in milliseconds");
 
 namespace aos {
 namespace message_bridge {
@@ -23,9 +23,15 @@ namespace chrono = std::chrono;
 class PingClient {
  public:
   PingClient(aos::ShmEventLoop *event_loop)
-      : event_loop_(event_loop), client_(FLAGS_target, FLAGS_port, 2, "::", 0) {
-    client_.SetMaxReadSize(std::max(FLAGS_rx_size, FLAGS_size) + 100);
-    client_.SetMaxWriteSize(std::max(FLAGS_rx_size, FLAGS_size) + 100);
+      : event_loop_(event_loop),
+        client_(absl::GetFlag(FLAGS_target), absl::GetFlag(FLAGS_port), 2,
+                "::", 0) {
+    client_.SetMaxReadSize(
+        std::max(absl::GetFlag(FLAGS_rx_size), absl::GetFlag(FLAGS_size)) +
+        100);
+    client_.SetMaxWriteSize(
+        std::max(absl::GetFlag(FLAGS_rx_size), absl::GetFlag(FLAGS_size)) +
+        100);
 
     timer_ = event_loop_->AddTimer([this]() { Timer(); });
 
@@ -45,9 +51,9 @@ class PingClient {
   sctp_assoc_t sac_assoc_id_ = 0;
 
   void Timer() {
-    std::string data(FLAGS_size, 'a');
+    std::string data(absl::GetFlag(FLAGS_size), 'a');
 
-    if (client_.Send(0, data, FLAGS_ttl)) {
+    if (client_.Send(0, data, absl::GetFlag(FLAGS_ttl))) {
       LOG(INFO) << "Sent " << data.size();
     } else {
       PLOG(ERROR) << "Failed to send";
@@ -119,7 +125,7 @@ class PingClient {
 
 int Main() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
   PingClient server(&event_loop);

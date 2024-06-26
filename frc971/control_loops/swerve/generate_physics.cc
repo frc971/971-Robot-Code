@@ -12,26 +12,30 @@
 #include <numbers>
 #include <utility>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/substitute.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/init.h"
 #include "aos/util/file.h"
 #include "frc971/control_loops/swerve/motors.h"
 
-DEFINE_string(output_base, "",
-              "Path to strip off the front of the output paths.");
-DEFINE_string(cc_output_path, "", "Path to write generated cc code to");
-DEFINE_string(h_output_path, "", "Path to write generated header code to");
-DEFINE_string(py_output_path, "", "Path to write generated py code to");
-DEFINE_string(casadi_py_output_path, "",
-              "Path to write casadi generated py code to");
+ABSL_FLAG(std::string, output_base, "",
+          "Path to strip off the front of the output paths.");
+ABSL_FLAG(std::string, cc_output_path, "",
+          "Path to write generated cc code to");
+ABSL_FLAG(std::string, h_output_path, "",
+          "Path to write generated header code to");
+ABSL_FLAG(std::string, py_output_path, "",
+          "Path to write generated py code to");
+ABSL_FLAG(std::string, casadi_py_output_path, "",
+          "Path to write casadi generated py code to");
 
-DEFINE_bool(symbolic, false, "If true, write everything out symbolically.");
+ABSL_FLAG(bool, symbolic, false, "If true, write everything out symbolically.");
 
 using SymEngine::abs;
 using SymEngine::add;
@@ -100,7 +104,7 @@ class SwerveSimulation {
     auto fy = symbol("fy");
     auto moment = symbol("moment");
 
-    if (FLAGS_symbolic) {
+    if (absl::GetFlag(FLAGS_symbolic)) {
       Cx_ = symbol("Cx");
       Cy_ = symbol("Cy");
 
@@ -335,7 +339,8 @@ class SwerveSimulation {
     std::vector<std::string> result_h;
 
     std::string_view include_guard_stripped = h_path;
-    CHECK(absl::ConsumePrefix(&include_guard_stripped, FLAGS_output_base));
+    CHECK(absl::ConsumePrefix(&include_guard_stripped,
+                              absl::GetFlag(FLAGS_output_base)));
     std::string include_guard =
         absl::StrReplaceAll(absl::AsciiStrToUpper(include_guard_stripped),
                             {{"/", "_"}, {".", "_"}});
@@ -934,14 +939,16 @@ int main(int argc, char **argv) {
 
   frc971::control_loops::swerve::SwerveSimulation sim;
 
-  if (!FLAGS_cc_output_path.empty() && !FLAGS_h_output_path.empty()) {
-    sim.Write(FLAGS_cc_output_path, FLAGS_h_output_path);
+  if (!absl::GetFlag(FLAGS_cc_output_path).empty() &&
+      !absl::GetFlag(FLAGS_h_output_path).empty()) {
+    sim.Write(absl::GetFlag(FLAGS_cc_output_path),
+              absl::GetFlag(FLAGS_h_output_path));
   }
-  if (!FLAGS_py_output_path.empty()) {
-    sim.WritePy(FLAGS_py_output_path);
+  if (!absl::GetFlag(FLAGS_py_output_path).empty()) {
+    sim.WritePy(absl::GetFlag(FLAGS_py_output_path));
   }
-  if (!FLAGS_casadi_py_output_path.empty()) {
-    sim.WriteCasadi(FLAGS_casadi_py_output_path);
+  if (!absl::GetFlag(FLAGS_casadi_py_output_path).empty()) {
+    sim.WriteCasadi(absl::GetFlag(FLAGS_casadi_py_output_path));
   }
 
   return 0;

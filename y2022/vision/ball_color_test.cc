@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
 #include "gtest/gtest.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -11,9 +11,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/test_logging.h"
 #include "y2022/constants.h"
-
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
 
 namespace y2022::vision::testing {
 

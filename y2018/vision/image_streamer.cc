@@ -4,8 +4,9 @@
 #include <fstream>
 #include <string>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
+#include "aos/init.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
@@ -23,9 +24,9 @@ using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
 using ::y2018::VisionControl;
 
-DEFINE_bool(single_camera, true, "If true, only use video0");
-DEFINE_int32(camera0_exposure, 300, "Exposure for video0");
-DEFINE_int32(camera1_exposure, 300, "Exposure for video1");
+ABSL_FLAG(bool, single_camera, true, "If true, only use video0");
+ABSL_FLAG(int32_t, camera0_exposure, 300, "Exposure for video0");
+ABSL_FLAG(int32_t, camera1_exposure, 300, "Exposure for video1");
 
 aos::vision::DataRef mjpg_header =
     "HTTP/1.0 200 OK\r\n"
@@ -288,18 +289,18 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
 };
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, false);
+  aos::InitGoogle(&argc, &argv);
 
   TCPServer<MjpegDataSocket> tcp_server_(80);
   aos::vision::CameraParams params0;
-  params0.set_exposure(FLAGS_camera0_exposure);
+  params0.set_exposure(absl::GetFlag(FLAGS_camera0_exposure));
   params0.set_brightness(-40);
   params0.set_width(320);
   // params0.set_fps(10);
   params0.set_height(240);
 
   aos::vision::CameraParams params1 = params0;
-  params1.set_exposure(FLAGS_camera1_exposure);
+  params1.set_exposure(absl::GetFlag(FLAGS_camera1_exposure));
 
   ::y2018::VisionStatus vision_status;
   ::aos::events::ProtoTXUdpSocket<::y2018::VisionStatus> status_socket(
@@ -315,7 +316,7 @@ int main(int argc, char **argv) {
           status_socket.Send(vision_status);
         }
       }));
-  if (!FLAGS_single_camera) {
+  if (!absl::GetFlag(FLAGS_single_camera)) {
     camera1.reset(new CameraStream(
         // params,
         // "/dev/v4l/by-path/platform-tegra-xhci-usb-0:3.1:1.0-video-index0",

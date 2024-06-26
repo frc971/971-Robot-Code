@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include <Eigen/Dense>
 
 #include "aos/vision/blob/move_scale.h"
@@ -19,7 +19,7 @@ using aos::vision::RangeImage;
 using aos::vision::Segment;
 using aos::vision::Vector;
 
-DEFINE_int32(camera, 10, "The camera to use the intrinsics for");
+ABSL_FLAG(int32_t, camera, 10, "The camera to use the intrinsics for");
 
 namespace y2019::vision {
 

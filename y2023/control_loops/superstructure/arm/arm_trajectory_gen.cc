@@ -1,8 +1,9 @@
 #include <iostream>
 #include <memory>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffers.h"
@@ -24,7 +25,7 @@ using y2023::control_loops::superstructure::arm::NSpline;
 using y2023::control_loops::superstructure::arm::Path;
 using y2023::control_loops::superstructure::arm::Trajectory;
 
-DEFINE_string(output, "", "Defines the location of the output file");
+ABSL_FLAG(std::string, output, "", "Defines the location of the output file");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -193,5 +194,5 @@ int main(int argc, char **argv) {
       fbb.Release());
 
   // This writes to a binary file so we can cache the optimization results
-  aos::WriteFlatbufferToFile(FLAGS_output, detatched_buffer);
+  aos::WriteFlatbufferToFile(absl::GetFlag(FLAGS_output), detatched_buffer);
 }

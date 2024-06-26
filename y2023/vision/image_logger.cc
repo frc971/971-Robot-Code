@@ -1,8 +1,10 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
@@ -11,16 +13,16 @@
 #include "aos/logging/log_namer.h"
 #include "frc971/input/joystick_state_generated.h"
 
-DEFINE_string(config, "aos_config.json", "Config file to use.");
+ABSL_FLAG(std::string, config, "aos_config.json", "Config file to use.");
 
-DEFINE_double(rotate_every, 0.0,
-              "If set, rotate the logger after this many seconds");
-DECLARE_int32(flush_size);
-DEFINE_double(disabled_time, 5.0,
-              "Continue logging if disabled for this amount of time or less");
-DEFINE_bool(direct, false,
-            "If true, write using O_DIRECT and write 512 byte aligned blocks "
-            "whenever possible.");
+ABSL_FLAG(double, rotate_every, 0.0,
+          "If set, rotate the logger after this many seconds");
+ABSL_DECLARE_FLAG(int32_t, flush_size);
+ABSL_FLAG(double, disabled_time, 5.0,
+          "Continue logging if disabled for this amount of time or less");
+ABSL_FLAG(bool, direct, false,
+          "If true, write using O_DIRECT and write 512 byte aligned blocks "
+          "whenever possible.");
 
 std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
@@ -32,19 +34,20 @@ std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
   }
 
   return std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
-      event_loop, std::make_unique<aos::logger::RenamableFileBackend>(
-                      absl::StrCat(log_name.value(), "/"), FLAGS_direct));
+      event_loop,
+      std::make_unique<aos::logger::RenamableFileBackend>(
+          absl::StrCat(log_name.value(), "/"), absl::GetFlag(FLAGS_direct)));
 }
 
 int main(int argc, char *argv[]) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "This program provides a simple logger binary that logs all SHMEM data "
       "directly to a file specified at the command line when the robot is "
       "enabled and for a bit of time after.");
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
@@ -56,11 +59,12 @@ int main(int argc, char *argv[]) {
       event_loop.monotonic_now();
   aos::logger::Logger logger(&event_loop);
 
-  if (FLAGS_rotate_every != 0.0) {
+  if (absl::GetFlag(FLAGS_rotate_every) != 0.0) {
     logger.set_on_logged_period([&](aos::monotonic_clock::time_point) {
       const auto now = event_loop.monotonic_now();
-      if (logging && now > last_rotation_time + std::chrono::duration<double>(
-                                                    FLAGS_rotate_every)) {
+      if (logging &&
+          now > last_rotation_time + std::chrono::duration<double>(
+                                         absl::GetFlag(FLAGS_rotate_every))) {
         logger.Rotate();
         last_rotation_time = now;
       }
@@ -95,7 +99,8 @@ int main(int argc, char *argv[]) {
           last_rotation_time = event_loop.monotonic_now();
         } else if (logging && !enabled &&
                    (timestamp - last_disable_time) >
-                       std::chrono::duration<double>(FLAGS_disabled_time)) {
+                       std::chrono::duration<double>(
+                           absl::GetFlag(FLAGS_disabled_time))) {
           // Stop logging if we've been disabled for a non-negligible amount of
           // time
           LOG(INFO) << "Stopping logging";

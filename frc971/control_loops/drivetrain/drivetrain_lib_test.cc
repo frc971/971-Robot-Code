@@ -3,7 +3,7 @@
 #include <chrono>
 #include <memory>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -24,8 +24,8 @@
 #include "frc971/control_loops/polytope.h"
 #include "frc971/queues/gyro_generated.h"
 
-DEFINE_string(output_file, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_file, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -65,11 +65,11 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
     set_send_delay(chrono::nanoseconds(0));
     set_battery_voltage(12.0);
 
-    if (!FLAGS_output_file.empty()) {
-      unlink(FLAGS_output_file.c_str());
+    if (!absl::GetFlag(FLAGS_output_file).empty()) {
+      unlink(absl::GetFlag(FLAGS_output_file).c_str());
       logger_event_loop_ = MakeEventLoop("logger");
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_file));
     }
 
     // Run for enough time to allow the gyro/imu zeroing code to run.

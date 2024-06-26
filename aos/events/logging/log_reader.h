@@ -8,9 +8,10 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/condition.h"
 #include "aos/events/event_loop.h"

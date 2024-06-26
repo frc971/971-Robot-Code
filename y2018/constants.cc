@@ -9,7 +9,8 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"

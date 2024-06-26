@@ -12,9 +12,6 @@
 #include "y2022_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
-
 namespace y2022_bot3::control_loops::superstructure::testing {
 namespace chrono = std::chrono;
 

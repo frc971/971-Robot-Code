@@ -1,9 +1,11 @@
+#include "absl/flags/flag.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "y2023/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(arm_trajectories, "arm_trajectories_generated.bfbs",
-              "The path to the generated arm trajectories bfbs file.");
+ABSL_FLAG(std::string, arm_trajectories, "arm_trajectories_generated.bfbs",
+          "The path to the generated arm trajectories bfbs file.");
 
 using y2023::control_loops::superstructure::Superstructure;
 using y2023::control_loops::superstructure::arm::ArmTrajectories;
@@ -20,7 +22,7 @@ int main(int argc, char **argv) {
 
   auto trajectories =
       y2023::control_loops::superstructure::Superstructure::GetArmTrajectories(
-          FLAGS_arm_trajectories);
+          absl::GetFlag(FLAGS_arm_trajectories));
 
   std::shared_ptr<const y2023::constants::Values> values =
       std::make_shared<const y2023::constants::Values>(

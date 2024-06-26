@@ -14,10 +14,11 @@
 #include <map>
 #include <thread>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/events/glib_main_loop.h"
 #include "aos/events/shm_event_loop.h"
@@ -30,27 +31,28 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-DEFINE_string(config, "aos_config.json",
-              "Name of the config file to replay using.");
-DEFINE_string(device, "/dev/video0",
-              "Camera fd. Ignored if reading from channel");
-DEFINE_string(data_dir, "image_streamer_www",
-              "Directory to serve data files from");
-DEFINE_bool(publish_images, true,
-            "If true, publish images read from v4l2 to /camera.");
-DEFINE_int32(width, 400, "Image width");
-DEFINE_int32(height, 300, "Image height");
-DEFINE_int32(framerate, 25, "Framerate (FPS)");
-DEFINE_int32(brightness, 50, "Camera brightness");
-DEFINE_int32(exposure, 300, "Manual exposure");
-DEFINE_int32(bitrate, 500000, "H264 encode bitrate");
-DEFINE_int32(streaming_port, 1180, "Port to stream images on with seasocks");
-DEFINE_int32(min_port, 5800, "Min rtp port");
-DEFINE_int32(max_port, 5810, "Max rtp port");
-DEFINE_string(listen_on, "",
-              "Channel on which to receive frames from. Used in place of "
-              "internal V4L2 reader. Note: width and height MUST match the "
-              "expected size of channel images.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Name of the config file to replay using.");
+ABSL_FLAG(std::string, device, "/dev/video0",
+          "Camera fd. Ignored if reading from channel");
+ABSL_FLAG(std::string, data_dir, "image_streamer_www",
+          "Directory to serve data files from");
+ABSL_FLAG(bool, publish_images, true,
+          "If true, publish images read from v4l2 to /camera.");
+ABSL_FLAG(int32_t, width, 400, "Image width");
+ABSL_FLAG(int32_t, height, 300, "Image height");
+ABSL_FLAG(int32_t, framerate, 25, "Framerate (FPS)");
+ABSL_FLAG(int32_t, brightness, 50, "Camera brightness");
+ABSL_FLAG(int32_t, exposure, 300, "Manual exposure");
+ABSL_FLAG(int32_t, bitrate, 500000, "H264 encode bitrate");
+ABSL_FLAG(int32_t, streaming_port, 1180,
+          "Port to stream images on with seasocks");
+ABSL_FLAG(int32_t, min_port, 5800, "Min rtp port");
+ABSL_FLAG(int32_t, max_port, 5810, "Max rtp port");
+ABSL_FLAG(std::string, listen_on, "",
+          "Channel on which to receive frames from. Used in place of "
+          "internal V4L2 reader. Note: width and height MUST match the "
+          "expected size of channel images.");
 
 class Connection;
 
@@ -87,9 +89,9 @@ class V4L2Source : public GstSampleSource {
     // client since we don't expect more than 1 or 2.
 
     std::string exposure;
-    if (FLAGS_exposure > 0) {
+    if (absl::GetFlag(FLAGS_exposure) > 0) {
       exposure = absl::StrFormat(",auto_exposure=1,exposure_time_absolute=%d",
-                                 FLAGS_exposure);
+                                 absl::GetFlag(FLAGS_exposure));
     }
 
     pipeline_ = gst_parse_launch(
@@ -100,8 +102,10 @@ class V4L2Source : public GstSampleSource {
                         "name=appsink "
                         "emit-signals=true sync=false async=false "
                         "caps=video/x-raw,format=YUY2",
-                        FLAGS_device, FLAGS_brightness, exposure, FLAGS_width,
-                        FLAGS_height, FLAGS_framerate)
+                        absl::GetFlag(FLAGS_device),
+                        absl::GetFlag(FLAGS_brightness), exposure,
+                        absl::GetFlag(FLAGS_width), absl::GetFlag(FLAGS_height),
+                        absl::GetFlag(FLAGS_framerate))
             .c_str(),
         &error);
 
@@ -157,7 +161,7 @@ class ChannelSource : public GstSampleSource {
                 std::function<void(GstSample *)> callback)
       : callback_(std::move(callback)) {
     event_loop->MakeWatcher(
-        FLAGS_listen_on,
+        absl::GetFlag(FLAGS_listen_on),
         [this](const frc971::vision::CameraImage &image) { OnImage(image); });
   }
 
@@ -167,8 +171,8 @@ class ChannelSource : public GstSampleSource {
       VLOG(2) << "Skipping CameraImage with no data";
       return;
     }
-    CHECK_EQ(image.rows(), FLAGS_height);
-    CHECK_EQ(image.cols(), FLAGS_width);
+    CHECK_EQ(image.rows(), absl::GetFlag(FLAGS_height));
+    CHECK_EQ(image.cols(), absl::GetFlag(FLAGS_width));
 
     GBytes *bytes = g_bytes_new(image.data()->data(), image.data()->size());
     GstBuffer *buffer = gst_buffer_new_wrapped_bytes(bytes);
@@ -282,8 +286,8 @@ WebsocketHandler::WebsocketHandler(aos::ShmEventLoop *event_loop,
       server_(server),
       manual_restart_handle_(
           event_loop_->AddTimer([this]() { event_loop_->Exit(); })) {
-  if (FLAGS_listen_on.empty()) {
-    if (FLAGS_publish_images) {
+  if (absl::GetFlag(FLAGS_listen_on).empty()) {
+    if (absl::GetFlag(FLAGS_publish_images)) {
       sender_ = event_loop->MakeSender<frc971::vision::CameraImage>("/camera");
     }
     source_ =
@@ -377,7 +381,8 @@ Connection::Connection(::seasocks::WebSocket *sock, ::seasocks::Server *server)
           "application/"
           "x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000 !"
           "webrtcbin. ",
-          FLAGS_width, FLAGS_height, FLAGS_bitrate / 1000)
+          absl::GetFlag(FLAGS_width), absl::GetFlag(FLAGS_height),
+          absl::GetFlag(FLAGS_bitrate) / 1000)
           .c_str(),
       &error);
 
@@ -415,8 +420,8 @@ Connection::Connection(::seasocks::WebSocket *sock, ::seasocks::Server *server)
     g_object_get(G_OBJECT(webrtcbin_), "ice-agent", &ice, nullptr);
     CHECK(ice != nullptr);
 
-    g_object_set(ice, "min-rtp-port", FLAGS_min_port, "max-rtp-port",
-                 FLAGS_max_port, nullptr);
+    g_object_set(ice, "min-rtp-port", absl::GetFlag(FLAGS_min_port),
+                 "max-rtp-port", absl::GetFlag(FLAGS_max_port), nullptr);
 
     // We don't need upnp on a local network.
     {
@@ -628,7 +633,7 @@ int main(int argc, char **argv) {
   gst_init(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
   aos::ShmEventLoop event_loop(&config.message());
 
   {
@@ -637,14 +642,14 @@ int main(int argc, char **argv) {
     seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
         new ::aos::seasocks::SeasocksLogger(seasocks::Logger::Level::Info)));
 
-    LOG(INFO) << "Serving from " << FLAGS_data_dir;
+    LOG(INFO) << "Serving from " << absl::GetFlag(FLAGS_data_dir);
 
     auto websocket_handler =
         std::make_shared<WebsocketHandler>(&event_loop, &server);
     server.addWebSocketHandler("/ws", websocket_handler);
 
-    server.startListening(FLAGS_streaming_port);
-    server.setStaticPath(FLAGS_data_dir.c_str());
+    server.startListening(absl::GetFlag(FLAGS_streaming_port));
+    server.setStaticPath(absl::GetFlag(FLAGS_data_dir).c_str());
 
     aos::internal::EPoll *epoll = event_loop.epoll();
 

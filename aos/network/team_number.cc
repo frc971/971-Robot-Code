@@ -6,12 +6,14 @@
 #include <cinttypes>
 #include <cstdlib>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 
-DEFINE_string(
-    override_hostname, "",
-    "If set, this forces the hostname of this node to be the provided "
-    "hostname.");
+ABSL_FLAG(std::string, override_hostname, "",
+          "If set, this forces the hostname of this node to be the provided "
+          "hostname.");
 
 namespace aos::network {
 namespace team_number_internal {
@@ -106,13 +108,13 @@ uint16_t DoGetTeamNumber() {
 }  // namespace
 
 ::std::string GetHostname() {
-  if (FLAGS_override_hostname.empty()) {
+  if (absl::GetFlag(FLAGS_override_hostname).empty()) {
     char buf[256];
     buf[sizeof(buf) - 1] = '\0';
     PCHECK(gethostname(buf, sizeof(buf) - 1) == 0);
     return buf;
   } else {
-    return FLAGS_override_hostname;
+    return absl::GetFlag(FLAGS_override_hostname);
   }
 }
 

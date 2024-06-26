@@ -4,9 +4,10 @@
 #include <cstdio>
 #include <string_view>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
-#include "glog/logging.h"
 
 #include "aos/flatbuffer_utils.h"
 #include "aos/json_tokenizer.h"

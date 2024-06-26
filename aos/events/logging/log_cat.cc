@@ -6,8 +6,9 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/escaping.h"
-#include "gflags/gflags.h"
 
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
@@ -17,52 +18,52 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/sha256.h"
 
-DEFINE_string(
-    name, "",
+ABSL_FLAG(
+    std::string, name, "",
     "Name to match for printing out channels. Empty means no name filter.");
-DEFINE_string(type, "",
-              "Channel type to match for printing out channels. Empty means no "
-              "type filter.");
-DEFINE_bool(json, false, "If true, print fully valid JSON");
-DEFINE_bool(fetch, false,
-            "If true, also print out the messages from before the start of the "
-            "log file");
-DEFINE_bool(raw, false,
-            "If true, just print the data out unsorted and unparsed");
-DEFINE_string(raw_header, "",
-              "If set, the file to read the header from in raw mode");
-DEFINE_bool(distributed_clock, false,
-            "If true, print out the distributed time");
-DEFINE_bool(format_raw, true,
-            "If true and --raw is specified, print out raw data, but use the "
-            "schema to format the data.");
-DEFINE_int64(max_vector_size, 100,
-             "If positive, vectors longer than this will not be printed");
-DEFINE_bool(pretty, false,
-            "If true, pretty print the messages on multiple lines");
-DEFINE_bool(
-    pretty_max, false,
+ABSL_FLAG(std::string, type, "",
+          "Channel type to match for printing out channels. Empty means no "
+          "type filter.");
+ABSL_FLAG(bool, json, false, "If true, print fully valid JSON");
+ABSL_FLAG(bool, fetch, false,
+          "If true, also print out the messages from before the start of the "
+          "log file");
+ABSL_FLAG(bool, raw, false,
+          "If true, just print the data out unsorted and unparsed");
+ABSL_FLAG(std::string, raw_header, "",
+          "If set, the file to read the header from in raw mode");
+ABSL_FLAG(bool, distributed_clock, false,
+          "If true, print out the distributed time");
+ABSL_FLAG(bool, format_raw, true,
+          "If true and --raw is specified, print out raw data, but use the "
+          "schema to format the data.");
+ABSL_FLAG(int64_t, max_vector_size, 100,
+          "If positive, vectors longer than this will not be printed");
+ABSL_FLAG(bool, pretty, false,
+          "If true, pretty print the messages on multiple lines");
+ABSL_FLAG(
+    bool, pretty_max, false,
     "If true, expand every field to its own line (expands more than -pretty)");
-DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
-DEFINE_bool(print, true,
-            "If true, actually print the messages.  If false, discard them, "
-            "confirming they can be parsed.");
-DEFINE_uint64(
-    count, 0,
+ABSL_FLAG(bool, print_timestamps, true, "If true, timestamps are printed.");
+ABSL_FLAG(bool, print, true,
+          "If true, actually print the messages.  If false, discard them, "
+          "confirming they can be parsed.");
+ABSL_FLAG(
+    uint64_t, count, 0,
     "If >0, log_cat will exit after printing this many messages.  This "
     "includes messages from before the start of the log if --fetch is set.");
-DEFINE_bool(print_parts_only, false,
-            "If true, only print out the results of logfile sorting.");
-DEFINE_bool(channels, false,
-            "If true, print out all the configured channels for this log.");
-DEFINE_double(monotonic_start_time, 0.0,
-              "If set, only print messages sent at or after this many seconds "
-              "after epoch.");
-DEFINE_double(monotonic_end_time, 0.0,
-              "If set, only print messages sent at or before this many seconds "
-              "after epoch.");
-DEFINE_bool(hex, false,
-            "Are integers in the messages printed in hex notation.");
+ABSL_FLAG(bool, print_parts_only, false,
+          "If true, only print out the results of logfile sorting.");
+ABSL_FLAG(bool, channels, false,
+          "If true, print out all the configured channels for this log.");
+ABSL_FLAG(double, monotonic_start_time, 0.0,
+          "If set, only print messages sent at or after this many seconds "
+          "after epoch.");
+ABSL_FLAG(double, monotonic_end_time, 0.0,
+          "If set, only print messages sent at or before this many seconds "
+          "after epoch.");
+ABSL_FLAG(bool, hex, false,
+          "Are integers in the messages printed in hex notation.");
 
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
@@ -70,12 +71,14 @@ namespace chrono = std::chrono;
 // Prints out raw log parts to stdout.
 int PrintRaw(int argc, char **argv) {
   if (argc == 1) {
-    CHECK(!FLAGS_raw_header.empty());
-    aos::logger::MessageReader raw_header_reader(FLAGS_raw_header);
-    std::cout << aos::FlatbufferToJson(raw_header_reader.raw_log_file_header(),
-                                       {.multi_line = FLAGS_pretty,
-                                        .max_vector_size = static_cast<size_t>(
-                                            FLAGS_max_vector_size)})
+    CHECK(!absl::GetFlag(FLAGS_raw_header).empty());
+    aos::logger::MessageReader raw_header_reader(
+        absl::GetFlag(FLAGS_raw_header));
+    std::cout << aos::FlatbufferToJson(
+                     raw_header_reader.raw_log_file_header(),
+                     {.multi_line = absl::GetFlag(FLAGS_pretty),
+                      .max_vector_size = static_cast<size_t>(
+                          absl::GetFlag(FLAGS_max_vector_size))})
               << std::endl;
     return 0;
   }
@@ -108,9 +111,10 @@ int PrintRaw(int argc, char **argv) {
         maybe_header_data);
     if (maybe_header.Verify()) {
       std::cout << aos::FlatbufferToJson(
-                       log_file_header, {.multi_line = FLAGS_pretty,
-                                         .max_vector_size = static_cast<size_t>(
-                                             FLAGS_max_vector_size)})
+                       log_file_header,
+                       {.multi_line = absl::GetFlag(FLAGS_pretty),
+                        .max_vector_size = static_cast<size_t>(
+                            absl::GetFlag(FLAGS_max_vector_size))})
                 << std::endl;
       LOG(WARNING) << "Found duplicate LogFileHeader in " << reader.filename();
       log_file_header =
@@ -126,26 +130,26 @@ int PrintRaw(int argc, char **argv) {
   // And now use the final sha256 to match the raw_header.
   std::optional<aos::logger::MessageReader> raw_header_reader;
   const aos::logger::LogFileHeader *full_header = &log_file_header.message();
-  if (!FLAGS_raw_header.empty()) {
-    raw_header_reader.emplace(FLAGS_raw_header);
-    std::cout << aos::FlatbufferToJson(full_header,
-                                       {.multi_line = FLAGS_pretty,
-                                        .max_vector_size = static_cast<size_t>(
-                                            FLAGS_max_vector_size)})
+  if (!absl::GetFlag(FLAGS_raw_header).empty()) {
+    raw_header_reader.emplace(absl::GetFlag(FLAGS_raw_header));
+    std::cout << aos::FlatbufferToJson(
+                     full_header, {.multi_line = absl::GetFlag(FLAGS_pretty),
+                                   .max_vector_size = static_cast<size_t>(
+                                       absl::GetFlag(FLAGS_max_vector_size))})
               << std::endl;
     CHECK_EQ(full_header->configuration_sha256()->string_view(),
              aos::Sha256(raw_header_reader->raw_log_file_header().span()));
     full_header = raw_header_reader->log_file_header();
   }
 
-  if (!FLAGS_print) {
+  if (!absl::GetFlag(FLAGS_print)) {
     return 0;
   }
 
-  std::cout << aos::FlatbufferToJson(full_header,
-                                     {.multi_line = FLAGS_pretty,
-                                      .max_vector_size = static_cast<size_t>(
-                                          FLAGS_max_vector_size)})
+  std::cout << aos::FlatbufferToJson(
+                   full_header, {.multi_line = absl::GetFlag(FLAGS_pretty),
+                                 .max_vector_size = static_cast<size_t>(
+                                     absl::GetFlag(FLAGS_max_vector_size))})
             << std::endl;
   CHECK(full_header->has_configuration())
       << ": Missing configuration! You may want to provide the path to the "
@@ -178,21 +182,25 @@ int PrintRaw(int argc, char **argv) {
           << channel->type()->c_str();
     }
 
-    if (FLAGS_format_raw && message.message().data() != nullptr) {
+    if (absl::GetFlag(FLAGS_format_raw) &&
+        message.message().data() != nullptr) {
       std::cout << aos::configuration::StrippedChannelToString(channel) << " "
-                << aos::FlatbufferToJson(message, {.multi_line = FLAGS_pretty,
-                                                   .max_vector_size = 4})
+                << aos::FlatbufferToJson(
+                       message, {.multi_line = absl::GetFlag(FLAGS_pretty),
+                                 .max_vector_size = 4})
                 << ": "
                 << aos::FlatbufferToJson(
                        channel->schema(), message.message().data()->data(),
-                       {FLAGS_pretty,
-                        static_cast<size_t>(FLAGS_max_vector_size)})
+                       {absl::GetFlag(FLAGS_pretty),
+                        static_cast<size_t>(
+                            absl::GetFlag(FLAGS_max_vector_size))})
                 << std::endl;
     } else {
       std::cout << aos::configuration::StrippedChannelToString(channel) << " "
                 << aos::FlatbufferToJson(
-                       message, {FLAGS_pretty,
-                                 static_cast<size_t>(FLAGS_max_vector_size)})
+                       message, {absl::GetFlag(FLAGS_pretty),
+                                 static_cast<size_t>(
+                                     absl::GetFlag(FLAGS_max_vector_size))})
                 << std::endl;
     }
   }
@@ -219,26 +227,26 @@ class NodePrinter {
         event_loop_->configuration()->channels();
 
     const monotonic_clock::time_point start_time =
-        (FLAGS_monotonic_start_time == 0.0
+        (absl::GetFlag(FLAGS_monotonic_start_time) == 0.0
              ? monotonic_clock::min_time
              : monotonic_clock::time_point(
                    std::chrono::duration_cast<monotonic_clock::duration>(
                        std::chrono::duration<double>(
-                           FLAGS_monotonic_start_time))));
+                           absl::GetFlag(FLAGS_monotonic_start_time)))));
     const monotonic_clock::time_point end_time =
-        (FLAGS_monotonic_end_time == 0.0
+        (absl::GetFlag(FLAGS_monotonic_end_time) == 0.0
              ? monotonic_clock::max_time
              : monotonic_clock::time_point(
                    std::chrono::duration_cast<monotonic_clock::duration>(
                        std::chrono::duration<double>(
-                           FLAGS_monotonic_end_time))));
+                           absl::GetFlag(FLAGS_monotonic_end_time)))));
 
     for (flatbuffers::uoffset_t i = 0; i < channels->size(); i++) {
       const aos::Channel *channel = channels->Get(i);
       const flatbuffers::string_view name = channel->name()->string_view();
       const flatbuffers::string_view type = channel->type()->string_view();
-      if (name.find(FLAGS_name) != std::string::npos &&
-          type.find(FLAGS_type) != std::string::npos) {
+      if (name.find(absl::GetFlag(FLAGS_name)) != std::string::npos &&
+          type.find(absl::GetFlag(FLAGS_type)) != std::string::npos) {
         if (!aos::configuration::ChannelIsReadableOnNode(channel,
                                                          event_loop_->node())) {
           continue;
@@ -250,14 +258,15 @@ class NodePrinter {
                                               end_time](
                                                  const aos::Context &context,
                                                  const void * /*message*/) {
-          if (!FLAGS_print) {
+          if (!absl::GetFlag(FLAGS_print)) {
             return;
           }
-          if (FLAGS_count > 0 && printer_->message_count() >= FLAGS_count) {
+          if (absl::GetFlag(FLAGS_count) > 0 &&
+              printer_->message_count() >= absl::GetFlag(FLAGS_count)) {
             return;
           }
 
-          if (!FLAGS_fetch && !started_) {
+          if (!absl::GetFlag(FLAGS_fetch) && !started_) {
             return;
           }
 
@@ -267,7 +276,8 @@ class NodePrinter {
           }
 
           printer_->PrintMessage(node_name_, node_factory_, channel, context);
-          if (FLAGS_count > 0 && printer_->message_count() >= FLAGS_count) {
+          if (absl::GetFlag(FLAGS_count) > 0 &&
+              printer_->message_count() >= absl::GetFlag(FLAGS_count)) {
             factory_->Exit();
           }
         });
@@ -278,7 +288,7 @@ class NodePrinter {
   void SetStarted(bool started, aos::monotonic_clock::time_point monotonic_now,
                   aos::realtime_clock::time_point realtime_now) {
     started_ = started;
-    if (FLAGS_json) {
+    if (absl::GetFlag(FLAGS_json)) {
       return;
     }
     if (started_) {
@@ -318,7 +328,7 @@ class NodePrinter {
 };
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Usage:\n"
       "  log_cat [args] logfile1 logfile2 ...\n"
       "\n"
@@ -332,7 +342,7 @@ int main(int argc, char **argv) {
       "the logged data.");
   aos::InitGoogle(&argc, &argv);
 
-  if (FLAGS_raw) {
+  if (absl::GetFlag(FLAGS_raw)) {
     return PrintRaw(argc, argv);
   }
 
@@ -345,17 +355,17 @@ int main(int argc, char **argv) {
 
   for (auto &it : logfiles) {
     VLOG(1) << it;
-    if (FLAGS_print_parts_only) {
+    if (absl::GetFlag(FLAGS_print_parts_only)) {
       std::cout << it << std::endl;
     }
   }
-  if (FLAGS_print_parts_only) {
+  if (absl::GetFlag(FLAGS_print_parts_only)) {
     return 0;
   }
 
   aos::logger::LogReader reader(logfiles);
 
-  if (FLAGS_channels) {
+  if (absl::GetFlag(FLAGS_channels)) {
     const aos::Configuration *config = reader.configuration();
     for (const aos::Channel *channel : *config->channels()) {
       std::cout << channel->name()->c_str() << " " << channel->type()->c_str()
@@ -373,8 +383,8 @@ int main(int argc, char **argv) {
       const aos::Channel *channel = channels->Get(i);
       const flatbuffers::string_view name = channel->name()->string_view();
       const flatbuffers::string_view type = channel->type()->string_view();
-      if (name.find(FLAGS_name) != std::string::npos &&
-          type.find(FLAGS_type) != std::string::npos) {
+      if (name.find(absl::GetFlag(FLAGS_name)) != std::string::npos &&
+          type.find(absl::GetFlag(FLAGS_type)) != std::string::npos) {
         found_channel = true;
       }
     }
@@ -385,13 +395,14 @@ int main(int argc, char **argv) {
 
   aos::Printer printer(
       {
-          .pretty = FLAGS_pretty,
-          .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
-          .pretty_max = FLAGS_pretty_max,
-          .print_timestamps = FLAGS_print_timestamps,
-          .json = FLAGS_json,
-          .distributed_clock = FLAGS_distributed_clock,
-          .hex = FLAGS_hex,
+          .pretty = absl::GetFlag(FLAGS_pretty),
+          .max_vector_size =
+              static_cast<size_t>(absl::GetFlag(FLAGS_max_vector_size)),
+          .pretty_max = absl::GetFlag(FLAGS_pretty_max),
+          .print_timestamps = absl::GetFlag(FLAGS_print_timestamps),
+          .json = absl::GetFlag(FLAGS_json),
+          .distributed_clock = absl::GetFlag(FLAGS_distributed_clock),
+          .hex = absl::GetFlag(FLAGS_hex),
       },
       false);
 

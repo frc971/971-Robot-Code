@@ -10,10 +10,12 @@
 #include <ratio>
 #include <thread>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/epoll.h"
+#include "aos/init.h"
 #include "aos/ipc_lib/latency_lib.h"
 #include "aos/logging/implementations.h"
 #include "aos/realtime.h"
@@ -23,16 +25,16 @@
 // It measures both latency of a random timer thread, and latency of the
 // pipe.
 
-DEFINE_int32(seconds, 10, "Duration of the test to run");
-DEFINE_int32(
-    latency_threshold, 1000,
+ABSL_FLAG(int32_t, seconds, 10, "Duration of the test to run");
+ABSL_FLAG(
+    int32_t, latency_threshold, 1000,
     "Disable tracing when anything takes more than this many microseoncds");
-DEFINE_int32(core, 7, "Core to pin to");
-DEFINE_int32(sender_priority, 53, "RT priority to send at");
-DEFINE_int32(receiver_priority, 52, "RT priority to receive at");
-DEFINE_int32(timer_priority, 51, "RT priority to spin the timer at");
+ABSL_FLAG(int32_t, core, 7, "Core to pin to");
+ABSL_FLAG(int32_t, sender_priority, 53, "RT priority to send at");
+ABSL_FLAG(int32_t, receiver_priority, 52, "RT priority to receive at");
+ABSL_FLAG(int32_t, timer_priority, 51, "RT priority to spin the timer at");
 
-DEFINE_bool(log_latency, false, "If true, log the latency");
+ABSL_FLAG(bool, log_latency, false, "If true, log the latency");
 
 namespace chrono = ::std::chrono;
 
@@ -40,15 +42,15 @@ namespace aos {
 
 void SenderThread(int fd) {
   const monotonic_clock::time_point end_time =
-      monotonic_clock::now() + chrono::seconds(FLAGS_seconds);
+      monotonic_clock::now() + chrono::seconds(absl::GetFlag(FLAGS_seconds));
   // Standard mersenne_twister_engine seeded with 0
   ::std::mt19937 generator(0);
 
   // Sleep between 1 and 15 ms.
   ::std::uniform_int_distribution<> distribution(1000, 15000);
 
-  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_core}));
-  SetCurrentThreadRealtimePriority(FLAGS_sender_priority);
+  SetCurrentThreadAffinity(MakeCpusetFromCpus({absl::GetFlag(FLAGS_core)}));
+  SetCurrentThreadRealtimePriority(absl::GetFlag(FLAGS_sender_priority));
   while (true) {
     const monotonic_clock::time_point wakeup_time =
         monotonic_clock::now() + chrono::microseconds(distribution(generator));
@@ -108,21 +110,22 @@ void ReceiverThread(int fd) {
 
     max_wakeup_latency = ::std::max(wakeup_latency, max_wakeup_latency);
 
-    if (wakeup_latency > chrono::microseconds(FLAGS_latency_threshold)) {
+    if (wakeup_latency >
+        chrono::microseconds(absl::GetFlag(FLAGS_latency_threshold))) {
       t.Stop();
       AOS_LOG(INFO, "Stopped tracing, latency %" PRId64 "\n",
               static_cast<int64_t>(wakeup_latency.count()));
     }
 
-    if (FLAGS_log_latency) {
+    if (absl::GetFlag(FLAGS_log_latency)) {
       AOS_LOG(INFO, "dt: %8d.%03d\n",
               static_cast<int>(wakeup_latency.count() / 1000),
               static_cast<int>(wakeup_latency.count() % 1000));
     }
   });
 
-  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_core}));
-  SetCurrentThreadRealtimePriority(FLAGS_receiver_priority);
+  SetCurrentThreadAffinity(MakeCpusetFromCpus({absl::GetFlag(FLAGS_core)}));
+  SetCurrentThreadRealtimePriority(absl::GetFlag(FLAGS_receiver_priority));
   epoll.Run();
   UnsetCurrentThreadRealtimePriority();
   epoll.DeleteFd(fd);
@@ -141,8 +144,9 @@ void ReceiverThread(int fd) {
 int Main(int /*argc*/, char ** /*argv*/) {
   AOS_LOG(INFO, "Main!\n");
   ::std::thread t([]() {
-    TimerThread(monotonic_clock::now() + chrono::seconds(FLAGS_seconds),
-                FLAGS_timer_priority);
+    TimerThread(
+        monotonic_clock::now() + chrono::seconds(absl::GetFlag(FLAGS_seconds)),
+        absl::GetFlag(FLAGS_timer_priority));
   });
 
   int fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
@@ -162,7 +166,7 @@ int Main(int /*argc*/, char ** /*argv*/) {
 }  // namespace aos
 
 int main(int argc, char **argv) {
-  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
+  aos::InitGoogle(&argc, &argv);
 
   return ::aos::Main(argc, argv);
 }

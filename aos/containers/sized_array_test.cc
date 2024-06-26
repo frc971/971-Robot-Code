@@ -174,7 +174,7 @@ TEST(SizedArrayTest, OverflowTest) {
   // Verify that we didn't reallocate
   EXPECT_EQ(pre_front, a.data());
 
-  EXPECT_DEATH(a.emplace_back(5), "Aborted at");
+  EXPECT_DEATH(a.emplace_back(5), "SIGILL received at");
 }
 
 // Tests inserting at various positions in the array.

@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <ostream>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
-#include "glog/logging.h"
 
 namespace aos::logger::internal {
 

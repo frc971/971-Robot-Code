@@ -1,6 +1,7 @@
 #include "y2024/vision/vision_util.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace y2024::vision {
 

@@ -1,28 +1,7 @@
-diff -r -u a/bazel/ceres.bzl b/bazel/ceres.bzl
---- a/bazel/ceres.bzl	2024-06-25 18:35:28.266797366 -0700
-+++ b/bazel/ceres.bzl	2024-06-25 18:25:10.919515348 -0700
-@@ -189,6 +189,9 @@
-             "-I" + internal,
-             "-Wunused-parameter",
-             "-Wno-sign-compare",
-+            "-Wno-format-nonliteral",
-+            "-Wno-unused-parameter",
-+            "-Wno-unused-but-set-variable",
-         ] + schur_eliminator_copts,
- 
-         # These include directories and defines are propagated to other targets
-@@ -214,7 +217,7 @@
-         ],
-         visibility = ["//visibility:public"],
-         deps = [
--            "@com_gitlab_libeigen_eigen//:eigen",
-             "@com_github_google_glog//:glog",
-+            "@org_tuxfamily_eigen//:eigen",
-         ],
-     )
-diff -r -u a/BUILD b/BUILD
---- a/BUILD	2024-06-25 18:35:28.266797366 -0700
-+++ b/BUILD	2024-06-25 18:25:10.919515348 -0700
+diff --git a/BUILD b/BUILD
+index 652c4b17..9c7a799c 100644
+--- a/BUILD
++++ b/BUILD
 @@ -32,6 +32,7 @@
  # not support parameterization around threading choice or sparse backends.
  
@@ -31,15 +10,15 @@ diff -r -u a/BUILD b/BUILD
  
  ceres_library(
      name = "ceres",
-@@ -57,6 +58,7 @@
-     ],
+@@ -48,6 +49,7 @@ cc_library(
+     ]],
      copts = [
          "-Wno-sign-compare",
 +        "-Wno-unused-but-set-variable",
          "-DCERES_TEST_SRCDIR_SUFFIX=\\\"data/\\\"",
      ],
      includes = [
-@@ -165,12 +167,16 @@
+@@ -158,12 +160,16 @@ TEST_COPTS = [
      # but in the future disable these warnings only for rotation_test.
      # TODO(keir): When the tests are macro-ified, apply these selectively.
      "-Wno-address",
@@ -55,12 +34,36 @@ diff -r -u a/BUILD b/BUILD
      "//:test_util",
 -    "@com_gitlab_libeigen_eigen//:eigen",
 +    "@org_tuxfamily_eigen//:eigen",
-     "@com_github_gflags_gflags//:gflags",
+     "@com_google_absl//absl/flags:flag",
  ]
  
-diff -r -u a/examples/BUILD b/examples/BUILD
---- a/examples/BUILD	2024-06-25 18:35:28.270797439 -0700
-+++ b/examples/BUILD	2024-06-25 18:25:32.355906091 -0700
+diff --git a/bazel/ceres.bzl b/bazel/ceres.bzl
+index ed4d66d9..be8948d7 100644
+--- a/bazel/ceres.bzl
++++ b/bazel/ceres.bzl
+@@ -190,6 +190,9 @@ def ceres_library(
+             "-I" + internal,
+             "-Wunused-parameter",
+             "-Wno-sign-compare",
++            "-Wno-format-nonliteral",
++            "-Wno-unused-parameter",
++            "-Wno-unused-but-set-variable",
+         ] + schur_eliminator_copts,
+ 
+         # These include directories and defines are propagated to other targets
+@@ -215,7 +218,7 @@ def ceres_library(
+         ],
+         visibility = ["//visibility:public"],
+         deps = [
+-            "@com_gitlab_libeigen_eigen//:eigen",
++            "@org_tuxfamily_eigen//:eigen",
+             "@com_google_absl//absl/flags:flag",
+             "@com_google_absl//absl/log",
+             "@com_google_absl//absl/log:check",
+diff --git a/examples/BUILD b/examples/BUILD
+index e45fe318..6296417a 100644
+--- a/examples/BUILD
++++ b/examples/BUILD
 @@ -31,13 +31,14 @@
  EXAMPLE_COPTS = [
      # Needed to silence GFlags complaints.
@@ -74,13 +77,14 @@ diff -r -u a/examples/BUILD b/examples/BUILD
      "//:ceres",
 -    "@com_gitlab_libeigen_eigen//:eigen",
 +    "@org_tuxfamily_eigen//:eigen",
-     "@com_github_gflags_gflags//:gflags",
- ]
- 
-diff -r -u a/internal/ceres/autodiff_test.cc b/internal/ceres/autodiff_test.cc
---- a/internal/ceres/autodiff_test.cc	2024-06-25 18:35:28.278797586 -0700
-+++ b/internal/ceres/autodiff_test.cc	2024-06-25 18:25:10.935515640 -0700
-@@ -647,6 +647,10 @@
+     "@com_google_absl//absl/flags:flag",
+     "@com_google_absl//absl/log:log",
+     "@com_google_absl//absl/log:check",
+diff --git a/internal/ceres/autodiff_test.cc b/internal/ceres/autodiff_test.cc
+index b50327cb..19adcae0 100644
+--- a/internal/ceres/autodiff_test.cc
++++ b/internal/ceres/autodiff_test.cc
+@@ -647,6 +647,10 @@ TEST(AutoDiff, VariadicAutoDiff) {
    }
  }
  
@@ -91,7 +95,7 @@ diff -r -u a/internal/ceres/autodiff_test.cc b/internal/ceres/autodiff_test.cc
  // This is fragile test that triggers the alignment bug on
  // i686-apple-darwin10-llvm-g++-4.2 (GCC) 4.2.1. It is quite possible,
  // that other combinations of operating system + compiler will
-@@ -671,5 +675,8 @@
+@@ -671,5 +675,8 @@ TEST(AutoDiff, AlignedAllocationTest) {
    // Need this to makes sure that x does not get optimized out.
    x[0] = x[0] + JetT(1.0);
  }
@@ -100,10 +104,11 @@ diff -r -u a/internal/ceres/autodiff_test.cc b/internal/ceres/autodiff_test.cc
 +#endif
  
  }  // namespace ceres::internal
-diff -r -u a/internal/ceres/bundle_adjustment_test_util.h b/internal/ceres/bundle_adjustment_test_util.h
---- a/internal/ceres/bundle_adjustment_test_util.h	2024-06-25 18:35:28.278797586 -0700
-+++ b/internal/ceres/bundle_adjustment_test_util.h	2024-06-25 18:32:23.019406091 -0700
-@@ -97,7 +97,8 @@
+diff --git a/internal/ceres/bundle_adjustment_test_util.h b/internal/ceres/bundle_adjustment_test_util.h
+index fb2ac719..993863a2 100644
+--- a/internal/ceres/bundle_adjustment_test_util.h
++++ b/internal/ceres/bundle_adjustment_test_util.h
+@@ -98,7 +98,8 @@ class BundleAdjustmentProblem {
  
   private:
    void ReadData(const std::string& filename) {
@@ -113,10 +118,11 @@ diff -r -u a/internal/ceres/bundle_adjustment_test_util.h b/internal/ceres/bundl
  
      if (!fptr) {
        LOG(FATAL) << "File Error: unable to open file " << filename;
-diff -r -u a/internal/ceres/triplet_sparse_matrix_test.cc b/internal/ceres/triplet_sparse_matrix_test.cc
---- a/internal/ceres/triplet_sparse_matrix_test.cc	2024-06-25 18:35:28.298797952 -0700
-+++ b/internal/ceres/triplet_sparse_matrix_test.cc	2024-06-25 18:25:10.963516152 -0700
-@@ -184,8 +184,15 @@
+diff --git a/internal/ceres/triplet_sparse_matrix_test.cc b/internal/ceres/triplet_sparse_matrix_test.cc
+index e145c1a2..bde9a6ed 100644
+--- a/internal/ceres/triplet_sparse_matrix_test.cc
++++ b/internal/ceres/triplet_sparse_matrix_test.cc
+@@ -184,8 +184,15 @@ TEST(TripletSparseMatrix, AssignmentOperatorSelfAssignment) {
    orig.mutable_values()[1] = 5.2;
    orig.set_num_nonzeros(2);
  

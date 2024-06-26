@@ -11,8 +11,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
 
 #include "aos/events/context.h"
 #include "aos/ipc_lib/aos_sync.h"

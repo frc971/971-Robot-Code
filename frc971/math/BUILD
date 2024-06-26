@@ -22,8 +22,9 @@ cc_library(
     deps = [
         ":matrix_fbs",
         "//aos:json_to_flatbuffer",
-        "@com_github_google_glog//:glog",
         "@com_github_tartanllama_expected",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

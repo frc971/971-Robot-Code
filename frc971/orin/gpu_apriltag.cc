@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "absl/flags/flag.h"
 #include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/apriltag_pose.h"
 #include "third_party/apriltag/tag16h5.h"
@@ -18,18 +19,18 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/vision_util_lib.h"
 
-DEFINE_bool(debug, false, "If true, write debug images.");
-DEFINE_double(
-    max_expected_distortion, 0.314,
+ABSL_FLAG(bool, debug, false, "If true, write debug images.");
+ABSL_FLAG(
+    double, max_expected_distortion, 0.314,
     "Maximum expected value for unscaled distortion factors. Will scale "
     "distortion factors so that this value (and a higher distortion) maps to "
     "1.0.");
-DEFINE_double(min_decision_margin, 50.0,
-              "Minimum decision margin (confidence) for an apriltag detection");
-DEFINE_int32(pixel_border, 150,
-             "Size of image border within which to reject detected corners");
-DEFINE_uint64(pose_estimation_iterations, 50,
-              "Number of iterations for apriltag pose estimation.");
+ABSL_FLAG(double, min_decision_margin, 50.0,
+          "Minimum decision margin (confidence) for an apriltag detection");
+ABSL_FLAG(int32_t, pixel_border, 150,
+          "Size of image border within which to reject detected corners");
+ABSL_FLAG(uint64_t, pose_estimation_iterations, 50,
+          "Number of iterations for apriltag pose estimation.");
 
 namespace frc971::apriltag {
 
@@ -111,7 +112,7 @@ apriltag_detector_t *ApriltagDetector::MakeTagDetector(
   tag_detector->nthreads = 6;
   tag_detector->wp = workerpool_create(tag_detector->nthreads);
   tag_detector->qtp.min_white_black_diff = 5;
-  tag_detector->debug = FLAGS_debug;
+  tag_detector->debug = absl::GetFlag(FLAGS_debug);
 
   return tag_detector;
 }
@@ -169,7 +170,8 @@ double ApriltagDetector::ComputeDistortionFactor(
   double distortion_factor =
       avg_distance /
       cv::norm(cv::Point2d(image_size_.width, image_size_.height));
-  return std::min(distortion_factor / FLAGS_max_expected_distortion, 1.0);
+  return std::min(
+      distortion_factor / absl::GetFlag(FLAGS_max_expected_distortion), 1.0);
 }
 
 std::vector<cv::Point2f> ApriltagDetector::MakeCornerVector(
@@ -195,7 +197,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
   gpu_detector_.Detect(color_image.data);
   image_size_ = color_image.size();
   cv::Mat image_copy;
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     // TODO: Need to figure out how to extract displayable color image from this
     image_copy = color_image.clone();
   }
@@ -204,10 +206,10 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
 
   aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
 
-  const uint32_t min_x = FLAGS_pixel_border;
-  const uint32_t max_x = color_image.cols - FLAGS_pixel_border;
-  const uint32_t min_y = FLAGS_pixel_border;
-  const uint32_t max_y = color_image.rows - FLAGS_pixel_border;
+  const uint32_t min_x = absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t max_x = color_image.cols - absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t min_y = absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t max_y = color_image.rows - absl::GetFlag(FLAGS_pixel_border);
 
   // Define variables for storing / visualizing the output
   std::vector<Detection> results;
@@ -219,7 +221,8 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
 
     zarray_get(detections, i, &gpu_detection);
 
-    bool valid = gpu_detection->decision_margin > FLAGS_min_decision_margin;
+    bool valid = gpu_detection->decision_margin >
+                 absl::GetFlag(FLAGS_min_decision_margin);
 
     if (valid) {
       // Reject tags that are too close to the boundary, since they often
@@ -303,9 +306,9 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
       apriltag_pose_t pose_2;
       double pose_error_1;
       double pose_error_2;
-      estimate_tag_pose_orthogonal_iteration(&info, &pose_error_1, &pose_1,
-                                             &pose_error_2, &pose_2,
-                                             FLAGS_pose_estimation_iterations);
+      estimate_tag_pose_orthogonal_iteration(
+          &info, &pose_error_1, &pose_1, &pose_error_2, &pose_2,
+          absl::GetFlag(FLAGS_pose_estimation_iterations));
 
       const aos::monotonic_clock::time_point after_pose_estimation =
           aos::monotonic_clock::now();
@@ -351,7 +354,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
                                      .distortion_factor = distortion_factor,
                                      .pose_error_ratio = pose_error_ratio});
 
-      if (FLAGS_visualize) {
+      if (absl::GetFlag(FLAGS_visualize)) {
         // Draw raw (distorted) corner points in green
         cv::line(image_copy, orig_corner_points[0], orig_corner_points[1],
                  cv::Scalar(0, 255, 0), 2);
@@ -381,7 +384,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
     }
   }
 
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     // Display the result
     // Rotate by 180 degrees to make it upright
     // TODO: Make this an option?
@@ -422,7 +425,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
 
   end_time = aos::monotonic_clock::now();
 
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     timeprofile_display(tag_detector_->tp);
   }
 

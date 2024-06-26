@@ -11,9 +11,10 @@
 #include <ostream>
 #include <thread>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "flatbuffers/string.h"
-#include "glog/logging.h"
 
 #include "aos/ipc_lib/index.h"
 #include "aos/util/file.h"

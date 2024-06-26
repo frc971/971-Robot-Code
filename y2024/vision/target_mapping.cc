@@ -1,6 +1,7 @@
 #include <string>
 
 #include "Eigen/Dense"
+#include "absl/flags/flag.h"
 #include "opencv2/aruco.hpp"
 #include "opencv2/calib3d.hpp"
 #include "opencv2/core/eigen.hpp"
@@ -25,46 +26,45 @@
 #include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/vision/vision_util.h"
 
-DEFINE_string(config, "",
-              "If set, override the log's config file with this one.");
-DEFINE_string(constants_path, "y2024/constants/constants.json",
-              "Path to the constant file");
-DEFINE_string(dump_constraints_to, "/tmp/mapping_constraints.txt",
-              "Write the target constraints to this path");
-DEFINE_string(dump_stats_to, "/tmp/mapping_stats.txt",
-              "Write the mapping stats to this path");
-DEFINE_string(field_name, "crescendo",
-              "Field name, for the output json filename and flatbuffer field");
-DEFINE_string(json_path, "y2024/vision/maps/target_map.json",
-              "Specify path for json with initial pose guesses.");
-DEFINE_double(max_pose_error, 1e-6,
-              "Throw out target poses with a higher pose error than this");
-DEFINE_double(
-    max_pose_error_ratio, 0.4,
-    "Throw out target poses with a higher pose error ratio than this");
-DEFINE_string(mcap_output_path, "", "Log to output.");
-DEFINE_string(output_dir, "y2024/vision/maps",
-              "Directory to write solved target map to");
-DEFINE_double(pause_on_distance, 2.0,
-              "Pause if two consecutive implied robot positions differ by more "
-              "than this many meters");
-DEFINE_string(orin, "orin1",
-              "Orin name to generate mcap log for; defaults to orin1.");
-DEFINE_uint64(skip_to, 1,
-              "Start at combined image of this number (1 is the first image)");
-DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
-DEFINE_bool(split_field, false,
-            "Whether to break solve into two sides of field");
-DEFINE_int32(team_number, 0,
-             "Required: Use the calibration for a node with this team number");
-DEFINE_uint64(wait_key, 1,
-              "Time in ms to wait between images, if no click (0 to wait "
-              "indefinitely until click).");
+ABSL_FLAG(std::string, config, "",
+          "If set, override the log's config file with this one.");
+ABSL_FLAG(std::string, constants_path, "y2024/constants/constants.json",
+          "Path to the constant file");
+ABSL_FLAG(std::string, dump_constraints_to, "/tmp/mapping_constraints.txt",
+          "Write the target constraints to this path");
+ABSL_FLAG(std::string, dump_stats_to, "/tmp/mapping_stats.txt",
+          "Write the mapping stats to this path");
+ABSL_FLAG(std::string, field_name, "crescendo",
+          "Field name, for the output json filename and flatbuffer field");
+ABSL_FLAG(std::string, json_path, "y2024/vision/maps/target_map.json",
+          "Specify path for json with initial pose guesses.");
+ABSL_FLAG(double, max_pose_error, 1e-6,
+          "Throw out target poses with a higher pose error than this");
+ABSL_FLAG(double, max_pose_error_ratio, 0.4,
+          "Throw out target poses with a higher pose error ratio than this");
+ABSL_FLAG(std::string, mcap_output_path, "", "Log to output.");
+ABSL_FLAG(std::string, output_dir, "y2024/vision/maps",
+          "Directory to write solved target map to");
+ABSL_FLAG(double, pause_on_distance, 2.0,
+          "Pause if two consecutive implied robot positions differ by more "
+          "than this many meters");
+ABSL_FLAG(std::string, orin, "orin1",
+          "Orin name to generate mcap log for; defaults to orin1.");
+ABSL_FLAG(uint64_t, skip_to, 1,
+          "Start at combined image of this number (1 is the first image)");
+ABSL_FLAG(bool, solve, true, "Whether to solve for the field's target map.");
+ABSL_FLAG(bool, split_field, false,
+          "Whether to break solve into two sides of field");
+ABSL_FLAG(int32_t, team_number, 0,
+          "Required: Use the calibration for a node with this team number");
+ABSL_FLAG(uint64_t, wait_key, 1,
+          "Time in ms to wait between images, if no click (0 to wait "
+          "indefinitely until click).");
 
-DECLARE_int32(frozen_target_id);
-DECLARE_int32(min_target_id);
-DECLARE_int32(max_target_id);
-DECLARE_bool(visualize_solver);
+ABSL_DECLARE_FLAG(int32_t, frozen_target_id);
+ABSL_DECLARE_FLAG(int32_t, min_target_id);
+ABSL_DECLARE_FLAG(int32_t, max_target_id);
+ABSL_DECLARE_FLAG(bool, visualize_solver);
 
 namespace y2024::vision {
 using frc971::vision::DataAdapter;
@@ -148,8 +148,8 @@ std::map<uint, std::string> TargetMapperReplay::kIdAllianceMap = {
     {9, "blue"}, {10, "blue"}, {11, "red"},  {12, "red"},
     {13, "red"}, {14, "blue"}, {15, "blue"}, {16, "blue"}};
 
-const auto TargetMapperReplay::kFixedTargetMapper =
-    TargetMapper(FLAGS_json_path, ceres::examples::VectorOfConstraints{});
+const auto TargetMapperReplay::kFixedTargetMapper = TargetMapper(
+    absl::GetFlag(FLAGS_json_path), ceres::examples::VectorOfConstraints{});
 
 Eigen::Affine3d TargetMapperReplay::CameraToRobotDetection(
     Eigen::Affine3d H_camera_target, Eigen::Affine3d extrinsics) {
@@ -173,10 +173,11 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
   reader_->MaybeRemapLoggedChannel<Constants>("/roborio/constants");
   reader_->Register();
 
-  SendSimulationConstants(reader_->event_loop_factory(), FLAGS_team_number,
-                          FLAGS_constants_path);
+  SendSimulationConstants(reader_->event_loop_factory(),
+                          absl::GetFlag(FLAGS_team_number),
+                          absl::GetFlag(FLAGS_constants_path));
 
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     vis_robot_.ClearImage();
     // Set focal length to zoomed in, to view extrinsics
     const double kFocalLength = 1500.0;
@@ -197,7 +198,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
         mapping_event_loops_[mapping_event_loops_.size() - 1].get(),
         &constants_fetcher, camera_node.camera_number);
 
-    if (FLAGS_visualize_solver) {
+    if (absl::GetFlag(FLAGS_visualize_solver)) {
       // Show the extrinsics calibration to start, for reference to confirm
       const auto *calibration = FindCameraCalibration(
           constants_fetcher.constants(),
@@ -214,7 +215,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     }
   }
 
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     cv::imshow("Extrinsics", vis_robot_.image_);
     cv::waitKey(0);
     vis_robot_.ClearImage();
@@ -242,21 +243,22 @@ void TargetMapperReplay::HandleAprilTags(
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with invalid ids
     if (static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) <
-            FLAGS_min_target_id ||
+            absl::GetFlag(FLAGS_min_target_id) ||
         static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) >
-            FLAGS_max_target_id) {
+            absl::GetFlag(FLAGS_max_target_id)) {
       VLOG(1) << "Skipping tag with invalid id of " << target_pose_fbs->id();
       continue;
     }
 
     // Skip detections with high pose errors
-    if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
+    if (target_pose_fbs->pose_error() > absl::GetFlag(FLAGS_max_pose_error)) {
       VLOG(1) << "Skipping tag " << target_pose_fbs->id()
               << " due to pose error of " << target_pose_fbs->pose_error();
       continue;
     }
     // Skip detections with high pose error ratios
-    if (target_pose_fbs->pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+    if (target_pose_fbs->pose_error_ratio() >
+        absl::GetFlag(FLAGS_max_pose_error_ratio)) {
       VLOG(1) << "Skipping tag " << target_pose_fbs->id()
               << " due to pose error ratio of "
               << target_pose_fbs->pose_error_ratio();
@@ -296,7 +298,7 @@ void TargetMapperReplay::HandleAprilTags(
             .distortion_factor = distortion_factor,
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
 
-    if (FLAGS_visualize_solver) {
+    if (absl::GetFlag(FLAGS_visualize_solver)) {
       // If we've already drawn this camera_name in the current image,
       // display the image before clearing and adding the new poses
       if (drawn_cameras_.count(camera_name) != 0) {
@@ -306,20 +308,21 @@ void TargetMapperReplay::HandleAprilTags(
                     cv::Point(600, 10), cv::FONT_HERSHEY_PLAIN, 1.0,
                     cv::Scalar(255, 255, 255));
 
-        if (display_count_ >= FLAGS_skip_to) {
+        if (display_count_ >= absl::GetFlag(FLAGS_skip_to)) {
           VLOG(1) << "Showing image for camera " << camera_name
                   << " since we've drawn it already";
           cv::imshow("View", vis_robot_.image_);
           // Pause if delta_T is too large, but only after first image (to make
           // sure the delta's are correct)
-          if (max_delta_T_world_robot_ > FLAGS_pause_on_distance &&
+          if (max_delta_T_world_robot_ >
+                  absl::GetFlag(FLAGS_pause_on_distance) &&
               display_count_ > 1) {
             LOG(INFO) << "Pausing since the delta between robot estimates is "
                       << max_delta_T_world_robot_ << " which is > threshold of "
-                      << FLAGS_pause_on_distance;
+                      << absl::GetFlag(FLAGS_pause_on_distance);
             cv::waitKey(0);
           } else {
-            cv::waitKey(FLAGS_wait_key);
+            cv::waitKey(absl::GetFlag(FLAGS_wait_key));
           }
           max_delta_T_world_robot_ = 0.0;
         } else {
@@ -341,7 +344,8 @@ void TargetMapperReplay::HandleAprilTags(
 
       label << "id " << target_pose_fbs->id()
             << ": err (% of max): " << target_pose_fbs->pose_error() << " ("
-            << (target_pose_fbs->pose_error() / FLAGS_max_pose_error)
+            << (target_pose_fbs->pose_error() /
+                absl::GetFlag(FLAGS_max_pose_error))
             << ") err_ratio: " << target_pose_fbs->pose_error_ratio() << " ";
 
       vis_robot_.DrawRobotOutline(H_world_robot, camera_name,
@@ -363,7 +367,7 @@ void TargetMapperReplay::HandleAprilTags(
       last_H_world_robot_ = H_world_robot;
     }
   }
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     if (drew) {
       // Collect all the labels from a given camera, and add the text
       // TODO: Need to fix this one
@@ -374,7 +378,7 @@ void TargetMapperReplay::HandleAprilTags(
       drawn_cameras_.emplace(camera_name);
     } else if (node_distributed_time - last_draw_time_ >
                    std::chrono::milliseconds(30) &&
-               display_count_ >= FLAGS_skip_to && drew) {
+               display_count_ >= absl::GetFlag(FLAGS_skip_to) && drew) {
       // TODO: Check on 30ms value-- does this make sense?
       double delta_t = (node_distributed_time - last_draw_time_).count() / 1e6;
       VLOG(1) << "Last result was " << delta_t << "ms ago";
@@ -384,7 +388,7 @@ void TargetMapperReplay::HandleAprilTags(
       // Display and clear the image if we haven't draw in a while
       VLOG(1) << "Displaying image due to time lapse";
       cv::imshow("View", vis_robot_.image_);
-      cv::waitKey(FLAGS_wait_key);
+      cv::waitKey(absl::GetFlag(FLAGS_wait_key));
       max_delta_T_world_robot_ = 0.0;
       drawn_cameras_.clear();
     }
@@ -422,11 +426,11 @@ void TargetMapperReplay::HandleNodeCaptures(
 }
 
 void TargetMapperReplay::MaybeSolve() {
-  if (FLAGS_solve) {
+  if (absl::GetFlag(FLAGS_solve)) {
     auto target_constraints =
         DataAdapter::MatchTargetDetections(timestamped_target_detections_);
 
-    if (FLAGS_split_field) {
+    if (absl::GetFlag(FLAGS_split_field)) {
       // Remove constraints between the two sides of the field - these are
       // basically garbage because of how far the camera is. We will use seeding
       // below to connect the two sides
@@ -443,14 +447,15 @@ void TargetMapperReplay::MaybeSolve() {
 
     LOG(INFO) << "Solving for locations of tags with "
               << target_constraints.size() << " constraints";
-    TargetMapper mapper(FLAGS_json_path, target_constraints);
-    mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
+    TargetMapper mapper(absl::GetFlag(FLAGS_json_path), target_constraints);
+    mapper.Solve(absl::GetFlag(FLAGS_field_name),
+                 absl::GetFlag(FLAGS_output_dir));
 
-    if (!FLAGS_dump_constraints_to.empty()) {
-      mapper.DumpConstraints(FLAGS_dump_constraints_to);
+    if (!absl::GetFlag(FLAGS_dump_constraints_to).empty()) {
+      mapper.DumpConstraints(absl::GetFlag(FLAGS_dump_constraints_to));
     }
-    if (!FLAGS_dump_stats_to.empty()) {
-      mapper.DumpStats(FLAGS_dump_stats_to);
+    if (!absl::GetFlag(FLAGS_dump_stats_to).empty()) {
+      mapper.DumpStats(absl::GetFlag(FLAGS_dump_stats_to));
     }
     mapper.PrintDiffs();
   }
@@ -460,9 +465,10 @@ void MappingMain(int argc, char *argv[]) {
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections;
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config =
-      (FLAGS_config.empty()
+      (absl::GetFlag(FLAGS_config).empty()
            ? std::nullopt
-           : std::make_optional(aos::configuration::ReadConfig(FLAGS_config)));
+           : std::make_optional(
+                 aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config))));
 
   // Open logfiles
   aos::logger::LogReader reader(

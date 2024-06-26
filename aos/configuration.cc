@@ -16,11 +16,12 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
@@ -30,11 +31,11 @@
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
 
-DEFINE_uint32(max_queue_size_override, 0,
-              "If nonzero, this is the max number of elements in a queue to "
-              "enforce.  If zero, use the number that the processor that this "
-              "application is compiled for can support.  This is mostly useful "
-              "for config validation, and shouldn't be touched.");
+ABSL_FLAG(uint32_t, max_queue_size_override, 0,
+          "If nonzero, this is the max number of elements in a queue to "
+          "enforce.  If zero, use the number that the processor that this "
+          "application is compiled for can support.  This is mostly useful "
+          "for config validation, and shouldn't be touched.");
 
 namespace aos {
 namespace configuration {
@@ -1007,8 +1008,8 @@ void ValidateUnmergedConfiguration(const Flatbuffer<Configuration> &config) {
       }
 
       CHECK_LT(QueueSize(&config.message(), c) + QueueScratchBufferSize(c),
-               FLAGS_max_queue_size_override != 0
-                   ? FLAGS_max_queue_size_override
+               absl::GetFlag(FLAGS_max_queue_size_override) != 0
+                   ? absl::GetFlag(FLAGS_max_queue_size_override)
                    : std::numeric_limits<
                          ipc_lib::QueueIndex::PackedIndexType>::max())
           << ": More messages/second configured than the queue can hold on "
@@ -1535,9 +1536,10 @@ std::string_view NodeName(const Configuration *config, size_t node_index) {
 }
 
 const Node *GetMyNode(const Configuration *config) {
-  const std::string hostname = (FLAGS_override_hostname.size() > 0)
-                                   ? FLAGS_override_hostname
-                                   : network::GetHostname();
+  const std::string hostname =
+      (absl::GetFlag(FLAGS_override_hostname).size() > 0)
+          ? absl::GetFlag(FLAGS_override_hostname)
+          : network::GetHostname();
   const Node *node = GetNodeFromHostname(config, hostname);
   if (node != nullptr) return node;
 

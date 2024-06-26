@@ -4,7 +4,8 @@
 // /path/to/logfile And then opening the plotting webpage at
 // http://localhost:8080/graph.html
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -13,13 +14,14 @@
 #include "aos/init.h"
 #include "aos/network/web_proxy.h"
 
-DEFINE_string(data_dir, "www", "Directory to serve data files from");
-DEFINE_string(node, "", "Directory to serve data files from");
-DEFINE_int32(buffer_size, -1, "-1 if infinite, in # of messages / channel.");
-DEFINE_double(monotonic_start_time, -1.0, "Start time (sec)");
-DEFINE_double(monotonic_end_time, -1.0, "End time (sec)");
-DEFINE_double(
-    replay_rate, -1,
+ABSL_FLAG(std::string, data_dir, "www", "Directory to serve data files from");
+ABSL_FLAG(std::string, node, "", "Directory to serve data files from");
+ABSL_FLAG(int32_t, buffer_size, -1,
+          "-1 if infinite, in # of messages / channel.");
+ABSL_FLAG(double, monotonic_start_time, -1.0, "Start time (sec)");
+ABSL_FLAG(double, monotonic_end_time, -1.0, "End time (sec)");
+ABSL_FLAG(
+    double, replay_rate, -1,
     "-1 to replay as fast as possible; 1.0 = realtime, 0.5 = half speed.");
 
 int main(int argc, char **argv) {
@@ -34,44 +36,46 @@ int main(int argc, char **argv) {
 
   // If going for "as fast as possible" don't actually use infinity, because we
   // don't want the log reading blocking our use of the epoll handlers.
-  reader.SetRealtimeReplayRate(FLAGS_replay_rate == -1.0
+  reader.SetRealtimeReplayRate(absl::GetFlag(FLAGS_replay_rate) == -1.0
                                    ? std::numeric_limits<double>::max()
-                                   : FLAGS_replay_rate);
+                                   : absl::GetFlag(FLAGS_replay_rate));
 
   std::unique_ptr<aos::EventLoop> event_loop;
 
-  if (FLAGS_node.empty()) {
+  if (absl::GetFlag(FLAGS_node).empty()) {
     CHECK(!aos::configuration::MultiNode(reader.configuration()))
         << "If using a multi-node logfile, please specify --node.";
     event_loop = reader.event_loop_factory()->MakeEventLoop("web_proxy");
   } else {
     event_loop = reader.event_loop_factory()->MakeEventLoop(
-        "web_proxy",
-        aos::configuration::GetNode(reader.configuration(), FLAGS_node));
+        "web_proxy", aos::configuration::GetNode(reader.configuration(),
+                                                 absl::GetFlag(FLAGS_node)));
   }
 
   event_loop->SkipTimingReport();
 
-  if (FLAGS_monotonic_start_time > 0) {
+  if (absl::GetFlag(FLAGS_monotonic_start_time) > 0) {
     event_loop->AddTimer([&reader]() { reader.event_loop_factory()->Exit(); })
         ->Schedule(aos::monotonic_clock::time_point(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                std::chrono::duration<double>(FLAGS_monotonic_start_time))));
+                std::chrono::duration<double>(
+                    absl::GetFlag(FLAGS_monotonic_start_time)))));
 
     reader.event_loop_factory()->Run();
   }
 
   aos::web_proxy::WebProxy web_proxy(
       event_loop.get(), reader.event_loop_factory()->scheduler_epoll(),
-      aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
+      aos::web_proxy::StoreHistory::kYes, absl::GetFlag(FLAGS_buffer_size));
 
-  web_proxy.SetDataPath(FLAGS_data_dir.c_str());
+  web_proxy.SetDataPath(absl::GetFlag(FLAGS_data_dir).c_str());
 
-  if (FLAGS_monotonic_end_time > 0) {
+  if (absl::GetFlag(FLAGS_monotonic_end_time) > 0) {
     event_loop->AddTimer([&web_proxy]() { web_proxy.StopRecording(); })
         ->Schedule(aos::monotonic_clock::time_point(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                std::chrono::duration<double>(FLAGS_monotonic_end_time))));
+                std::chrono::duration<double>(
+                    absl::GetFlag(FLAGS_monotonic_end_time)))));
   }
 
   reader.event_loop_factory()->Run();

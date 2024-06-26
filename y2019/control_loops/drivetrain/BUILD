@@ -200,7 +200,7 @@ cc_test(
         "//frc971/control_loops/drivetrain:splinedrivetrain",
         "//frc971/control_loops/drivetrain:trajectory",
         "//y2019:constants",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ] + cpu_select({
         "amd64": [
             "//third_party/matplotlib-cpp",
@@ -254,7 +254,8 @@ cc_binary(
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

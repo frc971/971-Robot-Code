@@ -1,14 +1,15 @@
 #include "aos/network/timestamp_channel.h"
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 
-DEFINE_bool(combined_timestamp_channel_fallback, true,
-            "If true, fall back to using the combined timestamp channel if the "
-            "single timestamp channel doesn't exist for a timestamp.");
-DEFINE_bool(check_timestamp_channel_frequencies, true,
-            "If true, include a debug CHECK to ensure that remote timestamp "
-            "channels are configured to have at least as great a frequency as "
-            "the corresponding data channel.");
+ABSL_FLAG(bool, combined_timestamp_channel_fallback, true,
+          "If true, fall back to using the combined timestamp channel if the "
+          "single timestamp channel doesn't exist for a timestamp.");
+ABSL_FLAG(bool, check_timestamp_channel_frequencies, true,
+          "If true, include a debug CHECK to ensure that remote timestamp "
+          "channels are configured to have at least as great a frequency as "
+          "the corresponding data channel.");
 
 namespace aos::message_bridge {
 
@@ -55,7 +56,7 @@ const Channel *ChannelTimestampFinder::ForChannel(
     return split_timestamp_channel;
   }
 
-  if (!FLAGS_combined_timestamp_channel_fallback) {
+  if (!absl::GetFlag(FLAGS_combined_timestamp_channel_fallback)) {
     LOG(FATAL) << "Failed to find new timestamp channel {\"name\": \""
                << split_timestamp_channel_name << "\", \"type\": \""
                << RemoteMessage::GetFullyQualifiedName() << "\"} for "
@@ -112,7 +113,7 @@ aos::Sender<RemoteMessage> *ChannelTimestampSender::SenderForChannel(
 
   const Channel *timestamp_channel = finder.ForChannel(channel, connection);
 
-  if (FLAGS_check_timestamp_channel_frequencies) {
+  if (absl::GetFlag(FLAGS_check_timestamp_channel_frequencies)) {
     // Sanity-check that the timestamp channel can actually support full-rate
     // messages coming through on the source channel.
     CHECK_GE(timestamp_channel->frequency(), channel->frequency())

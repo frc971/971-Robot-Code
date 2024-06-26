@@ -3,7 +3,8 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"

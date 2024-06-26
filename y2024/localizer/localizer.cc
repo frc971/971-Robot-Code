@@ -1,6 +1,6 @@
 #include "y2024/localizer/localizer.h"
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -9,38 +9,36 @@
 #include "frc971/vision/target_map_utils.h"
 #include "y2024/constants.h"
 
-DEFINE_double(max_pose_error, 1e-5,
-              "Throw out target poses with a higher pose error than this");
-DEFINE_double(max_distortion, 1000.0, "");
-DEFINE_double(
-    max_pose_error_ratio, 0.4,
-    "Throw out target poses with a higher pose error ratio than this");
-DEFINE_double(distortion_noise_scalar, 4.0,
-              "Scale the target pose distortion factor by this when computing "
-              "the noise.");
-DEFINE_double(
-    max_implied_yaw_error, 5.0,
+ABSL_FLAG(double, max_pose_error, 1e-5,
+          "Throw out target poses with a higher pose error than this");
+ABSL_FLAG(double, max_distortion, 1000.0, "");
+ABSL_FLAG(double, max_pose_error_ratio, 0.4,
+          "Throw out target poses with a higher pose error ratio than this");
+ABSL_FLAG(double, distortion_noise_scalar, 4.0,
+          "Scale the target pose distortion factor by this when computing "
+          "the noise.");
+ABSL_FLAG(
+    double, max_implied_yaw_error, 5.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(
-    max_implied_teleop_yaw_error, 30.0,
+ABSL_FLAG(
+    double, max_implied_teleop_yaw_error, 30.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(max_distance_to_target, 5.0,
-              "Reject target poses that have a 3d distance of more than this "
-              "many meters.");
-DEFINE_double(max_auto_image_robot_speed, 5.0,
-              "Reject target poses when the robot is travelling faster than "
-              "this speed in auto.");
-DEFINE_bool(
-    do_xytheta_corrections, false,
+ABSL_FLAG(double, max_distance_to_target, 5.0,
+          "Reject target poses that have a 3d distance of more than this "
+          "many meters.");
+ABSL_FLAG(double, max_auto_image_robot_speed, 5.0,
+          "Reject target poses when the robot is travelling faster than "
+          "this speed in auto.");
+ABSL_FLAG(
+    bool, do_xytheta_corrections, false,
     "If set, uses the x/y/theta corrector rather than a heading/distance/skew "
     "one. This is better conditioned currently, but is theoretically worse due "
     "to not capturing noise effectively.");
-DEFINE_bool(
-    always_use_extra_tags, true,
-    "If set, we will use the \"deweighted\" tags even in auto mode (this "
-    "affects april tags whose field positions we do not trust as much).");
+ABSL_FLAG(bool, always_use_extra_tags, true,
+          "If set, we will use the \"deweighted\" tags even in auto mode (this "
+          "affects april tags whose field positions we do not trust as much).");
 
 namespace y2024::localizer {
 namespace {
@@ -380,8 +378,8 @@ bool Localizer::DeweightAprilTag(uint64_t target_id) {
 }
 
 namespace {
-// Converts a camera transformation matrix from treating the +Z axis from
-// pointing straight out the lens to having the +X pointing straight out the
+// converts a camera transformation matrix from treating the +z axis from
+// pointing straight out the lens to having the +x pointing straight out the
 // lens, with +Z going "up" (i.e., -Y in the normal convention) and +Y going
 // leftwards (i.e., -X in the normal convention).
 Localizer::Transform ZToXCamera(const Localizer::Transform &transform) {
@@ -419,7 +417,8 @@ void Localizer::HandleTarget(
   }
   double april_tag_noise_scalar = 1.0;
   if (DeweightAprilTag(target_id)) {
-    if (!FLAGS_always_use_extra_tags && utils_.MaybeInAutonomous()) {
+    if (!absl::GetFlag(FLAGS_always_use_extra_tags) &&
+        utils_.MaybeInAutonomous()) {
       VLOG(1) << "Rejecting target due to auto invalid ID " << target_id;
       RejectImage(camera_index, RejectionReason::NO_SUCH_TARGET, debug_builder);
       return;
@@ -454,12 +453,13 @@ void Localizer::HandleTarget(
     VLOG(1) << "Rejecting image due to being too old.";
     return RejectImage(camera_index, RejectionReason::IMAGE_TOO_OLD,
                        debug_builder);
-  } else if (target.pose_error() > FLAGS_max_pose_error) {
+  } else if (target.pose_error() > absl::GetFlag(FLAGS_max_pose_error)) {
     VLOG(1) << "Rejecting target due to high pose error "
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
                        debug_builder);
-  } else if (target.pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+  } else if (target.pose_error_ratio() >
+             absl::GetFlag(FLAGS_max_pose_error_ratio)) {
     VLOG(1) << "Rejecting target due to high pose error ratio "
             << target.pose_error_ratio();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR_RATIO,
@@ -484,7 +484,8 @@ void Localizer::HandleTarget(
   noises(Corrector::kSkew) *= distance_noise_scalar;
   // TODO(james): This is leftover from last year; figure out if we want it.
   // Scale noise by the distortion factor for this detection
-  noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
+  noises *= (1.0 + absl::GetFlag(FLAGS_distortion_noise_scalar) *
+                       target.distortion_factor());
   noises *= april_tag_noise_scalar;
   noises *= (1.0 + std::abs(robot_speed));
 
@@ -522,22 +523,24 @@ void Localizer::HandleTarget(
                                 corrector.observed_camera_pose().abs_theta());
   constexpr double kDegToRad = M_PI / 180.0;
   const double yaw_threshold =
-      (utils_.MaybeInAutonomous() ? FLAGS_max_implied_yaw_error
-                                  : FLAGS_max_implied_teleop_yaw_error) *
+      (utils_.MaybeInAutonomous()
+           ? absl::GetFlag(FLAGS_max_implied_yaw_error)
+           : absl::GetFlag(FLAGS_max_implied_teleop_yaw_error)) *
       kDegToRad;
 
-  if (target.distortion_factor() > FLAGS_max_distortion) {
+  if (target.distortion_factor() > absl::GetFlag(FLAGS_max_distortion)) {
     VLOG(1) << "Rejecting target due to high distortion.";
     return RejectImage(camera_index, RejectionReason::HIGH_DISTORTION,
                        debug_builder);
   } else if (utils_.MaybeInAutonomous() &&
-             (std::abs(robot_speed) > FLAGS_max_auto_image_robot_speed)) {
+             (std::abs(robot_speed) >
+              absl::GetFlag(FLAGS_max_auto_image_robot_speed))) {
     return RejectImage(camera_index, RejectionReason::ROBOT_TOO_FAST,
                        debug_builder);
   } else if (std::abs(camera_yaw_error) > yaw_threshold) {
     return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
                        debug_builder);
-  } else if (distance_to_target > FLAGS_max_distance_to_target) {
+  } else if (distance_to_target > absl::GetFlag(FLAGS_max_distance_to_target)) {
     return RejectImage(camera_index, RejectionReason::HIGH_DISTANCE_TO_TARGET,
                        debug_builder);
   }
@@ -551,15 +554,15 @@ void Localizer::HandleTarget(
   // the camera measurement and the current estimate of the
   // pose. This doesn't affect any of the math, it just makes the code a bit
   // more convenient to write given the Correct() interface we already have.
-  if (FLAGS_do_xytheta_corrections) {
+  if (absl::GetFlag(FLAGS_do_xytheta_corrections)) {
     Eigen::Vector3d Z(measured_pose.rel_pos().x(), measured_pose.rel_pos().y(),
                       measured_pose.rel_theta());
     Eigen::Matrix<double, 3, 1> xyz_noises(0.2, 0.2, 0.5);
     xyz_noises *= distance_noise_scalar;
     xyz_noises *= april_tag_noise_scalar;
     // Scale noise by the distortion factor for this detection
-    xyz_noises *=
-        (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
+    xyz_noises *= (1.0 + absl::GetFlag(FLAGS_distortion_noise_scalar) *
+                             target.distortion_factor());
 
     Eigen::Matrix3d R_xyz = Eigen::Matrix3d::Zero();
     R_xyz.diagonal() = xyz_noises.cwiseAbs2();

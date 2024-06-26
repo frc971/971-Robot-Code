@@ -2,8 +2,8 @@
 #include "aos/init.h"
 #include "y2024/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(arm_trajectories, "arm_trajectories_generated.bfbs",
-              "The path to the generated arm trajectories bfbs file.");
+ABSL_FLAG(std::string, arm_trajectories, "arm_trajectories_generated.bfbs",
+          "The path to the generated arm trajectories bfbs file.");
 
 using y2024::control_loops::superstructure::Superstructure;
 

@@ -2,6 +2,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 
 #include "aos/events/logging/log_reader.h"
@@ -15,11 +16,11 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
-DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
-DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_bool(turret, false, "If true, the camera is on the turret");
-DEFINE_string(base_intrinsics, "",
-              "Intrinsics to use for extrinsics calibration.");
+ABSL_FLAG(std::string, pi, "pi-7971-2", "Pi name to calibrate.");
+ABSL_FLAG(bool, plot, false, "Whether to plot the resulting data.");
+ABSL_FLAG(bool, turret, false, "If true, the camera is on the turret");
+ABSL_FLAG(std::string, base_intrinsics, "",
+          "Intrinsics to use for extrinsics calibration.");
 
 namespace frc971::vision {
 namespace chrono = std::chrono;
@@ -46,7 +47,7 @@ void Main(int argc, char **argv) {
         aos::configuration::GetNode(factory.configuration(), "roborio");
 
     std::optional<uint16_t> pi_number =
-        aos::network::ParsePiOrOrinNumber(FLAGS_pi);
+        aos::network::ParsePiOrOrinNumber(absl::GetFlag(FLAGS_pi));
     CHECK(pi_number);
     LOG(INFO) << "Pi " << *pi_number;
     const aos::Node *const pi_node = aos::configuration::GetNode(
@@ -65,13 +66,13 @@ void Main(int argc, char **argv) {
 
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> intrinsics =
         aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
-            FLAGS_base_intrinsics);
+            absl::GetFlag(FLAGS_base_intrinsics));
     // Now, hook Calibration up to everything.
     Calibration extractor(&factory, pi_event_loop.get(), imu_event_loop.get(),
-                          FLAGS_pi, &intrinsics.message(), TargetType::kCharuco,
-                          "/camera", &data);
+                          absl::GetFlag(FLAGS_pi), &intrinsics.message(),
+                          TargetType::kCharuco, "/camera", &data);
 
-    if (FLAGS_turret) {
+    if (absl::GetFlag(FLAGS_turret)) {
       aos::NodeEventLoopFactory *roborio_factory =
           factory.GetNodeEventLoopFactory(roborio_node->name()->string_view());
       roborio_event_loop->MakeWatcher(
@@ -141,7 +142,7 @@ void Main(int argc, char **argv) {
                    nominal_board_to_world.inverse())
                    .transpose();
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     Plot(data, calibration_parameters);
   }
 }

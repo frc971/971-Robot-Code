@@ -123,7 +123,8 @@ cc_library(
     deps = [
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -357,8 +358,9 @@ cc_binary(
         "//aos/events/logging:log_writer",
         "//aos/logging:log_namer",
         "//frc971/input:joystick_state_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -368,8 +370,9 @@ cc_library(
     hdrs = ["yolov5.h"],
     deps = [
         "//third_party:opencv",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ] + cpu_select({
         "amd64": [
@@ -426,8 +429,9 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//frc971/vision:vision_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

@@ -18,8 +18,9 @@ cc_library(
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

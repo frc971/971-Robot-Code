@@ -1,14 +1,15 @@
 #include <fstream>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "frc971/wpilib/pdp_values_generated.h"
 
-DEFINE_string(output_path, "/tmp/pdp_values.csv", "");
+ABSL_FLAG(std::string, output_path, "/tmp/pdp_values.csv", "");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -27,7 +28,7 @@ int main(int argc, char **argv) {
       event_loop_factory.MakeEventLoop("roborio", roborio);
 
   std::ofstream file_stream;
-  file_stream.open(FLAGS_output_path);
+  file_stream.open(absl::GetFlag(FLAGS_output_path));
   file_stream << "timestamp,currents,voltage\n";
 
   event_loop->SkipAosLog();

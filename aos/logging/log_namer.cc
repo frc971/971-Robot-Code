@@ -11,8 +11,9 @@
 #include <ostream>
 #include <string>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/time/time.h"
@@ -23,14 +24,14 @@
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-DEFINE_string(logging_folder,
+ABSL_FLAG(std::string, logging_folder,
 #ifdef AOS_ARCHITECTURE_arm_frc
-              "",
+          "",
 #else
-              "./logs",
+          "./logs",
 #endif
-              "The folder to log to.  If empty, search for the /media/sd*1/ "
-              "folder and place logs there.");
+          "The folder to log to.  If empty, search for the /media/sd*1/ "
+          "folder and place logs there.");
 
 namespace aos::logging {
 namespace {
@@ -126,7 +127,7 @@ bool FindDevice(char *device, size_t device_size) {
 }  // namespace
 
 std::optional<std::string> MaybeGetLogName(const char *basename) {
-  if (FLAGS_logging_folder.empty()) {
+  if (absl::GetFlag(FLAGS_logging_folder).empty()) {
     char folder[128];
     {
       char dev_name[8];
@@ -147,23 +148,23 @@ std::optional<std::string> MaybeGetLogName(const char *basename) {
                  << "' does not exist. please create it.";
     }
 
-    FLAGS_logging_folder = folder;
+    absl::SetFlag(&FLAGS_logging_folder, folder);
   }
-  const char *folder = FLAGS_logging_folder.c_str();
-  if (access(folder, R_OK | W_OK) == -1) {
+  const std::string folder = absl::GetFlag(FLAGS_logging_folder);
+  if (access(folder.c_str(), R_OK | W_OK) == -1) {
     LOG(FATAL) << "folder '" << folder << "' does not exist. please create it.";
   }
   LOG(INFO) << "logging to folder '" << folder << "'";
 
   char *tmp;
-  AllocateLogName(&tmp, folder, basename);
+  AllocateLogName(&tmp, folder.c_str(), basename);
 
   std::string log_base_name = tmp;
   std::string log_roborio_name = log_base_name + "/";
   free(tmp);
 
   char *tmp2;
-  if (asprintf(&tmp2, "%s/%s-current", folder, basename) == -1) {
+  if (asprintf(&tmp2, "%s/%s-current", folder.c_str(), basename) == -1) {
     PLOG(WARNING) << "couldn't create current symlink name";
   } else {
     if (unlink(tmp2) == -1 && (errno != EROFS && errno != ENOENT)) {

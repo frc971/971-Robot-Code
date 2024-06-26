@@ -12,14 +12,16 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <vector>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/time/time.h"
 #include "frc971/orin/apriltag.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 
-DEFINE_int32(debug_blob_index, 4096, "Blob to print out for");
+ABSL_FLAG(int32_t, debug_blob_index, 4096, "Blob to print out for");
 
 constexpr int kUndistortIterationThreshold = 100;
 constexpr double kUndistortConvergenceEpsilon = 1e-6;
@@ -101,7 +103,7 @@ void GpuDetector::UpdateFitQuads() {
   quad_corners_host_.resize(0);
   VLOG(1) << "Considering " << fit_quads_host_.size();
   for (const FitQuad &quad : fit_quads_host_) {
-    bool print = quad.blob_index == FLAGS_debug_blob_index;
+    bool print = quad.blob_index == absl::GetFlag(FLAGS_debug_blob_index);
     if (!quad.valid) {
       continue;
     }

@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/analysis/in_process_plotter.h"
 #include "aos/init.h"
@@ -8,9 +8,9 @@
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
-DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
-DEFINE_bool(plot, true, "If true, plot");
-DEFINE_bool(plot_thetas, true, "If true, plot the angles");
+ABSL_FLAG(bool, forwards, true, "If true, run the forwards simulation.");
+ABSL_FLAG(bool, plot, true, "If true, plot");
+ABSL_FLAG(bool, plot_thetas, true, "If true, plot the angles");
 
 namespace y2018::control_loops::superstructure::arm {
 
@@ -18,8 +18,9 @@ void Main() {
   frc971::control_loops::arm::Dynamics dynamics(kArmConstants);
   frc971::control_loops::arm::Trajectory trajectory(
       &dynamics,
-      FLAGS_forwards ? MakeNeutralToFrontHighPath()
-                     : Path::Reversed(MakeNeutralToFrontHighPath()),
+      absl::GetFlag(FLAGS_forwards)
+          ? MakeNeutralToFrontHighPath()
+          : Path::Reversed(MakeNeutralToFrontHighPath()),
       0.001);
 
   constexpr double kAlpha0Max = 30.0;
@@ -254,7 +255,7 @@ void Main() {
     t += sim_dt;
   }
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     aos::analysis::Plotter plotter;
 
     plotter.AddFigure();
@@ -324,7 +325,7 @@ void Main() {
     plotter.AddLine(t_array, torque1_hat_t_array, "torque1_hat");
     plotter.Publish();
 
-    if (FLAGS_plot_thetas) {
+    if (absl::GetFlag(FLAGS_plot_thetas)) {
       plotter.AddFigure();
       plotter.Title("Angles");
       plotter.AddLine(t_array, theta0_goal_t_array, "theta0_t_goal");

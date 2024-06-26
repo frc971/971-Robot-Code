@@ -2,8 +2,9 @@
 
 #include <chrono>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "frc971/control_loops/drivetrain/trajectory.h"
@@ -18,7 +19,7 @@
 #include "y2016/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
-DEFINE_bool(plot, false, "If true, plot");
+ABSL_FLAG(bool, plot, false, "If true, plot");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -137,7 +138,7 @@ DrivetrainSimulation::DrivetrainSimulation(
         // Skip this the first time.
         if (!first_) {
           Simulate();
-          if (FLAGS_plot) {
+          if (absl::GetFlag(FLAGS_plot)) {
             EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
 
             ::Eigen::Matrix<double, 2, 1> actual_position = GetPosition();
@@ -368,7 +369,7 @@ void DrivetrainSimulation::Simulate() {
 
 void DrivetrainSimulation::MaybePlot() {
 #if defined(SUPPORT_PLOT)
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     std::cout << "Plotting." << ::std::endl;
     matplotlibcpp::figure();
     matplotlibcpp::plot(actual_x_, actual_y_, {{"label", "actual position"}});

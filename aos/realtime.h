@@ -6,7 +6,26 @@
 #include <ostream>
 #include <string_view>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_format.h"
+
+// Stringifies the cpu_set_t for LOG().
+template <typename Sink>
+void AbslStringify(Sink &sink, const cpu_set_t &cpuset) {
+  sink.Append("{CPUs ");
+  bool first_found = false;
+  for (int i = 0; i < CPU_SETSIZE; ++i) {
+    if (CPU_ISSET(i, &cpuset)) {
+      if (first_found) {
+        sink.Append(", ");
+      }
+      absl::Format(&sink, "%d", i);
+      first_found = true;
+    }
+  }
+  sink.Append("}");
+}
 
 namespace aos {
 
@@ -28,9 +47,6 @@ void ExpandStackSize();
 // This will displayed by `top -H`, dump_rtprio, and show up in logs.
 // name can have a maximum of 16 characters.
 void SetCurrentThreadName(const std::string_view name);
-
-// Stringifies the cpu_set_t for streams.
-std::ostream &operator<<(std::ostream &stream, const cpu_set_t &cpuset);
 
 // Creates a cpu_set_t from a list of CPUs.
 inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {

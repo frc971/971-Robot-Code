@@ -3,7 +3,8 @@
 #include <chrono>
 #include <functional>
 
-#include "gflags/gflags.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "gmock/gmock-matchers.h"
 #include "gtest/gtest.h"
 
@@ -13,7 +14,7 @@
 #include "aos/network/sctp_server.h"
 #include "sctp_lib.h"
 
-DECLARE_bool(disable_ipv6);
+ABSL_DECLARE_FLAG(bool, disable_ipv6);
 
 namespace aos::message_bridge::testing {
 
@@ -128,7 +129,7 @@ class SctpTest : public ::testing::Test {
   static void SetUpTestSuite() {
     EnableSctpAuthIfAvailable();
     // Buildkite seems to have issues with ipv6 sctp sockets...
-    FLAGS_disable_ipv6 = true;
+    absl::SetFlag(&FLAGS_disable_ipv6, true);
   }
 
   void SetUp() override { Run(); }

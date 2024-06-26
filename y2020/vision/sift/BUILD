@@ -21,7 +21,8 @@ cc_test(
         ":get_gaussian_kernel",
         "//aos/testing:googletest",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -158,7 +159,8 @@ cc_library(
     deps = [
         ":fast_gaussian",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -175,7 +177,8 @@ cc_library(
         ":fast_gaussian_all",
         "//third_party:halide_runtime",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -204,7 +207,8 @@ cc_binary(
         "//aos/time",
         "//third_party:opencv",
         "//y2020/vision/sift:sift971",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

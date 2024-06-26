@@ -15,8 +15,8 @@
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 #include "y2023/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_folder, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace y2023::control_loops::superstructure::testing {
 namespace {
@@ -320,11 +320,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     SetEnabled(true);
 
-    if (!FLAGS_output_folder.empty()) {
-      unlink(FLAGS_output_folder.c_str());
+    if (!absl::GetFlag(FLAGS_output_folder).empty()) {
+      unlink(absl::GetFlag(FLAGS_output_folder).c_str());
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_folder);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
     }
   }
 

@@ -9,15 +9,14 @@
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 
-DECLARE_string(override_hostname);
+ABSL_DECLARE_FLAG(std::string, override_hostname);
 
 namespace aos::logger::testing {
 
 class RealtimeLoggerTest : public ::testing::Test {
  protected:
   RealtimeLoggerTest()
-      : shm_dir_(aos::testing::TestTmpDir() + "/aos"),
-        config_file_(
+      : config_file_(
             aos::testing::ArtifactPath("aos/events/pingpong_config.json")),
         config_(aos::configuration::ReadConfig(config_file_)),
         event_loop_factory_(&config_.message()),
@@ -27,16 +26,11 @@ class RealtimeLoggerTest : public ::testing::Test {
         pong_(pong_event_loop_.get()),
         tmpdir_(aos::testing::TestTmpDir()),
         base_name_(tmpdir_ + "/logfile/") {
-    FLAGS_shm_base = shm_dir_;
-
     // Nuke the shm and log dirs, to ensure we aren't being affected by any
     // preexisting tests.
-    aos::util::UnlinkRecursive(shm_dir_);
+    aos::util::UnlinkRecursive(absl::GetFlag(FLAGS_shm_base));
     aos::util::UnlinkRecursive(base_name_);
   }
-
-  gflags::FlagSaver flag_saver_;
-  std::string shm_dir_;
 
   const std::string config_file_;
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
@@ -54,8 +48,7 @@ class RealtimeLoggerTest : public ::testing::Test {
 class RealtimeMultiNodeLoggerTest : public ::testing::Test {
  protected:
   RealtimeMultiNodeLoggerTest()
-      : shm_dir_(aos::testing::TestTmpDir() + "/aos"),
-        config_file_(aos::testing::ArtifactPath(
+      : config_file_(aos::testing::ArtifactPath(
             "aos/events/logging/multinode_pingpong_combined_config.json")),
         config_(aos::configuration::ReadConfig(config_file_)),
         event_loop_factory_(&config_.message()),
@@ -64,16 +57,11 @@ class RealtimeMultiNodeLoggerTest : public ::testing::Test {
         ping_(ping_event_loop_.get()),
         tmpdir_(aos::testing::TestTmpDir()),
         base_name_(tmpdir_ + "/logfile/") {
-    FLAGS_shm_base = shm_dir_;
-
     // Nuke the shm and log dirs, to ensure we aren't being affected by any
     // preexisting tests.
-    aos::util::UnlinkRecursive(shm_dir_);
+    aos::util::UnlinkRecursive(absl::GetFlag(FLAGS_shm_base));
     aos::util::UnlinkRecursive(base_name_);
   }
-
-  gflags::FlagSaver flag_saver_;
-  std::string shm_dir_;
 
   const std::string config_file_;
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
@@ -178,7 +166,7 @@ TEST_F(RealtimeLoggerTest, SingleNodeReplayChannels) {
 // Tests that ReplayChannels causes no messages to be replayed other than what
 // is included on a multi node config
 TEST_F(RealtimeMultiNodeLoggerTest, ReplayChannelsPingTest) {
-  FLAGS_override_hostname = "raspberrypi";
+  absl::SetFlag(&FLAGS_override_hostname, "raspberrypi");
   {
     std::unique_ptr<EventLoop> logger_event_loop =
         event_loop_factory_.MakeEventLoop(
@@ -223,7 +211,7 @@ TEST_F(RealtimeMultiNodeLoggerTest, ReplayChannelsPingTest) {
 // Tests that when remapping a channel included in ReplayChannels messages are
 // sent on the remapped channel
 TEST_F(RealtimeMultiNodeLoggerTest, RemappedReplayChannelsTest) {
-  FLAGS_override_hostname = "raspberrypi";
+  absl::SetFlag(&FLAGS_override_hostname, "raspberrypi");
   {
     std::unique_ptr<EventLoop> logger_event_loop =
         event_loop_factory_.MakeEventLoop(
@@ -275,7 +263,7 @@ TEST_F(RealtimeMultiNodeLoggerTest, RemappedReplayChannelsTest) {
 // exist in the log being replayed, and there's no messages on those
 // channels as well.
 TEST_F(RealtimeMultiNodeLoggerTest, DoesNotExistInReplayChannelsTest) {
-  FLAGS_override_hostname = "raspberrypi";
+  absl::SetFlag(&FLAGS_override_hostname, "raspberrypi");
   {
     std::unique_ptr<EventLoop> logger_event_loop =
         event_loop_factory_.MakeEventLoop(
@@ -335,7 +323,7 @@ using RealtimeMultiNodeLoggerDeathTest = RealtimeMultiNodeLoggerTest;
 // the channel being remapped.
 TEST_F(RealtimeMultiNodeLoggerDeathTest,
        RemapLoggedChannelNotIncludedInReplayChannels) {
-  FLAGS_override_hostname = "raspberrypi";
+  absl::SetFlag(&FLAGS_override_hostname, "raspberrypi");
   {
     std::unique_ptr<EventLoop> logger_event_loop =
         event_loop_factory_.MakeEventLoop(

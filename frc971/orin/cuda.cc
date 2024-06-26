@@ -1,10 +1,10 @@
 #include "frc971/orin/cuda.h"
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 
-DEFINE_bool(
-    sync, false,
+ABSL_FLAG(
+    bool, sync, false,
     "If true, force synchronization after each step to isolate errors better.");
 
 namespace frc971::apriltag {
@@ -17,11 +17,11 @@ void CheckAndSynchronize(std::string_view message) {
 }
 
 void MaybeCheckAndSynchronize() {
-  if (FLAGS_sync) CheckAndSynchronize();
+  if (absl::GetFlag(FLAGS_sync)) CheckAndSynchronize();
 }
 
 void MaybeCheckAndSynchronize(std::string_view message) {
-  if (FLAGS_sync) CheckAndSynchronize(message);
+  if (absl::GetFlag(FLAGS_sync)) CheckAndSynchronize(message);
 }
 
 }  // namespace frc971::apriltag

@@ -3,8 +3,10 @@
 #include <ostream>
 #include <string_view>
 
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "flatbuffers/string.h"
-#include "glog/logging.h"
 
 namespace aos::logging {
 
@@ -31,7 +33,7 @@ void DynamicLogging::HandleDynamicLogCommand(const DynamicLogCommand &command) {
   if (command.vlog_level() < 0) {
     return;
   }
-  FLAGS_v = command.vlog_level();
+  absl::SetGlobalVLogLevel(command.vlog_level());
 }
 
 }  // namespace aos::logging

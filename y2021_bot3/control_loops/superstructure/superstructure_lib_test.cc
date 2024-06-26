@@ -1,6 +1,7 @@
 #include <chrono>
 #include <memory>
 
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/log_writer.h"
@@ -10,8 +11,8 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "y2021_bot3/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_folder, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace y2021_bot3::control_loops::superstructure::testing {
 
@@ -42,11 +43,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     phased_loop_handle_ = test_event_loop_->AddPhasedLoop(
         [this](int) { SendPositionMessage(); }, dt());
 
-    if (!FLAGS_output_folder.empty()) {
-      unlink(FLAGS_output_folder.c_str());
+    if (!absl::GetFlag(FLAGS_output_folder).empty()) {
+      unlink(absl::GetFlag(FLAGS_output_folder).c_str());
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_folder);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
     }
   }
 

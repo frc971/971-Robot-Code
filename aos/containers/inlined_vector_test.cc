@@ -1,19 +1,21 @@
 #include "aos/containers/inlined_vector.h"
 
-#include "gflags/gflags.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "gtest/gtest.h"
 
 #include "aos/realtime.h"
 
-DECLARE_bool(die_on_malloc);
+ABSL_DECLARE_FLAG(bool, die_on_malloc);
 
 namespace aos::testing {
 
 // Checks that we don't malloc until/unless we need to increase the size of the
 // vector.
 TEST(SizedArrayTest, NoUnnecessaryMalloc) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_die_on_malloc = true;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_die_on_malloc, true);
   RegisterMallocHook();
   InlinedVector<int, 5> a;
   {

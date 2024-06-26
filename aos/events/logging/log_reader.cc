@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/escaping.h"
 #include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
@@ -30,47 +31,47 @@
 #include "aos/util/file.h"
 #include "aos/uuid.h"
 
-DEFINE_bool(skip_missing_forwarding_entries, false,
-            "If true, drop any forwarding entries with missing data.  If "
-            "false, CHECK.");
+ABSL_FLAG(bool, skip_missing_forwarding_entries, false,
+          "If true, drop any forwarding entries with missing data.  If "
+          "false, CHECK.");
 
-DECLARE_bool(timestamps_to_csv);
-DEFINE_bool(
-    enable_timestamp_loading, true,
+ABSL_DECLARE_FLAG(bool, timestamps_to_csv);
+ABSL_FLAG(
+    bool, enable_timestamp_loading, true,
     "Enable loading all the timestamps into RAM at startup if they are in "
     "separate files.  This fixes any timestamp queueing problems for the cost "
     "of storing timestamps in RAM only on logs with timestamps logged in "
     "separate files from data.  Only disable this if you are reading a really "
     "long log file and are experiencing memory problems due to loading all the "
     "timestamps into RAM.");
-DEFINE_bool(
-    force_timestamp_loading, false,
+ABSL_FLAG(
+    bool, force_timestamp_loading, false,
     "Force loading all the timestamps into RAM at startup.  This fixes any "
     "timestamp queueing problems for the cost of storing timestamps in RAM and "
     "potentially reading each log twice.");
 
-DEFINE_bool(skip_order_validation, false,
-            "If true, ignore any out of orderness in replay");
+ABSL_FLAG(bool, skip_order_validation, false,
+          "If true, ignore any out of orderness in replay");
 
-DEFINE_double(
-    time_estimation_buffer_seconds, 2.0,
+ABSL_FLAG(
+    double, time_estimation_buffer_seconds, 2.0,
     "The time to buffer ahead in the log file to accurately reconstruct time.");
 
-DEFINE_string(
-    start_time, "",
+ABSL_FLAG(
+    std::string, start_time, "",
     "If set, start at this point in time in the log on the realtime clock.");
-DEFINE_string(
-    end_time, "",
+ABSL_FLAG(
+    std::string, end_time, "",
     "If set, end at this point in time in the log on the realtime clock.");
 
-DEFINE_bool(drop_realtime_messages_before_start, false,
-            "If set, will drop any messages sent before the start of the "
-            "logfile in realtime replay. Setting this guarantees consistency "
-            "in timing with the original logfile, but means that you lose "
-            "access to fetched low-frequency messages.");
+ABSL_FLAG(bool, drop_realtime_messages_before_start, false,
+          "If set, will drop any messages sent before the start of the "
+          "logfile in realtime replay. Setting this guarantees consistency "
+          "in timing with the original logfile, but means that you lose "
+          "access to fetched low-frequency messages.");
 
-DEFINE_double(
-    threaded_look_ahead_seconds, 2.0,
+ABSL_FLAG(
+    double, threaded_look_ahead_seconds, 2.0,
     "Time, in seconds, to add to look-ahead when using multi-threaded replay. "
     "Can validly be zero, but higher values are encouraged for realtime replay "
     "in order to prevent the replay from ever having to block on waiting for "
@@ -190,8 +191,8 @@ LogReader::LogReader(LogFilesContainer log_files,
       replay_channels_(replay_channels),
       config_remapper_(log_files_.config().get(), replay_configuration_,
                        replay_channels_) {
-  SetStartTime(FLAGS_start_time);
-  SetEndTime(FLAGS_end_time);
+  SetStartTime(absl::GetFlag(FLAGS_start_time));
+  SetEndTime(absl::GetFlag(FLAGS_end_time));
 
   {
     // Log files container validates that log files shared the same config.
@@ -442,13 +443,13 @@ void LogReader::RegisterWithoutStarting(
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_->configuration(), logged_configuration(),
-          log_files_.boots(), FLAGS_skip_order_validation,
+          log_files_.boots(), absl::GetFlag(FLAGS_skip_order_validation),
           timestamp_queue_strategy ==
                   TimestampQueueStrategy::kQueueTimestampsAtStartup
               ? chrono::seconds(0)
               : chrono::duration_cast<chrono::nanoseconds>(
                     chrono::duration<double>(
-                        FLAGS_time_estimation_buffer_seconds)));
+                        absl::GetFlag(FLAGS_time_estimation_buffer_seconds))));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
@@ -625,7 +626,7 @@ void LogReader::StartAfterRegister(
                                                : monotonic_clock::min_time);
   }
 
-  if (FLAGS_timestamps_to_csv) {
+  if (absl::GetFlag(FLAGS_timestamps_to_csv)) {
     filters_->Start(event_loop_factory);
   }
 }
@@ -640,8 +641,8 @@ message_bridge::NoncausalOffsetEstimator *LogReader::GetFilter(
 
 TimestampQueueStrategy LogReader::ComputeTimestampQueueStrategy() const {
   if ((log_files_.TimestampsStoredSeparately() &&
-       FLAGS_enable_timestamp_loading) ||
-      FLAGS_force_timestamp_loading) {
+       absl::GetFlag(FLAGS_enable_timestamp_loading)) ||
+      absl::GetFlag(FLAGS_force_timestamp_loading)) {
     return TimestampQueueStrategy::kQueueTimestampsAtStartup;
   } else {
     return TimestampQueueStrategy::kQueueTogether;
@@ -658,13 +659,13 @@ void LogReader::Register(EventLoop *event_loop) {
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop->configuration(), logged_configuration(),
-          log_files_.boots(), FLAGS_skip_order_validation,
+          log_files_.boots(), absl::GetFlag(FLAGS_skip_order_validation),
           timestamp_queue_strategy ==
                   TimestampQueueStrategy::kQueueTimestampsAtStartup
               ? chrono::seconds(0)
               : chrono::duration_cast<chrono::nanoseconds>(
                     chrono::duration<double>(
-                        FLAGS_time_estimation_buffer_seconds)));
+                        absl::GetFlag(FLAGS_time_estimation_buffer_seconds))));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
@@ -860,7 +861,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
         state->event_loop()->context().monotonic_event_time;
     if (event_loop_factory_ != nullptr) {
       // Only enforce exact timing in simulation.
-      if (!FLAGS_skip_order_validation) {
+      if (!absl::GetFlag(FLAGS_skip_order_validation)) {
         CHECK(monotonic_now == timestamped_message.monotonic_event_time.time)
             << ": " << FlatbufferToJson(state->event_loop()->node()) << " Now "
             << monotonic_now << " trying to send "
@@ -884,11 +885,12 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
             state->monotonic_start_time(
                 timestamped_message.monotonic_event_time.boot) ||
         event_loop_factory_ != nullptr ||
-        !FLAGS_drop_realtime_messages_before_start) {
+        !absl::GetFlag(FLAGS_drop_realtime_messages_before_start)) {
       if (timestamped_message.data != nullptr && !state->found_last_message()) {
         if (timestamped_message.monotonic_remote_time !=
                 BootTimestamp::min_time() &&
-            !FLAGS_skip_order_validation && event_loop_factory_ != nullptr) {
+            !absl::GetFlag(FLAGS_skip_order_validation) &&
+            event_loop_factory_ != nullptr) {
           // Confirm that the message was sent on the sending node before the
           // destination node (this node).  As a proxy, do this by making sure
           // that time on the source node is past when the message was sent.
@@ -899,7 +901,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
           // fix that.
           BootTimestamp monotonic_remote_now =
               state->monotonic_remote_now(timestamped_message.channel_index);
-          if (!FLAGS_skip_order_validation) {
+          if (!absl::GetFlag(FLAGS_skip_order_validation)) {
             CHECK_EQ(timestamped_message.monotonic_remote_time.boot,
                      monotonic_remote_now.boot)
                 << state->event_loop()->node()->name()->string_view() << " to "
@@ -974,7 +976,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
                       state->monotonic_remote_start_time(
                           timestamped_message.monotonic_remote_time.boot,
                           timestamped_message.channel_index) &&
-                  !FLAGS_skip_missing_forwarding_entries)) {
+                  !absl::GetFlag(FLAGS_skip_missing_forwarding_entries))) {
         if (!state->found_last_message()) {
           // We've found a timestamp without data that we expect to have data
           // for. This likely means that we are at the end of the log file.
@@ -1130,8 +1132,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
       // primed).
       state->QueueThreadUntil(
           next_time + std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          std::chrono::duration<double>(
-                              FLAGS_threaded_look_ahead_seconds)));
+                          std::chrono::duration<double>(absl::GetFlag(
+                              FLAGS_threaded_look_ahead_seconds))));
       state->MaybeSetClockOffset();
       state->Schedule(next_time.time);
       state->SetUpStartupTimer();
@@ -1787,7 +1789,8 @@ TimestampedMessage LogReader::State::PopOldest() {
     message_queuer_->SetState(
         message.value().monotonic_event_time +
         std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::duration<double>(FLAGS_threaded_look_ahead_seconds)));
+            std::chrono::duration<double>(
+                absl::GetFlag(FLAGS_threaded_look_ahead_seconds))));
     VLOG(1) << "Popped " << message.value()
             << configuration::CleanedChannelToString(
                    event_loop_->configuration()->channels()->Get(
@@ -1872,8 +1875,9 @@ void LogReader::State::MaybeSeedSortedMessages() {
       TimestampQueueStrategy::kQueueTimestampsAtStartup)
     return;
 
-  timestamp_mapper_->QueueFor(chrono::duration_cast<chrono::seconds>(
-      chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
+  timestamp_mapper_->QueueFor(
+      chrono::duration_cast<chrono::seconds>(chrono::duration<double>(
+          absl::GetFlag(FLAGS_time_estimation_buffer_seconds))));
 }
 
 void LogReader::State::Deregister() {

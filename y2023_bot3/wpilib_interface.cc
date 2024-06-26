@@ -11,6 +11,7 @@
 #include <mutex>
 #include <thread>
 
+#include "absl/flags/flag.h"
 #include "ctre/phoenix/CANifier.h"
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -60,9 +61,9 @@
 #include "y2023_bot3/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_position_generated.h"
 
-DEFINE_bool(ctre_diag_server, false,
-            "If true, enable the diagnostics server for interacting with "
-            "devices on the CAN bus using Phoenix Tuner");
+ABSL_FLAG(bool, ctre_diag_server, false,
+          "If true, enable the diagnostics server for interacting with "
+          "devices on the CAN bus using Phoenix Tuner");
 
 using ::aos::monotonic_clock;
 using ::y2023_bot3::constants::Values;
@@ -642,7 +643,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 6.
     // Set up CAN.
-    if (!FLAGS_ctre_diag_server) {
+    if (!absl::GetFlag(FLAGS_ctre_diag_server)) {
       c_Phoenix_Diagnostics_SetSecondsToStart(-1);
       c_Phoenix_Diagnostics_Dispose();
     }

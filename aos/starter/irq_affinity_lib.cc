@@ -7,12 +7,13 @@
 #include <ostream>
 #include <utility>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 
 #include "aos/scoped/scoped_fd.h"
 

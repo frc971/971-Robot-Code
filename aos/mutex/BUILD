@@ -12,7 +12,8 @@ cc_library(
     deps = [
         "//aos/ipc_lib:aos_sync",
         "//aos/type_traits",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -29,6 +30,7 @@ cc_test(
         "//aos/testing:test_shm",
         "//aos/time",
         "//aos/util:death_test_log_implementation",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

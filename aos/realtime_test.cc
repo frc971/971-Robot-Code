@@ -1,12 +1,15 @@
 #include "aos/realtime.h"
 
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
+#include "absl/base/internal/raw_logging.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/init.h"
 
-DECLARE_bool(die_on_malloc);
+ABSL_DECLARE_FLAG(bool, die_on_malloc);
 
 namespace aos::testing {
 
@@ -129,7 +132,7 @@ TEST(RealtimeDeathTest, Realloc) {
         *b = 5;
         EXPECT_EQ(*b, 5);
       },
-      "RAW: Delete");  // realloc free first, then allocates
+      "RAW: Malloced");
 }
 
 TEST(RealtimeDeathTest, Calloc) {
@@ -175,15 +178,15 @@ TEST(RealtimeDeathTest, SignalHandler) {
         int x = reinterpret_cast<const volatile int *>(0)[0];
         LOG(INFO) << x;
       },
-      "\\*\\*\\* Aborted at .*");
+      "\\*\\*\\* SIGSEGV received at .*");
 }
 
-// Tests that RAW_LOG(FATAL) explodes properly.
+// Tests that ABSL_RAW_LOG(FATAL) explodes properly.
 TEST(RealtimeDeathTest, RawFatal) {
   EXPECT_DEATH(
       {
         ScopedRealtime rt;
-        RAW_LOG(FATAL, "Cute message here\n");
+        ABSL_RAW_LOG(FATAL, "Cute message here\n");
       },
       "Cute message here");
 }
@@ -210,10 +213,9 @@ TEST(RealtimeDeathTest, SetAffinityErrorMessage) {
 // we can't test CHECK statements before turning die_on_malloc on globally.
 GTEST_API_ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  FLAGS_logtostderr = true;
 
 #if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
-  FLAGS_die_on_malloc = true;
+  absl::SetFlag(&FLAGS_die_on_malloc, true);
 #endif
 
   aos::InitGoogle(&argc, &argv);

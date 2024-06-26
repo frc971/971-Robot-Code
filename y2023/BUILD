@@ -260,8 +260,9 @@ cc_library(
         "//y2023/control_loops/superstructure/arm:arm_constants",
         "//y2023/control_loops/superstructure/roll:roll_plants",
         "//y2023/control_loops/superstructure/wrist:wrist_plants",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -352,7 +353,8 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/input:joystick_state_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

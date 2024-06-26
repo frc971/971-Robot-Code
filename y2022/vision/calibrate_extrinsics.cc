@@ -1,5 +1,6 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 
 #include "aos/events/logging/log_reader.h"
@@ -14,16 +15,17 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
-DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
-DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_bool(turret, true, "If true, the camera is on the turret");
-DEFINE_string(target_type, "charuco",
-              "Type of target: aruco|charuco|charuco_diamond");
-DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
-DEFINE_string(output_logs, "/tmp/calibration/",
-              "Output folder for visualization logs.");
-DEFINE_string(base_intrinsics, "",
-              "Intrinsics to use for extrinsics calibration.");
+ABSL_FLAG(std::string, pi, "pi-7971-2", "Pi name to calibrate.");
+ABSL_FLAG(bool, plot, false, "Whether to plot the resulting data.");
+ABSL_FLAG(bool, turret, true, "If true, the camera is on the turret");
+ABSL_FLAG(std::string, target_type, "charuco",
+          "Type of target: aruco|charuco|charuco_diamond");
+ABSL_FLAG(std::string, image_channel, "/camera",
+          "Channel to listen for images on");
+ABSL_FLAG(std::string, output_logs, "/tmp/calibration/",
+          "Output folder for visualization logs.");
+ABSL_FLAG(std::string, base_intrinsics, "",
+          "Intrinsics to use for extrinsics calibration.");
 
 namespace frc971::vision {
 namespace chrono = std::chrono;
@@ -36,7 +38,7 @@ using aos::monotonic_clock;
 void Main(int argc, char **argv) {
   CalibrationData data;
   std::optional<uint16_t> pi_number =
-      aos::network::ParsePiOrOrinNumber(FLAGS_pi);
+      aos::network::ParsePiOrOrinNumber(absl::GetFlag(FLAGS_pi));
   CHECK(pi_number);
   const std::string pi_name = absl::StrCat("pi", *pi_number);
   LOG(INFO) << "Pi " << *pi_number;
@@ -83,29 +85,30 @@ void Main(int argc, char **argv) {
     std::unique_ptr<aos::EventLoop> logger_loop =
         factory.MakeEventLoop("logger", pi_node);
     aos::logger::Logger logger(logger_loop.get());
-    logger.StartLoggingOnRun(FLAGS_output_logs);
+    logger.StartLoggingOnRun(absl::GetFlag(FLAGS_output_logs));
 
     TargetType target_type = TargetType::kCharuco;
-    if (FLAGS_target_type == "aruco") {
+    if (absl::GetFlag(FLAGS_target_type) == "aruco") {
       target_type = TargetType::kAruco;
-    } else if (FLAGS_target_type == "charuco") {
+    } else if (absl::GetFlag(FLAGS_target_type) == "charuco") {
       target_type = TargetType::kCharuco;
-    } else if (FLAGS_target_type == "charuco_diamond") {
+    } else if (absl::GetFlag(FLAGS_target_type) == "charuco_diamond") {
       target_type = TargetType::kCharucoDiamond;
     } else {
-      LOG(FATAL) << "Unknown target type: " << FLAGS_target_type
+      LOG(FATAL) << "Unknown target type: " << absl::GetFlag(FLAGS_target_type)
                  << ", expected: aruco|charuco|charuco_diamond";
     }
 
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> intrinsics =
         aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
-            FLAGS_base_intrinsics);
+            absl::GetFlag(FLAGS_base_intrinsics));
     // Now, hook Calibration up to everything.
     Calibration extractor(&factory, pi_event_loop.get(), imu_event_loop.get(),
-                          FLAGS_pi, &intrinsics.message(), target_type,
-                          FLAGS_image_channel, &data);
+                          absl::GetFlag(FLAGS_pi), &intrinsics.message(),
+                          target_type, absl::GetFlag(FLAGS_image_channel),
+                          &data);
 
-    if (FLAGS_turret) {
+    if (absl::GetFlag(FLAGS_turret)) {
       aos::NodeEventLoopFactory *roborio_factory =
           factory.GetNodeEventLoopFactory(roborio_node->name()->string_view());
       roborio_event_loop->MakeWatcher(
@@ -253,12 +256,12 @@ void Main(int argc, char **argv) {
                    nominal_board_to_world.inverse())
                    .transpose();
 
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     LOG(INFO) << "Showing visualization";
     Visualize(data, calibration_parameters);
   }
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     Plot(data, calibration_parameters);
   }
 }  // namespace vision

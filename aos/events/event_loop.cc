@@ -1,15 +1,17 @@
 #include "aos/events/event_loop.h"
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/logging/implementations.h"
 #include "aos/realtime.h"
 
-DEFINE_bool(timing_reports, true, "Publish timing reports.");
-DEFINE_int32(timing_report_ms, 1000,
-             "Period in milliseconds to publish timing reports at.");
+ABSL_FLAG(bool, timing_reports, true, "Publish timing reports.");
+ABSL_FLAG(int32_t, timing_report_ms, 1000,
+          "Period in milliseconds to publish timing reports at.");
 
 namespace aos {
 namespace {
@@ -157,7 +159,9 @@ PhasedLoopHandler::~PhasedLoopHandler() {}
 EventLoop::EventLoop(const Configuration *configuration)
     : version_string_(default_version_string_),
       timing_report_(flatbuffers::DetachedBuffer()),
-      configuration_(configuration) {}
+      configuration_(configuration) {
+  CHECK(configuration != nullptr);
+}
 
 EventLoop::~EventLoop() {
   if (!senders_.empty()) {
@@ -545,7 +549,7 @@ void EventLoop::UpdateTimingReport() {
 }
 
 void EventLoop::MaybeScheduleTimingReports() {
-  if (FLAGS_timing_reports && !skip_timing_report_) {
+  if (absl::GetFlag(FLAGS_timing_reports) && !skip_timing_report_) {
     CHECK(!timing_report_sender_) << ": Timing reports already scheduled.";
     // Make a raw sender for the report.
     const Channel *channel = configuration::GetChannel(
@@ -578,8 +582,9 @@ void EventLoop::MaybeScheduleTimingReports() {
     timing_reports_timer->set_name("timing_reports");
     OnRun([this, timing_reports_timer]() {
       timing_reports_timer->Schedule(
-          monotonic_now() + std::chrono::milliseconds(FLAGS_timing_report_ms),
-          std::chrono::milliseconds(FLAGS_timing_report_ms));
+          monotonic_now() +
+              std::chrono::milliseconds(absl::GetFlag(FLAGS_timing_report_ms)),
+          std::chrono::milliseconds(absl::GetFlag(FLAGS_timing_report_ms)));
     });
 
     UpdateTimingReport();

@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/math.h"
@@ -12,9 +14,9 @@
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(just_shoot, false,
-            "If true, run the autonomous that just shoots balls.");
+ABSL_FLAG(bool, spline_auto, false, "If true, define a spline autonomous mode");
+ABSL_FLAG(bool, just_shoot, false,
+          "If true, run the autonomous that just shoots balls.");
 
 namespace y2020::actors {
 
@@ -93,7 +95,7 @@ void AutonomousActor::Replan() {
     return;
   }
   sent_starting_position_ = false;
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
@@ -161,7 +163,7 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     SplineAuto();
   } else {
     if (practice_robot_) {

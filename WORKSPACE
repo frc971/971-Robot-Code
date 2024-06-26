@@ -462,11 +462,6 @@ http_archive(
     url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.zst",
 )
 
-local_repository(
-    name = "com_github_gflags_gflags",
-    path = "third_party/gflags",
-)
-
 # Generated with:
 # git fetch https://github.com/wpilibsuite/ni-libraries main
 # git archive --output=allwpilib_ni-libraries_776db4e8aed31a651fa2f590e7468c69b384b42a.tar.gz --format=tar.gz 776db4e8aed31a651fa2f590e7468c69b384b42a
@@ -674,11 +669,6 @@ remote_java_repository(
     version = "11",
 )
 
-local_repository(
-    name = "com_github_google_glog",
-    path = "third_party/google-glog",
-)
-
 http_archive(
     name = "com_google_googletest",
     patch_args = ["-p1"],
@@ -701,9 +691,9 @@ http_archive(
     name = "com_google_ceres_solver",
     patch_args = ["-p1"],
     patches = ["//third_party:ceres.patch"],
-    sha256 = "a4c32939bd694a4b59fc50c244abda5d49863a56e77437b9d3bc398e17d59e20",
-    strip_prefix = "ceres-solver-7f9cc571b03632f1df93ea35725a1f5dfffe2c72",
-    urls = ["https://github.com/ceres-solver/ceres-solver/archive/7f9cc571b03632f1df93ea35725a1f5dfffe2c72.zip"],
+    sha256 = "5fef6cd0ed744a09e20d1c341a15b0f94ed0c8df43537e198a869e6c242c99d5",
+    strip_prefix = "ceres-solver-bd323ce698748bef0686eb27cb6cea4f88bb4f44",
+    urls = ["https://github.com/ceres-solver/ceres-solver/archive/bd323ce698748bef0686eb27cb6cea4f88bb4f44.zip"],
 )
 
 http_archive(
@@ -1771,5 +1761,12 @@ http_archive(
     build_file = "@//debian:symengine.BUILD",
     sha256 = "1b5c3b0bc6a9f187635f93585649f24a18e9c7f2167cebcd885edeaaf211d956",
     strip_prefix = "symengine-0.12.0",
-    url = "http://software.frc971.org/Build-Dependencies/github.com/symengine/symengine/releases/download/v0.12.0/symengine-0.12.0.tar.gz",
+    url = "https://github.com/symengine/symengine/releases/download/v0.12.0/symengine-0.12.0.tar.gz",
+)
+
+http_archive(
+    name = "com_google_tcmalloc",
+    sha256 = "f11a004d7361ac6cd3e41fd573b08a92db28220934e8d4c82344ce0aeb20d1e4",
+    strip_prefix = "tcmalloc-6c3e8bf43de02934525b3760571ca8781dca1869",
+    url = "https://github.com/google/tcmalloc/archive/6c3e8bf43de02934525b3760571ca8781dca1869.zip",
 )

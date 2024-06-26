@@ -2,11 +2,12 @@
 #define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_DYNAMICS_H_
 
 #include "Eigen/Dense"
-#include "gflags/gflags.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 
 #include "frc971/control_loops/runge_kutta.h"
 
-DECLARE_bool(gravity);
+ABSL_DECLARE_FLAG(bool, gravity);
 
 namespace frc971::control_loops::arm {
 
@@ -202,7 +203,7 @@ class Dynamics {
             arm_constants_.r1 * arm_constants_.m1 * ::std::sin(X(2)) *
                 accel_due_to_gravity)
                .finished() *
-           (FLAGS_gravity ? 1.0 : 0.0);
+           (absl::GetFlag(FLAGS_gravity) ? 1.0 : 0.0);
   }
 
   const ::Eigen::Matrix<double, 4, 1> UnboundedDiscreteDynamics(

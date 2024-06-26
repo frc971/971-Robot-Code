@@ -2,7 +2,10 @@
 
 #include <random>
 
-#include "glog/logging.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/simulated_event_loop.h"
@@ -10,8 +13,8 @@
 #include "aos/testing/random_seed.h"
 #include "aos/util/math.h"
 
-DECLARE_int32(min_target_id);
-DECLARE_int32(max_target_id);
+ABSL_DECLARE_FLAG(int32_t, min_target_id);
+ABSL_DECLARE_FLAG(int32_t, max_target_id);
 
 namespace frc971::vision {
 
@@ -342,8 +345,8 @@ TEST(DataAdapterTest, MatchTargetDetections) {
 }
 
 TEST(TargetMapperTest, TwoTargetsOneConstraint) {
-  FLAGS_min_target_id = 0;
-  FLAGS_max_target_id = 1;
+  absl::SetFlag(&FLAGS_min_target_id, 0);
+  absl::SetFlag(&FLAGS_max_target_id, 1);
 
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
@@ -368,8 +371,8 @@ TEST(TargetMapperTest, TwoTargetsOneConstraint) {
 }
 
 TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
-  FLAGS_min_target_id = 0;
-  FLAGS_max_target_id = 1;
+  absl::SetFlag(&FLAGS_min_target_id, 0);
+  absl::SetFlag(&FLAGS_max_target_id, 1);
 
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
@@ -400,8 +403,8 @@ TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
 }
 
 TEST(TargetMapperTest, TwoTargetsOneNoisyConstraint) {
-  FLAGS_min_target_id = 0;
-  FLAGS_max_target_id = 1;
+  absl::SetFlag(&FLAGS_min_target_id, 0);
+  absl::SetFlag(&FLAGS_max_target_id, 1);
 
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
@@ -486,8 +489,8 @@ class ChargedUpTargetMapperTest : public ::testing::Test {
 // when freeing memory. For some reason this segfault occurs only in this test,
 // but when running the test with gdb it doesn't occur...
 TEST_F(ChargedUpTargetMapperTest, DISABLED_FieldCircleMotion) {
-  FLAGS_min_target_id = 1;
-  FLAGS_max_target_id = 8;
+  absl::SetFlag(&FLAGS_min_target_id, 1);
+  absl::SetFlag(&FLAGS_max_target_id, 8);
 
   // Read target map
   auto target_map_fbs = aos::JsonFileToFlatbuffer<TargetMap>(

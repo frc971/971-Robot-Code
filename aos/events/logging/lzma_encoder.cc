@@ -1,8 +1,10 @@
 #include "aos/events/logging/lzma_encoder.h"
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
-DEFINE_int32(lzma_threads, 1, "Number of threads to use for encoding");
+ABSL_FLAG(int32_t, lzma_threads, 1, "Number of threads to use for encoding");
 
 namespace aos::logger {
 namespace {
@@ -58,14 +60,14 @@ LzmaEncoder::LzmaEncoder(size_t max_message_size,
   CHECK_LE(compression_preset_, 9u)
       << ": Compression preset must be in the range [0, 9].";
 
-  if (FLAGS_lzma_threads <= 1) {
+  if (absl::GetFlag(FLAGS_lzma_threads) <= 1) {
     lzma_ret status =
         lzma_easy_encoder(&stream_, compression_preset_, LZMA_CHECK_CRC64);
     CHECK(LzmaCodeIsOk(status));
   } else {
     lzma_mt mt_options;
     memset(&mt_options, 0, sizeof(mt_options));
-    mt_options.threads = FLAGS_lzma_threads;
+    mt_options.threads = absl::GetFlag(FLAGS_lzma_threads);
     mt_options.block_size = block_size;
     // Compress for at most 100 ms before relinquishing control back to the main
     // thread.

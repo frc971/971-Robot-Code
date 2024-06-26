@@ -1,5 +1,6 @@
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
@@ -8,11 +9,10 @@
 #include "aos/network/sctp_lib.h"
 #include "aos/sha256.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config.");
-DEFINE_int32(rt_priority, -1, "If > 0, run as this RT priority");
-DEFINE_bool(
-    wants_sctp_authentication, false,
-    "When set, try to use SCTP authentication if provided by the kernel");
+ABSL_FLAG(std::string, config, "aos_config.json", "Path to the config.");
+ABSL_FLAG(int32_t, rt_priority, -1, "If > 0, run as this RT priority");
+ABSL_FLAG(bool, wants_sctp_authentication, false,
+          "When set, try to use SCTP authentication if provided by the kernel");
 
 namespace aos::message_bridge {
 
@@ -20,15 +20,15 @@ using ::aos::util::ReadFileToVecOrDie;
 
 int Main() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
-  if (FLAGS_rt_priority > 0) {
-    event_loop.SetRuntimeRealtimePriority(FLAGS_rt_priority);
+  if (absl::GetFlag(FLAGS_rt_priority) > 0) {
+    event_loop.SetRuntimeRealtimePriority(absl::GetFlag(FLAGS_rt_priority));
   }
 
   MessageBridgeServer app(&event_loop, Sha256(config.span()),
-                          FLAGS_wants_sctp_authentication
+                          absl::GetFlag(FLAGS_wants_sctp_authentication)
                               ? SctpAuthMethod::kAuth
                               : SctpAuthMethod::kNoAuth);
 

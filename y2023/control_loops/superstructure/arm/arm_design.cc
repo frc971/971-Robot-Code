@@ -1,3 +1,5 @@
+#include "absl/flags/flag.h"
+
 #include "aos/analysis/in_process_plotter.h"
 #include "aos/init.h"
 #include "frc971/control_loops/dlqr.h"
@@ -5,17 +7,17 @@
 #include "frc971/control_loops/jacobian.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
 
-DEFINE_double(lqr_proximal_pos, 0.15, "Position LQR gain");
-DEFINE_double(lqr_proximal_vel, 4.0, "Velocity LQR gain");
-DEFINE_double(lqr_distal_pos, 0.20, "Position LQR gain");
-DEFINE_double(lqr_distal_vel, 4.0, "Velocity LQR gain");
-DEFINE_double(fx, 0.0, "X force");
-DEFINE_double(fy, 0.0, "y force");
+ABSL_FLAG(double, lqr_proximal_pos, 0.15, "Position LQR gain");
+ABSL_FLAG(double, lqr_proximal_vel, 4.0, "Velocity LQR gain");
+ABSL_FLAG(double, lqr_distal_pos, 0.20, "Position LQR gain");
+ABSL_FLAG(double, lqr_distal_vel, 4.0, "Velocity LQR gain");
+ABSL_FLAG(double, fx, 0.0, "X force");
+ABSL_FLAG(double, fy, 0.0, "y force");
 
-DEFINE_double(start0, 0.0, "starting position on proximal");
-DEFINE_double(start1, 0.0, "starting position on distal");
-DEFINE_double(goal0, 0.0, "goal position on proximal");
-DEFINE_double(goal1, 0.0, "goal position on distal");
+ABSL_FLAG(double, start0, 0.0, "starting position on proximal");
+ABSL_FLAG(double, start1, 0.0, "starting position on distal");
+ABSL_FLAG(double, goal0, 0.0, "goal position on proximal");
+ABSL_FLAG(double, goal1, 0.0, "goal position on distal");
 
 namespace y2023::control_loops::superstructure::arm {
 
@@ -26,14 +28,14 @@ int Main() {
 
   ::Eigen::Matrix<double, 4, 1> X = ::Eigen::Matrix<double, 4, 1>::Zero();
   ::Eigen::Matrix<double, 4, 1> goal = ::Eigen::Matrix<double, 4, 1>::Zero();
-  goal(0, 0) = FLAGS_goal0;
+  goal(0, 0) = absl::GetFlag(FLAGS_goal0);
   goal(1, 0) = 0;
-  goal(2, 0) = FLAGS_goal1;
+  goal(2, 0) = absl::GetFlag(FLAGS_goal1);
   goal(3, 0) = 0;
 
-  X(0, 0) = FLAGS_start0;
+  X(0, 0) = absl::GetFlag(FLAGS_start0);
   X(1, 0) = 0;
-  X(2, 0) = FLAGS_start1;
+  X(2, 0) = absl::GetFlag(FLAGS_start1);
   X(3, 0) = 0;
   ::Eigen::Matrix<double, 2, 1> U = ::Eigen::Matrix<double, 2, 1>::Zero();
 
@@ -52,10 +54,10 @@ int Main() {
   std::vector<double> torque0;
   std::vector<double> torque1;
 
-  const double kProximalPosLQR = FLAGS_lqr_proximal_pos;
-  const double kProximalVelLQR = FLAGS_lqr_proximal_vel;
-  const double kDistalPosLQR = FLAGS_lqr_distal_pos;
-  const double kDistalVelLQR = FLAGS_lqr_distal_vel;
+  const double kProximalPosLQR = absl::GetFlag(FLAGS_lqr_proximal_pos);
+  const double kProximalVelLQR = absl::GetFlag(FLAGS_lqr_proximal_vel);
+  const double kDistalPosLQR = absl::GetFlag(FLAGS_lqr_distal_pos);
+  const double kDistalVelLQR = absl::GetFlag(FLAGS_lqr_distal_vel);
   const ::Eigen::DiagonalMatrix<double, 4> Q =
       (::Eigen::DiagonalMatrix<double, 4>().diagonal()
            << 1.0 / ::std::pow(kProximalPosLQR, 2),
@@ -74,8 +76,9 @@ int Main() {
   {
     const ::Eigen::Matrix<double, 2, 1> torque =
         dynamics
-            .TorqueFromForce(X,
-                             ::Eigen::Matrix<double, 2, 1>(FLAGS_fx, FLAGS_fy))
+            .TorqueFromForce(
+                X, ::Eigen::Matrix<double, 2, 1>(absl::GetFlag(FLAGS_fx),
+                                                 absl::GetFlag(FLAGS_fy)))
             .transpose();
     LOG(INFO) << "Torque (N m): " << torque.transpose();
     const ::Eigen::Matrix<double, 2, 1> current =

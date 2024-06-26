@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/flags/flag.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -12,28 +13,30 @@
 #include "aos/time/time.h"
 #include "frc971/vision/geometry.h"
 
-DEFINE_bool(
-    use_outdoors, true,
-    "If set, use the color filters and exposure for an outdoor setting.");
-DEFINE_int32(red_delta, 50, "Required difference between green pixels vs. red");
-DEFINE_int32(blue_delta, -20,
-             "Required difference between green pixels vs. blue");
-DEFINE_int32(outdoors_red_delta, 70,
-             "Required difference between green pixels vs. red when using "
-             "--use_outdoors");
-DEFINE_int32(outdoors_blue_delta, -10,
-             "Required difference between green pixels vs. blue when using "
-             "--use_outdoors");
+ABSL_FLAG(bool, use_outdoors, true,
+          "If set, use the color filters and exposure for an outdoor setting.");
+ABSL_FLAG(int32_t, red_delta, 50,
+          "Required difference between green pixels vs. red");
+ABSL_FLAG(int32_t, blue_delta, -20,
+          "Required difference between green pixels vs. blue");
+ABSL_FLAG(int32_t, outdoors_red_delta, 70,
+          "Required difference between green pixels vs. red when using "
+          "--use_outdoors");
+ABSL_FLAG(int32_t, outdoors_blue_delta, -10,
+          "Required difference between green pixels vs. blue when using "
+          "--use_outdoors");
 
 namespace y2022::vision {
 
 cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
   cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
 
-  const int red_delta =
-      (FLAGS_use_outdoors ? FLAGS_outdoors_red_delta : FLAGS_red_delta);
-  const int blue_delta =
-      (FLAGS_use_outdoors ? FLAGS_outdoors_blue_delta : FLAGS_blue_delta);
+  const int red_delta = (absl::GetFlag(FLAGS_use_outdoors)
+                             ? absl::GetFlag(FLAGS_outdoors_red_delta)
+                             : absl::GetFlag(FLAGS_red_delta));
+  const int blue_delta = (absl::GetFlag(FLAGS_use_outdoors)
+                              ? absl::GetFlag(FLAGS_outdoors_blue_delta)
+                              : absl::GetFlag(FLAGS_blue_delta));
 
   for (int row = 0; row < bgr_image.rows; row++) {
     for (int col = 0; col < bgr_image.cols; col++) {

@@ -171,7 +171,7 @@ cc_binary(
         "//frc971/control_loops:fixed_quadrature",
         "//frc971/control_loops/double_jointed_arm:ekf",
         "//y2023/control_loops/superstructure/roll:roll_plants",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

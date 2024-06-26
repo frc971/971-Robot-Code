@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/flatbuffers.h"
@@ -11,7 +11,7 @@
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
 
-DEFINE_bool(plot, false, "If true, plot");
+ABSL_FLAG(bool, plot, false, "If true, plot");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -78,7 +78,7 @@ TEST_P(ParameterizedDistanceSplineTest, XYIntegral) {
 
 #if defined(SUPPORT_PLOT)
   // Conditionally plot the functions and their integrals to aid debugging.
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     matplotlibcpp::figure();
     matplotlibcpp::plot(distances_plot, x_plot, {{"label", "x"}});
     matplotlibcpp::plot(distances_plot, ix_plot, {{"label", "ix"}});
@@ -138,7 +138,7 @@ TEST_P(ParameterizedDistanceSplineTest, ThetaIntegral) {
 
 #if defined(SUPPORT_PLOT)
   // Conditionally plot the functions and their integrals to aid debugging.
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     matplotlibcpp::figure();
     matplotlibcpp::plot(distances_plot, theta_plot, {{"label", "theta"}});
     matplotlibcpp::plot(distances_plot, itheta_plot, {{"label", "itheta"}});

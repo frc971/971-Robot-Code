@@ -76,7 +76,7 @@ cc_binary(
         "//aos/analysis:in_process_plotter",
         "//frc971/control_loops/double_jointed_arm:ekf",
         "//frc971/control_loops/double_jointed_arm:trajectory",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

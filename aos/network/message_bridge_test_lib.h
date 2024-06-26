@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 
+#include "absl/flags/reflection.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 
@@ -92,7 +93,7 @@ class MessageBridgeParameterizedTest
 
   bool shared() const;
 
-  gflags::FlagSaver flag_saver_;
+  absl::FlagSaver flag_saver_;
 
   PiNode pi1_;
   PiNode pi2_;

@@ -1,12 +1,14 @@
 #include "frc971/can_logger/can_logger.h"
 
-DEFINE_bool(poll, false,
-            "If true, poll the CAN bus every 100ms.  If false, wake up for "
-            "each frame and publish it.");
+#include "absl/flags/flag.h"
 
-DEFINE_int32(priority, 10,
-             "If --poll is not set, set the realtime priority to this.");
-DEFINE_int32(affinity, -1, "If positive, pin to this core.");
+ABSL_FLAG(bool, poll, false,
+          "If true, poll the CAN bus every 100ms.  If false, wake up for "
+          "each frame and publish it.");
+
+ABSL_FLAG(int32_t, priority, 10,
+          "If --poll is not set, set the realtime priority to this.");
+ABSL_FLAG(int32_t, affinity, -1, "If positive, pin to this core.");
 
 namespace frc971::can_logger {
 
@@ -17,12 +19,12 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
       fd_(socket(PF_CAN, SOCK_RAW | SOCK_NONBLOCK, CAN_RAW)),
       frames_sender_(shm_event_loop_->MakeSender<CanFrame>(channel_name)) {
   // TODO(max): Figure out a proper priority
-  if (!FLAGS_poll) {
-    shm_event_loop_->SetRuntimeRealtimePriority(FLAGS_priority);
+  if (!absl::GetFlag(FLAGS_poll)) {
+    shm_event_loop_->SetRuntimeRealtimePriority(absl::GetFlag(FLAGS_priority));
   }
-  if (FLAGS_affinity >= 0) {
+  if (absl::GetFlag(FLAGS_affinity) >= 0) {
     shm_event_loop_->SetRuntimeAffinity(
-        aos::MakeCpusetFromCpus({FLAGS_affinity}));
+        aos::MakeCpusetFromCpus({absl::GetFlag(FLAGS_affinity)}));
   }
   struct ifreq ifr;
   strcpy(ifr.ifr_name, interface_name.data());
@@ -49,7 +51,7 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
   CHECK_EQ(opt_size, sizeof(recieve_buffer_size));
   VLOG(0) << "CAN recieve bufffer is " << recieve_buffer_size << " bytes large";
 
-  if (FLAGS_poll) {
+  if (absl::GetFlag(FLAGS_poll)) {
     aos::TimerHandler *timer_handler =
         shm_event_loop_->AddTimer([this]() { Poll(); });
     timer_handler->set_name("CAN logging Loop");

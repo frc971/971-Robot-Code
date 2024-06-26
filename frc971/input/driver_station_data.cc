@@ -1,6 +1,7 @@
 #include "frc971/input/driver_station_data.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace frc971::input::driver_station {
 

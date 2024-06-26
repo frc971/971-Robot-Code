@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -11,8 +13,8 @@
 #include "y2024/constants.h"
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
-DEFINE_bool(do_fifth_piece, true, "");
+ABSL_FLAG(bool, spline_auto, false, "Run simple test S-spline auto mode.");
+ABSL_FLAG(bool, do_fifth_piece, true, "");
 
 namespace y2024::autonomous {
 
@@ -344,7 +346,7 @@ void AutonomousActor::FourPieceAuto() {
       INFO, "Finished 4 notes at %lfs\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-  if (!FLAGS_do_fifth_piece) {
+  if (!absl::GetFlag(FLAGS_do_fifth_piece)) {
     AOS_LOG(INFO, "Exitting early due to --nodo_fifth_piece");
     return;
   }

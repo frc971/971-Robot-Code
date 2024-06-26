@@ -7,8 +7,8 @@
 #include "frc971/zeroing/wrap.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
-DEFINE_bool(ignore_distance, false,
-            "If true, ignore distance when shooting and obay joystick_reader");
+ABSL_FLAG(bool, ignore_distance, false,
+          "If true, ignore distance when shooting and obay joystick_reader");
 
 namespace y2023::control_loops::superstructure {
 

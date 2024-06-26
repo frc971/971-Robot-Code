@@ -5,9 +5,10 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
-#include "glog/logging.h"
 
 namespace aos {
 

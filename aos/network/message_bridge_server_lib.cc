@@ -1,9 +1,10 @@
 #include "aos/network/message_bridge_server_lib.h"
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logger_generated.h"
@@ -31,31 +32,31 @@
 // that hopefully it is a relatively minor blip for anything that isn't
 // timing-critical (and timing-critical things that hit the retry logic are
 // probably in trouble).
-DEFINE_uint32(min_retry_period_ms, 10,
-              "Maximum retry timer period--the exponential backoff will not "
-              "exceed this period, in milliseconds.");
+ABSL_FLAG(uint32_t, min_retry_period_ms, 10,
+          "Maximum retry timer period--the exponential backoff will not "
+          "exceed this period, in milliseconds.");
 // Amount of backoff to add every time a retry fails. Chosen semi-arbitrarily;
 // 100ms is large enough that the backoff actually does increase at a reasonable
 // rate, while preventing the period from growing so fast that it can readily
 // take multiple seconds for a retry to occur.
-DEFINE_uint32(retry_period_additive_backoff_ms, 100,
-              "Amount of time to add to the retry period every time a retry "
-              "fails, in milliseconds.");
+ABSL_FLAG(uint32_t, retry_period_additive_backoff_ms, 100,
+          "Amount of time to add to the retry period every time a retry "
+          "fails, in milliseconds.");
 // Max out retry period at 10 seconds---this is generally a much longer
 // timescale than anything normally happening on our systems, while still being
 // short enough that the retries will regularly happen (basically, the maximum
 // should be short enough that a human trying to debug issues with the system
 // will still see the retries regularly happening as they debug, rather than
 // having to wait minutes or hours for a retry to occur).
-DEFINE_uint32(max_retry_period_ms, 10000,
-              "Maximum retry timer period--the additive backoff will not "
-              "exceed this period, in milliseconds.");
+ABSL_FLAG(uint32_t, max_retry_period_ms, 10000,
+          "Maximum retry timer period--the additive backoff will not "
+          "exceed this period, in milliseconds.");
 
-DEFINE_int32(force_wmem_max, -1,
-             "If set to a nonnegative numbers, the wmem buffer size to use, in "
-             "bytes. Intended solely for testing purposes.");
+ABSL_FLAG(int32_t, force_wmem_max, -1,
+          "If set to a nonnegative numbers, the wmem buffer size to use, in "
+          "bytes. Intended solely for testing purposes.");
 
-DECLARE_bool(use_sctp_authentication);
+ABSL_DECLARE_FLAG(bool, use_sctp_authentication);
 
 namespace aos::message_bridge {
 namespace chrono = std::chrono;
@@ -115,7 +116,8 @@ ChannelState::ChannelState(aos::EventLoop *event_loop, const Channel *channel,
       allocator_(allocator),
       last_message_fetcher_(event_loop->MakeRawFetcher(channel)),
       retry_timer_(event_loop->AddTimer([this]() { SendData(); })),
-      retry_period_(std::chrono::milliseconds(FLAGS_min_retry_period_ms)) {
+      retry_period_(
+          std::chrono::milliseconds(absl::GetFlag(FLAGS_min_retry_period_ms))) {
   retry_timer_->set_name(absl::StrFormat("retry%d", channel_index));
 }
 
@@ -164,7 +166,8 @@ void ChannelState::SendData() {
   // either (a) we run out of messages to send or (b) sends start to fail.
   do {
     if (ReadyToFetchNext()) {
-      retry_period_ = std::chrono::milliseconds(FLAGS_min_retry_period_ms);
+      retry_period_ =
+          std::chrono::milliseconds(absl::GetFlag(FLAGS_min_retry_period_ms));
       if (!last_message_fetcher_->FetchNext()) {
         return;
       }
@@ -231,9 +234,9 @@ bool ChannelState::TrySendData(const Context &context) {
   if (retry_required) {
     retry_timer_->Schedule(event_loop_->monotonic_now() + retry_period_);
     retry_period_ = std::min(
-        retry_period_ +
-            std::chrono::milliseconds(FLAGS_retry_period_additive_backoff_ms),
-        std::chrono::milliseconds(FLAGS_max_retry_period_ms));
+        retry_period_ + std::chrono::milliseconds(absl::GetFlag(
+                            FLAGS_retry_period_additive_backoff_ms)),
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_max_retry_period_ms)));
   }
 
   if (logged_remotely) {
@@ -369,13 +372,13 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
         reconnected->push_back(peer.sac_assoc_id);
         if (peer.sac_assoc_id == assoc_id) {
           if (VLOG_IS_ON(1)) {
-            LOG_EVERY_T(WARNING, 0.025)
+            LOG_EVERY_N_SEC(WARNING, 0.025)
                 << "Node " << node->name()->string_view() << " reconnecting on "
                 << assoc_id << " with the same ID, something got lost";
           }
         } else {
           if (VLOG_IS_ON(1)) {
-            LOG_EVERY_T(WARNING, 0.025)
+            LOG_EVERY_N_SEC(WARNING, 0.025)
                 << "Node " << node->name()->string_view() << " "
                 << " already connected on " << peer.sac_assoc_id
                 << " aborting old connection and switching to " << assoc_id;
@@ -395,7 +398,8 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
       if (!AnyNodeConnected()) {
         // If no one else is connected yet, reset the Fetcher.
         last_message_fetcher_->Fetch();
-        retry_period_ = std::chrono::milliseconds(FLAGS_min_retry_period_ms);
+        retry_period_ =
+            std::chrono::milliseconds(absl::GetFlag(FLAGS_min_retry_period_ms));
       }
       // Unreliable channels aren't supposed to send out the latest fetched
       // message.
@@ -581,8 +585,8 @@ MessageBridgeServer::MessageBridgeServer(
   LOG(INFO) << "Reliable buffer size for all clients is "
             << reliable_buffer_size;
   server_.SetMaxReadSize(max_size);
-  if (FLAGS_force_wmem_max >= 0) {
-    server_.SetMaxWriteSize(FLAGS_force_wmem_max);
+  if (absl::GetFlag(FLAGS_force_wmem_max) >= 0) {
+    server_.SetMaxWriteSize(absl::GetFlag(FLAGS_force_wmem_max));
   } else {
     server_.SetMaxWriteSize(
         std::max(max_channel_buffer_size, reliable_buffer_size));
@@ -696,7 +700,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
       flatbuffers::Verifier verifier(message->data(), message->size);
       if (!connect->Verify(verifier)) {
         if (VLOG_IS_ON(1)) {
-          LOG_EVERY_T(WARNING, 1.0)
+          LOG_EVERY_N_SEC(WARNING, 1.0)
               << "Failed to verify message, disconnecting client";
         }
         server_.Abort(message->header.rcvinfo.rcv_assoc_id);

@@ -91,7 +91,8 @@ cc_test(
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
         "//frc971/can_logger:can_logging_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -110,7 +111,8 @@ cc_test(
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
         "//frc971/can_logger:can_logging_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

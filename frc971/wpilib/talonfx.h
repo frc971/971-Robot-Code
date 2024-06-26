@@ -5,8 +5,9 @@
 #include <cinttypes>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ctre/phoenix6/TalonFX.hpp"
-#include "glog/logging.h"
 
 #include "aos/commonmath.h"
 #include "aos/init.h"

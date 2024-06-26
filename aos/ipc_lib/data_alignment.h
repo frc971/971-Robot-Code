@@ -1,7 +1,8 @@
 #ifndef AOS_IPC_LIB_DATA_ALIGNMENT_H_
 #define AOS_IPC_LIB_DATA_ALIGNMENT_H_
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace aos {
 

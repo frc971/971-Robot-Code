@@ -11,6 +11,7 @@
 #include <mutex>
 #include <thread>
 
+#include "absl/flags/flag.h"
 #include "ctre/phoenix/CANifier.h"
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -63,7 +64,8 @@ namespace superstructure = ::y2022::control_loops::superstructure;
 namespace chrono = ::std::chrono;
 using std::make_unique;
 
-DEFINE_bool(can_catapult, false, "If true, use CAN to control the catapult.");
+ABSL_FLAG(bool, can_catapult, false,
+          "If true, use CAN to control the catapult.");
 
 namespace y2022::wpilib {
 namespace {
@@ -804,7 +806,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<::ctre::phoenix6::hardware::TalonFX>(2));
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
-    if (!FLAGS_can_catapult) {
+    if (!absl::GetFlag(FLAGS_can_catapult)) {
       superstructure_writer.set_catapult_falcon_1(make_unique<frc::TalonFX>(9));
     } else {
       std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> catapult1 =

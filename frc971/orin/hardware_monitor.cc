@@ -1,16 +1,17 @@
 #include <dirent.h>
 #include <sys/statvfs.h>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "frc971/orin/hardware_stats_generated.h"
 
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
-DEFINE_bool(log_voltages, false, "If true, log voltages too.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
+ABSL_FLAG(bool, log_voltages, false, "If true, log voltages too.");
 
 namespace frc971::orin {
 namespace {
@@ -102,7 +103,7 @@ class HardwareMonitor {
     flatbuffers::Offset<
         flatbuffers::Vector<flatbuffers::Offset<ElectricalReading>>>
         electrical_readings_offset;
-    if (FLAGS_log_voltages) {
+    if (absl::GetFlag(FLAGS_log_voltages)) {
       std::vector<flatbuffers::Offset<ElectricalReading>> electrical_readings;
       // Iterate through INA3221 electrical reading channels
       for (int channel = 1; channel <= 3; channel++) {
@@ -182,7 +183,7 @@ int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop shm_event_loop(&config.message());
 

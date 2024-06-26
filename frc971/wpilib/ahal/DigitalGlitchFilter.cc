@@ -10,7 +10,8 @@
 #include <algorithm>
 #include <array>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/Encoder.h"

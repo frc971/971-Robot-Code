@@ -5,11 +5,12 @@
 #include <random>
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/escaping.h"
 #include "external/com_github_google_flatbuffers/src/annotated_binary_text_gen.h"
 #include "external/com_github_google_flatbuffers/src/binary_annotator.h"
 #include "flatbuffers/reflection_generated.h"
-#include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/logfile_sorting.h"
@@ -3094,7 +3095,7 @@ TEST(MessageReaderConfirmCrash, ReadWrite) {
   }
 
   {
-    gflags::FlagSaver fs;
+    absl::FlagSaver fs;
 
     MessageReader reader(logfile);
     reader.set_crash_on_corrupt_message_flag(false);
@@ -3116,7 +3117,7 @@ TEST(MessageReaderConfirmCrash, ReadWrite) {
   }
 
   {
-    gflags::FlagSaver fs;
+    absl::FlagSaver fs;
 
     MessageReader reader(logfile);
     reader.set_crash_on_corrupt_message_flag(false);
@@ -3239,6 +3240,30 @@ class InlinePackMessage : public ::testing::Test {
       std::mt19937(::aos::testing::RandomSeed())};
 
   std::vector<uint8_t> data_;
+
+  const aos::FlatbufferDetachedBuffer<Configuration> config_{
+      JsonToFlatbuffer<Configuration>(
+          R"({
+  "channels": [
+    {
+      "name": "/a",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/b",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/c",
+      "type": "aos.logger.testing.TestMessage"
+    },
+    {
+      "name": "/d",
+      "type": "aos.logger.testing.TestMessage"
+    }
+  ]
+}
+)")};
 };
 
 // Uses the binary schema to annotate a provided flatbuffer.  Returns the
@@ -3268,7 +3293,7 @@ std::string AnnotateBinaries(
 // tested below.
 class TimeEventLoop : public EventLoop {
  public:
-  TimeEventLoop() : EventLoop(nullptr) {}
+  TimeEventLoop(const aos::Configuration *config) : EventLoop(config) {}
 
   aos::monotonic_clock::time_point monotonic_now() const final {
     return aos::monotonic_clock::min_time;
@@ -3403,7 +3428,7 @@ TEST_F(InlinePackMessage, Equivilent) {
 
       // Ok, now we want to confirm that we can build up arbitrary pieces of
       // said flatbuffer.  Try all of them since it is cheap.
-      TimeEventLoop event_loop;
+      TimeEventLoop event_loop(&config_.message());
       for (size_t i = 0; i < repacked_message.size(); i += 8) {
         for (size_t j = i; j < repacked_message.size(); j += 8) {
           std::vector<uint8_t> destination(repacked_message.size(), 67u);
@@ -3475,7 +3500,7 @@ TEST_F(InlinePackMessage, RemoteEquivilent) {
 
     // Ok, now we want to confirm that we can build up arbitrary pieces of said
     // flatbuffer.  Try all of them since it is cheap.
-    TimeEventLoop event_loop;
+    TimeEventLoop event_loop(&config_.message());
     for (size_t i = 0; i < repacked_message.size(); i += 8) {
       for (size_t j = i; j < repacked_message.size(); j += 8) {
         std::vector<uint8_t> destination(repacked_message.size(), 67u);

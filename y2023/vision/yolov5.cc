@@ -12,23 +12,23 @@
 #include <chrono>
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include <opencv2/dnn.hpp>
 
-DEFINE_double(conf_threshold, 0.9,
-              "Threshold value for confidence scores. Detections with a "
-              "confidence score below this value will be ignored.");
+ABSL_FLAG(double, conf_threshold, 0.9,
+          "Threshold value for confidence scores. Detections with a "
+          "confidence score below this value will be ignored.");
 
-DEFINE_double(
-    nms_threshold, 0.5,
-    "Threshold value for non-maximum suppression. Detections with an "
-    "intersection-over-union value below this value will be removed.");
+ABSL_FLAG(double, nms_threshold, 0.5,
+          "Threshold value for non-maximum suppression. Detections with an "
+          "intersection-over-union value below this value will be removed.");
 
-DEFINE_int32(nthreads, 6, "Number of threads to use during inference.");
+ABSL_FLAG(int32_t, nthreads, 6, "Number of threads to use during inference.");
 
-DEFINE_bool(visualize_detections, false, "Display inference output");
+ABSL_FLAG(bool, visualize_detections, false, "Display inference output");
 
 namespace y2023::vision {
 
@@ -134,7 +134,7 @@ void YOLOV5Impl::LoadModel(const std::string path) {
   input_8_ =
       absl::Span(interpreter_->typed_tensor<uint8_t>(input_), tensor_size);
 
-  interpreter_->SetNumThreads(FLAGS_nthreads);
+  interpreter_->SetNumThreads(absl::GetFlag(FLAGS_nthreads));
 
   VLOG(1) << "Load model: Done";
 }
@@ -184,7 +184,7 @@ std::vector<Detection> YOLOV5Impl::NonMaximumSupression(
   cv::Point class_id;
 
   for (int i = 0; i < rows; i++) {
-    if (orig_preds[i][4] > FLAGS_conf_threshold) {
+    if (orig_preds[i][4] > absl::GetFlag(FLAGS_conf_threshold)) {
       float x = orig_preds[i][0];
       float y = orig_preds[i][1];
       float w = orig_preds[i][2];
@@ -200,7 +200,7 @@ std::vector<Detection> YOLOV5Impl::NonMaximumSupression(
 
       cv::minMaxLoc(scores, nullptr, &confidence, nullptr, &class_id);
       scores.clear();
-      if (confidence > FLAGS_conf_threshold) {
+      if (confidence > absl::GetFlag(FLAGS_conf_threshold)) {
         Detection detection{cv::Rect(left, top, width, height), confidence,
                             class_id.x};
         detections->push_back(detection);
@@ -216,8 +216,8 @@ std::vector<Detection> YOLOV5Impl::NonMaximumSupression(
     confidences.push_back(d.confidence);
   }
 
-  cv::dnn::NMSBoxes(boxes, confidences, FLAGS_conf_threshold,
-                    FLAGS_nms_threshold, *indices);
+  cv::dnn::NMSBoxes(boxes, confidences, absl::GetFlag(FLAGS_conf_threshold),
+                    absl::GetFlag(FLAGS_nms_threshold), *indices);
 
   std::vector<Detection> filtered_detections;
   for (size_t i = 0; i < indices->size(); i++) {
@@ -277,7 +277,7 @@ std::vector<Detection> YOLOV5Impl::ProcessImage(cv::Mat frame) {
           << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start)
                  .count();
 
-  if (FLAGS_visualize_detections) {
+  if (absl::GetFlag(FLAGS_visualize_detections)) {
     cv::resize(frame, frame, cv::Size(img_width_, img_height_), 0, 0, true);
     for (size_t i = 0; i < filtered_detections.size(); i++) {
       VLOG(1) << "Bounding Box | X: " << filtered_detections[i].box.x

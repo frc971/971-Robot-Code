@@ -4,8 +4,8 @@
 #include <source_location>
 #include <string_view>
 
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
-#include "glog/logging.h"
 #include "tl/expected.hpp"
 
 #include "aos/containers/inlined_vector.h"

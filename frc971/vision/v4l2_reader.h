@@ -4,8 +4,8 @@
 #include <array>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/epoll.h"

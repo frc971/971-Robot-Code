@@ -1,6 +1,7 @@
 #include <string>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
@@ -8,21 +9,21 @@
 #include "aos/init.h"
 #include "aos/util/foxglove_websocket_lib.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config.");
-DEFINE_uint32(port, 8765, "Port to use for foxglove websocket server.");
-DEFINE_string(mode, "flatbuffer", "json or flatbuffer serialization.");
-DEFINE_bool(fetch_pinned_channels, true,
-            "Set this to allow foxglove_websocket to make fetchers on channels "
-            "with a read_method of PIN (see aos/configuration.fbs; PIN is an "
-            "enum value). Having this enabled will cause foxglove to  consume "
-            "extra shared memory resources.");
-DEFINE_bool(
-    canonical_channel_names, false,
+ABSL_FLAG(std::string, config, "aos_config.json", "Path to the config.");
+ABSL_FLAG(uint32_t, port, 8765, "Port to use for foxglove websocket server.");
+ABSL_FLAG(std::string, mode, "flatbuffer", "json or flatbuffer serialization.");
+ABSL_FLAG(bool, fetch_pinned_channels, true,
+          "Set this to allow foxglove_websocket to make fetchers on channels "
+          "with a read_method of PIN (see aos/configuration.fbs; PIN is an "
+          "enum value). Having this enabled will cause foxglove to  consume "
+          "extra shared memory resources.");
+ABSL_FLAG(
+    bool, canonical_channel_names, false,
     "If set, use full channel names; by default, will shorten names to be the "
     "shortest possible version of the name (e.g., /aos instead of /pi/aos).");
 
 int main(int argc, char *argv[]) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Runs a websocket server that a foxglove instance can connect to in "
       "order to view live data on a device.\n\n"
       "Typical Usage: foxglove_websocket [--port 8765]\n"
@@ -51,19 +52,19 @@ int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
   aos::FoxgloveWebsocketServer server(
-      &event_loop, FLAGS_port,
-      FLAGS_mode == "flatbuffer"
+      &event_loop, absl::GetFlag(FLAGS_port),
+      absl::GetFlag(FLAGS_mode) == "flatbuffer"
           ? aos::FoxgloveWebsocketServer::Serialization::kFlatbuffer
           : aos::FoxgloveWebsocketServer::Serialization::kJson,
-      FLAGS_fetch_pinned_channels
+      absl::GetFlag(FLAGS_fetch_pinned_channels)
           ? aos::FoxgloveWebsocketServer::FetchPinnedChannels::kYes
           : aos::FoxgloveWebsocketServer::FetchPinnedChannels::kNo,
-      FLAGS_canonical_channel_names
+      absl::GetFlag(FLAGS_canonical_channel_names)
           ? aos::FoxgloveWebsocketServer::CanonicalChannelNames::kCanonical
           : aos::FoxgloveWebsocketServer::CanonicalChannelNames::kShortened);
 

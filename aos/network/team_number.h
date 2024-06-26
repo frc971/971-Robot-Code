@@ -5,9 +5,9 @@
 #include <optional>
 #include <string_view>
 
-#include "glog/logging.h"
+#include "absl/flags/declare.h"
 
-DECLARE_string(override_hostname);
+ABSL_DECLARE_FLAG(std::string, override_hostname);
 
 namespace aos {
 namespace network {
