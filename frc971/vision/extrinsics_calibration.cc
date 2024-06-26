@@ -836,8 +836,8 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
     CalibrationParameters *calibration_parameters) {
   ceres::Problem problem;
 
-  ceres::EigenQuaternionParameterization *quaternion_local_parameterization =
-      new ceres::EigenQuaternionParameterization();
+  ceres::EigenQuaternionManifold *quaternion_local_parameterization =
+      new ceres::EigenQuaternionManifold();
   // Set up the only cost function (also known as residual). This uses
   // auto-differentiation to obtain the derivative (jacobian).
 
@@ -874,9 +874,8 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
   if (calibration_parameters->has_pivot) {
     // Constrain Z since it's along the rotation axis and therefore
     // redundant.
-    problem.SetParameterization(
-        calibration_parameters->pivot_to_imu_translation.data(),
-        new ceres::SubsetParameterization(3, {2}));
+    problem.SetManifold(calibration_parameters->pivot_to_imu_translation.data(),
+                        new ceres::SubsetManifold(3, {2}));
   } else {
     problem.SetParameterBlockConstant(
         calibration_parameters->pivot_to_imu.coeffs().data());
@@ -895,18 +894,15 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
         calibration_parameters->board_to_world.coeffs().data());
   }
 
-  problem.SetParameterization(
+  problem.SetManifold(
       calibration_parameters->initial_orientation.coeffs().data(),
       quaternion_local_parameterization);
-  problem.SetParameterization(
-      calibration_parameters->pivot_to_camera.coeffs().data(),
-      quaternion_local_parameterization);
-  problem.SetParameterization(
-      calibration_parameters->pivot_to_imu.coeffs().data(),
-      quaternion_local_parameterization);
-  problem.SetParameterization(
-      calibration_parameters->board_to_world.coeffs().data(),
-      quaternion_local_parameterization);
+  problem.SetManifold(calibration_parameters->pivot_to_camera.coeffs().data(),
+                      quaternion_local_parameterization);
+  problem.SetManifold(calibration_parameters->pivot_to_imu.coeffs().data(),
+                      quaternion_local_parameterization);
+  problem.SetManifold(calibration_parameters->board_to_world.coeffs().data(),
+                      quaternion_local_parameterization);
   for (int i = 0; i < 3; ++i) {
     problem.SetParameterLowerBound(calibration_parameters->gyro_bias.data(), i,
                                    -0.05);

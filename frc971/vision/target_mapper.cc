@@ -313,8 +313,8 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
   }
 
   ceres::LossFunction *loss_function = new ceres::HuberLoss(2.0);
-  ceres::LocalParameterization *quaternion_local_parameterization =
-      new ceres::EigenQuaternionParameterization;
+  ceres::Manifold *quaternion_local_parameterization =
+      new ceres::EigenQuaternionManifold();
 
   int min_constraint_id = std::numeric_limits<int>::max();
   int max_constraint_id = std::numeric_limits<int>::min();
@@ -368,10 +368,10 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
                               pose_end_iter->second.p.data(),
                               pose_end_iter->second.q.coeffs().data());
 
-    problem->SetParameterization(pose_begin_iter->second.q.coeffs().data(),
-                                 quaternion_local_parameterization);
-    problem->SetParameterization(pose_end_iter->second.q.coeffs().data(),
-                                 quaternion_local_parameterization);
+    problem->SetManifold(pose_begin_iter->second.q.coeffs().data(),
+                         quaternion_local_parameterization);
+    problem->SetManifold(pose_end_iter->second.q.coeffs().data(),
+                         quaternion_local_parameterization);
   }
 
   // The pose graph optimization problem has six DOFs that are not fully
@@ -411,14 +411,14 @@ TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
       this, num_residuals, ceres::DO_NOT_TAKE_OWNERSHIP);
 
   ceres::LossFunction *loss_function = new ceres::HuberLoss(2.0);
-  ceres::LocalParameterization *quaternion_local_parameterization =
-      new ceres::EigenQuaternionParameterization;
+  ceres::Manifold *quaternion_local_parameterization =
+      new ceres::EigenQuaternionManifold();
 
   problem->AddResidualBlock(cost_function.get(), loss_function,
                             T_frozen_actual_.vector().data(),
                             R_frozen_actual_.coeffs().data());
-  problem->SetParameterization(R_frozen_actual_.coeffs().data(),
-                               quaternion_local_parameterization);
+  problem->SetManifold(R_frozen_actual_.coeffs().data(),
+                       quaternion_local_parameterization);
   return cost_function;
 }
 

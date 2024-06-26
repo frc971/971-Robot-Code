@@ -124,7 +124,7 @@ struct StaticImuParameters {
   Scalar time_offset;
 
   void PopulateParameters(
-      ceres::EigenQuaternionParameterization *quaternion_local_parameterization,
+      ceres::EigenQuaternionManifold *quaternion_local_parameterization,
       ceres::Problem *problem, ceres::DynamicCostFunction *cost_function,
       std::vector<double *> *parameters,
       std::vector<std::function<void()>> *post_populate_methods) {
@@ -134,8 +134,8 @@ struct StaticImuParameters {
     parameters->push_back(&time_offset);
     post_populate_methods->emplace_back(
         [this, problem, quaternion_local_parameterization]() {
-          problem->SetParameterization(rotation.coeffs().data(),
-                                       quaternion_local_parameterization);
+          problem->SetManifold(rotation.coeffs().data(),
+                               quaternion_local_parameterization);
           problem->SetParameterLowerBound(&time_offset, 0, -0.03);
           problem->SetParameterUpperBound(&time_offset, 0, 0.03);
         });
@@ -189,7 +189,7 @@ struct AllParameters {
   std::vector<ImuConfig<Scalar>> imus;
   std::tuple<std::vector<double *>, std::vector<std::function<void()>>>
   PopulateParameters(
-      ceres::EigenQuaternionParameterization *quaternion_local_parameterization,
+      ceres::EigenQuaternionManifold *quaternion_local_parameterization,
       ceres::Problem *problem, ceres::DynamicCostFunction *cost_function) {
     std::vector<std::function<void()>> post_populate_methods;
     std::vector<double *> parameters;

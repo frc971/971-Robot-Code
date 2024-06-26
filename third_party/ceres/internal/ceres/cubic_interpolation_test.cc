@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,8 +36,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 static constexpr double kTolerance = 1e-12;
 
@@ -226,7 +225,7 @@ class CubicInterpolatorTest : public ::testing::Test {
                                       const double b,
                                       const double c,
                                       const double d) {
-    values_.reset(new double[kDataDimension * kNumSamples]);
+    values_ = std::make_unique<double[]>(kDataDimension * kNumSamples);
 
     for (int x = 0; x < kNumSamples; ++x) {
       for (int dim = 0; dim < kDataDimension; ++dim) {
@@ -335,7 +334,7 @@ class BiCubicInterpolatorTest : public ::testing::Test {
 
   template <int kDataDimension>
   void RunPolynomialInterpolationTest(const Eigen::Matrix3d& coeff) {
-    values_.reset(new double[kNumRows * kNumCols * kDataDimension]);
+    values_ = std::make_unique<double[]>(kNumRows * kNumCols * kDataDimension);
     coeff_ = coeff;
     double* v = values_.get();
     for (int r = 0; r < kNumRows; ++r) {
@@ -530,5 +529,4 @@ TEST(BiCubicInterpolator, JetEvaluation) {
               kTolerance);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

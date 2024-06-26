@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,8 @@
 #include <limits>
 
 namespace ceres {
+
+LossFunction::~LossFunction() = default;
 
 void TrivialLoss::Evaluate(double s, double rho[3]) const {
   rho[0] = s;
@@ -161,7 +163,7 @@ void ComposedLoss::Evaluate(double s, double rho[3]) const {
 }
 
 void ScaledLoss::Evaluate(double s, double rho[3]) const {
-  if (rho_.get() == NULL) {
+  if (rho_.get() == nullptr) {
     rho[0] = a_ * s;
     rho[1] = a_;
     rho[2] = 0.0;

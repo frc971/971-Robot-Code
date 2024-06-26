@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,7 @@
 
 #include <string>
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 class BALProblem {
  public:
@@ -105,7 +104,6 @@ class BALProblem {
   double* parameters_;
 };
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 #endif  // CERES_EXAMPLES_BAL_PROBLEM_H_

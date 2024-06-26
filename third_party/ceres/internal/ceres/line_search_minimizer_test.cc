@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class QuadraticFirstOrderFunction : public ceres::FirstOrderFunction {
  public:
@@ -44,7 +43,7 @@ class QuadraticFirstOrderFunction : public ceres::FirstOrderFunction {
                 double* cost,
                 double* gradient) const final {
     cost[0] = parameters[0] * parameters[0];
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       gradient[0] = 2.0 * parameters[0];
     }
     return true;
@@ -62,5 +61,4 @@ TEST(LineSearchMinimizerTest, FinalCostIsZero) {
   EXPECT_NEAR(summary.final_cost, 0.0, std::numeric_limits<double>::epsilon());
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

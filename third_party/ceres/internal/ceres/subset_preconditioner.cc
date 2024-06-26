@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/inner_product_computer.h"
@@ -39,25 +40,25 @@
 #include "ceres/sparse_cholesky.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
-SubsetPreconditioner::SubsetPreconditioner(
-    const Preconditioner::Options& options, const BlockSparseMatrix& A)
-    : options_(options), num_cols_(A.num_cols()) {
+SubsetPreconditioner::SubsetPreconditioner(Preconditioner::Options options,
+                                           const BlockSparseMatrix& A)
+    : options_(std::move(options)), num_cols_(A.num_cols()) {
   CHECK_GE(options_.subset_preconditioner_start_row_block, 0)
       << "Congratulations, you found a bug in Ceres. Please report it.";
 
   LinearSolver::Options sparse_cholesky_options;
   sparse_cholesky_options.sparse_linear_algebra_library_type =
       options_.sparse_linear_algebra_library_type;
-  sparse_cholesky_options.use_postordering = options_.use_postordering;
+  sparse_cholesky_options.ordering_type = options_.ordering_type;
   sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 }
 
-SubsetPreconditioner::~SubsetPreconditioner() {}
+SubsetPreconditioner::~SubsetPreconditioner() = default;
 
-void SubsetPreconditioner::RightMultiply(const double* x, double* y) const {
+void SubsetPreconditioner::RightMultiplyAndAccumulate(const double* x,
+                                                      double* y) const {
   CHECK(x != nullptr);
   CHECK(y != nullptr);
   std::string message;
@@ -66,14 +67,14 @@ void SubsetPreconditioner::RightMultiply(const double* x, double* y) const {
 
 bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
                                       const double* D) {
-  BlockSparseMatrix* m = const_cast<BlockSparseMatrix*>(&A);
+  auto* m = const_cast<BlockSparseMatrix*>(&A);
   const CompressedRowBlockStructure* bs = m->block_structure();
 
   // A = [P]
   //     [Q]
 
   // Now add D to A if needed.
-  if (D != NULL) {
+  if (D != nullptr) {
     // A = [P]
     //     [Q]
     //     [D]
@@ -82,19 +83,19 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
     m->AppendRows(*regularizer);
   }
 
-  if (inner_product_computer_.get() == NULL) {
-    inner_product_computer_.reset(InnerProductComputer::Create(
+  if (inner_product_computer_ == nullptr) {
+    inner_product_computer_ = InnerProductComputer::Create(
         *m,
         options_.subset_preconditioner_start_row_block,
         bs->rows.size(),
-        sparse_cholesky_->StorageType()));
+        sparse_cholesky_->StorageType());
   }
 
   // Compute inner_product = [Q'*Q + D'*D]
   inner_product_computer_->Compute();
 
   // Unappend D if needed.
-  if (D != NULL) {
+  if (D != nullptr) {
     // A = [P]
     //     [Q]
     m->DeleteRowBlocks(bs->cols.size());
@@ -105,7 +106,7 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   const LinearSolverTerminationType termination_type =
       sparse_cholesky_->Factorize(inner_product_computer_->mutable_result(),
                                   &message);
-  if (termination_type != LINEAR_SOLVER_SUCCESS) {
+  if (termination_type != LinearSolverTerminationType::SUCCESS) {
     LOG(ERROR) << "Preconditioner factorization failed: " << message;
     return false;
   }
@@ -113,5 +114,4 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   return true;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

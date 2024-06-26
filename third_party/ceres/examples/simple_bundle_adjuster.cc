@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ class BALProblem {
 
   bool LoadFile(const char* filename) {
     FILE* fptr = fopen(filename, "r");
-    if (fptr == NULL) {
+    if (fptr == nullptr) {
       return false;
     };
 
@@ -164,8 +164,8 @@ struct SnavelyReprojectionError {
   // the client code.
   static ceres::CostFunction* Create(const double observed_x,
                                      const double observed_y) {
-    return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
-        new SnavelyReprojectionError(observed_x, observed_y)));
+    return new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
+        observed_x, observed_y);
   }
 
   double observed_x;
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     ceres::CostFunction* cost_function = SnavelyReprojectionError::Create(
         observations[2 * i + 0], observations[2 * i + 1]);
     problem.AddResidualBlock(cost_function,
-                             NULL /* squared loss */,
+                             nullptr /* squared loss */,
                              bal_problem.mutable_camera_for_observation(i),
                              bal_problem.mutable_point_for_observation(i));
   }

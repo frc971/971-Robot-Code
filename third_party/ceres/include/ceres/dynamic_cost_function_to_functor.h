@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,8 +37,10 @@
 #include <vector>
 
 #include "ceres/dynamic_cost_function.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/fixed_array.h"
-#include "ceres/internal/port.h"
+#include "glog/logging.h"
 
 namespace ceres {
 
@@ -100,16 +102,22 @@ namespace ceres {
 //  private:
 //   DynamicCostFunctionToFunctor intrinsic_projection_;
 // };
-class DynamicCostFunctionToFunctor {
+class CERES_EXPORT DynamicCostFunctionToFunctor {
  public:
   // Takes ownership of cost_function.
   explicit DynamicCostFunctionToFunctor(CostFunction* cost_function)
-      : cost_function_(cost_function) {
-    CHECK(cost_function != nullptr);
+      : DynamicCostFunctionToFunctor{
+            std::unique_ptr<CostFunction>{cost_function}} {}
+
+  // Takes ownership of cost_function.
+  explicit DynamicCostFunctionToFunctor(
+      std::unique_ptr<CostFunction> cost_function)
+      : cost_function_(std::move(cost_function)) {
+    CHECK(cost_function_ != nullptr);
   }
 
   bool operator()(double const* const* parameters, double* residuals) const {
-    return cost_function_->Evaluate(parameters, residuals, NULL);
+    return cost_function_->Evaluate(parameters, residuals, nullptr);
   }
 
   template <typename JetT>
@@ -181,10 +189,14 @@ class DynamicCostFunctionToFunctor {
     return true;
   }
 
+  CostFunction* function() const noexcept { return cost_function_.get(); }
+
  private:
   std::unique_ptr<CostFunction> cost_function_;
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_PUBLIC_DYNAMIC_COST_FUNCTION_TO_FUNCTOR_H_

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,11 +30,9 @@
 
 #include "ceres/wall_time.h"
 
-#ifdef CERES_USE_OPENMP
-#include <omp.h>
-#else
 #include <ctime>
-#endif
+
+#include "ceres/internal/config.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,13 +40,9 @@
 #include <sys/time.h>
 #endif
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 double WallTimeInSeconds() {
-#ifdef CERES_USE_OPENMP
-  return omp_get_wtime();
-#else
 #ifdef _WIN32
   LARGE_INTEGER count;
   LARGE_INTEGER frequency;
@@ -58,9 +52,8 @@ double WallTimeInSeconds() {
          static_cast<double>(frequency.QuadPart);
 #else
   timeval time_val;
-  gettimeofday(&time_val, NULL);
+  gettimeofday(&time_val, nullptr);
   return (time_val.tv_sec + time_val.tv_usec * 1e-6);
-#endif
 #endif
 }
 
@@ -72,7 +65,7 @@ EventLogger::EventLogger(const std::string& logger_name) {
   start_time_ = WallTimeInSeconds();
   last_event_time_ = start_time_;
   events_ = StringPrintf(
-      "\n%s\n                                   Delta   Cumulative\n",
+      "\n%s\n                                        Delta   Cumulative\n",
       logger_name.c_str());
 }
 
@@ -101,5 +94,4 @@ void EventLogger::AddEvent(const std::string& event_name) {
                 absolute_time_delta);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

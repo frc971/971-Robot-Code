@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,16 +33,17 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
 #include <memory>
 
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // An interface that abstracts away the internal details of various
 // sparse linear algebra libraries and offers a simple API for solving
@@ -61,13 +62,14 @@ namespace internal {
 //
 //  CompressedRowSparseMatrix lhs = ...;
 //  std::string message;
-//  CHECK_EQ(sparse_cholesky->Factorize(&lhs, &message), LINEAR_SOLVER_SUCCESS);
+//  CHECK_EQ(sparse_cholesky->Factorize(&lhs, &message),
+//           LinearSolverTerminationType::SUCCESS);
 //  Vector rhs = ...;
 //  Vector solution = ...;
 //  CHECK_EQ(sparse_cholesky->Solve(rhs.data(), solution.data(), &message),
-//           LINEAR_SOLVER_SUCCESS);
+//           LinearSolverTerminationType::SUCCESS);
 
-class CERES_EXPORT_INTERNAL SparseCholesky {
+class CERES_NO_EXPORT SparseCholesky {
  public:
   static std::unique_ptr<SparseCholesky> Create(
       const LinearSolver::Options& options);
@@ -103,38 +105,39 @@ class CERES_EXPORT_INTERNAL SparseCholesky {
 
   // Convenience method which combines a call to Factorize and
   // Solve. Solve is only called if Factorize returns
-  // LINEAR_SOLVER_SUCCESS.
-  virtual LinearSolverTerminationType FactorAndSolve(
-      CompressedRowSparseMatrix* lhs,
-      const double* rhs,
-      double* solution,
-      std::string* message);
+  // LinearSolverTerminationType::SUCCESS.
+  LinearSolverTerminationType FactorAndSolve(CompressedRowSparseMatrix* lhs,
+                                             const double* rhs,
+                                             double* solution,
+                                             std::string* message);
 };
 
-class IterativeRefiner;
+class SparseIterativeRefiner;
 
 // Computes an initial solution using the given instance of
-// SparseCholesky, and then refines it using the IterativeRefiner.
-class CERES_EXPORT_INTERNAL RefinedSparseCholesky : public SparseCholesky {
+// SparseCholesky, and then refines it using the SparseIterativeRefiner.
+class CERES_NO_EXPORT RefinedSparseCholesky final : public SparseCholesky {
  public:
-  RefinedSparseCholesky(std::unique_ptr<SparseCholesky> sparse_cholesky,
-                        std::unique_ptr<IterativeRefiner> iterative_refiner);
-  virtual ~RefinedSparseCholesky();
+  RefinedSparseCholesky(
+      std::unique_ptr<SparseCholesky> sparse_cholesky,
+      std::unique_ptr<SparseIterativeRefiner> iterative_refiner);
+  ~RefinedSparseCholesky() override;
 
-  virtual CompressedRowSparseMatrix::StorageType StorageType() const;
-  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
-                                                std::string* message);
-  virtual LinearSolverTerminationType Solve(const double* rhs,
-                                            double* solution,
-                                            std::string* message);
+  CompressedRowSparseMatrix::StorageType StorageType() const override;
+  LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                        std::string* message) override;
+  LinearSolverTerminationType Solve(const double* rhs,
+                                    double* solution,
+                                    std::string* message) override;
 
  private:
   std::unique_ptr<SparseCholesky> sparse_cholesky_;
-  std::unique_ptr<IterativeRefiner> iterative_refiner_;
+  std::unique_ptr<SparseIterativeRefiner> iterative_refiner_;
   CompressedRowSparseMatrix* lhs_ = nullptr;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SPARSE_CHOLESKY_H_

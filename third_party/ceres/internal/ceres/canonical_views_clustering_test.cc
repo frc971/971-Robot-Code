@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,8 +36,7 @@
 #include "ceres/graph.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 const int kVertexIds[] = {0, 1, 2, 3};
 class CanonicalViewsTest : public ::testing::Test {
@@ -139,5 +138,4 @@ TEST_F(CanonicalViewsTest, SimilarityPenaltyTest) {
   EXPECT_EQ(centers_[0], kVertexIds[1]);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

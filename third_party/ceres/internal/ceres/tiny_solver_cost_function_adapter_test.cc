@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,8 +68,8 @@ class CostFunction2x3 : public SizedCostFunction<2, 3> {
 template <int kNumResiduals, int kNumParameters>
 void TestHelper() {
   std::unique_ptr<CostFunction> cost_function(new CostFunction2x3);
-  typedef TinySolverCostFunctionAdapter<kNumResiduals, kNumParameters>
-      CostFunctionAdapter;
+  using CostFunctionAdapter =
+      TinySolverCostFunctionAdapter<kNumResiduals, kNumParameters>;
   CostFunctionAdapter cfa(*cost_function);
   EXPECT_EQ(CostFunctionAdapter::NUM_RESIDUALS, kNumResiduals);
   EXPECT_EQ(CostFunctionAdapter::NUM_PARAMETERS, kNumParameters);
@@ -85,8 +85,8 @@ void TestHelper() {
   double* parameters[1] = {xyz};
 
   // Check that residual only evaluation works.
-  cost_function->Evaluate(parameters, expected_residuals.data(), NULL);
-  cfa(xyz, actual_residuals.data(), NULL);
+  cost_function->Evaluate(parameters, expected_residuals.data(), nullptr);
+  cfa(xyz, actual_residuals.data(), nullptr);
   EXPECT_NEAR(
       (expected_residuals - actual_residuals).norm() / actual_residuals.norm(),
       0.0,

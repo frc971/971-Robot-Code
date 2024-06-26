@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,24 +36,40 @@
 #include "ceres/casts.h"
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/context_impl.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/linear_operator.h"
+#include "ceres/linear_solver.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BlockSparseMatrix;
 class SparseMatrix;
 
-class CERES_EXPORT_INTERNAL Preconditioner : public LinearOperator {
+class CERES_NO_EXPORT Preconditioner : public LinearOperator {
  public:
   struct Options {
+    Options() = default;
+    Options(const LinearSolver::Options& linear_solver_options)
+        : type(linear_solver_options.preconditioner_type),
+          visibility_clustering_type(
+              linear_solver_options.visibility_clustering_type),
+          sparse_linear_algebra_library_type(
+              linear_solver_options.sparse_linear_algebra_library_type),
+          num_threads(linear_solver_options.num_threads),
+          elimination_groups(linear_solver_options.elimination_groups),
+          row_block_size(linear_solver_options.row_block_size),
+          e_block_size(linear_solver_options.e_block_size),
+          f_block_size(linear_solver_options.f_block_size),
+          context(linear_solver_options.context) {}
+
     PreconditionerType type = JACOBI;
     VisibilityClusteringType visibility_clustering_type = CANONICAL_VIEWS;
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type =
         SUITE_SPARSE;
+    OrderingType ordering_type = OrderingType::NATURAL;
 
     // When using the subset preconditioner, all row blocks starting
     // from this row block are used to construct the preconditioner.
@@ -66,9 +82,6 @@ class CERES_EXPORT_INTERNAL Preconditioner : public LinearOperator {
     // where P has subset_preconditioner_start_row_block row blocks,
     // and the preconditioner is the inverse of the matrix Q'Q.
     int subset_preconditioner_start_row_block = -1;
-
-    // See solver.h for information about these flags.
-    bool use_postordering = false;
 
     // If possible, how many threads the preconditioner can use.
     int num_threads = 1;
@@ -115,7 +128,7 @@ class CERES_EXPORT_INTERNAL Preconditioner : public LinearOperator {
   static PreconditionerType PreconditionerForZeroEBlocks(
       PreconditionerType preconditioner_type);
 
-  virtual ~Preconditioner();
+  ~Preconditioner() override;
 
   // Update the numerical value of the preconditioner for the linear
   // system:
@@ -126,30 +139,48 @@ class CERES_EXPORT_INTERNAL Preconditioner : public LinearOperator {
   // for some vector b. It is important that the matrix A have the
   // same block structure as the one used to construct this object.
   //
-  // D can be NULL, in which case its interpreted as a diagonal matrix
+  // D can be nullptr, in which case its interpreted as a diagonal matrix
   // of size zero.
   virtual bool Update(const LinearOperator& A, const double* D) = 0;
 
   // LinearOperator interface. Since the operator is symmetric,
-  // LeftMultiply and num_cols are just calls to RightMultiply and
-  // num_rows respectively. Update() must be called before
-  // RightMultiply can be called.
-  void RightMultiply(const double* x, double* y) const override = 0;
-  void LeftMultiply(const double* x, double* y) const override {
-    return RightMultiply(x, y);
+  // LeftMultiplyAndAccumulate and num_cols are just calls to
+  // RightMultiplyAndAccumulate and num_rows respectively. Update() must be
+  // called before RightMultiplyAndAccumulate can be called.
+  void RightMultiplyAndAccumulate(const double* x,
+                                  double* y) const override = 0;
+  void LeftMultiplyAndAccumulate(const double* x, double* y) const override {
+    return RightMultiplyAndAccumulate(x, y);
   }
 
   int num_rows() const override = 0;
   int num_cols() const override { return num_rows(); }
 };
 
+class CERES_NO_EXPORT IdentityPreconditioner : public Preconditioner {
+ public:
+  IdentityPreconditioner(int num_rows) : num_rows_(num_rows) {}
+
+  bool Update(const LinearOperator& /*A*/, const double* /*D*/) final {
+    return true;
+  }
+
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final {
+    VectorRef(y, num_rows_) += ConstVectorRef(x, num_rows_);
+  }
+
+  int num_rows() const final { return num_rows_; }
+
+ private:
+  int num_rows_ = -1;
+};
+
 // This templated subclass of Preconditioner serves as a base class for
 // other preconditioners that depend on the particular matrix layout of
 // the underlying linear operator.
 template <typename MatrixType>
-class TypedPreconditioner : public Preconditioner {
+class CERES_NO_EXPORT TypedPreconditioner : public Preconditioner {
  public:
-  virtual ~TypedPreconditioner() {}
   bool Update(const LinearOperator& A, const double* D) final {
     return UpdateImpl(*down_cast<const MatrixType*>(&A), D);
   }
@@ -161,28 +192,32 @@ class TypedPreconditioner : public Preconditioner {
 // Preconditioners that depend on access to the low level structure
 // of a SparseMatrix.
 // clang-format off
-typedef TypedPreconditioner<SparseMatrix>              SparseMatrixPreconditioner;
-typedef TypedPreconditioner<BlockSparseMatrix>         BlockSparseMatrixPreconditioner;
-typedef TypedPreconditioner<CompressedRowSparseMatrix> CompressedRowSparseMatrixPreconditioner;
+using SparseMatrixPreconditioner = TypedPreconditioner<SparseMatrix>;
+using BlockSparseMatrixPreconditioner = TypedPreconditioner<BlockSparseMatrix>;
+using CompressedRowSparseMatrixPreconditioner = TypedPreconditioner<CompressedRowSparseMatrix>;
 // clang-format on
 
 // Wrap a SparseMatrix object as a preconditioner.
-class SparseMatrixPreconditionerWrapper : public SparseMatrixPreconditioner {
+class CERES_NO_EXPORT SparseMatrixPreconditionerWrapper final
+    : public SparseMatrixPreconditioner {
  public:
   // Wrapper does NOT take ownership of the matrix pointer.
-  explicit SparseMatrixPreconditionerWrapper(const SparseMatrix* matrix);
-  virtual ~SparseMatrixPreconditionerWrapper();
+  explicit SparseMatrixPreconditionerWrapper(
+      const SparseMatrix* matrix, const Preconditioner::Options& options);
+  ~SparseMatrixPreconditionerWrapper() override;
 
   // Preconditioner interface
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual int num_rows() const;
+  void RightMultiplyAndAccumulate(const double* x, double* y) const override;
+  int num_rows() const override;
 
  private:
-  virtual bool UpdateImpl(const SparseMatrix& A, const double* D);
+  bool UpdateImpl(const SparseMatrix& A, const double* D) override;
   const SparseMatrix* matrix_;
+  const Preconditioner::Options options_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_PRECONDITIONER_H_

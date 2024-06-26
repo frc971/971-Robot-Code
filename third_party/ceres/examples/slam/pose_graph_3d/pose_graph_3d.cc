@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2016 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,8 +41,7 @@
 
 DEFINE_string(input, "", "The pose graph definition filename in g2o format.");
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 namespace {
 
 // Constructs the nonlinear least squares optimization problem from the pose
@@ -50,27 +49,21 @@ namespace {
 void BuildOptimizationProblem(const VectorOfConstraints& constraints,
                               MapOfPoses* poses,
                               ceres::Problem* problem) {
-  CHECK(poses != NULL);
-  CHECK(problem != NULL);
+  CHECK(poses != nullptr);
+  CHECK(problem != nullptr);
   if (constraints.empty()) {
     LOG(INFO) << "No constraints, no problem to optimize.";
     return;
   }
 
-  ceres::LossFunction* loss_function = NULL;
-  ceres::LocalParameterization* quaternion_local_parameterization =
-      new EigenQuaternionParameterization;
+  ceres::LossFunction* loss_function = nullptr;
+  ceres::Manifold* quaternion_manifold = new EigenQuaternionManifold;
 
-  for (VectorOfConstraints::const_iterator constraints_iter =
-           constraints.begin();
-       constraints_iter != constraints.end();
-       ++constraints_iter) {
-    const Constraint3d& constraint = *constraints_iter;
-
-    MapOfPoses::iterator pose_begin_iter = poses->find(constraint.id_begin);
+  for (const auto& constraint : constraints) {
+    auto pose_begin_iter = poses->find(constraint.id_begin);
     CHECK(pose_begin_iter != poses->end())
         << "Pose with ID: " << constraint.id_begin << " not found.";
-    MapOfPoses::iterator pose_end_iter = poses->find(constraint.id_end);
+    auto pose_end_iter = poses->find(constraint.id_end);
     CHECK(pose_end_iter != poses->end())
         << "Pose with ID: " << constraint.id_end << " not found.";
 
@@ -87,10 +80,10 @@ void BuildOptimizationProblem(const VectorOfConstraints& constraints,
                               pose_end_iter->second.p.data(),
                               pose_end_iter->second.q.coeffs().data());
 
-    problem->SetParameterization(pose_begin_iter->second.q.coeffs().data(),
-                                 quaternion_local_parameterization);
-    problem->SetParameterization(pose_end_iter->second.q.coeffs().data(),
-                                 quaternion_local_parameterization);
+    problem->SetManifold(pose_begin_iter->second.q.coeffs().data(),
+                         quaternion_manifold);
+    problem->SetManifold(pose_end_iter->second.q.coeffs().data(),
+                         quaternion_manifold);
   }
 
   // The pose graph optimization problem has six DOFs that are not fully
@@ -100,7 +93,7 @@ void BuildOptimizationProblem(const VectorOfConstraints& constraints,
   // internal damping which mitigates this issue, but it is better to properly
   // constrain the gauge freedom. This can be done by setting one of the poses
   // as constant so the optimizer cannot change it.
-  MapOfPoses::iterator pose_start_iter = poses->begin();
+  auto pose_start_iter = poses->begin();
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
   problem->SetParameterBlockConstant(pose_start_iter->second.p.data());
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
@@ -108,7 +101,7 @@ void BuildOptimizationProblem(const VectorOfConstraints& constraints,
 
 // Returns true if the solve was successful.
 bool SolveOptimizationProblem(ceres::Problem* problem) {
-  CHECK(problem != NULL);
+  CHECK(problem != nullptr);
 
   ceres::Solver::Options options;
   options.max_num_iterations = 200;
@@ -130,18 +123,7 @@ bool OutputPoses(const std::string& filename, const MapOfPoses& poses) {
     LOG(ERROR) << "Error opening the file: " << filename;
     return false;
   }
-  for (std::map<int,
-                Pose3d,
-                std::less<int>,
-                Eigen::aligned_allocator<std::pair<const int, Pose3d>>>::
-           const_iterator poses_iter = poses.begin();
-       poses_iter != poses.end();
-       ++poses_iter) {
-    const std::map<int,
-                   Pose3d,
-                   std::less<int>,
-                   Eigen::aligned_allocator<std::pair<const int, Pose3d>>>::
-        value_type& pair = *poses_iter;
+  for (const auto& pair : poses) {
     outfile << pair.first << " " << pair.second.p.transpose() << " "
             << pair.second.q.x() << " " << pair.second.q.y() << " "
             << pair.second.q.z() << " " << pair.second.q.w() << '\n';
@@ -150,8 +132,7 @@ bool OutputPoses(const std::string& filename, const MapOfPoses& poses) {
 }
 
 }  // namespace
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);

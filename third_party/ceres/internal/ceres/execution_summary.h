@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,17 +34,17 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <utility>
 
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/wall_time.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 struct CallStatistics {
-  CallStatistics() : time(0.), calls(0) {}
-  double time;
-  int calls;
+  CallStatistics() = default;
+  double time{0.};
+  int calls{0};
 };
 
 // Struct used by various objects to report statistics about their
@@ -69,8 +69,10 @@ class ExecutionSummary {
 
 class ScopedExecutionTimer {
  public:
-  ScopedExecutionTimer(const std::string& name, ExecutionSummary* summary)
-      : start_time_(WallTimeInSeconds()), name_(name), summary_(summary) {}
+  ScopedExecutionTimer(std::string name, ExecutionSummary* summary)
+      : start_time_(WallTimeInSeconds()),
+        name_(std::move(name)),
+        summary_(summary) {}
 
   ~ScopedExecutionTimer() {
     summary_->IncrementTimeBy(name_, WallTimeInSeconds() - start_time_);
@@ -82,7 +84,6 @@ class ScopedExecutionTimer {
   ExecutionSummary* summary_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_EXECUTION_SUMMARY_H_

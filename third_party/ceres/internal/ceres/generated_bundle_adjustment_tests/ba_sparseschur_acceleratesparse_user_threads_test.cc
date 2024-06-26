@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,31 +35,31 @@
 //
 // This file is generated using generate_bundle_adjustment_tests.py.
 
-#include "bundle_adjustment_test_util.h"
+#include "ceres/bundle_adjustment_test_util.h"
+#include "ceres/internal/config.h"
+#include "gtest/gtest.h"
 
 #ifndef CERES_NO_ACCELERATE_SPARSE
-#ifndef CERES_NO_THREADS
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 TEST_F(BundleAdjustmentTest,
        SparseSchur_AccelerateSparse_UserOrdering_Threads) {  // NOLINT
   BundleAdjustmentProblem bundle_adjustment_problem;
   Solver::Options* options = bundle_adjustment_problem.mutable_solver_options();
+  options->eta = 0.01;
   options->num_threads = 4;
   options->linear_solver_type = SPARSE_SCHUR;
+  options->dense_linear_algebra_library_type = EIGEN;
   options->sparse_linear_algebra_library_type = ACCELERATE_SPARSE;
   options->preconditioner_type = IDENTITY;
   if (kUserOrdering) {
-    options->linear_solver_ordering.reset();
+    options->linear_solver_ordering = nullptr;
   }
   Problem* problem = bundle_adjustment_problem.mutable_problem();
   RunSolverForConfigAndExpectResidualsMatch(*options, problem);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
-#endif  // CERES_NO_THREADS
 #endif  // CERES_NO_ACCELERATE_SPARSE

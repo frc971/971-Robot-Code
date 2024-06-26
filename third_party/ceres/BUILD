@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2018 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,7 @@ cc_library(
 CERES_TESTS = [
     "array_utils",
     "autodiff_cost_function",
-    "autodiff_local_parameterization",
+    "autodiff_manifold",
     "autodiff",
     "block_jacobi_preconditioner",
     "block_random_access_dense_matrix",
@@ -92,6 +92,7 @@ CERES_TESTS = [
     "cost_function_to_functor",
     "covariance",
     "cubic_interpolation",
+    "dense_cholesky",
     "dense_linear_solver",
     "dense_sparse_matrix",
     "detect_structure",
@@ -120,7 +121,6 @@ CERES_TESTS = [
     "levenberg_marquardt_strategy",
     "line_search_minimizer",
     "line_search_preprocessor",
-    "local_parameterization",
     "loss_function",
     "minimizer",
     "normal_prior",
@@ -197,7 +197,7 @@ TEST_DEPS = [
 # dependency that we'd prefer to avoid.
 [cc_test(
     name = test_filename.split("/")[-1][:-3],  # Remove .cc.
-    timeout = "moderate",
+    timeout = "long",
     srcs = [test_filename],
     copts = TEST_COPTS,
 

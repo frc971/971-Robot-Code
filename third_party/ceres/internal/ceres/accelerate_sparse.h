@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
 #define CERES_INTERNAL_ACCELERATE_SPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 
 #ifndef CERES_NO_ACCELERATE_SPARSE
 
@@ -55,18 +55,18 @@ struct SparseTypesTrait {};
 
 template <>
 struct SparseTypesTrait<double> {
-  typedef DenseVector_Double DenseVector;
-  typedef SparseMatrix_Double SparseMatrix;
-  typedef SparseOpaqueSymbolicFactorization SymbolicFactorization;
-  typedef SparseOpaqueFactorization_Double NumericFactorization;
+  using DenseVector = DenseVector_Double;
+  using SparseMatrix = SparseMatrix_Double;
+  using SymbolicFactorization = SparseOpaqueSymbolicFactorization;
+  using NumericFactorization = SparseOpaqueFactorization_Double;
 };
 
 template <>
 struct SparseTypesTrait<float> {
-  typedef DenseVector_Float DenseVector;
-  typedef SparseMatrix_Float SparseMatrix;
-  typedef SparseOpaqueSymbolicFactorization SymbolicFactorization;
-  typedef SparseOpaqueFactorization_Float NumericFactorization;
+  using DenseVector = DenseVector_Float;
+  using SparseMatrix = SparseMatrix_Float;
+  using SymbolicFactorization = SparseOpaqueSymbolicFactorization;
+  using NumericFactorization = SparseOpaqueFactorization_Float;
 };
 
 template <typename Scalar>
@@ -91,7 +91,8 @@ class AccelerateSparse {
   //       objects internally).
   ASSparseMatrix CreateSparseMatrixTransposeView(CompressedRowSparseMatrix* A);
   // Computes a symbolic factorisation of A that can be used in Solve().
-  SymbolicFactorization AnalyzeCholesky(ASSparseMatrix* A);
+  SymbolicFactorization AnalyzeCholesky(OrderingType ordering_type,
+                                        ASSparseMatrix* A);
   // Compute the numeric Cholesky factorization of A, given its
   // symbolic factorization.
   NumericFactorization Cholesky(ASSparseMatrix* A,
@@ -111,7 +112,7 @@ class AccelerateSparse {
 // An implementation of SparseCholesky interface using Apple's Accelerate
 // framework.
 template <typename Scalar>
-class AppleAccelerateCholesky : public SparseCholesky {
+class AppleAccelerateCholesky final : public SparseCholesky {
  public:
   // Factory
   static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);

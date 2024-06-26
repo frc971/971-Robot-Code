@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,12 @@
 #ifndef CERES_INTERNAL_DOGLEG_STRATEGY_H_
 #define CERES_INTERNAL_DOGLEG_STRATEGY_H_
 
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Dogleg step computation and trust region sizing strategy based on
 // on "Methods for Nonlinear Least Squares" by K. Madsen, H.B. Nielsen
@@ -53,10 +53,9 @@ namespace internal {
 // DoglegStrategy follows the approach by Shultz, Schnabel, Byrd.
 // This finds the exact optimum over the two-dimensional subspace
 // spanned by the two Dogleg vectors.
-class CERES_EXPORT_INTERNAL DoglegStrategy : public TrustRegionStrategy {
+class CERES_NO_EXPORT DoglegStrategy final : public TrustRegionStrategy {
  public:
   explicit DoglegStrategy(const TrustRegionStrategy::Options& options);
-  virtual ~DoglegStrategy() {}
 
   // TrustRegionStrategy interface
   Summary ComputeStep(const PerSolveOptions& per_solve_options,
@@ -65,7 +64,7 @@ class CERES_EXPORT_INTERNAL DoglegStrategy : public TrustRegionStrategy {
                       double* step) final;
   void StepAccepted(double step_quality) final;
   void StepRejected(double step_quality) final;
-  void StepIsInvalid();
+  void StepIsInvalid() override;
   double Radius() const final;
 
   // These functions are predominantly for testing.
@@ -76,8 +75,8 @@ class CERES_EXPORT_INTERNAL DoglegStrategy : public TrustRegionStrategy {
   Matrix subspace_B() const { return subspace_B_; }
 
  private:
-  typedef Eigen::Matrix<double, 2, 1, Eigen::DontAlign> Vector2d;
-  typedef Eigen::Matrix<double, 2, 2, Eigen::DontAlign> Matrix2d;
+  using Vector2d = Eigen::Matrix<double, 2, 1, Eigen::DontAlign>;
+  using Matrix2d = Eigen::Matrix<double, 2, 2, Eigen::DontAlign>;
 
   LinearSolver::Summary ComputeGaussNewtonStep(
       const PerSolveOptions& per_solve_options,
@@ -159,7 +158,8 @@ class CERES_EXPORT_INTERNAL DoglegStrategy : public TrustRegionStrategy {
   Matrix2d subspace_B_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_DOGLEG_STRATEGY_H_

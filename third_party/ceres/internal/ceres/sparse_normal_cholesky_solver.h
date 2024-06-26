@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,15 +36,16 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
+#include <memory>
 #include <vector>
 
+#include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class CompressedRowSparseMatrix;
 class InnerProductComputer;
@@ -52,13 +53,14 @@ class SparseCholesky;
 
 // Solves the normal equations (A'A + D'D) x = A'b, using the sparse
 // linear algebra library of the user's choice.
-class SparseNormalCholeskySolver : public BlockSparseMatrixSolver {
+class CERES_NO_EXPORT SparseNormalCholeskySolver
+    : public BlockSparseMatrixSolver {
  public:
   explicit SparseNormalCholeskySolver(const LinearSolver::Options& options);
   SparseNormalCholeskySolver(const SparseNormalCholeskySolver&) = delete;
   void operator=(const SparseNormalCholeskySolver&) = delete;
 
-  virtual ~SparseNormalCholeskySolver();
+  ~SparseNormalCholeskySolver() override;
 
  private:
   LinearSolver::Summary SolveImpl(BlockSparseMatrix* A,
@@ -72,7 +74,6 @@ class SparseNormalCholeskySolver : public BlockSparseMatrixSolver {
   std::unique_ptr<InnerProductComputer> inner_product_computer_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_SPARSE_NORMAL_CHOLESKY_SOLVER_H_

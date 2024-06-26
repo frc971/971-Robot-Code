@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 
 #include "ceres/casts.h"
 #include "ceres/context_impl.h"
+#include "ceres/internal/config.h"
 #include "ceres/linear_least_squares_problems.h"
 #include "ceres/linear_solver.h"
 #include "ceres/triplet_sparse_matrix.h"
@@ -39,12 +40,10 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
-typedef ::testing::
-    tuple<LinearSolverType, DenseLinearAlgebraLibraryType, bool, int>
-        Param;
+using Param = ::testing::
+    tuple<LinearSolverType, DenseLinearAlgebraLibraryType, bool, int>;
 
 static std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
   Param param = info.param;
@@ -62,8 +61,8 @@ TEST_P(DenseLinearSolverTest, _) {
   Param param = GetParam();
   const bool regularized = testing::get<2>(param);
 
-  std::unique_ptr<LinearLeastSquaresProblem> problem(
-      CreateLinearLeastSquaresProblemFromId(testing::get<3>(param)));
+  std::unique_ptr<LinearLeastSquaresProblem> problem =
+      CreateLinearLeastSquaresProblemFromId(testing::get<3>(param));
   DenseSparseMatrix lhs(*down_cast<TripletSparseMatrix*>(problem->A.get()));
 
   const int num_cols = lhs.num_cols();
@@ -87,25 +86,25 @@ TEST_P(DenseLinearSolverTest, _) {
   Vector solution(num_cols);
   LinearSolver::Summary summary =
       solver->Solve(&lhs, rhs.data(), per_solve_options, solution.data());
-  EXPECT_EQ(summary.termination_type, LINEAR_SOLVER_SUCCESS);
+  EXPECT_EQ(summary.termination_type, LinearSolverTerminationType::SUCCESS);
 
-  // If solving for the regularized solution, add the diagonal to the
-  // matrix. This makes subsequent computations simpler.
-  if (testing::get<2>(param)) {
-    lhs.AppendDiagonal(problem->D.get());
-  };
+  Vector normal_rhs = lhs.matrix().transpose() * rhs.head(num_rows);
+  Matrix normal_lhs = lhs.matrix().transpose() * lhs.matrix();
 
-  Vector tmp = Vector::Zero(num_rows + num_cols);
-  lhs.RightMultiply(solution.data(), tmp.data());
-  Vector actual_normal_rhs = Vector::Zero(num_cols);
-  lhs.LeftMultiply(tmp.data(), actual_normal_rhs.data());
+  if (regularized) {
+    ConstVectorRef diagonal(problem->D.get(), num_cols);
+    normal_lhs += diagonal.array().square().matrix().asDiagonal();
+  }
 
-  Vector expected_normal_rhs = Vector::Zero(num_cols);
-  lhs.LeftMultiply(rhs.data(), expected_normal_rhs.data());
-  const double residual = (expected_normal_rhs - actual_normal_rhs).norm() /
-                          expected_normal_rhs.norm();
+  Vector actual_normal_rhs = normal_lhs * solution;
 
-  EXPECT_NEAR(residual, 0.0, 10 * std::numeric_limits<double>::epsilon());
+  const double normalized_residual =
+      (normal_rhs - actual_normal_rhs).norm() / normal_rhs.norm();
+
+  EXPECT_NEAR(
+      normalized_residual, 0.0, 10 * std::numeric_limits<double>::epsilon())
+      << "\nexpected: " << normal_rhs.transpose()
+      << "\nactual: " << actual_normal_rhs.transpose();
 }
 
 namespace {
@@ -136,5 +135,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 #endif
 }  // namespace
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

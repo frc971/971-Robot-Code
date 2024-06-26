@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2016 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 #ifndef EXAMPLES_CERES_TYPES_H_
 #define EXAMPLES_CERES_TYPES_H_
 
+#include <functional>
 #include <istream>
 #include <map>
 #include <string>
@@ -39,8 +40,7 @@
 #include "Eigen/Core"
 #include "Eigen/Geometry"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 struct Pose3d {
   Eigen::Vector3d p;
@@ -61,11 +61,11 @@ inline std::istream& operator>>(std::istream& input, Pose3d& pose) {
   return input;
 }
 
-typedef std::map<int,
-                 Pose3d,
-                 std::less<int>,
-                 Eigen::aligned_allocator<std::pair<const int, Pose3d>>>
-    MapOfPoses;
+using MapOfPoses =
+    std::map<int,
+             Pose3d,
+             std::less<int>,
+             Eigen::aligned_allocator<std::pair<const int, Pose3d>>>;
 
 // The constraint between two vertices in the pose graph. The constraint is the
 // transformation from vertex id_begin to vertex id_end.
@@ -103,10 +103,9 @@ inline std::istream& operator>>(std::istream& input, Constraint3d& constraint) {
   return input;
 }
 
-typedef std::vector<Constraint3d, Eigen::aligned_allocator<Constraint3d>>
-    VectorOfConstraints;
+using VectorOfConstraints =
+    std::vector<Constraint3d, Eigen::aligned_allocator<Constraint3d>>;
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 #endif  // EXAMPLES_CERES_TYPES_H_
