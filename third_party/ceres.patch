@@ -1,0 +1,134 @@
+diff -r -u a/bazel/ceres.bzl b/bazel/ceres.bzl
+--- a/bazel/ceres.bzl	2024-06-25 18:35:28.266797366 -0700
++++ b/bazel/ceres.bzl	2024-06-25 18:25:10.919515348 -0700
+@@ -189,6 +189,9 @@
+             "-I" + internal,
+             "-Wunused-parameter",
+             "-Wno-sign-compare",
++            "-Wno-format-nonliteral",
++            "-Wno-unused-parameter",
++            "-Wno-unused-but-set-variable",
+         ] + schur_eliminator_copts,
+ 
+         # These include directories and defines are propagated to other targets
+@@ -214,7 +217,7 @@
+         ],
+         visibility = ["//visibility:public"],
+         deps = [
+-            "@com_gitlab_libeigen_eigen//:eigen",
+             "@com_github_google_glog//:glog",
++            "@org_tuxfamily_eigen//:eigen",
+         ],
+     )
+diff -r -u a/BUILD b/BUILD
+--- a/BUILD	2024-06-25 18:35:28.266797366 -0700
++++ b/BUILD	2024-06-25 18:25:10.919515348 -0700
+@@ -32,6 +32,7 @@
+ # not support parameterization around threading choice or sparse backends.
+ 
+ load("//:bazel/ceres.bzl", "ceres_library")
++load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
+ 
+ ceres_library(
+     name = "ceres",
+@@ -57,6 +58,7 @@
+     ],
+     copts = [
+         "-Wno-sign-compare",
++        "-Wno-unused-but-set-variable",
+         "-DCERES_TEST_SRCDIR_SUFFIX=\\\"data/\\\"",
+     ],
+     includes = [
+@@ -165,12 +167,16 @@
+     # but in the future disable these warnings only for rotation_test.
+     # TODO(keir): When the tests are macro-ified, apply these selectively.
+     "-Wno-address",
+-]
++    "-Wno-unused-parameter",
++] + compiler_select({
++    "gcc": ["-Wno-use-after-free"],
++    "clang": [],
++})
+ 
+ TEST_DEPS = [
+     "//:ceres",
+     "//:test_util",
+-    "@com_gitlab_libeigen_eigen//:eigen",
++    "@org_tuxfamily_eigen//:eigen",
+     "@com_github_gflags_gflags//:gflags",
+ ]
+ 
+diff -r -u a/examples/BUILD b/examples/BUILD
+--- a/examples/BUILD	2024-06-25 18:35:28.270797439 -0700
++++ b/examples/BUILD	2024-06-25 18:25:32.355906091 -0700
+@@ -31,13 +31,14 @@
+ EXAMPLE_COPTS = [
+     # Needed to silence GFlags complaints.
+     "-Wno-sign-compare",
++    "-Wno-unused-parameter",
+     # Needed to put fscanf in a function.
+     "-Wno-format-nonliteral",
+ ]
+ 
+ EXAMPLE_DEPS = [
+     "//:ceres",
+-    "@com_gitlab_libeigen_eigen//:eigen",
++    "@org_tuxfamily_eigen//:eigen",
+     "@com_github_gflags_gflags//:gflags",
+ ]
+ 
+diff -r -u a/internal/ceres/autodiff_test.cc b/internal/ceres/autodiff_test.cc
+--- a/internal/ceres/autodiff_test.cc	2024-06-25 18:35:28.278797586 -0700
++++ b/internal/ceres/autodiff_test.cc	2024-06-25 18:25:10.935515640 -0700
+@@ -647,6 +647,10 @@
+   }
+ }
+ 
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunused-but-set-variable"
++#endif
+ // This is fragile test that triggers the alignment bug on
+ // i686-apple-darwin10-llvm-g++-4.2 (GCC) 4.2.1. It is quite possible,
+ // that other combinations of operating system + compiler will
+@@ -671,5 +675,8 @@
+   // Need this to makes sure that x does not get optimized out.
+   x[0] = x[0] + JetT(1.0);
+ }
++#ifdef __clang__
++#pragma clang diagnostic pop
++#endif
+ 
+ }  // namespace ceres::internal
+diff -r -u a/internal/ceres/bundle_adjustment_test_util.h b/internal/ceres/bundle_adjustment_test_util.h
+--- a/internal/ceres/bundle_adjustment_test_util.h	2024-06-25 18:35:28.278797586 -0700
++++ b/internal/ceres/bundle_adjustment_test_util.h	2024-06-25 18:32:23.019406091 -0700
+@@ -97,7 +97,8 @@
+ 
+  private:
+   void ReadData(const std::string& filename) {
+-    FILE* fptr = fopen(filename.c_str(), "r");
++    FILE* fptr = fopen(
++        (std::string("../com_google_ceres_solver/") + filename).c_str(), "r");
+ 
+     if (!fptr) {
+       LOG(FATAL) << "File Error: unable to open file " << filename;
+diff -r -u a/internal/ceres/triplet_sparse_matrix_test.cc b/internal/ceres/triplet_sparse_matrix_test.cc
+--- a/internal/ceres/triplet_sparse_matrix_test.cc	2024-06-25 18:35:28.298797952 -0700
++++ b/internal/ceres/triplet_sparse_matrix_test.cc	2024-06-25 18:25:10.963516152 -0700
+@@ -184,8 +184,15 @@
+   orig.mutable_values()[1] = 5.2;
+   orig.set_num_nonzeros(2);
+ 
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wself-assign-overloaded"
++#endif
+   // Who's on earth gonna do this?
+   orig = orig;
++#ifdef __clang__
++#pragma clang diagnostic pop
++#endif
+ 
+   EXPECT_EQ(orig.num_rows(), 2);
+   EXPECT_EQ(orig.num_cols(), 5);

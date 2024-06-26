@@ -693,9 +693,13 @@ http_archive(
     urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.1.tar.gz"],
 )
 
-local_repository(
+http_archive(
     name = "com_google_ceres_solver",
-    path = "third_party/ceres",
+    patch_args = ["-p1"],
+    patches = ["//third_party:ceres.patch"],
+    sha256 = "a4c32939bd694a4b59fc50c244abda5d49863a56e77437b9d3bc398e17d59e20",
+    strip_prefix = "ceres-solver-7f9cc571b03632f1df93ea35725a1f5dfffe2c72",
+    urls = ["https://github.com/ceres-solver/ceres-solver/archive/7f9cc571b03632f1df93ea35725a1f5dfffe2c72.zip"],
 )
 
 http_archive(
