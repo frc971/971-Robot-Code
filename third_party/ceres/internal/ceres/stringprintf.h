@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,10 +41,10 @@
 #include <cstdarg>
 #include <string>
 
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 #if (defined(__GNUC__) || defined(__clang__))
 // Tell the compiler to do printf format string checking if the compiler
@@ -63,32 +63,34 @@ namespace internal {
 #endif
 
 // Return a C++ string.
-CERES_EXPORT_INTERNAL extern std::string StringPrintf(const char* format, ...)
+CERES_NO_EXPORT extern std::string StringPrintf(const char* format, ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(1, 2);
 
 // Store result into a supplied string and return it.
-CERES_EXPORT_INTERNAL extern const std::string& SStringPrintf(
-    std::string* dst, const char* format, ...)
+CERES_NO_EXPORT extern const std::string& SStringPrintf(std::string* dst,
+                                                        const char* format,
+                                                        ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(2, 3);
 
 // Append result to a supplied string.
-CERES_EXPORT_INTERNAL extern void StringAppendF(std::string* dst,
-                                                const char* format,
-                                                ...)
+CERES_NO_EXPORT extern void StringAppendF(std::string* dst,
+                                          const char* format,
+                                          ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(2, 3);
 
 // Lower-level routine that takes a va_list and appends to a specified string.
 // All other routines are just convenience wrappers around it.
-CERES_EXPORT_INTERNAL extern void StringAppendV(std::string* dst,
-                                                const char* format,
-                                                va_list ap);
+CERES_NO_EXPORT extern void StringAppendV(std::string* dst,
+                                          const char* format,
+                                          va_list ap);
 
 #undef CERES_PRINTF_ATTRIBUTE
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_STRINGPRINTF_H_

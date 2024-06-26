@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #define CERES_PUBLIC_ITERATION_CALLBACK_H_
 
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -164,8 +165,6 @@ struct CERES_EXPORT IterationSummary {
 //     explicit LoggingCallback(bool log_to_stdout)
 //         : log_to_stdout_(log_to_stdout) {}
 //
-//     ~LoggingCallback() {}
-//
 //     CallbackReturnType operator()(const IterationSummary& summary) {
 //       const char* kReportRowFormat =
 //           "% 4d: f:% 8e d:% 3.2e g:% 3.2e h:% 3.2e "
@@ -194,7 +193,7 @@ struct CERES_EXPORT IterationSummary {
 //
 class CERES_EXPORT IterationCallback {
  public:
-  virtual ~IterationCallback() {}
+  virtual ~IterationCallback();
   virtual CallbackReturnType operator()(const IterationSummary& summary) = 0;
 };
 

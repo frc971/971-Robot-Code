@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,10 @@
 
 #include "ceres/schur_eliminator.h"
 
+#include <algorithm>
 #include <memory>
+#include <random>
+#include <vector>
 
 #include "Eigen/Dense"
 #include "ceres/block_random_access_dense_matrix.h"
@@ -41,7 +44,6 @@
 #include "ceres/detect_structure.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
-#include "ceres/random.h"
 #include "ceres/test_util.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
@@ -51,22 +53,20 @@
 // TODO(sameeragarwal): Reduce the size of these tests and redo the
 // parameterization to be more efficient.
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class SchurEliminatorTest : public ::testing::Test {
  protected:
   void SetUpFromId(int id) {
-    std::unique_ptr<LinearLeastSquaresProblem> problem(
-        CreateLinearLeastSquaresProblemFromId(id));
+    auto problem = CreateLinearLeastSquaresProblemFromId(id);
     CHECK(problem != nullptr);
     SetupHelper(problem.get());
   }
 
   void SetupHelper(LinearLeastSquaresProblem* problem) {
     A.reset(down_cast<BlockSparseMatrix*>(problem->A.release()));
-    b.reset(problem->b.release());
-    D.reset(problem->D.release());
+    b = std::move(problem->b);
+    D = std::move(problem->D);
 
     num_eliminate_blocks = problem->num_eliminate_blocks;
     num_eliminate_cols = 0;
@@ -126,12 +126,8 @@ class SchurEliminatorTest : public ::testing::Test {
                                 const double relative_tolerance) {
     const CompressedRowBlockStructure* bs = A->block_structure();
     const int num_col_blocks = bs->cols.size();
-    std::vector<int> blocks(num_col_blocks - num_eliminate_blocks, 0);
-    for (int i = num_eliminate_blocks; i < num_col_blocks; ++i) {
-      blocks[i - num_eliminate_blocks] = bs->cols[i].size;
-    }
-
-    BlockRandomAccessDenseMatrix lhs(blocks);
+    auto blocks = Tail(bs->cols, num_col_blocks - num_eliminate_blocks);
+    BlockRandomAccessDenseMatrix lhs(blocks, &context_, 1);
 
     const int num_cols = A->num_cols();
     const int schur_size = lhs.num_rows();
@@ -139,8 +135,7 @@ class SchurEliminatorTest : public ::testing::Test {
     Vector rhs(schur_size);
 
     LinearSolver::Options options;
-    ContextImpl context;
-    options.context = &context;
+    options.context = &context_;
     options.elimination_groups.push_back(num_eliminate_blocks);
     if (use_static_structure) {
       DetectStructure(*bs,
@@ -150,8 +145,8 @@ class SchurEliminatorTest : public ::testing::Test {
                       &options.f_block_size);
     }
 
-    std::unique_ptr<SchurEliminatorBase> eliminator;
-    eliminator.reset(SchurEliminatorBase::Create(options));
+    std::unique_ptr<SchurEliminatorBase> eliminator =
+        SchurEliminatorBase::Create(options);
     const bool kFullRankETE = true;
     eliminator->Init(num_eliminate_blocks, kFullRankETE, A->block_structure());
     eliminator->Eliminate(
@@ -181,6 +176,8 @@ class SchurEliminatorTest : public ::testing::Test {
                 0.0,
                 relative_tolerance);
   }
+
+  ContextImpl context_;
 
   std::unique_ptr<BlockSparseMatrix> A;
   std::unique_ptr<double[]> b;
@@ -228,7 +225,9 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
   constexpr int kFBlockSize = 6;
   constexpr int num_e_blocks = 5;
 
-  CompressedRowBlockStructure* bs = new CompressedRowBlockStructure;
+  ContextImpl context;
+
+  auto* bs = new CompressedRowBlockStructure;
   bs->cols.resize(num_e_blocks + 1);
   int col_pos = 0;
   for (int i = 0; i < num_e_blocks; ++i) {
@@ -284,9 +283,11 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
 
   BlockSparseMatrix matrix(bs);
   double* values = matrix.mutable_values();
-  for (int i = 0; i < matrix.num_nonzeros(); ++i) {
-    values[i] = RandNormal();
-  }
+  std::mt19937 prng;
+  std::normal_distribution<> standard_normal;
+  std::generate_n(values, matrix.num_nonzeros(), [&prng, &standard_normal] {
+    return standard_normal(prng);
+  });
 
   Vector b(matrix.num_rows());
   b.setRandom();
@@ -294,9 +295,10 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
   Vector diagonal(matrix.num_cols());
   diagonal.setOnes();
 
-  std::vector<int> blocks(1, kFBlockSize);
-  BlockRandomAccessDenseMatrix actual_lhs(blocks);
-  BlockRandomAccessDenseMatrix expected_lhs(blocks);
+  std::vector<Block> blocks;
+  blocks.emplace_back(kFBlockSize, 0);
+  BlockRandomAccessDenseMatrix actual_lhs(blocks, &context, 1);
+  BlockRandomAccessDenseMatrix expected_lhs(blocks, &context, 1);
   Vector actual_rhs(kFBlockSize);
   Vector expected_rhs(kFBlockSize);
 
@@ -308,7 +310,6 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
   expected_e_sol.setZero();
 
   {
-    ContextImpl context;
     LinearSolver::Options linear_solver_options;
     linear_solver_options.e_block_size = kEBlockSize;
     linear_solver_options.row_block_size = kRowBlockSize;
@@ -369,5 +370,4 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
       << actual_e_sol;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,10 +43,11 @@
 #include <utility>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/preconditioner.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BlockRandomAccessDiagonalMatrix;
 class BlockSparseMatrix;
@@ -69,10 +70,13 @@ class SchurEliminatorBase;
 //   options.elimination_groups.push_back(num_cameras);
 //   SchurJacobiPreconditioner preconditioner(
 //      *A.block_structure(), options);
-//   preconditioner.Update(A, NULL);
-//   preconditioner.RightMultiply(x, y);
+//   preconditioner.Update(A, nullptr);
+//   preconditioner.RightMultiplyAndAccumulate(x, y);
 //
-class SchurJacobiPreconditioner : public BlockSparseMatrixPreconditioner {
+// TODO(https://github.com/ceres-solver/ceres-solver/issues/935):
+// SchurJacobiPreconditioner::RightMultiply will benefit from multithreading
+class CERES_NO_EXPORT SchurJacobiPreconditioner
+    : public BlockSparseMatrixPreconditioner {
  public:
   // Initialize the symbolic structure of the preconditioner. bs is
   // the block structure of the linear system to be solved. It is used
@@ -81,14 +85,14 @@ class SchurJacobiPreconditioner : public BlockSparseMatrixPreconditioner {
   // It has the same structural requirement as other Schur complement
   // based solvers. Please see schur_eliminator.h for more details.
   SchurJacobiPreconditioner(const CompressedRowBlockStructure& bs,
-                            const Preconditioner::Options& options);
+                            Preconditioner::Options options);
   SchurJacobiPreconditioner(const SchurJacobiPreconditioner&) = delete;
   void operator=(const SchurJacobiPreconditioner&) = delete;
 
-  virtual ~SchurJacobiPreconditioner();
+  ~SchurJacobiPreconditioner() override;
 
   // Preconditioner interface.
-  void RightMultiply(const double* x, double* y) const final;
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final;
   int num_rows() const final;
 
  private:
@@ -101,7 +105,8 @@ class SchurJacobiPreconditioner : public BlockSparseMatrixPreconditioner {
   std::unique_ptr<BlockRandomAccessDiagonalMatrix> m_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SCHUR_JACOBI_PRECONDITIONER_H_

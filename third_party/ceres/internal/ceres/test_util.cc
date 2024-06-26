@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <cmath>
 
 #include "ceres/file.h"
+#include "ceres/internal/port.h"
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 #include "gflags/gflags.h"
@@ -134,7 +135,8 @@ void ExpectArraysClose(int n, const double* p, const double* q, double tol) {
 }
 
 std::string TestFileAbsolutePath(const std::string& filename) {
-  return JoinPath(FLAGS_test_srcdir + CERES_TEST_SRCDIR_SUFFIX, filename);
+  return JoinPath(CERES_GET_FLAG(FLAGS_test_srcdir) + CERES_TEST_SRCDIR_SUFFIX,
+                  filename);
 }
 
 std::string ToString(const Solver::Options& options) {

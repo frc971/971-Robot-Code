@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,10 +37,9 @@
 #include <vector>
 
 #include "ceres/concurrent_queue.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // A thread-safe thread pool with an unbounded task queue and a resizable number
 // of workers.  The size of the thread pool can be increased but never decreased
@@ -58,7 +57,7 @@ namespace internal {
 //  workers to stop.  The workers will finish all of the tasks that have already
 //  been added to the thread pool.
 //
-class CERES_EXPORT_INTERNAL ThreadPool {
+class CERES_NO_EXPORT ThreadPool {
  public:
   // Returns the maximum number of hardware threads.
   static int MaxNumThreadsAvailable();
@@ -115,7 +114,6 @@ class CERES_EXPORT_INTERNAL ThreadPool {
   std::mutex thread_pool_mutex_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_THREAD_POOL_H_

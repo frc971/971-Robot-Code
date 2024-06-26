@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,19 +33,17 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <string>
 
 #include "ceres/array_utils.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/parameter_block.h"
 #include "ceres/residual_block.h"
 #include "ceres/stringprintf.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
-
-using std::string;
+namespace ceres::internal {
 
 void InvalidateEvaluation(const ResidualBlock& block,
                           double* cost,
@@ -56,7 +54,7 @@ void InvalidateEvaluation(const ResidualBlock& block,
 
   InvalidateArray(1, cost);
   InvalidateArray(num_residuals, residuals);
-  if (jacobians != NULL) {
+  if (jacobians != nullptr) {
     for (int i = 0; i < num_parameter_blocks; ++i) {
       const int parameter_block_size = block.parameter_blocks()[i]->Size();
       InvalidateArray(num_residuals * parameter_block_size, jacobians[i]);
@@ -64,17 +62,17 @@ void InvalidateEvaluation(const ResidualBlock& block,
   }
 }
 
-string EvaluationToString(const ResidualBlock& block,
-                          double const* const* parameters,
-                          double* cost,
-                          double* residuals,
-                          double** jacobians) {
+std::string EvaluationToString(const ResidualBlock& block,
+                               double const* const* parameters,
+                               double* cost,
+                               double* residuals,
+                               double** jacobians) {
   CHECK(cost != nullptr);
   CHECK(residuals != nullptr);
 
   const int num_parameter_blocks = block.NumParameterBlocks();
   const int num_residuals = block.NumResiduals();
-  string result = "";
+  std::string result = "";
 
   // clang-format off
   StringAppendF(&result,
@@ -89,7 +87,7 @@ string EvaluationToString(const ResidualBlock& block,
       "to Inf or NaN is also an error.  \n\n"; // NOLINT
   // clang-format on
 
-  string space = "Residuals:     ";
+  std::string space = "Residuals:     ";
   result += space;
   AppendArrayToString(num_residuals, residuals, &result);
   StringAppendF(&result, "\n\n");
@@ -104,9 +102,9 @@ string EvaluationToString(const ResidualBlock& block,
       StringAppendF(&result, "| ");
       for (int k = 0; k < num_residuals; ++k) {
         AppendArrayToString(1,
-                            (jacobians != NULL && jacobians[i] != NULL)
+                            (jacobians != nullptr && jacobians[i] != nullptr)
                                 ? jacobians[i] + k * parameter_block_size + j
-                                : NULL,
+                                : nullptr,
                             &result);
       }
       StringAppendF(&result, "\n");
@@ -117,9 +115,11 @@ string EvaluationToString(const ResidualBlock& block,
   return result;
 }
 
+// TODO(sameeragarwal) Check cost value validness here
+// Cost value is a part of evaluation but not checked here since according to
+// residual_block.cc cost is not valid at the time this method is called
 bool IsEvaluationValid(const ResidualBlock& block,
-                       double const* const* parameters,
-                       double* cost,
+                       double const* const* /*parameters*/,
                        double* residuals,
                        double** jacobians) {
   const int num_parameter_blocks = block.NumParameterBlocks();
@@ -129,7 +129,7 @@ bool IsEvaluationValid(const ResidualBlock& block,
     return false;
   }
 
-  if (jacobians != NULL) {
+  if (jacobians != nullptr) {
     for (int i = 0; i < num_parameter_blocks; ++i) {
       const int parameter_block_size = block.parameter_blocks()[i]->Size();
       if (!IsArrayValid(num_residuals * parameter_block_size, jacobians[i])) {
@@ -141,5 +141,4 @@ bool IsEvaluationValid(const ResidualBlock& block,
   return true;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

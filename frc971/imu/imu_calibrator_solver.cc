@@ -38,8 +38,8 @@ AllParameters<double> Solve(
     const std::vector<ImuConfig<double>> &nominal_config) {
   ceres::Problem problem;
 
-  ceres::EigenQuaternionParameterization *quaternion_local_parameterization =
-      new ceres::EigenQuaternionParameterization();
+  ceres::EigenQuaternionManifold *quaternion_local_parameterization =
+      new ceres::EigenQuaternionManifold();
   AllParameters<double> parameters;
   std::vector<size_t> num_readings;
   CHECK_EQ(nominal_config.size(), readings.size());

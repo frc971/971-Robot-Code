@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,14 @@
 #ifndef CERES_INTERNAL_NUMERIC_DIFF_TEST_UTILS_H_
 #define CERES_INTERNAL_NUMERIC_DIFF_TEST_UTILS_H_
 
+#include <random>
+
 #include "ceres/cost_function.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Noise factor for randomized cost function.
 static constexpr double kNoiseFactor = 0.01;
@@ -48,7 +49,7 @@ static constexpr unsigned int kRandomSeed = 1234;
 // y1 = x1'x2      -> dy1/dx1 = x2,               dy1/dx2 = x1
 // y2 = (x1'x2)^2  -> dy2/dx1 = 2 * x2 * (x1'x2), dy2/dx2 = 2 * x1 * (x1'x2)
 // y3 = x2'x2      -> dy3/dx1 = 0,                dy3/dx2 = 2 * x2
-class CERES_EXPORT_INTERNAL EasyFunctor {
+class CERES_NO_EXPORT EasyFunctor {
  public:
   bool operator()(const double* x1, const double* x2, double* residuals) const;
   void ExpectCostFunctionEvaluationIsNearlyCorrect(
@@ -72,14 +73,14 @@ class EasyCostFunction : public SizedCostFunction<3, 5, 5> {
 //
 // dy1/dx1 =  x2 * cos(x1'x2),            dy1/dx2 =  x1 * cos(x1'x2)
 // dy2/dx1 = -x2 * exp(-x1'x2 / 10) / 10, dy2/dx2 = -x2 * exp(-x1'x2 / 10) / 10
-class CERES_EXPORT TranscendentalFunctor {
+class CERES_NO_EXPORT TranscendentalFunctor {
  public:
   bool operator()(const double* x1, const double* x2, double* residuals) const;
   void ExpectCostFunctionEvaluationIsNearlyCorrect(
       const CostFunction& cost_function, NumericDiffMethodType method) const;
 };
 
-class CERES_EXPORT_INTERNAL TranscendentalCostFunction
+class CERES_NO_EXPORT TranscendentalCostFunction
     : public SizedCostFunction<2, 5, 5> {
  public:
   bool Evaluate(double const* const* parameters,
@@ -93,7 +94,7 @@ class CERES_EXPORT_INTERNAL TranscendentalCostFunction
 };
 
 // y = exp(x), dy/dx = exp(x)
-class CERES_EXPORT_INTERNAL ExponentialFunctor {
+class CERES_NO_EXPORT ExponentialFunctor {
  public:
   bool operator()(const double* x1, double* residuals) const;
   void ExpectCostFunctionEvaluationIsNearlyCorrect(
@@ -115,10 +116,12 @@ class ExponentialCostFunction : public SizedCostFunction<1, 1> {
 // Test adaptive numeric differentiation by synthetically adding random noise
 // to a functor.
 // y = x^2 + [random noise], dy/dx ~ 2x
-class CERES_EXPORT_INTERNAL RandomizedFunctor {
+class CERES_NO_EXPORT RandomizedFunctor {
  public:
-  RandomizedFunctor(double noise_factor, unsigned int random_seed)
-      : noise_factor_(noise_factor), random_seed_(random_seed) {}
+  RandomizedFunctor(double noise_factor, std::mt19937& prng)
+      : noise_factor_(noise_factor),
+        prng_(&prng),
+        uniform_distribution_{-noise_factor, noise_factor} {}
 
   bool operator()(const double* x1, double* residuals) const;
   void ExpectCostFunctionEvaluationIsNearlyCorrect(
@@ -126,14 +129,16 @@ class CERES_EXPORT_INTERNAL RandomizedFunctor {
 
  private:
   double noise_factor_;
-  unsigned int random_seed_;
+  // Store the generator as a pointer to be able to modify the instance the
+  // pointer is pointing to.
+  std::mt19937* prng_;
+  mutable std::uniform_real_distribution<> uniform_distribution_;
 };
 
-class CERES_EXPORT_INTERNAL RandomizedCostFunction
-    : public SizedCostFunction<1, 1> {
+class CERES_NO_EXPORT RandomizedCostFunction : public SizedCostFunction<1, 1> {
  public:
-  RandomizedCostFunction(double noise_factor, unsigned int random_seed)
-      : functor_(noise_factor, random_seed) {}
+  RandomizedCostFunction(double noise_factor, std::mt19937& prng)
+      : functor_(noise_factor, prng) {}
 
   bool Evaluate(double const* const* parameters,
                 double* residuals,
@@ -145,7 +150,6 @@ class CERES_EXPORT_INTERNAL RandomizedCostFunction
   RandomizedFunctor functor_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_NUMERIC_DIFF_TEST_UTILS_H_

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 //
 // Generic loop for line search based optimization algorithms.
 //
-// This is primarily inpsired by the minFunc packaged written by Mark
+// This is primarily inspired by the minFunc packaged written by Mark
 // Schmidt.
 //
 // http://www.di.ens.fr/~mschmidt/Software/minFunc.html
@@ -51,7 +51,7 @@
 #include "ceres/array_utils.h"
 #include "ceres/evaluator.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/line_search.h"
 #include "ceres/line_search_direction.h"
 #include "ceres/stringprintf.h"
@@ -59,8 +59,7 @@
 #include "ceres/wall_time.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 namespace {
 
 bool EvaluateGradientNorms(Evaluator* evaluator,
@@ -171,8 +170,8 @@ void LineSearchMinimizer::Minimize(const Minimizer::Options& options,
   line_search_direction_options.max_lbfgs_rank = options.max_lbfgs_rank;
   line_search_direction_options.use_approximate_eigenvalue_bfgs_scaling =
       options.use_approximate_eigenvalue_bfgs_scaling;
-  std::unique_ptr<LineSearchDirection> line_search_direction(
-      LineSearchDirection::Create(line_search_direction_options));
+  std::unique_ptr<LineSearchDirection> line_search_direction =
+      LineSearchDirection::Create(line_search_direction_options);
 
   LineSearchFunction line_search_function(evaluator);
 
@@ -280,8 +279,8 @@ void LineSearchMinimizer::Minimize(const Minimizer::Options& options,
                      << options.max_num_line_search_direction_restarts
                      << " [max].";
       }
-      line_search_direction.reset(
-          LineSearchDirection::Create(line_search_direction_options));
+      line_search_direction =
+          LineSearchDirection::Create(line_search_direction_options);
       current_state.search_direction = -current_state.gradient;
     }
 
@@ -473,5 +472,4 @@ void LineSearchMinimizer::Minimize(const Minimizer::Options& options,
   }
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ class QuadraticCostFunctor {
   explicit QuadraticCostFunctor(double a) : a_(a) {}
   template <typename T>
   bool operator()(const T* const x, T* cost) const {
-    cost[0] = x[0] * x[1] + x[2] * x[3] - T(a_);
+    cost[0] = x[0] * x[1] + x[2] * x[3] - a_;
     return true;
   }
 

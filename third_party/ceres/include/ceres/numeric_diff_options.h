@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
 #ifndef CERES_PUBLIC_NUMERIC_DIFF_OPTIONS_H_
 #define CERES_PUBLIC_NUMERIC_DIFF_OPTIONS_H_
 
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -69,5 +70,7 @@ struct CERES_EXPORT NumericDiffOptions {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_PUBLIC_NUMERIC_DIFF_OPTIONS_H_

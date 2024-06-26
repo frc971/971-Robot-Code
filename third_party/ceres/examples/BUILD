@@ -32,6 +32,7 @@ EXAMPLE_COPTS = [
     # Needed to silence GFlags complaints.
     "-Wno-sign-compare",
     "-Wno-unused-parameter",
+    # Needed to put fscanf in a function.
     "-Wno-format-nonliteral",
 ]
 
@@ -47,7 +48,6 @@ cc_binary(
         "bal_problem.cc",
         "bal_problem.h",
         "bundle_adjuster.cc",
-        "random.h",
         "snavely_reprojection_error.h",
     ],
     copts = EXAMPLE_COPTS,
@@ -69,7 +69,6 @@ cc_binary(
 cc_binary(
     name = "robot_pose_mle",
     srcs = [
-        "random.h",
         "robot_pose_mle.cc",
     ],
     copts = EXAMPLE_COPTS,
@@ -80,7 +79,7 @@ cc_binary(
     name = "pose_graph_2d",
     srcs = [
         "slam/common/read_g2o.h",
-        "slam/pose_graph_2d/angle_local_parameterization.h",
+        "slam/pose_graph_2d/angle_manifold.h",
         "slam/pose_graph_2d/normalize_angle.h",
         "slam/pose_graph_2d/pose_graph_2d.cc",
         "slam/pose_graph_2d/pose_graph_2d_error_term.h",

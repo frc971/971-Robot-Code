@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 
 #include "ceres/problem.h"
 
+#include <memory>
 #include <vector>
 
 #include "ceres/crs_matrix.h"
@@ -38,20 +39,18 @@
 
 namespace ceres {
 
-using std::vector;
-
 Problem::Problem() : impl_(new internal::ProblemImpl) {}
 Problem::Problem(const Problem::Options& options)
     : impl_(new internal::ProblemImpl(options)) {}
 // Not inline defaulted in declaration due to use of std::unique_ptr.
 Problem::Problem(Problem&&) = default;
 Problem& Problem::operator=(Problem&&) = default;
-Problem::~Problem() {}
+Problem::~Problem() = default;
 
 ResidualBlockId Problem::AddResidualBlock(
     CostFunction* cost_function,
     LossFunction* loss_function,
-    const vector<double*>& parameter_blocks) {
+    const std::vector<double*>& parameter_blocks) {
   return impl_->AddResidualBlock(cost_function,
                                  loss_function,
                                  parameter_blocks.data(),
@@ -70,10 +69,8 @@ void Problem::AddParameterBlock(double* values, int size) {
   impl_->AddParameterBlock(values, size);
 }
 
-void Problem::AddParameterBlock(double* values,
-                                int size,
-                                LocalParameterization* local_parameterization) {
-  impl_->AddParameterBlock(values, size, local_parameterization);
+void Problem::AddParameterBlock(double* values, int size, Manifold* manifold) {
+  impl_->AddParameterBlock(values, size, manifold);
 }
 
 void Problem::RemoveResidualBlock(ResidualBlockId residual_block) {
@@ -96,14 +93,16 @@ bool Problem::IsParameterBlockConstant(const double* values) const {
   return impl_->IsParameterBlockConstant(values);
 }
 
-void Problem::SetParameterization(
-    double* values, LocalParameterization* local_parameterization) {
-  impl_->SetParameterization(values, local_parameterization);
+void Problem::SetManifold(double* values, Manifold* manifold) {
+  impl_->SetManifold(values, manifold);
 }
 
-const LocalParameterization* Problem::GetParameterization(
-    const double* values) const {
-  return impl_->GetParameterization(values);
+const Manifold* Problem::GetManifold(const double* values) const {
+  return impl_->GetManifold(values);
+}
+
+bool Problem::HasManifold(const double* values) const {
+  return impl_->HasManifold(values);
 }
 
 void Problem::SetParameterLowerBound(double* values,
@@ -128,8 +127,8 @@ double Problem::GetParameterLowerBound(const double* values, int index) const {
 
 bool Problem::Evaluate(const EvaluateOptions& evaluate_options,
                        double* cost,
-                       vector<double>* residuals,
-                       vector<double>* gradient,
+                       std::vector<double>* residuals,
+                       std::vector<double>* gradient,
                        CRSMatrix* jacobian) {
   return impl_->Evaluate(evaluate_options, cost, residuals, gradient, jacobian);
 }
@@ -169,30 +168,30 @@ int Problem::NumResidualBlocks() const { return impl_->NumResidualBlocks(); }
 
 int Problem::NumResiduals() const { return impl_->NumResiduals(); }
 
-int Problem::ParameterBlockSize(const double* parameter_block) const {
-  return impl_->ParameterBlockSize(parameter_block);
+int Problem::ParameterBlockSize(const double* values) const {
+  return impl_->ParameterBlockSize(values);
 }
 
-int Problem::ParameterBlockLocalSize(const double* parameter_block) const {
-  return impl_->ParameterBlockLocalSize(parameter_block);
+int Problem::ParameterBlockTangentSize(const double* values) const {
+  return impl_->ParameterBlockTangentSize(values);
 }
 
 bool Problem::HasParameterBlock(const double* values) const {
   return impl_->HasParameterBlock(values);
 }
 
-void Problem::GetParameterBlocks(vector<double*>* parameter_blocks) const {
+void Problem::GetParameterBlocks(std::vector<double*>* parameter_blocks) const {
   impl_->GetParameterBlocks(parameter_blocks);
 }
 
 void Problem::GetResidualBlocks(
-    vector<ResidualBlockId>* residual_blocks) const {
+    std::vector<ResidualBlockId>* residual_blocks) const {
   impl_->GetResidualBlocks(residual_blocks);
 }
 
 void Problem::GetParameterBlocksForResidualBlock(
     const ResidualBlockId residual_block,
-    vector<double*>* parameter_blocks) const {
+    std::vector<double*>* parameter_blocks) const {
   impl_->GetParameterBlocksForResidualBlock(residual_block, parameter_blocks);
 }
 
@@ -207,8 +206,12 @@ const LossFunction* Problem::GetLossFunctionForResidualBlock(
 }
 
 void Problem::GetResidualBlocksForParameterBlock(
-    const double* values, vector<ResidualBlockId>* residual_blocks) const {
+    const double* values, std::vector<ResidualBlockId>* residual_blocks) const {
   impl_->GetResidualBlocksForParameterBlock(values, residual_blocks);
 }
+
+const Problem::Options& Problem::options() const { return impl_->options(); }
+
+internal::ProblemImpl* Problem::mutable_impl() { return impl_.get(); }
 
 }  // namespace ceres

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,55 +72,56 @@ DEFINE_int32(ridders_extrapolations,
              3,
              "Maximal number of extrapolations in Ridders' method.");
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 const double kDoubleMax = std::numeric_limits<double>::max();
 
 static void SetNumericDiffOptions(ceres::NumericDiffOptions* options) {
-  options->max_num_ridders_extrapolations = FLAGS_ridders_extrapolations;
+  options->max_num_ridders_extrapolations =
+      CERES_GET_FLAG(FLAGS_ridders_extrapolations);
 }
 
-#define BEGIN_MGH_PROBLEM(name, num_parameters, num_residuals)                \
-  struct name {                                                               \
-    static constexpr int kNumParameters = num_parameters;                     \
-    static const double initial_x[kNumParameters];                            \
-    static const double lower_bounds[kNumParameters];                         \
-    static const double upper_bounds[kNumParameters];                         \
-    static const double constrained_optimal_cost;                             \
-    static const double unconstrained_optimal_cost;                           \
-    static CostFunction* Create() {                                           \
-      if (FLAGS_use_numeric_diff) {                                           \
-        ceres::NumericDiffOptions options;                                    \
-        SetNumericDiffOptions(&options);                                      \
-        if (FLAGS_numeric_diff_method == "central") {                         \
-          return new NumericDiffCostFunction<name,                            \
-                                             ceres::CENTRAL,                  \
-                                             num_residuals,                   \
-                                             num_parameters>(                 \
-              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);       \
-        } else if (FLAGS_numeric_diff_method == "forward") {                  \
-          return new NumericDiffCostFunction<name,                            \
-                                             ceres::FORWARD,                  \
-                                             num_residuals,                   \
-                                             num_parameters>(                 \
-              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);       \
-        } else if (FLAGS_numeric_diff_method == "ridders") {                  \
-          return new NumericDiffCostFunction<name,                            \
-                                             ceres::RIDDERS,                  \
-                                             num_residuals,                   \
-                                             num_parameters>(                 \
-              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);       \
-        } else {                                                              \
-          LOG(ERROR) << "Invalid numeric diff method specified";              \
-          return NULL;                                                        \
-        }                                                                     \
-      } else {                                                                \
-        return new AutoDiffCostFunction<name, num_residuals, num_parameters>( \
-            new name);                                                        \
-      }                                                                       \
-    }                                                                         \
-    template <typename T>                                                     \
+#define BEGIN_MGH_PROBLEM(name, num_parameters, num_residuals)               \
+  struct name {                                                              \
+    static constexpr int kNumParameters = num_parameters;                    \
+    static const double initial_x[kNumParameters];                           \
+    static const double lower_bounds[kNumParameters];                        \
+    static const double upper_bounds[kNumParameters];                        \
+    static const double constrained_optimal_cost;                            \
+    static const double unconstrained_optimal_cost;                          \
+    static CostFunction* Create() {                                          \
+      if (CERES_GET_FLAG(FLAGS_use_numeric_diff)) {                          \
+        ceres::NumericDiffOptions options;                                   \
+        SetNumericDiffOptions(&options);                                     \
+        if (CERES_GET_FLAG(FLAGS_numeric_diff_method) == "central") {        \
+          return new NumericDiffCostFunction<name,                           \
+                                             ceres::CENTRAL,                 \
+                                             num_residuals,                  \
+                                             num_parameters>(                \
+              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);      \
+        } else if (CERES_GET_FLAG(FLAGS_numeric_diff_method) == "forward") { \
+          return new NumericDiffCostFunction<name,                           \
+                                             ceres::FORWARD,                 \
+                                             num_residuals,                  \
+                                             num_parameters>(                \
+              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);      \
+        } else if (CERES_GET_FLAG(FLAGS_numeric_diff_method) == "ridders") { \
+          return new NumericDiffCostFunction<name,                           \
+                                             ceres::RIDDERS,                 \
+                                             num_residuals,                  \
+                                             num_parameters>(                \
+              new name, ceres::TAKE_OWNERSHIP, num_residuals, options);      \
+        } else {                                                             \
+          LOG(ERROR) << "Invalid numeric diff method specified";             \
+          return nullptr;                                                    \
+        }                                                                    \
+      } else {                                                               \
+        return new AutoDiffCostFunction<name,                                \
+                                        num_residuals,                       \
+                                        num_parameters>();                   \
+      }                                                                      \
+    }                                                                        \
+    template <typename T>                                                    \
     bool operator()(const T* const x, T* residual) const {
 // clang-format off
 
@@ -223,7 +224,7 @@ BEGIN_MGH_PROBLEM(TestProblem7, 3, 3)
   const T x1 = x[0];
   const T x2 = x[1];
   const T x3 = x[2];
-  const T theta = (0.5 / M_PI)  * atan(x2 / x1) + (x1 > 0.0 ? 0.0 : 0.5);
+  const T theta = (0.5 / constants::pi)  * atan(x2 / x1) + (x1 > 0.0 ? 0.0 : 0.5);
   residual[0] = 10.0 * (x3 - 10.0 * theta);
   residual[1] = 10.0 * (sqrt(x1 * x1 + x2 * x2) - 1.0);
   residual[2] = x3;
@@ -548,7 +549,7 @@ bool Solve(bool is_constrained, int trial) {
   }
 
   Problem problem;
-  problem.AddResidualBlock(TestProblem::Create(), NULL, x);
+  problem.AddResidualBlock(TestProblem::Create(), nullptr, x);
   double optimal_cost = TestProblem::unconstrained_optimal_cost;
 
   if (is_constrained) {
@@ -580,13 +581,11 @@ bool Solve(bool is_constrained, int trial) {
   return success;
 }
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
-
   using ceres::examples::Solve;
 
   int unconstrained_problems = 0;
@@ -597,7 +596,8 @@ int main(int argc, char** argv) {
 
 #define UNCONSTRAINED_SOLVE(n)                              \
   ss << "Unconstrained Problem " << n << " : ";             \
-  if (FLAGS_problem == #n || FLAGS_problem == "all") {      \
+  if (CERES_GET_FLAG(FLAGS_problem) == #n ||                \
+      CERES_GET_FLAG(FLAGS_problem) == "all") {             \
     unconstrained_problems += 3;                            \
     if (Solve<ceres::examples::TestProblem##n>(false, 0)) { \
       unconstrained_successes += 1;                         \
@@ -645,7 +645,8 @@ int main(int argc, char** argv) {
 
 #define CONSTRAINED_SOLVE(n)                               \
   ss << "Constrained Problem " << n << " : ";              \
-  if (FLAGS_problem == #n || FLAGS_problem == "all") {     \
+  if (CERES_GET_FLAG(FLAGS_problem) == #n ||               \
+      CERES_GET_FLAG(FLAGS_problem) == "all") {            \
     constrained_problems += 1;                             \
     if (Solve<ceres::examples::TestProblem##n>(true, 0)) { \
       constrained_successes += 1;                          \

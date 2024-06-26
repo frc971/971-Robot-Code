@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,14 @@
 // Based on examples/ellipse_approximation.cc
 
 #include <cmath>
+#include <utility>
 #include <vector>
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Data generated with the following Python code.
 //   import numpy as np
@@ -280,8 +280,8 @@ class PointToLineSegmentContourCostFunction : public CostFunction {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   PointToLineSegmentContourCostFunction(const int num_segments,
-                                        const Eigen::Vector2d& y)
-      : num_segments_(num_segments), y_(y) {
+                                        Eigen::Vector2d y)
+      : num_segments_(num_segments), y_(std::move(y)) {
     // The first parameter is the preimage position.
     mutable_parameter_block_sizes()->push_back(1);
     // The next parameters are the control points for the line segment contour.
@@ -307,16 +307,16 @@ class PointToLineSegmentContourCostFunction : public CostFunction {
     residuals[0] = y_[0] - ((1.0 - u) * x[1 + i0][0] + u * x[1 + i1][0]);
     residuals[1] = y_[1] - ((1.0 - u) * x[1 + i0][1] + u * x[1 + i1][1]);
 
-    if (jacobians == NULL) {
+    if (jacobians == nullptr) {
       return true;
     }
 
-    if (jacobians[0] != NULL) {
+    if (jacobians[0] != nullptr) {
       jacobians[0][0] = x[1 + i0][0] - x[1 + i1][0];
       jacobians[0][1] = x[1 + i0][1] - x[1 + i1][1];
     }
     for (int i = 0; i < num_segments_; ++i) {
-      if (jacobians[i + 1] != NULL) {
+      if (jacobians[i + 1] != nullptr) {
         MatrixRef(jacobians[i + 1], 2, 2).setZero();
         if (i == i0) {
           jacobians[i + 1][0] = -(1.0 - u);
@@ -366,9 +366,9 @@ class EuclideanDistanceFunctor {
 };
 
 TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
-  // Skip test if there is no sparse linear algebra library.
+  // Skip test if there is no sparse linear algebra library that
+  // supports dynamic sparsity.
   if (!IsSparseLinearAlgebraLibraryTypeAvailable(SUITE_SPARSE) &&
-      !IsSparseLinearAlgebraLibraryTypeAvailable(CX_SPARSE) &&
       !IsSparseLinearAlgebraLibraryTypeAvailable(EIGEN_SPARSE)) {
     return;
   }
@@ -383,7 +383,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   //
   // Initialize `X` to points on the unit circle.
   Vector w(num_segments + 1);
-  w.setLinSpaced(num_segments + 1, 0.0, 2.0 * M_PI);
+  w.setLinSpaced(num_segments + 1, 0.0, 2.0 * constants::pi);
   w.conservativeResize(num_segments);
   Matrix X(num_segments, 2);
   X.col(0) = w.array().cos();
@@ -403,7 +403,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   // For each data point add a residual which measures its distance to its
   // corresponding position on the line segment contour.
   std::vector<double*> parameter_blocks(1 + num_segments);
-  parameter_blocks[0] = NULL;
+  parameter_blocks[0] = nullptr;
   for (int i = 0; i < num_segments; ++i) {
     parameter_blocks[i + 1] = X.data() + 2 * i;
   }
@@ -411,7 +411,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
     parameter_blocks[0] = &t[i];
     problem.AddResidualBlock(
         PointToLineSegmentContourCostFunction::Create(num_segments, kY.row(i)),
-        NULL,
+        nullptr,
         parameter_blocks);
   }
 
@@ -419,7 +419,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   for (int i = 0; i < num_segments; ++i) {
     problem.AddResidualBlock(
         EuclideanDistanceFunctor::Create(sqrt(regularization_weight)),
-        NULL,
+        nullptr,
         X.data() + 2 * i,
         X.data() + 2 * ((i + 1) % num_segments));
   }
@@ -427,6 +427,13 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   Solver::Options options;
   options.max_num_iterations = 100;
   options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  // Only SuiteSparse & EigenSparse currently support dynamic sparsity.
+  options.sparse_linear_algebra_library_type =
+#if !defined(CERES_NO_SUITESPARSE)
+      ceres::SUITE_SPARSE;
+#elif defined(CERES_USE_EIGEN_SPARSE)
+      ceres::EIGEN_SPARSE;
+#endif
 
   // First, solve `X` and `t` jointly with dynamic_sparsity = true.
   Matrix X0 = X;
@@ -453,5 +460,4 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
       << dynamic_summary.FullReport();
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
