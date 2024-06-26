@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,18 +30,18 @@
 
 #include "ceres/float_suitesparse.h"
 
+#include <memory>
+
 #if !defined(CERES_NO_SUITESPARSE)
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 std::unique_ptr<SparseCholesky> FloatSuiteSparseCholesky::Create(
     OrderingType ordering_type) {
   LOG(FATAL) << "FloatSuiteSparseCholesky is not available.";
-  return std::unique_ptr<SparseCholesky>();
+  return {};
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // !defined(CERES_NO_SUITESPARSE)

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,14 +35,15 @@
 #ifndef CERES_INTERNAL_VISIBILITY_H_
 #define CERES_INTERNAL_VISIBILITY_H_
 
+#include <memory>
 #include <set>
 #include <vector>
 
 #include "ceres/graph.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 struct CompressedRowBlockStructure;
 
@@ -54,7 +55,7 @@ struct CompressedRowBlockStructure;
 //
 // In a structure from motion problem, e_blocks correspond to 3D
 // points and f_blocks correspond to cameras.
-CERES_EXPORT_INTERNAL void ComputeVisibility(
+CERES_NO_EXPORT void ComputeVisibility(
     const CompressedRowBlockStructure& block_structure,
     int num_eliminate_blocks,
     std::vector<std::set<int>>* visibility);
@@ -72,10 +73,11 @@ CERES_EXPORT_INTERNAL void ComputeVisibility(
 //
 // Caller acquires ownership of the returned WeightedGraph pointer
 // (heap-allocated).
-CERES_EXPORT_INTERNAL WeightedGraph<int>* CreateSchurComplementGraph(
+CERES_NO_EXPORT std::unique_ptr<WeightedGraph<int>> CreateSchurComplementGraph(
     const std::vector<std::set<int>>& visibility);
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_VISIBILITY_H_

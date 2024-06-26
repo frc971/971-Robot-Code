@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,8 +45,7 @@
 #include "ceres/types.h"
 #include "ceres/wall_time.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 SparseNormalCholeskySolver::SparseNormalCholeskySolver(
     const LinearSolver::Options& options)
@@ -54,7 +53,7 @@ SparseNormalCholeskySolver::SparseNormalCholeskySolver(
   sparse_cholesky_ = SparseCholesky::Create(options);
 }
 
-SparseNormalCholeskySolver::~SparseNormalCholeskySolver() {}
+SparseNormalCholeskySolver::~SparseNormalCholeskySolver() = default;
 
 LinearSolver::Summary SparseNormalCholeskySolver::SolveImpl(
     BlockSparseMatrix* A,
@@ -64,7 +63,7 @@ LinearSolver::Summary SparseNormalCholeskySolver::SolveImpl(
   EventLogger event_logger("SparseNormalCholeskySolver::Solve");
   LinearSolver::Summary summary;
   summary.num_iterations = 1;
-  summary.termination_type = LINEAR_SOLVER_SUCCESS;
+  summary.termination_type = LinearSolverTerminationType::SUCCESS;
   summary.message = "Success.";
 
   const int num_cols = A->num_cols();
@@ -72,24 +71,24 @@ LinearSolver::Summary SparseNormalCholeskySolver::SolveImpl(
   xref.setZero();
   rhs_.resize(num_cols);
   rhs_.setZero();
-  A->LeftMultiply(b, rhs_.data());
+  A->LeftMultiplyAndAccumulate(b, rhs_.data());
   event_logger.AddEvent("Compute RHS");
 
-  if (per_solve_options.D != NULL) {
+  if (per_solve_options.D != nullptr) {
     // Temporarily append a diagonal block to the A matrix, but undo
     // it before returning the matrix to the user.
-    std::unique_ptr<BlockSparseMatrix> regularizer;
-    regularizer.reset(BlockSparseMatrix::CreateDiagonalMatrix(
-        per_solve_options.D, A->block_structure()->cols));
+    std::unique_ptr<BlockSparseMatrix> regularizer =
+        BlockSparseMatrix::CreateDiagonalMatrix(per_solve_options.D,
+                                                A->block_structure()->cols);
     event_logger.AddEvent("Diagonal");
     A->AppendRows(*regularizer);
     event_logger.AddEvent("Append");
   }
   event_logger.AddEvent("Append Rows");
 
-  if (inner_product_computer_.get() == NULL) {
-    inner_product_computer_.reset(
-        InnerProductComputer::Create(*A, sparse_cholesky_->StorageType()));
+  if (inner_product_computer_.get() == nullptr) {
+    inner_product_computer_ =
+        InnerProductComputer::Create(*A, sparse_cholesky_->StorageType());
 
     event_logger.AddEvent("InnerProductComputer::Create");
   }
@@ -97,7 +96,7 @@ LinearSolver::Summary SparseNormalCholeskySolver::SolveImpl(
   inner_product_computer_->Compute();
   event_logger.AddEvent("InnerProductComputer::Compute");
 
-  if (per_solve_options.D != NULL) {
+  if (per_solve_options.D != nullptr) {
     A->DeleteRowBlocks(A->block_structure()->cols.size());
   }
 
@@ -110,5 +109,4 @@ LinearSolver::Summary SparseNormalCholeskySolver::SolveImpl(
   return summary;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

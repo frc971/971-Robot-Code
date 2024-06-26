@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,27 +33,26 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
 #include <memory>
 
+#include "ceres/internal/export.h"
 #include "ceres/sparse_cholesky.h"
 
 #if !defined(CERES_NO_SUITESPARSE)
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Fake implementation of a single precision Sparse Cholesky using
 // SuiteSparse.
-class FloatSuiteSparseCholesky : public SparseCholesky {
+class CERES_NO_EXPORT FloatSuiteSparseCholesky : public SparseCholesky {
  public:
   static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // !defined(CERES_NO_SUITESPARSE)
 

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,16 +34,18 @@
 #ifndef CERES_INTERNAL_DYNAMIC_COMPRESSED_ROW_JACOBIAN_WRITER_H_
 #define CERES_INTERNAL_DYNAMIC_COMPRESSED_ROW_JACOBIAN_WRITER_H_
 
+#include <memory>
+
 #include "ceres/evaluator.h"
+#include "ceres/internal/export.h"
 #include "ceres/scratch_evaluate_preparer.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class Program;
 class SparseMatrix;
 
-class DynamicCompressedRowJacobianWriter {
+class CERES_NO_EXPORT DynamicCompressedRowJacobianWriter {
  public:
   DynamicCompressedRowJacobianWriter(Evaluator::Options /* ignored */,
                                      Program* program)
@@ -55,16 +57,17 @@ class DynamicCompressedRowJacobianWriter {
   // the cost functions. The scratch space is therefore used to store
   // the jacobians (including zeros) temporarily before only the non-zero
   // entries are copied over to the larger jacobian in `Write`.
-  ScratchEvaluatePreparer* CreateEvaluatePreparers(int num_threads);
+  std::unique_ptr<ScratchEvaluatePreparer[]> CreateEvaluatePreparers(
+      int num_threads);
 
   // Return a `DynamicCompressedRowSparseMatrix` which is filled by
   // `Write`. Note that `Finalize` must be called to make the
   // `CompressedRowSparseMatrix` interface valid.
-  SparseMatrix* CreateJacobian() const;
+  std::unique_ptr<SparseMatrix> CreateJacobian() const;
 
   // Write only the non-zero jacobian entries for a residual block
   // (specified by `residual_id`) into `base_jacobian`, starting at the row
-  // specifed by `residual_offset`.
+  // specified by `residual_offset`.
   //
   // This method is thread-safe over residual blocks (each `residual_id`).
   void Write(int residual_id,
@@ -76,7 +79,6 @@ class DynamicCompressedRowJacobianWriter {
   Program* program_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_DYNAMIC_COMPRESSED_ROW_JACOBIAN_WRITER_H_

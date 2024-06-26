@@ -60,7 +60,7 @@
 // Image number shall be greater or equal to zero. Order of cameras does not
 // matter and gaps are possible.
 //
-// Every 3D point is decribed by:
+// Every 3D point is described by:
 //
 //  - Track number point belongs to (single 4 bytes integer value).
 //  - 3D position vector, 3-component vector of float values.
@@ -100,12 +100,16 @@
 #define close _close
 typedef unsigned __int32 uint32_t;
 #else
-#include <stdint.h>
 #include <unistd.h>
 
+#include <cstdint>
+
+// NOTE MinGW does define the macro.
+#ifndef O_BINARY
 // O_BINARY is not defined on unix like platforms, as there is no
 // difference between binary and text files.
 #define O_BINARY 0
+#endif
 
 #endif
 
@@ -114,12 +118,10 @@ typedef unsigned __int32 uint32_t;
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-typedef Eigen::Matrix<double, 3, 3> Mat3;
-typedef Eigen::Matrix<double, 6, 1> Vec6;
-typedef Eigen::Vector3d Vec3;
-typedef Eigen::Vector4d Vec4;
-
-using std::vector;
+using Mat3 = Eigen::Matrix<double, 3, 3>;
+using Vec6 = Eigen::Matrix<double, 6, 1>;
+using Vec3 = Eigen::Vector3d;
+using Vec4 = Eigen::Vector4d;
 
 DEFINE_string(input, "", "Input File name");
 DEFINE_string(refine_intrinsics,
@@ -135,10 +137,10 @@ namespace {
 // R is a 3x3 matrix representing the rotation of the camera.
 // t is a translation vector representing its positions.
 struct EuclideanCamera {
-  EuclideanCamera() : image(-1) {}
-  EuclideanCamera(const EuclideanCamera& c) : image(c.image), R(c.R), t(c.t) {}
+  EuclideanCamera() = default;
+  EuclideanCamera(const EuclideanCamera& c) = default;
 
-  int image;
+  int image{-1};
   Mat3 R;
   Vec3 t;
 };
@@ -148,9 +150,9 @@ struct EuclideanCamera {
 // track identifies which track this point corresponds to.
 // X represents the 3D position of the track.
 struct EuclideanPoint {
-  EuclideanPoint() : track(-1) {}
-  EuclideanPoint(const EuclideanPoint& p) : track(p.track), X(p.X) {}
-  int track;
+  EuclideanPoint() = default;
+  EuclideanPoint(const EuclideanPoint& p) = default;
+  int track{-1};
   Vec3 X;
 };
 
@@ -203,32 +205,32 @@ enum {
 };
 
 // Returns a pointer to the camera corresponding to a image.
-EuclideanCamera* CameraForImage(vector<EuclideanCamera>* all_cameras,
+EuclideanCamera* CameraForImage(std::vector<EuclideanCamera>* all_cameras,
                                 const int image) {
   if (image < 0 || image >= all_cameras->size()) {
-    return NULL;
+    return nullptr;
   }
   EuclideanCamera* camera = &(*all_cameras)[image];
   if (camera->image == -1) {
-    return NULL;
+    return nullptr;
   }
   return camera;
 }
 
 const EuclideanCamera* CameraForImage(
-    const vector<EuclideanCamera>& all_cameras, const int image) {
+    const std::vector<EuclideanCamera>& all_cameras, const int image) {
   if (image < 0 || image >= all_cameras.size()) {
-    return NULL;
+    return nullptr;
   }
   const EuclideanCamera* camera = &all_cameras[image];
   if (camera->image == -1) {
-    return NULL;
+    return nullptr;
   }
   return camera;
 }
 
 // Returns maximal image number at which marker exists.
-int MaxImage(const vector<Marker>& all_markers) {
+int MaxImage(const std::vector<Marker>& all_markers) {
   if (all_markers.size() == 0) {
     return -1;
   }
@@ -241,14 +243,14 @@ int MaxImage(const vector<Marker>& all_markers) {
 }
 
 // Returns a pointer to the point corresponding to a track.
-EuclideanPoint* PointForTrack(vector<EuclideanPoint>* all_points,
+EuclideanPoint* PointForTrack(std::vector<EuclideanPoint>* all_points,
                               const int track) {
   if (track < 0 || track >= all_points->size()) {
-    return NULL;
+    return nullptr;
   }
   EuclideanPoint* point = &(*all_points)[track];
   if (point->track == -1) {
-    return NULL;
+    return nullptr;
   }
   return point;
 }
@@ -262,7 +264,7 @@ EuclideanPoint* PointForTrack(vector<EuclideanPoint>* all_points,
 // denotes file endianness in this way.
 class EndianAwareFileReader {
  public:
-  EndianAwareFileReader(void) : file_descriptor_(-1) {
+  EndianAwareFileReader() {
     // Get an endian type of the host machine.
     union {
       unsigned char bytes[4];
@@ -272,7 +274,7 @@ class EndianAwareFileReader {
     file_endian_type_ = host_endian_type_;
   }
 
-  ~EndianAwareFileReader(void) {
+  ~EndianAwareFileReader() {
     if (file_descriptor_ > 0) {
       close(file_descriptor_);
     }
@@ -284,7 +286,7 @@ class EndianAwareFileReader {
       return false;
     }
     // Get an endian tpye of data in the file.
-    unsigned char file_endian_type_flag = Read<unsigned char>();
+    auto file_endian_type_flag = Read<unsigned char>();
     if (file_endian_type_flag == 'V') {
       file_endian_type_ = kBigEndian;
     } else if (file_endian_type_flag == 'v') {
@@ -297,9 +299,11 @@ class EndianAwareFileReader {
 
   // Read value from the file, will switch endian if needed.
   template <typename T>
-  T Read(void) const {
+  T Read() const {
     T value;
+    CERES_DISABLE_DEPRECATED_WARNING
     CHECK_GT(read(file_descriptor_, &value, sizeof(value)), 0);
+    CERES_RESTORE_DEPRECATED_WARNING
     // Switch endian type if file contains data in different type
     // that current machine.
     if (file_endian_type_ != host_endian_type_) {
@@ -316,7 +320,7 @@ class EndianAwareFileReader {
   template <typename T>
   T SwitchEndian(const T value) const {
     if (sizeof(T) == 4) {
-      unsigned int temp_value = static_cast<unsigned int>(value);
+      auto temp_value = static_cast<unsigned int>(value);
       // clang-format off
       return ((temp_value >> 24)) |
              ((temp_value << 8) & 0x00ff0000) |
@@ -333,7 +337,7 @@ class EndianAwareFileReader {
 
   int host_endian_type_;
   int file_endian_type_;
-  int file_descriptor_;
+  int file_descriptor_{-1};
 };
 
 // Read 3x3 column-major matrix from the file
@@ -369,17 +373,17 @@ void ReadVector3(const EndianAwareFileReader& file_reader, Vec3* vector) {
 // reading.
 bool ReadProblemFromFile(const std::string& file_name,
                          double camera_intrinsics[8],
-                         vector<EuclideanCamera>* all_cameras,
-                         vector<EuclideanPoint>* all_points,
+                         std::vector<EuclideanCamera>* all_cameras,
+                         std::vector<EuclideanPoint>* all_points,
                          bool* is_image_space,
-                         vector<Marker>* all_markers) {
+                         std::vector<Marker>* all_markers) {
   EndianAwareFileReader file_reader;
   if (!file_reader.OpenFile(file_name)) {
     return false;
   }
 
   // Read markers' space flag.
-  unsigned char is_image_space_flag = file_reader.Read<unsigned char>();
+  auto is_image_space_flag = file_reader.Read<unsigned char>();
   if (is_image_space_flag == 'P') {
     *is_image_space = true;
   } else if (is_image_space_flag == 'N') {
@@ -610,10 +614,10 @@ void PrintCameraIntrinsics(const char* text, const double* camera_intrinsics) {
 //
 // Element with index i matches to a rotation+translation for
 // camera at image i.
-vector<Vec6> PackCamerasRotationAndTranslation(
-    const vector<Marker>& all_markers,
-    const vector<EuclideanCamera>& all_cameras) {
-  vector<Vec6> all_cameras_R_t;
+std::vector<Vec6> PackCamerasRotationAndTranslation(
+    const std::vector<Marker>& all_markers,
+    const std::vector<EuclideanCamera>& all_cameras) {
+  std::vector<Vec6> all_cameras_R_t;
   int max_image = MaxImage(all_markers);
 
   all_cameras_R_t.resize(max_image + 1);
@@ -633,9 +637,10 @@ vector<Vec6> PackCamerasRotationAndTranslation(
 }
 
 // Convert cameras rotations fro mangle axis back to rotation matrix.
-void UnpackCamerasRotationAndTranslation(const vector<Marker>& all_markers,
-                                         const vector<Vec6>& all_cameras_R_t,
-                                         vector<EuclideanCamera>* all_cameras) {
+void UnpackCamerasRotationAndTranslation(
+    const std::vector<Marker>& all_markers,
+    const std::vector<Vec6>& all_cameras_R_t,
+    std::vector<EuclideanCamera>* all_cameras) {
   int max_image = MaxImage(all_markers);
 
   for (int i = 0; i <= max_image; i++) {
@@ -650,12 +655,12 @@ void UnpackCamerasRotationAndTranslation(const vector<Marker>& all_markers,
   }
 }
 
-void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
+void EuclideanBundleCommonIntrinsics(const std::vector<Marker>& all_markers,
                                      const int bundle_intrinsics,
                                      const int bundle_constraints,
                                      double* camera_intrinsics,
-                                     vector<EuclideanCamera>* all_cameras,
-                                     vector<EuclideanPoint>* all_points) {
+                                     std::vector<EuclideanCamera>* all_cameras,
+                                     std::vector<EuclideanPoint>* all_points) {
   PrintCameraIntrinsics("Original intrinsics: ", camera_intrinsics);
 
   ceres::Problem::Options problem_options;
@@ -667,11 +672,11 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
   //
   // Block for minimization has got the following structure:
   //   <3 elements for angle-axis> <3 elements for translation>
-  vector<Vec6> all_cameras_R_t =
+  std::vector<Vec6> all_cameras_R_t =
       PackCamerasRotationAndTranslation(all_markers, *all_cameras);
 
-  // Parameterization used to restrict camera motion for modal solvers.
-  ceres::SubsetParameterization* constant_transform_parameterization = NULL;
+  // Manifold used to restrict camera motion for modal solvers.
+  ceres::SubsetManifold* constant_transform_manifold = nullptr;
   if (bundle_constraints & BUNDLE_NO_TRANSLATION) {
     std::vector<int> constant_translation;
 
@@ -680,8 +685,8 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
     constant_translation.push_back(4);
     constant_translation.push_back(5);
 
-    constant_transform_parameterization =
-        new ceres::SubsetParameterization(6, constant_translation);
+    constant_transform_manifold =
+        new ceres::SubsetManifold(6, constant_translation);
   }
 
   std::vector<OpenCVReprojectionError> errors;
@@ -692,11 +697,10 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
 
   int num_residuals = 0;
   bool have_locked_camera = false;
-  for (int i = 0; i < all_markers.size(); ++i) {
-    const Marker& marker = all_markers[i];
+  for (const auto& marker : all_markers) {
     EuclideanCamera* camera = CameraForImage(all_cameras, marker.image);
     EuclideanPoint* point = PointForTrack(all_points, marker.track);
-    if (camera == NULL || point == NULL) {
+    if (camera == nullptr || point == nullptr) {
       continue;
     }
 
@@ -708,7 +712,7 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
     costFunctions.emplace_back(&errors.back(), ceres::DO_NOT_TAKE_OWNERSHIP);
 
     problem.AddResidualBlock(&costFunctions.back(),
-                             NULL,
+                             nullptr,
                              camera_intrinsics,
                              current_camera_R_t,
                              &point->X(0));
@@ -720,8 +724,7 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
     }
 
     if (bundle_constraints & BUNDLE_NO_TRANSLATION) {
-      problem.SetParameterization(current_camera_R_t,
-                                  constant_transform_parameterization);
+      problem.SetManifold(current_camera_R_t, constant_transform_manifold);
     }
 
     num_residuals++;
@@ -760,10 +763,8 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker>& all_markers,
     // Always set K3 constant, it's not used at the moment.
     constant_intrinsics.push_back(OFFSET_K3);
 
-    ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(8, constant_intrinsics);
-
-    problem.SetParameterization(camera_intrinsics, subset_parameterization);
+    auto* subset_manifold = new ceres::SubsetManifold(8, constant_intrinsics);
+    problem.SetManifold(camera_intrinsics, subset_manifold);
   }
 
   // Configure the solver.
@@ -793,18 +794,18 @@ int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
-  if (FLAGS_input.empty()) {
+  if (CERES_GET_FLAG(FLAGS_input).empty()) {
     LOG(ERROR) << "Usage: libmv_bundle_adjuster --input=blender_problem";
     return EXIT_FAILURE;
   }
 
   double camera_intrinsics[8];
-  vector<EuclideanCamera> all_cameras;
-  vector<EuclideanPoint> all_points;
+  std::vector<EuclideanCamera> all_cameras;
+  std::vector<EuclideanPoint> all_points;
   bool is_image_space;
-  vector<Marker> all_markers;
+  std::vector<Marker> all_markers;
 
-  if (!ReadProblemFromFile(FLAGS_input,
+  if (!ReadProblemFromFile(CERES_GET_FLAG(FLAGS_input),
                            camera_intrinsics,
                            &all_cameras,
                            &all_points,
@@ -828,14 +829,14 @@ int main(int argc, char** argv) {
   // declare which intrinsics need to be refined and in this case
   // refining flags does not depend on problem at all.
   int bundle_intrinsics = BUNDLE_NO_INTRINSICS;
-  if (FLAGS_refine_intrinsics.empty()) {
+  if (CERES_GET_FLAG(FLAGS_refine_intrinsics).empty()) {
     if (is_image_space) {
       bundle_intrinsics = BUNDLE_FOCAL_LENGTH | BUNDLE_RADIAL;
     }
   } else {
-    if (FLAGS_refine_intrinsics == "radial") {
+    if (CERES_GET_FLAG(FLAGS_refine_intrinsics) == "radial") {
       bundle_intrinsics = BUNDLE_FOCAL_LENGTH | BUNDLE_RADIAL;
-    } else if (FLAGS_refine_intrinsics != "none") {
+    } else if (CERES_GET_FLAG(FLAGS_refine_intrinsics) != "none") {
       LOG(ERROR) << "Unsupported value for refine-intrinsics";
       return EXIT_FAILURE;
     }

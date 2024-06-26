@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2024 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -63,11 +63,11 @@ namespace ceres {
 // when added with AddResidualBlock().
 class CERES_EXPORT CostFunction {
  public:
-  CostFunction() : num_residuals_(0) {}
+  CostFunction();
   CostFunction(const CostFunction&) = delete;
-  void operator=(const CostFunction&) = delete;
+  CostFunction& operator=(const CostFunction&) = delete;
 
-  virtual ~CostFunction() {}
+  virtual ~CostFunction();
 
   // Inputs:
   //
@@ -92,8 +92,8 @@ class CERES_EXPORT CostFunction {
   //   jacobians[i][r*parameter_block_size_[i] + c] =
   //                              d residual[r] / d parameters[i][c]
   //
-  // If jacobians is NULL, then no derivatives are returned; this is
-  // the case when computing cost only. If jacobians[i] is NULL, then
+  // If jacobians is nullptr, then no derivatives are returned; this is
+  // the case when computing cost only. If jacobians[i] is nullptr, then
   // the jacobian block corresponding to the i'th parameter block must
   // not to be returned.
   //
@@ -124,6 +124,10 @@ class CERES_EXPORT CostFunction {
   int num_residuals() const { return num_residuals_; }
 
  protected:
+  // Prevent moving through the base class
+  CostFunction(CostFunction&& other) noexcept;
+  CostFunction& operator=(CostFunction&& other) noexcept;
+
   std::vector<int32_t>* mutable_parameter_block_sizes() {
     return &parameter_block_sizes_;
   }

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,11 +30,13 @@
 
 #include "ceres/internal/autodiff.h"
 
-#include "ceres/random.h"
+#include <algorithm>
+#include <iterator>
+#include <random>
+
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 template <typename T>
 inline T& RowMajorAccess(T* base, int rows, int cols, int i, int j) {
@@ -163,18 +165,19 @@ struct Projective {
 
 // Test projective camera model projector.
 TEST(AutoDiff, ProjectiveCameraModel) {
-  srand(5);
   double const tol = 1e-10;  // floating-point tolerance.
   double const del = 1e-4;   // finite-difference step.
   double const err = 1e-6;   // finite-difference tolerance.
 
   Projective b;
+  std::mt19937 prng;
+  std::uniform_real_distribution<double> uniform01(0.0, 1.0);
 
   // Make random P and X, in a single vector.
   double PX[12 + 4];
-  for (int i = 0; i < 12 + 4; ++i) {
-    PX[i] = RandDouble();
-  }
+  std::generate(std::begin(PX), std::end(PX), [&prng, &uniform01] {
+    return uniform01(prng);
+  });
 
   // Handy names for the P and X parts.
   double* P = PX + 0;
@@ -283,16 +286,20 @@ struct Metric {
 
 // This test is similar in structure to the previous one.
 TEST(AutoDiff, Metric) {
-  srand(5);
   double const tol = 1e-10;  // floating-point tolerance.
   double const del = 1e-4;   // finite-difference step.
-  double const err = 1e-5;   // finite-difference tolerance.
+  double const err = 2e-5;   // finite-difference tolerance.
 
   Metric b;
 
   // Make random parameter vector.
   double qcX[4 + 3 + 3];
-  for (int i = 0; i < 4 + 3 + 3; ++i) qcX[i] = RandDouble();
+  std::mt19937 prng;
+  std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+
+  std::generate(std::begin(qcX), std::end(qcX), [&prng, &uniform01] {
+    return uniform01(prng);
+  });
 
   // Handy names.
   double* q = qcX;
@@ -658,12 +665,11 @@ TEST(AutoDiff, AlignedAllocationTest) {
   // this function.
   y += 1;
 
-  typedef Jet<double, 2> JetT;
+  using JetT = Jet<double, 2>;
   FixedArray<JetT, (256 * 7) / sizeof(JetT)> x(3);
 
   // Need this to makes sure that x does not get optimized out.
   x[0] = x[0] + JetT(1.0);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

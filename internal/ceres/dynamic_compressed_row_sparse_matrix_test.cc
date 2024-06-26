@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 #include "ceres/dynamic_compressed_row_sparse_matrix.h"
 
 #include <memory>
+#include <vector>
 
 #include "ceres/casts.h"
 #include "ceres/compressed_row_sparse_matrix.h"
@@ -41,9 +42,6 @@
 
 namespace ceres {
 namespace internal {
-
-using std::copy;
-using std::vector;
 
 class DynamicCompressedRowSparseMatrixTest : public ::testing::Test {
  protected:
@@ -61,7 +59,8 @@ class DynamicCompressedRowSparseMatrixTest : public ::testing::Test {
     InitialiseDenseReference();
     InitialiseSparseMatrixReferences();
 
-    dcrsm.reset(new DynamicCompressedRowSparseMatrix(num_rows, num_cols, 0));
+    dcrsm = std::make_unique<DynamicCompressedRowSparseMatrix>(
+        num_rows, num_cols, 0);
   }
 
   void Finalize() { dcrsm->Finalize(num_additional_elements); }
@@ -81,8 +80,8 @@ class DynamicCompressedRowSparseMatrixTest : public ::testing::Test {
   }
 
   void InitialiseSparseMatrixReferences() {
-    vector<int> rows, cols;
-    vector<double> values;
+    std::vector<int> rows, cols;
+    std::vector<double> values;
     for (int i = 0; i < (num_rows * num_cols); ++i) {
       const int r = i / num_cols, c = i % num_cols;
       if (r != c) {
@@ -93,18 +92,18 @@ class DynamicCompressedRowSparseMatrixTest : public ::testing::Test {
     }
     ASSERT_EQ(values.size(), expected_num_nonzeros);
 
-    tsm.reset(
-        new TripletSparseMatrix(num_rows, num_cols, expected_num_nonzeros));
-    copy(rows.begin(), rows.end(), tsm->mutable_rows());
-    copy(cols.begin(), cols.end(), tsm->mutable_cols());
-    copy(values.begin(), values.end(), tsm->mutable_values());
+    tsm = std::make_unique<TripletSparseMatrix>(
+        num_rows, num_cols, expected_num_nonzeros);
+    std::copy(rows.begin(), rows.end(), tsm->mutable_rows());
+    std::copy(cols.begin(), cols.end(), tsm->mutable_cols());
+    std::copy(values.begin(), values.end(), tsm->mutable_values());
     tsm->set_num_nonzeros(values.size());
 
     Matrix dense_from_tsm;
     tsm->ToDenseMatrix(&dense_from_tsm);
     ASSERT_TRUE((dense.array() == dense_from_tsm.array()).all());
 
-    crsm.reset(CompressedRowSparseMatrix::FromTripletSparseMatrix(*tsm));
+    crsm = CompressedRowSparseMatrix::FromTripletSparseMatrix(*tsm);
     Matrix dense_from_crsm;
     crsm->ToDenseMatrix(&dense_from_crsm);
     ASSERT_TRUE((dense.array() == dense_from_crsm.array()).all());
@@ -140,7 +139,7 @@ class DynamicCompressedRowSparseMatrixTest : public ::testing::Test {
   }
 
   void ExpectEqualToCompressedRowSparseMatrixReference() {
-    typedef Eigen::Map<const Eigen::VectorXi> ConstIntVectorRef;
+    using ConstIntVectorRef = Eigen::Map<const Eigen::VectorXi>;
 
     ConstIntVectorRef crsm_rows(crsm->rows(), crsm->num_rows() + 1);
     ConstIntVectorRef dcrsm_rows(dcrsm->rows(), dcrsm->num_rows() + 1);

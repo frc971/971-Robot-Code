@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,18 +33,19 @@
 
 #include <string>
 
-#include "ceres/internal/port.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
+#include "ceres/linear_solver.h"
 #include "ceres/parameter_block_ordering.h"
 #include "ceres/problem_impl.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class Program;
 
 // Reorder the parameter blocks in program using the ordering
-CERES_EXPORT_INTERNAL bool ApplyOrdering(
+CERES_NO_EXPORT bool ApplyOrdering(
     const ProblemImpl::ParameterMap& parameter_map,
     const ParameterBlockOrdering& ordering,
     Program* program,
@@ -53,7 +54,7 @@ CERES_EXPORT_INTERNAL bool ApplyOrdering(
 // Reorder the residuals for program, if necessary, so that the residuals
 // involving each E block occur together. This is a necessary condition for the
 // Schur eliminator, which works on these "row blocks" in the jacobian.
-CERES_EXPORT_INTERNAL bool LexicographicallyOrderResidualBlocks(
+CERES_NO_EXPORT bool LexicographicallyOrderResidualBlocks(
     int size_of_first_elimination_group, Program* program, std::string* error);
 
 // Schur type solvers require that all parameter blocks eliminated
@@ -72,9 +73,10 @@ CERES_EXPORT_INTERNAL bool LexicographicallyOrderResidualBlocks(
 //
 // Upon return, ordering contains the parameter block ordering that
 // was used to order the program.
-CERES_EXPORT_INTERNAL bool ReorderProgramForSchurTypeLinearSolver(
+CERES_NO_EXPORT bool ReorderProgramForSchurTypeLinearSolver(
     LinearSolverType linear_solver_type,
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
+    LinearSolverOrderingType linear_solver_ordering_type,
     const ProblemImpl::ParameterMap& parameter_map,
     ParameterBlockOrdering* parameter_block_ordering,
     Program* program,
@@ -90,8 +92,9 @@ CERES_EXPORT_INTERNAL bool ReorderProgramForSchurTypeLinearSolver(
 // fill-reducing ordering is available in the sparse linear algebra
 // library (SuiteSparse version >= 4.2.0) then the fill reducing
 // ordering will take it into account, otherwise it will be ignored.
-CERES_EXPORT_INTERNAL bool ReorderProgramForSparseCholesky(
+CERES_NO_EXPORT bool ReorderProgramForSparseCholesky(
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
+    LinearSolverOrderingType linear_solver_ordering_type,
     const ParameterBlockOrdering& parameter_block_ordering,
     int start_row_block,
     Program* program,
@@ -107,11 +110,20 @@ CERES_EXPORT_INTERNAL bool ReorderProgramForSparseCholesky(
 // bottom_residual_blocks.size() because we allow
 // bottom_residual_blocks to contain residual blocks not present in
 // the Program.
-CERES_EXPORT_INTERNAL int ReorderResidualBlocksByPartition(
+CERES_NO_EXPORT int ReorderResidualBlocksByPartition(
     const std::unordered_set<ResidualBlockId>& bottom_residual_blocks,
     Program* program);
 
-}  // namespace internal
-}  // namespace ceres
+// The return value of this function indicates whether the columns of
+// the Jacobian can be reordered using a fill reducing ordering.
+CERES_NO_EXPORT bool AreJacobianColumnsOrdered(
+    LinearSolverType linear_solver_type,
+    PreconditionerType preconditioner_type,
+    SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
+    LinearSolverOrderingType linear_solver_ordering_type);
 
-#endif  // CERES_INTERNAL_REORDER_PROGRAM_
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
+
+#endif  // CERES_INTERNAL_REORDER_PROGRAM_H_

@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -344,6 +344,11 @@ if (NOT GLOG_FOUND)
       "${GLOG_LIBRARY} does not match glog.")
   endif (GLOG_LIBRARY AND
     NOT "${LOWERCASE_GLOG_LIBRARY}" MATCHES ".*glog[^/]*")
+
+  # add glog::glog target
+  add_library(glog::glog INTERFACE IMPORTED)
+  target_include_directories(glog::glog INTERFACE ${GLOG_INCLUDE_DIRS})
+  target_link_libraries(glog::glog INTERFACE ${GLOG_LIBRARY})
 
   glog_reset_find_library_prefix()
 

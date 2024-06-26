@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2016 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,13 @@
 #ifndef EXAMPLES_CERES_POSE_GRAPH_3D_ERROR_TERM_H_
 #define EXAMPLES_CERES_POSE_GRAPH_3D_ERROR_TERM_H_
 
+#include <utility>
+
 #include "Eigen/Core"
 #include "ceres/autodiff_cost_function.h"
 #include "types.h"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 // Computes the error term for two poses that have a relative pose measurement
 // between them. Let the hat variables be the measurement. We have two poses x_a
@@ -69,9 +70,10 @@ namespace examples {
 // where I is the information matrix which is the inverse of the covariance.
 class PoseGraph3dErrorTerm {
  public:
-  PoseGraph3dErrorTerm(const Pose3d& t_ab_measured,
-                       const Eigen::Matrix<double, 6, 6>& sqrt_information)
-      : t_ab_measured_(t_ab_measured), sqrt_information_(sqrt_information) {}
+  PoseGraph3dErrorTerm(Pose3d t_ab_measured,
+                       Eigen::Matrix<double, 6, 6> sqrt_information)
+      : t_ab_measured_(std::move(t_ab_measured)),
+        sqrt_information_(std::move(sqrt_information)) {}
 
   template <typename T>
   bool operator()(const T* const p_a_ptr,
@@ -114,7 +116,7 @@ class PoseGraph3dErrorTerm {
       const Pose3d& t_ab_measured,
       const Eigen::Matrix<double, 6, 6>& sqrt_information) {
     return new ceres::AutoDiffCostFunction<PoseGraph3dErrorTerm, 6, 3, 4, 3, 4>(
-        new PoseGraph3dErrorTerm(t_ab_measured, sqrt_information));
+        t_ab_measured, sqrt_information);
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -126,7 +128,6 @@ class PoseGraph3dErrorTerm {
   const Eigen::Matrix<double, 6, 6> sqrt_information_;
 };
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 #endif  // EXAMPLES_CERES_POSE_GRAPH_3D_ERROR_TERM_H_

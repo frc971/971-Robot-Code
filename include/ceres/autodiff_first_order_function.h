@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2024 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 #define CERES_PUBLIC_AUTODIFF_FIRST_ORDER_FUNCTION_H_
 
 #include <memory>
+#include <type_traits>
 
 #include "ceres/first_order_function.h"
 #include "ceres/internal/eigen.h"
@@ -102,15 +103,25 @@ namespace ceres {
 // seen where instead of using a_ directly, a_ is wrapped with T(a_).
 
 template <typename FirstOrderFunctor, int kNumParameters>
-class AutoDiffFirstOrderFunction : public FirstOrderFunction {
+class AutoDiffFirstOrderFunction final : public FirstOrderFunction {
  public:
   // Takes ownership of functor.
   explicit AutoDiffFirstOrderFunction(FirstOrderFunctor* functor)
-      : functor_(functor) {
+      : AutoDiffFirstOrderFunction{
+            std::unique_ptr<FirstOrderFunctor>{functor}} {}
+
+  explicit AutoDiffFirstOrderFunction(
+      std::unique_ptr<FirstOrderFunctor> functor)
+      : functor_(std::move(functor)) {
     static_assert(kNumParameters > 0, "kNumParameters must be positive");
   }
 
-  virtual ~AutoDiffFirstOrderFunction() {}
+  template <class... Args,
+            std::enable_if_t<std::is_constructible_v<FirstOrderFunctor,
+                                                     Args&&...>>* = nullptr>
+  explicit AutoDiffFirstOrderFunction(Args&&... args)
+      : AutoDiffFirstOrderFunction{
+            std::make_unique<FirstOrderFunctor>(std::forward<Args>(args)...)} {}
 
   bool Evaluate(const double* const parameters,
                 double* cost,
@@ -119,7 +130,7 @@ class AutoDiffFirstOrderFunction : public FirstOrderFunction {
       return (*functor_)(parameters, cost);
     }
 
-    typedef Jet<double, kNumParameters> JetT;
+    using JetT = Jet<double, kNumParameters>;
     internal::FixedArray<JetT, (256 * 7) / sizeof(JetT)> x(kNumParameters);
     for (int i = 0; i < kNumParameters; ++i) {
       x[i].a = parameters[i];
@@ -141,6 +152,8 @@ class AutoDiffFirstOrderFunction : public FirstOrderFunction {
   }
 
   int NumParameters() const override { return kNumParameters; }
+
+  const FirstOrderFunctor& functor() const { return *functor_; }
 
  private:
   std::unique_ptr<FirstOrderFunctor> functor_;

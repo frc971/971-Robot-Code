@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,15 +27,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
+//
+// This example fits the curve f(x;m,c) = e^(m * x + c) to data, minimizing the
+// sum squared loss.
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
-
-using ceres::AutoDiffCostFunction;
-using ceres::CostFunction;
-using ceres::Problem;
-using ceres::Solve;
-using ceres::Solver;
 
 // Data generated using the following octave code.
 //   randn('seed', 23497);
@@ -137,28 +134,30 @@ struct ExponentialResidual {
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
 
-  double m = 0.0;
-  double c = 0.0;
+  const double initial_m = 0.0;
+  const double initial_c = 0.0;
+  double m = initial_m;
+  double c = initial_c;
 
-  Problem problem;
+  ceres::Problem problem;
   for (int i = 0; i < kNumObservations; ++i) {
     problem.AddResidualBlock(
-        new AutoDiffCostFunction<ExponentialResidual, 1, 1, 1>(
-            new ExponentialResidual(data[2 * i], data[2 * i + 1])),
-        NULL,
+        new ceres::AutoDiffCostFunction<ExponentialResidual, 1, 1, 1>(
+            data[2 * i], data[2 * i + 1]),
+        nullptr,
         &m,
         &c);
   }
 
-  Solver::Options options;
+  ceres::Solver::Options options;
   options.max_num_iterations = 25;
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_progress_to_stdout = true;
 
-  Solver::Summary summary;
-  Solve(options, &problem, &summary);
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
   std::cout << summary.BriefReport() << "\n";
-  std::cout << "Initial m: " << 0.0 << " c: " << 0.0 << "\n";
+  std::cout << "Initial m: " << initial_m << " c: " << initial_c << "\n";
   std::cout << "Final   m: " << m << " c: " << c << "\n";
   return 0;
 }

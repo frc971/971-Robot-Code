@@ -14,8 +14,7 @@
 
 #include "ceres/internal/fixed_array.h"
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -54,7 +53,7 @@ static bool IsOnStack(const ArrayType& a) {
 
 class ConstructionTester {
  public:
-  ConstructionTester() : self_ptr_(this), value_(0) { constructions++; }
+  ConstructionTester() : self_ptr_(this) { constructions++; }
   ~ConstructionTester() {
     assert(self_ptr_ == this);
     self_ptr_ = nullptr;
@@ -75,7 +74,7 @@ class ConstructionTester {
   // self_ptr_ should always point to 'this' -- that's how we can be sure the
   // constructor has been called.
   ConstructionTester* self_ptr_;
-  int value_;
+  int value_{0};
 };
 
 int ConstructionTester::constructions = 0;
@@ -117,7 +116,7 @@ TEST(FixedArrayTest, CopyCtor) {
 TEST(FixedArrayTest, MoveCtor) {
   ceres::internal::FixedArray<std::unique_ptr<int>, 10> on_stack(5);
   for (int i = 0; i < 5; ++i) {
-    on_stack[i] = std::unique_ptr<int>(new int(i));
+    on_stack[i] = std::make_unique<int>(i);
   }
 
   ceres::internal::FixedArray<std::unique_ptr<int>, 10> stack_copy =
@@ -127,7 +126,7 @@ TEST(FixedArrayTest, MoveCtor) {
 
   ceres::internal::FixedArray<std::unique_ptr<int>, 10> allocated(15);
   for (int i = 0; i < 15; ++i) {
-    allocated[i] = std::unique_ptr<int>(new int(i));
+    allocated[i] = std::make_unique<int>(i);
   }
 
   ceres::internal::FixedArray<std::unique_ptr<int>, 10> alloced_copy =
@@ -467,7 +466,7 @@ TEST(FixedArrayTest, ManySizedArraysOfArraysOf2) {
 //     will always overflow destination buffer [-Werror]
 TEST(FixedArrayTest, AvoidParanoidDiagnostics) {
   ceres::internal::FixedArray<char, 32> buf(32);
-  sprintf(buf.data(), "foo");  // NOLINT(runtime/printf)
+  snprintf(buf.data(), 32, "foo");
 }
 
 TEST(FixedArrayTest, TooBigInlinedSpace) {
@@ -500,8 +499,6 @@ TEST(FixedArrayTest, TooBigInlinedSpace) {
 
 // PickyDelete EXPECTs its class-scope deallocation funcs are unused.
 struct PickyDelete {
-  PickyDelete() {}
-  ~PickyDelete() {}
   void operator delete(void* p) {
     EXPECT_TRUE(false) << __FUNCTION__;
     ::operator delete(p);
@@ -655,12 +652,10 @@ template <typename T>
 class CountingAllocator : public std::allocator<T> {
  public:
   using Alloc = std::allocator<T>;
-  using pointer = typename Alloc::pointer;
   using size_type = typename Alloc::size_type;
 
-  CountingAllocator() : bytes_used_(nullptr), instance_count_(nullptr) {}
-  explicit CountingAllocator(int64_t* b)
-      : bytes_used_(b), instance_count_(nullptr) {}
+  CountingAllocator() = default;
+  explicit CountingAllocator(int64_t* b) : bytes_used_(b) {}
   CountingAllocator(int64_t* b, int64_t* a)
       : bytes_used_(b), instance_count_(a) {}
 
@@ -670,41 +665,20 @@ class CountingAllocator : public std::allocator<T> {
         bytes_used_(x.bytes_used_),
         instance_count_(x.instance_count_) {}
 
-  pointer allocate(size_type n, const void* const hint = nullptr) {
+  T* allocate(size_type n) {
     assert(bytes_used_ != nullptr);
     *bytes_used_ += n * sizeof(T);
-    return Alloc::allocate(n, hint);
+    return Alloc::allocate(n);
   }
 
-  void deallocate(pointer p, size_type n) {
+  void deallocate(T* p, size_type n) {
     Alloc::deallocate(p, n);
     assert(bytes_used_ != nullptr);
     *bytes_used_ -= n * sizeof(T);
   }
 
-  template <typename... Args>
-  void construct(pointer p, Args&&... args) {
-    Alloc::construct(p, std::forward<Args>(args)...);
-    if (instance_count_) {
-      *instance_count_ += 1;
-    }
-  }
-
-  void destroy(pointer p) {
-    Alloc::destroy(p);
-    if (instance_count_) {
-      *instance_count_ -= 1;
-    }
-  }
-
-  template <typename U>
-  class rebind {
-   public:
-    using other = CountingAllocator<U>;
-  };
-
-  int64_t* bytes_used_;
-  int64_t* instance_count_;
+  int64_t* bytes_used_{nullptr};
+  int64_t* instance_count_{nullptr};
 };
 
 TEST(AllocatorSupportTest, CountInlineAllocations) {

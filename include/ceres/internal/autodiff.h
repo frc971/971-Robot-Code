@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -132,17 +132,16 @@
 // respectively. This is how autodiff works for functors taking multiple vector
 // valued arguments (up to 6).
 //
-// Jacobian NULL pointers
-// ----------------------
-// In general, the functions below will accept NULL pointers for all or some of
-// the Jacobian parameters, meaning that those Jacobians will not be computed.
+// Jacobian null pointers (nullptr)
+// --------------------------------
+// In general, the functions below will accept nullptr for all or some of the
+// Jacobian parameters, meaning that those Jacobians will not be computed.
 
 #ifndef CERES_PUBLIC_INTERNAL_AUTODIFF_H_
 #define CERES_PUBLIC_INTERNAL_AUTODIFF_H_
 
-#include <stddef.h>
-
 #include <array>
+#include <cstddef>
 #include <utility>
 
 #include "ceres/internal/array_selector.h"
@@ -165,8 +164,7 @@
 #define CERES_AUTODIFF_MAX_RESIDUALS_ON_STACK 20
 #endif
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Extends src by a 1st order perturbation for every dimension and puts it in
 // dst. The size of src is N. Since this is also used for perturbations in
@@ -198,7 +196,7 @@ struct Make1stOrderPerturbation {
 template <int N, int Offset, typename T, typename JetT>
 struct Make1stOrderPerturbation<N, N, Offset, T, JetT> {
  public:
-  static void Apply(const T* src, JetT* dst) {}
+  static void Apply(const T* /* NOT USED */, JetT* /* NOT USED */) {}
 };
 
 // Calls Make1stOrderPerturbation for every parameter block.
@@ -311,7 +309,7 @@ inline bool AutoDifferentiate(const Functor& functor,
                               int dynamic_num_outputs,
                               T* function_value,
                               T** jacobians) {
-  typedef Jet<T, ParameterDims::kNumParameters> JetT;
+  using JetT = Jet<T, ParameterDims::kNumParameters>;
   using Parameters = typename ParameterDims::Parameters;
 
   if (kNumResiduals != DYNAMIC) {
@@ -360,7 +358,6 @@ inline bool AutoDifferentiate(const Functor& functor,
   return true;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_PUBLIC_INTERNAL_AUTODIFF_H_

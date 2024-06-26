@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,14 +55,14 @@
 #include <utility>
 #include <vector>
 
+#include "ceres/block_structure.h"
 #include "ceres/graph.h"
 #include "ceres/linear_solver.h"
 #include "ceres/pair_hash.h"
 #include "ceres/preconditioner.h"
 #include "ceres/sparse_cholesky.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BlockRandomAccessSparseMatrix;
 class BlockSparseMatrix;
@@ -122,9 +122,10 @@ class SchurEliminatorBase;
 //   options.elimination_groups.push_back(num_cameras);
 //   VisibilityBasedPreconditioner preconditioner(
 //      *A.block_structure(), options);
-//   preconditioner.Update(A, NULL);
-//   preconditioner.RightMultiply(x, y);
-class VisibilityBasedPreconditioner : public BlockSparseMatrixPreconditioner {
+//   preconditioner.Update(A, nullptr);
+//   preconditioner.RightMultiplyAndAccumulate(x, y);
+class CERES_NO_EXPORT VisibilityBasedPreconditioner
+    : public BlockSparseMatrixPreconditioner {
  public:
   // Initialize the symbolic structure of the preconditioner. bs is
   // the block structure of the linear system to be solved. It is used
@@ -133,14 +134,14 @@ class VisibilityBasedPreconditioner : public BlockSparseMatrixPreconditioner {
   // It has the same structural requirement as other Schur complement
   // based solvers. Please see schur_eliminator.h for more details.
   VisibilityBasedPreconditioner(const CompressedRowBlockStructure& bs,
-                                const Preconditioner::Options& options);
+                                Preconditioner::Options options);
   VisibilityBasedPreconditioner(const VisibilityBasedPreconditioner&) = delete;
   void operator=(const VisibilityBasedPreconditioner&) = delete;
 
-  virtual ~VisibilityBasedPreconditioner();
+  ~VisibilityBasedPreconditioner() override;
 
   // Preconditioner interface
-  void RightMultiply(const double* x, double* y) const final;
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final;
   int num_rows() const final;
 
   friend class VisibilityBasedPreconditionerTest;
@@ -160,7 +161,7 @@ class VisibilityBasedPreconditioner : public BlockSparseMatrixPreconditioner {
   void ComputeClusterVisibility(
       const std::vector<std::set<int>>& visibility,
       std::vector<std::set<int>>* cluster_visibility) const;
-  WeightedGraph<int>* CreateClusterGraph(
+  std::unique_ptr<WeightedGraph<int>> CreateClusterGraph(
       const std::vector<std::set<int>>& visibility) const;
   void ForestToClusterPairs(
       const WeightedGraph<int>& forest,
@@ -176,7 +177,7 @@ class VisibilityBasedPreconditioner : public BlockSparseMatrixPreconditioner {
   int num_clusters_;
 
   // Sizes of the blocks in the schur complement.
-  std::vector<int> block_size_;
+  std::vector<Block> blocks_;
 
   // Mapping from cameras to clusters.
   std::vector<int> cluster_membership_;
@@ -193,10 +194,10 @@ class VisibilityBasedPreconditioner : public BlockSparseMatrixPreconditioner {
 
   // Preconditioner matrix.
   std::unique_ptr<BlockRandomAccessSparseMatrix> m_;
+  std::unique_ptr<CompressedRowSparseMatrix> m_crs_;
   std::unique_ptr<SparseCholesky> sparse_cholesky_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_VISIBILITY_BASED_PRECONDITIONER_H_

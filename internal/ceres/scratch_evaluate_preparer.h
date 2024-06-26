@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,18 +37,20 @@
 
 #include <memory>
 
-namespace ceres {
-namespace internal {
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
+
+namespace ceres::internal {
 
 class Program;
 class ResidualBlock;
 class SparseMatrix;
 
-class ScratchEvaluatePreparer {
+class CERES_NO_EXPORT ScratchEvaluatePreparer {
  public:
   // Create num_threads ScratchEvaluatePreparers.
-  static ScratchEvaluatePreparer* Create(const Program& program,
-                                         int num_threads);
+  static std::unique_ptr<ScratchEvaluatePreparer[]> Create(
+      const Program& program, unsigned num_threads);
 
   // EvaluatePreparer interface
   void Init(int max_derivatives_per_residual_block);
@@ -63,7 +65,8 @@ class ScratchEvaluatePreparer {
   std::unique_ptr<double[]> jacobian_scratch_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SCRATCH_EVALUATE_PREPARER_H_

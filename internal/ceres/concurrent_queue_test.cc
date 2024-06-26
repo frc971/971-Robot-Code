@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,20 +28,16 @@
 //
 // Author: vitus@google.com (Michael Vitus)
 
-// This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
-
-#ifdef CERES_USE_CXX_THREADS
+#include "ceres/concurrent_queue.h"
 
 #include <chrono>
 #include <thread>
 
-#include "ceres/concurrent_queue.h"
+#include "ceres/internal/config.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // A basic test of push and pop.
 TEST(ConcurrentQueue, PushPop) {
@@ -300,7 +296,4 @@ TEST(ConcurrentQueue, StopAndEnableWaiters) {
   EXPECT_EQ(13456, value);
 }
 
-}  // namespace internal
-}  // namespace ceres
-
-#endif  // CERES_USE_CXX_THREADS
+}  // namespace ceres::internal

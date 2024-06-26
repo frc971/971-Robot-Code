@@ -1,6 +1,6 @@
 
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -39,13 +39,13 @@
 
 namespace ceres {
 
-typedef Eigen::Matrix<double, 2, 1> Vec2;
-typedef Eigen::Matrix<double, 3, 1> Vec3;
-typedef Eigen::VectorXd VecX;
+using Vec2 = Eigen::Matrix<double, 2, 1>;
+using Vec3 = Eigen::Matrix<double, 3, 1>;
+using VecX = Eigen::VectorXd;
 
 class ExampleStatic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     // Can also be Eigen::Dynamic.
     NUM_RESIDUALS = 2,
@@ -60,7 +60,7 @@ class ExampleStatic {
 
 class ExampleParametersDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = 2,
     NUM_PARAMETERS = Eigen::Dynamic,
@@ -77,7 +77,7 @@ class ExampleParametersDynamic {
 
 class ExampleResidualsDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = Eigen::Dynamic,
     NUM_PARAMETERS = 3,
@@ -94,7 +94,7 @@ class ExampleResidualsDynamic {
 
 class ExampleAllDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = Eigen::Dynamic,
     NUM_PARAMETERS = Eigen::Dynamic,
@@ -115,7 +115,7 @@ template <typename Function, typename Vector>
 void TestHelper(const Function& f, const Vector& x0) {
   Vector x = x0;
   Vec2 residuals;
-  f(x.data(), residuals.data(), NULL);
+  f(x.data(), residuals.data(), nullptr);
   EXPECT_GT(residuals.squaredNorm() / 2.0, 1e-10);
 
   TinySolver<Function> solver;
