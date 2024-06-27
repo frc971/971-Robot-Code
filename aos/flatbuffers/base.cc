@@ -51,10 +51,9 @@ std::optional<std::span<uint8_t>> ResizeableObject::InsertBytes(
   if (parent_ != nullptr) {
     return parent_->InsertBytes(insertion_point, aligned_bytes, set_zero);
   } else {
-    std::optional<std::span<uint8_t>> new_buffer =
-        CHECK_NOTNULL(allocator_)
-            ->InsertBytes(insertion_point, aligned_bytes, Alignment(),
-                          set_zero);
+    CHECK(allocator_ != nullptr);
+    std::optional<std::span<uint8_t>> new_buffer = allocator_->InsertBytes(
+        insertion_point, aligned_bytes, Alignment(), set_zero);
     if (!new_buffer.has_value()) {
       return std::nullopt;
     }
@@ -94,6 +93,7 @@ void ResizeableObject::FixObjects(void *modification_point,
     if (absolute_offset >= modification_point &&
         object.inline_entry < modification_point) {
       if (*object.inline_entry != 0) {
+        CHECK(object.object != nullptr);
         CHECK_EQ(static_cast<const void *>(
                      static_cast<const uint8_t *>(absolute_offset)),
                  DereferenceOffset(object.inline_entry));

@@ -1065,7 +1065,7 @@ void MultiNodeLogNamer::CreateBufferWriter(
 
 void MultiNodeLogNamer::CloseWriter(
     std::unique_ptr<DetachedBufferWriter> *writer_pointer) {
-  CHECK_NOTNULL(writer_pointer);
+  CHECK(writer_pointer != nullptr);
   if (!(*writer_pointer)) {
     return;
   }

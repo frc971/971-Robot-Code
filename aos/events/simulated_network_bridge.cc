@@ -863,8 +863,11 @@ void SimulatedMessageBridge::State::SetEventLoop(
         }
 
         // And the timestamps are then logged back by us again.
-        if (!delivery_time_is_logged ||
-            CHECK_NOTNULL(delayer)->forwarding_disabled()) {
+        if (!delivery_time_is_logged) {
+          continue;
+        }
+        CHECK(delayer != nullptr);
+        if (delayer->forwarding_disabled()) {
           continue;
         }
 

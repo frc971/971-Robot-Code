@@ -77,7 +77,7 @@ namespace frc971::control_loops::drivetrain {
 }
 
 std::vector<Spline> FlatbufferToSplines(const MultiSpline *fb) {
-  CHECK_NOTNULL(fb);
+  CHECK(fb != nullptr);
   const size_t spline_count = fb->spline_count();
   CHECK_EQ(fb->spline_x()->size(), static_cast<size_t>(spline_count * 5 + 1));
   CHECK_EQ(fb->spline_y()->size(), static_cast<size_t>(spline_count * 5 + 1));
@@ -95,7 +95,7 @@ std::vector<Spline> FlatbufferToSplines(const MultiSpline *fb) {
 
 aos::SizedArray<Spline, FinishedDistanceSpline::kMaxSplines>
 SizedFlatbufferToSplines(const MultiSpline *fb) {
-  CHECK_NOTNULL(fb);
+  CHECK(fb != nullptr);
   const size_t spline_count = fb->spline_count();
   CHECK_EQ(fb->spline_x()->size(), static_cast<size_t>(spline_count * 5 + 1));
   CHECK_EQ(fb->spline_y()->size(), static_cast<size_t>(spline_count * 5 + 1));
@@ -141,8 +141,8 @@ flatbuffers::Offset<fb::DistanceSpline> DistanceSplineBase::Serialize(
       fbb->CreateUninitializedVector(num_points, &spline_x_vector);
   const flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
       fbb->CreateUninitializedVector(num_points, &spline_y_vector);
-  CHECK_NOTNULL(spline_x_vector);
-  CHECK_NOTNULL(spline_y_vector);
+  CHECK(spline_x_vector != nullptr);
+  CHECK(spline_y_vector != nullptr);
   spline_x_vector[0] = splines()[0].control_points()(0, 0);
   spline_y_vector[0] = splines()[0].control_points()(1, 0);
   for (size_t spline_index = 0; spline_index < splines().size();

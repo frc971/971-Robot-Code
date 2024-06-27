@@ -2017,7 +2017,7 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
               // Got a forwarding timestamp!
               NoncausalOffsetEstimator *filter =
                   filters_per_channel_[node_index][msg->channel_index];
-              CHECK_NOTNULL(filter);
+              CHECK(filter != nullptr);
               const Node *node = configuration()->nodes()->Get(node_index);
 
               // The remote time could be from a reliable message long ago,

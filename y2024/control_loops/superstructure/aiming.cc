@@ -11,7 +11,10 @@ using y2024::control_loops::superstructure::Aimer;
 Aimer::Aimer(aos::EventLoop *event_loop,
              const y2024::Constants *robot_constants)
     : event_loop_(event_loop),
-      robot_constants_(CHECK_NOTNULL(robot_constants)),
+      robot_constants_([&]() {
+        CHECK(robot_constants != nullptr);
+        return robot_constants;
+      }()),
       drivetrain_config_(
           frc971::control_loops::drivetrain::DrivetrainConfig<double>::
               FromFlatbuffer(*robot_constants_->common()->drivetrain())),
@@ -58,7 +61,7 @@ void Aimer::Update(
   } else {
     received_joystick_state_ = true;
 
-    CHECK_NOTNULL(joystick_state_fetcher_.get());
+    CHECK(joystick_state_fetcher_.get() != nullptr);
     alliance = joystick_state_fetcher_->alliance();
   }
 

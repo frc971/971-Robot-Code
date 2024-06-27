@@ -5,7 +5,10 @@ namespace aos::ipc_lib {
 size_t TotalSharedMemoryUsage(const aos::Configuration *config,
                               const aos::Node *node) {
   size_t total_size = 0;
-  for (const aos::Channel *channel : *CHECK_NOTNULL(config->channels())) {
+  const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
+      config->channels();
+  CHECK(channels != nullptr);
+  for (const aos::Channel *channel : *channels) {
     if (aos::configuration::ChannelIsReadableOnNode(channel, node)) {
       total_size +=
           LocklessQueueMemorySize(MakeQueueConfiguration(config, channel));

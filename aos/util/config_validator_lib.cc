@@ -177,8 +177,10 @@ void ConfigIsValid(const aos::Configuration *config,
               }
               // TODO(james): This will be overly noisy, as it ends up
               // CHECK-failing.
-              required_timestamp_channels.insert(CHECK_NOTNULL(
-                  timestamp_finder.ForChannel(channel, connection)));
+              const Channel *found_channel =
+                  timestamp_finder.ForChannel(channel, connection);
+              CHECK(found_channel != nullptr);
+              required_timestamp_channels.insert(found_channel);
               break;
           }
         }

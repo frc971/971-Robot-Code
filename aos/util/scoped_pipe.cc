@@ -49,7 +49,7 @@ void ScopedPipe::SetCloexec() {
 }
 
 size_t ScopedPipe::ScopedReadPipe::Read(std::string *buffer) {
-  CHECK_NOTNULL(buffer);
+  CHECK(buffer != nullptr);
   constexpr ssize_t kBufferSize = 1024;
   const size_t original_size = buffer->size();
   size_t read_bytes = 0;

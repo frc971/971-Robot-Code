@@ -123,7 +123,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   SensorReader(::aos::ShmEventLoop *event_loop,
                const Constants *robot_constants)
       : ::frc971::wpilib::SensorReader(event_loop),
-        robot_constants_(CHECK_NOTNULL(robot_constants)),
+        robot_constants_(robot_constants),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
@@ -505,7 +505,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                     drivetrain_can_position_sender.MakeStaticBuilder();
 
             auto drivetrain_falcon_vector =
-                CHECK_NOTNULL(drivetrain_can_builder->add_talonfxs());
+                drivetrain_can_builder->add_talonfxs();
+            CHECK(drivetrain_falcon_vector != nullptr);
 
             for (auto talonfx : drivetrain_krakens) {
               talonfx->SerializePosition(
@@ -678,7 +679,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   drivetrain_can_position_sender.MakeStaticBuilder();
 
           auto drivetrain_falcon_vector =
-              CHECK_NOTNULL(drivetrain_can_builder->add_talonfxs());
+              drivetrain_can_builder->add_talonfxs();
+          CHECK(drivetrain_falcon_vector != nullptr);
 
           for (auto talonfx : drivetrain_talonfxs) {
             talonfx->SerializePosition(

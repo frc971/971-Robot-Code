@@ -263,7 +263,8 @@ std::vector<const Channel *> ConfigRemapper::RemappedChannels() const {
   result.reserve(remapped_channels_.size());
   for (auto &pair : remapped_channels_) {
     const Channel *const original_channel =
-        CHECK_NOTNULL(original_configuration()->channels()->Get(pair.first));
+        original_configuration()->channels()->Get(pair.first);
+    CHECK(original_channel != nullptr);
 
     auto channel_iterator = std::lower_bound(
         remapped_configuration_->channels()->cbegin(),
@@ -472,9 +473,10 @@ void ConfigRemapper::MakeRemappedConfig() {
 
   // Reconstruct the remapped channels.
   for (auto &pair : remapped_channels_) {
-    const Channel *const c = CHECK_NOTNULL(configuration::GetChannel(
+    const Channel *const c = configuration::GetChannel(
         base_config, original_configuration()->channels()->Get(pair.first), "",
-        nullptr));
+        nullptr);
+    CHECK(c != nullptr);
     channel_offsets.emplace_back(
         CopyChannel(c, pair.second.remapped_name, "", &fbb));
 

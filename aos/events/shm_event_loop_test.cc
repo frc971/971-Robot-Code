@@ -17,13 +17,6 @@ namespace chrono = ::std::chrono;
 class ShmEventLoopTestFactory : public EventLoopTestFactory {
  public:
   ShmEventLoopTestFactory() {
-    // Put all the queue files in ${TEST_TMPDIR} if it is set, otherwise
-    // everything will be reusing /dev/shm when sharded.
-    char *test_tmpdir = getenv("TEST_TMPDIR");
-    if (test_tmpdir != nullptr) {
-      FLAGS_shm_base = std::string(test_tmpdir) + "/aos";
-    }
-
     // Clean up anything left there before.
     unlink((FLAGS_shm_base + "/test/aos.TestMessage.v7").c_str());
     unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v7").c_str());
@@ -58,14 +51,19 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
   }
 
   Result<void> Run() override {
-    return CHECK_NOTNULL(primary_event_loop_)->Run();
+    CHECK(primary_event_loop_ != nullptr);
+    return primary_event_loop_->Run();
   }
 
   std::unique_ptr<ExitHandle> MakeExitHandle() override {
-    return CHECK_NOTNULL(primary_event_loop_)->MakeExitHandle();
+    CHECK(primary_event_loop_ != nullptr);
+    return primary_event_loop_->MakeExitHandle();
   }
 
-  void Exit() override { CHECK_NOTNULL(primary_event_loop_)->Exit(); }
+  void Exit() override {
+    CHECK(primary_event_loop_ != nullptr);
+    primary_event_loop_->Exit();
+  }
 
   void SleepFor(::std::chrono::nanoseconds duration) override {
     ::std::this_thread::sleep_for(duration);

@@ -333,7 +333,7 @@ void Subscriber::RemoveListener(
 
 std::shared_ptr<struct mbuf> Subscriber::NextBuffer(
     ChannelInformation *channel) {
-  CHECK_NOTNULL(channel);
+  CHECK(channel != nullptr);
   if (message_buffer_.empty()) {
     return nullptr;
   }
@@ -400,7 +400,7 @@ std::shared_ptr<struct mbuf> Subscriber::NextBuffer(
 }
 
 void Subscriber::SkipToLastMessage(ChannelInformation *channel) {
-  CHECK_NOTNULL(channel);
+  CHECK(channel != nullptr);
   if (message_buffer_.empty() ||
       channel->current_queue_index == message_buffer_.back().index) {
     return;

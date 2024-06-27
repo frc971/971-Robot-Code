@@ -123,7 +123,8 @@ TEST_F(StaticFlatbuffersTest, DocumentationExample) {
   }
   {
     auto vector_of_strings = object->add_vector_of_strings();
-    auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+    auto sub_string = vector_of_strings->emplace_back();
+    CHECK(sub_string != nullptr);
     CHECK(sub_string->emplace_back('D'));
   }
   { object->set_substruct({971, 254}); }
@@ -163,8 +164,13 @@ flatbuffers::Offset<SubTable> PopulateOld(flatbuffers::FlatBufferBuilder *fbb) {
   builder.add_foo(1234);
   return builder.Finish();
 }
-void PopulateStatic(SubTableStatic *subtable) { subtable->set_foo(1234); }
+void PopulateStatic(SubTableStatic *subtable) {
+  CHECK(subtable != nullptr);
+  subtable->set_foo(1234);
+}
+
 }  // namespace
+
 TEST_F(StaticFlatbuffersTest, PopulateMethodConversionExample) {
   // Using a FlatBufferBuilder:
   flatbuffers::FlatBufferBuilder fbb;
@@ -178,7 +184,7 @@ TEST_F(StaticFlatbuffersTest, PopulateMethodConversionExample) {
   // Using the static flatbuffer API.
   aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> static_builder(&allocator);
-  PopulateStatic(CHECK_NOTNULL(static_builder.get()->add_subtable()));
+  PopulateStatic(static_builder.get()->add_subtable());
 
   // And confirm that they both contain the expected flatbuffer:
   const std::string expected = R"json({ "subtable": { "foo": 1234 } })json";
@@ -292,7 +298,8 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
       EXPECT_FALSE(object->has_vector_of_strings());
       auto vector_of_strings = object->add_vector_of_strings();
       EXPECT_TRUE(object->has_vector_of_strings());
-      auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+      auto sub_string = vector_of_strings->emplace_back();
+      CHECK(sub_string != nullptr);
       ASSERT_TRUE(sub_string->emplace_back('D'));
       EXPECT_TRUE(fbs.has_vector_of_strings());
       ASSERT_EQ(1u, fbs.vector_of_strings()->size());
@@ -729,7 +736,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
     ASSERT_TRUE(builder.Verify());
     ASSERT_FALSE(object->has_vector_of_scalars())
         << aos::FlatbufferToJson(builder.AsFlatbufferSpan());
-    vector = CHECK_NOTNULL(object->add_vector_of_scalars());
+    vector = object->add_vector_of_scalars();
+    ASSERT_TRUE(vector != nullptr);
     ASSERT_TRUE(builder.Verify());
     EXPECT_EQ(0u, object->AsFlatbuffer().vector_of_scalars()->size());
     ASSERT_TRUE(vector->emplace_back(9));
@@ -783,7 +791,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
     object->clear_subtable();
     ASSERT_TRUE(builder.Verify());
     EXPECT_FALSE(object->has_subtable());
-    auto subtable = CHECK_NOTNULL(object->add_subtable());
+    auto subtable = object->add_subtable();
+    ASSERT_TRUE(subtable != nullptr);
     subtable->set_baz(9.71);
     EXPECT_EQ(
         R"json({
@@ -806,7 +815,8 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
     object->clear_subtable();
     ASSERT_TRUE(builder.Verify());
     EXPECT_FALSE(object->has_subtable());
-    subtable = CHECK_NOTNULL(object->add_subtable());
+    subtable = object->add_subtable();
+    ASSERT_TRUE(subtable != nullptr);
     subtable->set_baz(16.78);
     EXPECT_EQ(
         R"json({
@@ -883,7 +893,8 @@ TEST_F(StaticFlatbuffersTest, ExactSizeSpanAllocator) {
   }
   {
     auto vector_of_strings = object->add_vector_of_strings();
-    auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+    auto sub_string = vector_of_strings->emplace_back();
+    ASSERT_TRUE(sub_string != nullptr);
     ASSERT_TRUE(sub_string->emplace_back('D'));
   }
   { object->set_substruct({971, 254}); }
@@ -1048,7 +1059,8 @@ TEST_F(StaticFlatbuffersTest, FixedStackAllocator) {
   }
   {
     auto vector_of_strings = object->add_vector_of_strings();
-    auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+    auto sub_string = vector_of_strings->emplace_back();
+    ASSERT_TRUE(sub_string != nullptr);
     ASSERT_TRUE(sub_string->emplace_back('D'));
   }
   { object->set_substruct({971, 254}); }
@@ -1153,7 +1165,8 @@ TEST_F(StaticFlatbuffersTest, BuilderMoveConstructor) {
   }
   {
     auto vector_of_strings = object->add_vector_of_strings();
-    auto sub_string = CHECK_NOTNULL(vector_of_strings->emplace_back());
+    auto sub_string = vector_of_strings->emplace_back();
+    ASSERT_TRUE(sub_string != nullptr);
     ASSERT_TRUE(sub_string->emplace_back('D'));
   }
   { object->set_substruct({971, 254}); }

@@ -467,7 +467,7 @@ void TargetMapper::DisplaySolvedVsInitial() {
 
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
 bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
-  CHECK_NOTNULL(problem);
+  CHECK(problem != nullptr);
 
   ceres::Solver::Options options;
   options.max_num_iterations = FLAGS_max_num_iterations;

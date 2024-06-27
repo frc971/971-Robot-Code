@@ -82,7 +82,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         superstructure_status_fetcher_(
             event_loop->MakeFetcher<control_loops::superstructure::Status>(
                 "/superstructure")),
-        robot_constants_(CHECK_NOTNULL(robot_constants)) {}
+        robot_constants_(robot_constants) {
+    CHECK(robot_constants_ != nullptr);
+  }
 
   void AutoEnded() override { AOS_LOG(INFO, "Auto ended.\n"); }
 

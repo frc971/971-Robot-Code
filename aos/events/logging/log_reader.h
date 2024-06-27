@@ -655,7 +655,7 @@ class LogReader {
     }
 
     monotonic_clock::time_point monotonic_now() const {
-      CHECK_NOTNULL(event_loop_);
+      CHECK(event_loop_ != nullptr);
       return event_loop_->monotonic_now();
     }
 

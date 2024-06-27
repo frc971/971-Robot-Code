@@ -79,7 +79,9 @@ void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
 }
 
 void SplineDrivetrain::DeleteCurrentSpline() {
-  DeleteTrajectory(&CHECK_NOTNULL(current_trajectory())->trajectory());
+  const FinishedTrajectory *const trajectory = current_trajectory();
+  CHECK(trajectory != nullptr);
+  DeleteTrajectory(&trajectory->trajectory());
   executing_spline_ = false;
   commanded_spline_.reset();
   current_xva_.setZero();
@@ -95,12 +97,15 @@ void SplineDrivetrain::UpdateSplineHandles(
       DeleteCurrentSpline();
       return;
     } else {
-      if (executing_spline_ &&
-          CHECK_NOTNULL(current_trajectory())->spline_handle() !=
-              *commanded_spline) {
-        // If we are executing a spline, and the handle has changed, garbage
-        // collect the old spline.
-        DeleteCurrentSpline();
+      if (executing_spline_) {
+        const FinishedTrajectory *const trajectory = current_trajectory();
+        CHECK(trajectory != nullptr);
+
+        if (trajectory->spline_handle() != *commanded_spline) {
+          // If we are executing a spline, and the handle has changed, garbage
+          // collect the old spline.
+          DeleteCurrentSpline();
+        }
       }
     }
   }
@@ -144,8 +149,8 @@ void SplineDrivetrain::Update(
   enable_ = enable;
   if (enable && executing_spline_) {
     ::Eigen::Matrix<double, 2, 1> U_ff = ::Eigen::Matrix<double, 2, 1>::Zero();
-    const FinishedTrajectory *const trajectory =
-        CHECK_NOTNULL(current_trajectory());
+    const FinishedTrajectory *const trajectory = current_trajectory();
+    CHECK(trajectory != nullptr);
     if (!IsAtEnd() && executing_spline_) {
       // TODO(alex): It takes about a cycle for the outputs to propagate to the
       // motors. Consider delaying the output by a cycle.
@@ -258,7 +263,9 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
     trajectory_logging_builder.add_x(goal_state(0));
     trajectory_logging_builder.add_y(goal_state(1));
-    if (CHECK_NOTNULL(current_trajectory())->drive_spline_backwards()) {
+    const FinishedTrajectory *const trajectory = current_trajectory();
+    CHECK(trajectory != nullptr);
+    if (trajectory->drive_spline_backwards()) {
       trajectory_logging_builder.add_left_velocity(-goal_state(4));
       trajectory_logging_builder.add_right_velocity(-goal_state(3));
       trajectory_logging_builder.add_theta(
@@ -285,10 +292,14 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
       trajectory_logging_builder.add_current_spline_idx(*commanded_spline_);
     }
   }
-  trajectory_logging_builder.add_distance_remaining(
-      executing_spline_
-          ? CHECK_NOTNULL(current_trajectory())->length() - current_xva_.x()
-          : 0.0);
+  if (executing_spline_) {
+    const FinishedTrajectory *const trajectory = current_trajectory();
+    CHECK(trajectory != nullptr);
+    trajectory_logging_builder.add_distance_remaining(trajectory->length() -
+                                                      current_xva_.x());
+  } else {
+    trajectory_logging_builder.add_distance_remaining(0.0);
+  }
   trajectory_logging_builder.add_available_splines(handles_vector);
   trajectory_logging_builder.add_distance_traveled(
       executing_spline_ ? current_xva_.x() : 0.0);

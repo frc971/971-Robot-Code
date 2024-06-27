@@ -36,7 +36,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                     name),
       constants_fetcher_(event_loop),
-      robot_constants_(CHECK_NOTNULL(&constants_fetcher_.constants())),
+      robot_constants_(&constants_fetcher_.constants()),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),

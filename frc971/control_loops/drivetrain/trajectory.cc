@@ -38,9 +38,13 @@ FinishedTrajectory::FinishedTrajectory(
         StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                           HybridKalman<2, 2, 2>>>
         velocity_drivetrain)
-    : BaseTrajectory(CHECK_NOTNULL(CHECK_NOTNULL(buffer->spline())->spline())
-                         ->constraints(),
-                     config, std::move(velocity_drivetrain)),
+    : BaseTrajectory(
+          [&]() {
+            CHECK(buffer->spline() != nullptr);
+            CHECK(buffer->spline()->spline() != nullptr);
+            return buffer->spline()->spline()->constraints();
+          }(),
+          config, std::move(velocity_drivetrain)),
       buffer_(buffer),
       spline_(*buffer_->spline()) {}
 
@@ -819,8 +823,9 @@ void Trajectory::CalculatePathGains() {
 
 Eigen::Matrix<double, 2, 5> FinishedTrajectory::GainForDistance(
     double distance) const {
+  CHECK(trajectory().gains() != nullptr);
   const flatbuffers::Vector<flatbuffers::Offset<fb::GainPoint>> &gains =
-      *CHECK_NOTNULL(trajectory().gains());
+      *trajectory().gains();
   CHECK_LT(0u, gains.size());
   size_t index = 0;
   for (index = 0; index < gains.size() - 1; ++index) {

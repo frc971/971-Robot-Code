@@ -196,7 +196,7 @@ LogReader::LogReader(LogFilesContainer log_files,
   {
     // Log files container validates that log files shared the same config.
     const Configuration *config = log_files_.config().get();
-    CHECK_NOTNULL(config);
+    CHECK(config != nullptr);
   }
 
   if (replay_channels_ != nullptr) {
@@ -386,7 +386,7 @@ void LogReader::State::RunOnEnd() {
 std::vector<
     std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
 LogReader::State::NonExclusiveChannels() {
-  CHECK_NOTNULL(node_event_loop_factory_);
+  CHECK(node_event_loop_factory_ != nullptr);
   const aos::Configuration *config = node_event_loop_factory_->configuration();
   std::vector<
       std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
@@ -1423,10 +1423,11 @@ bool LogReader::State::Send(TimestampedMessage &&timestamped_message) {
 
   if (remote_timestamp_senders_[timestamped_message.channel_index] != nullptr) {
     State *source_state =
-        CHECK_NOTNULL(channel_source_state_[timestamped_message.channel_index]);
-    std::vector<ContiguousSentTimestamp> *queue_index_map = CHECK_NOTNULL(
-        source_state->queue_index_map_[timestamped_message.channel_index]
-            .get());
+        channel_source_state_[timestamped_message.channel_index];
+    CHECK(source_state != nullptr);
+    std::vector<ContiguousSentTimestamp> *queue_index_map =
+        source_state->queue_index_map_[timestamped_message.channel_index].get();
+    CHECK(queue_index_map != nullptr);
 
     struct SentTimestamp {
       monotonic_clock::time_point monotonic_event_time;
@@ -1495,15 +1496,13 @@ bool LogReader::State::Send(TimestampedMessage &&timestamped_message) {
     // Sanity check that we are using consistent boot uuids.
     State *source_state =
         channel_source_state_[timestamped_message.channel_index];
+    CHECK(source_state != nullptr);
+    CHECK(source_state->event_loop_ != nullptr);
     CHECK_EQ(multinode_filters_->boot_uuid(
                  configuration::GetNodeIndex(event_loop_->configuration(),
                                              source_state->node()),
                  timestamped_message.monotonic_remote_time.boot),
-             CHECK_NOTNULL(
-                 CHECK_NOTNULL(
-                     channel_source_state_[timestamped_message.channel_index])
-                     ->event_loop_)
-                 ->boot_uuid());
+             source_state->event_loop_->boot_uuid());
   }
 
   SharedSpan to_send;
@@ -1529,20 +1528,23 @@ bool LogReader::State::Send(TimestampedMessage &&timestamped_message) {
 
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
+  const UUID boot_uuid = [&]() -> UUID {
+    if (channel_source_state_[timestamped_message.channel_index] != nullptr) {
+      CHECK(multinode_filters_ != nullptr);
+      return multinode_filters_->boot_uuid(
+          configuration::GetNodeIndex(
+              event_loop_->configuration(),
+              channel_source_state_[timestamped_message.channel_index]->node()),
+          timestamped_message.monotonic_remote_time.boot);
+    } else {
+      return event_loop_->boot_uuid();
+    }
+  }();
   const RawSender::Error err = sender->Send(
       std::move(to_send), timestamped_message.monotonic_remote_time.time,
       timestamped_message.realtime_remote_time,
       timestamped_message.monotonic_remote_transmit_time.time,
-      remote_queue_index,
-      (channel_source_state_[timestamped_message.channel_index] != nullptr
-           ? CHECK_NOTNULL(multinode_filters_)
-                 ->boot_uuid(configuration::GetNodeIndex(
-                                 event_loop_->configuration(),
-                                 channel_source_state_[timestamped_message
-                                                           .channel_index]
-                                     ->node()),
-                             timestamped_message.monotonic_remote_time.boot)
-           : event_loop_->boot_uuid()));
+      remote_queue_index, boot_uuid);
   if (err != RawSender::Error::kOk) return false;
   if (monotonic_start_time(timestamped_message.monotonic_event_time.boot) <=
       timestamped_message.monotonic_event_time.time) {
@@ -1601,7 +1603,8 @@ bool LogReader::State::Send(TimestampedMessage &&timestamped_message) {
     // that the timestamps correspond to. This code, as written, also doesn't
     // correctly handle a non-zero clock_offset for the *_remote_time fields.
     State *source_state =
-        CHECK_NOTNULL(channel_source_state_[timestamped_message.channel_index]);
+        channel_source_state_[timestamped_message.channel_index];
+    CHECK(source_state != nullptr);
 
     flatbuffers::FlatBufferBuilder fbb;
     fbb.ForceDefaults(true);
@@ -1655,14 +1658,14 @@ LogReader::RemoteMessageSender::RemoteMessageSender(
 
 void LogReader::RemoteMessageSender::ScheduleTimestamp() {
   if (remote_timestamps_.empty()) {
-    CHECK_NOTNULL(timer_);
+    CHECK(timer_ != nullptr);
     timer_->Disable();
     scheduled_time_ = monotonic_clock::min_time;
     return;
   }
 
   if (scheduled_time_ != remote_timestamps_.front().monotonic_timestamp_time) {
-    CHECK_NOTNULL(timer_);
+    CHECK(timer_ != nullptr);
     timer_->Schedule(remote_timestamps_.front().monotonic_timestamp_time);
     scheduled_time_ = remote_timestamps_.front().monotonic_timestamp_time;
     CHECK_GE(scheduled_time_, event_loop_->monotonic_now())

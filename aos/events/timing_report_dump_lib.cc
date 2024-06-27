@@ -120,8 +120,9 @@ void TimingReportDump::PrintSenders(
     std::stringstream errors;
     CHECK(sender->has_error_counts());
     for (size_t ii = 0; ii < sender->error_counts()->size(); ++ii) {
-      const size_t error_count =
-          CHECK_NOTNULL(sender->error_counts()->Get(ii))->count();
+      auto *error_counts = sender->error_counts()->Get(ii);
+      CHECK(error_counts != nullptr);
+      const size_t error_count = error_counts->count();
       errors << error_count;
       if (error_count > 0) {
         // Put send errors onto stderr so that people just interested in

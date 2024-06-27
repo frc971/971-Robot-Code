@@ -117,8 +117,12 @@ SctpClientConnection::SctpClientConnection(
                                           remote_name, event_loop->boot_uuid(),
                                           config_sha256)),
       message_reception_reply_(MakeMessageHeaderReply()),
-      remote_node_(CHECK_NOTNULL(
-          configuration::GetNode(event_loop->configuration(), remote_name))),
+      remote_node_([&]() {
+        const aos::Node *node =
+            configuration::GetNode(event_loop->configuration(), remote_name);
+        CHECK(node != nullptr);
+        return node;
+      }()),
       client_(remote_node_->hostname()->string_view(), remote_node_->port(),
               connect_message_.message().channels_to_transfer()->size() +
                   kControlStreams(),

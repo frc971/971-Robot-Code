@@ -409,7 +409,8 @@ class Vector : public ResizeableObject {
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
   [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer *vector) {
-    return FromFlatbuffer(*CHECK_NOTNULL(vector));
+    CHECK(vector != nullptr);
+    return FromFlatbuffer(*vector);
   }
   [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer &vector);
   // The remaining FromFlatbuffer() overloads are for when using the flatbuffer
@@ -449,8 +450,8 @@ class Vector : public ResizeableObject {
     resize_inline(input_size, SetZero::kNo);
 
     if (input_size > 0) {
-      memcpy(inline_data(), CHECK_NOTNULL(input_data),
-             size() * sizeof(InlineType));
+      CHECK(input_data != nullptr);
+      memcpy(inline_data(), input_data, size() * sizeof(InlineType));
     }
     return true;
   }
@@ -584,7 +585,7 @@ class Vector : public ResizeableObject {
       return;
     } else {
       while (length_ < size) {
-        CHECK_NOTNULL(emplace_back());
+        CHECK(emplace_back() != nullptr);
       }
     }
   }
@@ -725,7 +726,9 @@ class Vector : public ResizeableObject {
     resize_not_inline(0);
 
     for (const auto &entry : vector) {
-      if (!CHECK_NOTNULL(emplace_back())->FromFlatbuffer(entry)) {
+      T *emplaced_entry = emplace_back();
+      CHECK(emplaced_entry != nullptr);
+      if (!emplaced_entry->FromFlatbuffer(entry)) {
         return false;
       }
     }

@@ -2442,7 +2442,7 @@ void TimestampMapper::PopFront() {
 
 Message TimestampMapper::MatchingMessageFor(const Message &message) {
   // Figure out what queue index we are looking for.
-  CHECK_NOTNULL(message.header);
+  CHECK(message.header != nullptr);
   CHECK(message.header->remote_queue_index.has_value());
   const BootQueueIndex remote_queue_index =
       BootQueueIndex{.boot = message.monotonic_remote_boot,

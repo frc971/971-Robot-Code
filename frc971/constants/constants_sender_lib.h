@@ -82,7 +82,10 @@ class ConstantsFetcher {
     });
   }
 
-  const ConstantsData &constants() const { return *fetcher_.get(); }
+  const ConstantsData &constants() const {
+    CHECK(fetcher_.get() != nullptr);
+    return *fetcher_.get();
+  }
 
  private:
   aos::Fetcher<ConstantsData> fetcher_;

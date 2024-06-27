@@ -586,7 +586,7 @@ class SimulatedEventLoop : public EventLoop {
       const Configuration *configuration,
       std::vector<SimulatedEventLoop *> *event_loops_, const Node *node,
       pid_t tid, EventLoopOptions options)
-      : EventLoop(CHECK_NOTNULL(configuration)),
+      : EventLoop(configuration),
         scheduler_(scheduler),
         node_event_loop_factory_(node_event_loop_factory),
         channels_(channels),
@@ -945,7 +945,8 @@ SimulatedWatcher::~SimulatedWatcher() {
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
   }
-  CHECK_NOTNULL(simulated_channel_)->RemoveWatcher(this);
+  CHECK(simulated_channel_ != nullptr);
+  simulated_channel_->RemoveWatcher(this);
 }
 
 bool SimulatedWatcher::has_run() const {
@@ -1387,8 +1388,13 @@ void SimulatedPhasedLoopHandler::Schedule(
 
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
-    : configuration_(CHECK_NOTNULL(configuration)),
-      nodes_(configuration::GetNodes(configuration_)) {
+    : configuration_(configuration),
+      nodes_(
+          // Don't crash if configuration is nullptr, handle it a bit better
+          // before doing anything.
+          configuration == nullptr ? std::vector<const Node *>{}
+                                   : configuration::GetNodes(configuration_)) {
+  CHECK(configuration_ != nullptr);
   CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   for (const Node *node : nodes_) {
     node_factories_.emplace_back(

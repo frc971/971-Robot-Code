@@ -265,7 +265,8 @@ class Fetcher {
   // Fetches the next message. Returns true if it fetched a new message.  This
   // method will only return messages sent after the Fetcher was created.
   bool FetchNext() {
-    const bool result = CHECK_NOTNULL(fetcher_)->FetchNext();
+    CHECK(fetcher_ != nullptr);
+    const bool result = fetcher_->FetchNext();
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -277,7 +278,8 @@ class Fetcher {
   // true.  The data and buffer_index are the only pieces of the Context which
   // are zeroed out.  The function must be valid.
   bool FetchNextIf(std::function<bool(const Context &)> fn) {
-    const bool result = CHECK_NOTNULL(fetcher_)->FetchNextIf(std::move(fn));
+    CHECK(fetcher_ != nullptr);
+    const bool result = fetcher_->FetchNextIf(std::move(fn));
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -289,7 +291,8 @@ class Fetcher {
   // This will return the latest message regardless of if it was sent before or
   // after the fetcher was created.
   bool Fetch() {
-    const bool result = CHECK_NOTNULL(fetcher_)->Fetch();
+    CHECK(fetcher_ != nullptr);
+    const bool result = fetcher_->Fetch();
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -301,7 +304,8 @@ class Fetcher {
   // new message. This will return the latest message regardless of if it was
   // sent before or after the fetcher was created.  The function must be valid.
   bool FetchIf(std::function<bool(const Context &)> fn) {
-    const bool result = CHECK_NOTNULL(fetcher_)->FetchIf(std::move(fn));
+    CHECK(fetcher_ != nullptr);
+    const bool result = fetcher_->FetchIf(std::move(fn));
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -312,18 +316,25 @@ class Fetcher {
   // Returns a pointer to the contained flatbuffer, or nullptr if there is no
   // available message.
   const T *get() const {
-    return CHECK_NOTNULL(fetcher_)->context().data != nullptr
+    CHECK(fetcher_ != nullptr);
+    return fetcher_->context().data != nullptr
                ? flatbuffers::GetRoot<T>(
                      reinterpret_cast<const char *>(fetcher_->context().data))
                : nullptr;
   }
 
   // Returns the channel this fetcher uses
-  const Channel *channel() const { return CHECK_NOTNULL(fetcher_)->channel(); }
+  const Channel *channel() const {
+    CHECK(fetcher_ != nullptr);
+    return fetcher_->channel();
+  }
 
   // Returns the context holding timestamps and other metadata about the
   // message.
-  const Context &context() const { return CHECK_NOTNULL(fetcher_)->context(); }
+  const Context &context() const {
+    CHECK(fetcher_ != nullptr);
+    return fetcher_->context();
+  }
 
   const T &operator*() const { return *get(); }
   const T *operator->() const { return get(); }
@@ -366,7 +377,9 @@ class Sender {
   class StaticBuilder {
    public:
     StaticBuilder(RawSender *sender, fbs::SpanAllocator *allocator)
-        : builder_(allocator), sender_(CHECK_NOTNULL(sender)) {}
+        : builder_(allocator), sender_(sender) {
+      CHECK(sender != nullptr);
+    }
     StaticBuilder(const StaticBuilder &) = delete;
     StaticBuilder(StaticBuilder &&) = default;
 
@@ -408,7 +421,8 @@ class Sender {
     Builder(RawSender *sender, ChannelPreallocatedAllocator *allocator)
         : fbb_(allocator->size(), allocator),
           allocator_(allocator),
-          sender_(CHECK_NOTNULL(sender)) {
+          sender_(sender) {
+      CHECK(sender != nullptr);
       CheckChannelDataAlignment(allocator->data(), allocator->size());
       fbb_.ForceDefaults(true);
     }
@@ -480,12 +494,16 @@ class Sender {
 
   // Equivalent to RawSender::CheckOk
   void CheckOk(const RawSender::Error err) {
-    CHECK_NOTNULL(sender_)->CheckOk(err);
+    CHECK(sender_ != nullptr);
+    sender_->CheckOk(err);
   };
 
   // Returns the name of the underlying queue, if valid.  You must check valid()
   // first.
-  const Channel *channel() const { return CHECK_NOTNULL(sender_)->channel(); }
+  const Channel *channel() const {
+    CHECK(sender_ != nullptr);
+    return sender_->channel();
+  }
 
   // Returns true if the Sender is a valid Sender. If you, e.g., are using
   // TryMakeSender, then you must check valid() before attempting to use the
@@ -496,19 +514,25 @@ class Sender {
 
   // Returns the time_points that the last message was sent at.
   aos::monotonic_clock::time_point monotonic_sent_time() const {
-    return CHECK_NOTNULL(sender_)->monotonic_sent_time();
+    CHECK(sender_ != nullptr);
+    return sender_->monotonic_sent_time();
   }
   aos::realtime_clock::time_point realtime_sent_time() const {
-    return CHECK_NOTNULL(sender_)->realtime_sent_time();
+    CHECK(sender_ != nullptr);
+    return sender_->realtime_sent_time();
   }
   // Returns the queue index that this was sent with.
   uint32_t sent_queue_index() const {
-    return CHECK_NOTNULL(sender_)->sent_queue_index();
+    CHECK(sender_ != nullptr);
+    return sender_->sent_queue_index();
   }
 
   // Returns the buffer index which MakeBuilder() will expose access to. This is
   // the buffer the caller can fill out.
-  int buffer_index() const { return CHECK_NOTNULL(sender_)->buffer_index(); }
+  int buffer_index() const {
+    CHECK(sender_ != nullptr);
+    return sender_->buffer_index();
+  }
 
   // Convenience function to build and send a message created from JSON
   // representation.

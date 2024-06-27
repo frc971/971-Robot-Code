@@ -215,7 +215,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     // Run for enough time to allow the gyro/imu zeroing code to run.
     RunFor(std::chrono::seconds(15));
     CHECK(drivetrain_status_fetcher_.Fetch());
-    EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->zeroing())->zeroed());
+    CHECK(drivetrain_status_fetcher_->zeroing() != nullptr);
+    EXPECT_TRUE(drivetrain_status_fetcher_->zeroing()->zeroed());
   }
 
   virtual ~LocalizedDrivetrainTest() override {}

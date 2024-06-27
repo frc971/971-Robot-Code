@@ -1368,8 +1368,9 @@ TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
         std::make_unique<aos::ShmEventLoop>(&config_.message());
     pi2_.client_event_loop_->SetRuntimeRealtimePriority(1);
 
-    const aos::Node *const remote_node = CHECK_NOTNULL(configuration::GetNode(
-        pi2_.client_event_loop_->configuration(), "pi1"));
+    const aos::Node *const remote_node =
+        configuration::GetNode(pi2_.client_event_loop_->configuration(), "pi1");
+    CHECK(remote_node != nullptr);
 
     const aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect>
         connect_message(MakeConnectMessage(

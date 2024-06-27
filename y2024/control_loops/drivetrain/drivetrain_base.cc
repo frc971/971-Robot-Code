@@ -11,9 +11,10 @@ namespace y2024::control_loops::drivetrain {
 const frc971::control_loops::drivetrain::DrivetrainConfig<double>
 GetDrivetrainConfig(aos::EventLoop *event_loop) {
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher(event_loop);
+  CHECK(constants_fetcher.constants().common() != nullptr);
+  CHECK(constants_fetcher.constants().common()->drivetrain() != nullptr);
   return frc971::control_loops::drivetrain::DrivetrainConfig<double>::
-      FromFlatbuffer(
-          *CHECK_NOTNULL(constants_fetcher.constants().common()->drivetrain()));
+      FromFlatbuffer(*constants_fetcher.constants().common()->drivetrain());
 };
 
 }  // namespace y2024::control_loops::drivetrain

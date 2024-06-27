@@ -9,6 +9,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/buffer_encoder_param_test.h"
+#include "aos/testing/tmpdir.h"
 
 namespace aos::logger::testing {
 
@@ -44,8 +45,7 @@ TEST_F(DummyEncoderTest, CoppiesBuffersAsIs) {
 TEST(DummyDecoderTest, ReadsIntoExactBuffer) {
   static const std::string kTestString{"Just some random words."};
 
-  const char *const test_dir = CHECK_NOTNULL(getenv("TEST_TMPDIR"));
-  const std::string file_path = std::string(test_dir) + "/foo";
+  const std::string file_path = aos::testing::TestTmpDir() + "/foo";
   std::ofstream(file_path, std::ios::binary) << kTestString;
 
   // Read the contents of the file into the buffer.
@@ -65,8 +65,7 @@ TEST(DummyDecoderTest, ReadsIntoExactBuffer) {
 TEST(DummyDecoderTest, ReadsIntoLargerBuffer) {
   static const std::string kTestString{"Just some random words."};
 
-  const char *const test_dir = CHECK_NOTNULL(getenv("TEST_TMPDIR"));
-  const std::string file_path = std::string(test_dir) + "/foo";
+  const std::string file_path = aos::testing::TestTmpDir() + "/foo";
   std::ofstream(file_path, std::ios::binary) << kTestString;
 
   DummyDecoder dummy_decoder(file_path.c_str());
@@ -84,8 +83,7 @@ TEST(DummyDecoderTest, ReadsIntoLargerBuffer) {
 TEST(DummyDecoderTest, ReadsRepeatedlyIntoSmallerBuffer) {
   static const std::string kTestString{"Just some random words."};
 
-  const char *const test_dir = CHECK_NOTNULL(getenv("TEST_TMPDIR"));
-  const std::string file_path = std::string(test_dir) + "/foo";
+  const std::string file_path = aos::testing::TestTmpDir() + "/foo";
   std::ofstream(file_path, std::ios::binary) << kTestString;
 
   DummyDecoder dummy_decoder(file_path.c_str());

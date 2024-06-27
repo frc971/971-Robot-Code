@@ -45,6 +45,7 @@ using aos::monotonic_clock;
 CameraCalibration::CameraCalibration(
     const calibration::CameraCalibration *calibration)
     : intrinsics_([calibration]() {
+        CHECK(calibration != nullptr);
         const cv::Mat result(3, 3, CV_32F,
                              const_cast<void *>(static_cast<const void *>(
                                  calibration->intrinsics()->data())));
@@ -291,7 +292,7 @@ CharucoExtractor::CharucoExtractor(
     const TargetType target_type)
     : event_loop_(nullptr),
       target_type_(target_type),
-      calibration_(CHECK_NOTNULL(calibration)) {
+      calibration_(calibration) {
   VLOG(2) << "Configuring CharucoExtractor without event_loop";
   SetupTargetData();
   VLOG(2) << "Camera matrix:\n" << calibration_.CameraIntrinsics();
@@ -310,7 +311,7 @@ CharucoExtractor::CharucoExtractor(
     : event_loop_(event_loop),
       target_type_(target_type),
       image_channel_(image_channel),
-      calibration_(CHECK_NOTNULL(calibration)),
+      calibration_(calibration),
       handle_charuco_(std::move(handle_charuco_fn)) {
   SetupTargetData();
 

@@ -174,10 +174,12 @@ Localizer::MakeCameras(const Constants &constants, aos::EventLoop *event_loop) {
 Localizer::Localizer(aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       constants_fetcher_(event_loop),
-      dt_config_(
-          frc971::control_loops::drivetrain::DrivetrainConfig<double>::
-              FromFlatbuffer(*CHECK_NOTNULL(
-                  constants_fetcher_.constants().common()->drivetrain()))),
+      dt_config_(frc971::control_loops::drivetrain::DrivetrainConfig<
+                 double>::FromFlatbuffer(*[&]() {
+        CHECK(constants_fetcher_.constants().common() != nullptr);
+        CHECK(constants_fetcher_.constants().common()->drivetrain() != nullptr);
+        return constants_fetcher_.constants().common()->drivetrain();
+      }())),
       cameras_(MakeCameras(constants_fetcher_.constants(), event_loop)),
       target_poses_(GetTargetLocations(constants_fetcher_.constants())),
       down_estimator_(dt_config_),
@@ -214,8 +216,9 @@ Localizer::Localizer(aos::EventLoop *event_loop)
 
   for (size_t camera_index = 0; camera_index < kNumCameras; ++camera_index) {
     const std::string_view channel_name = kDetectionChannels.at(camera_index);
-    const aos::Channel *const channel = CHECK_NOTNULL(
-        event_loop->GetChannel<frc971::vision::TargetMap>(channel_name));
+    const aos::Channel *const channel =
+        event_loop->GetChannel<frc971::vision::TargetMap>(channel_name);
+    CHECK(channel != nullptr);
     event_loop->MakeWatcher(
         channel_name, [this, channel,
                        camera_index](const frc971::vision::TargetMap &targets) {
@@ -360,12 +363,14 @@ bool Localizer::DeweightAprilTag(uint64_t target_id) {
 
   switch (utils_.Alliance()) {
     case aos::Alliance::kRed:
-      ignore_tags = CHECK_NOTNULL(
-          constants_fetcher_.constants().common()->ignore_targets()->red());
+      ignore_tags =
+          constants_fetcher_.constants().common()->ignore_targets()->red();
+      CHECK(ignore_tags != nullptr);
       break;
     case aos::Alliance::kBlue:
-      ignore_tags = CHECK_NOTNULL(
-          constants_fetcher_.constants().common()->ignore_targets()->blue());
+      ignore_tags =
+          constants_fetcher_.constants().common()->ignore_targets()->blue();
+      CHECK(ignore_tags != nullptr);
       break;
     case aos::Alliance::kInvalid:
       return false;

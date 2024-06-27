@@ -1135,9 +1135,11 @@ void HandleReverseMaps(
     const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
     std::string_view type, const Node *node, std::set<std::string> *names) {
   for (const Map *map : *maps) {
-    CHECK_NOTNULL(map);
-    const Channel *const match = CHECK_NOTNULL(map->match());
-    const Channel *const rename = CHECK_NOTNULL(map->rename());
+    CHECK(map != nullptr);
+    const Channel *const match = map->match();
+    CHECK(match != nullptr);
+    const Channel *const rename = map->rename();
+    CHECK(rename != nullptr);
 
     // Handle type specific maps.
     const flatbuffers::String *const match_type_string = match->type();
@@ -1728,8 +1730,8 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
   }
   CHECK(channel->has_source_node()) << FlatbufferToJson(channel);
   CHECK(node->has_name()) << FlatbufferToJson(node);
-  return (CHECK_NOTNULL(channel)->source_node()->string_view() ==
-          node->name()->string_view());
+  CHECK(channel != nullptr);
+  return (channel->source_node()->string_view() == node->name()->string_view());
 }
 
 bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
@@ -1776,8 +1778,8 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
     LOG(FATAL) << "Unsupported logging configuration in a single node world: "
                << CleanedChannelToString(channel);
   }
-  return ChannelMessageIsLoggedOnNode(
-      channel, CHECK_NOTNULL(node)->name()->string_view());
+  CHECK(node != nullptr);
+  return ChannelMessageIsLoggedOnNode(channel, node->name()->string_view());
 }
 
 bool ChannelMessageIsLoggedOnNode(const Channel *channel,
@@ -2116,7 +2118,7 @@ FlatbufferDetachedBuffer<Configuration> GetPartialConfiguration(
   flatbuffers::FlatBufferBuilder fbb;
   std::vector<flatbuffers::Offset<Channel>> new_channels_vec;
   for (const auto &channel : *configuration.channels()) {
-    CHECK_NOTNULL(channel);
+    CHECK(channel != nullptr);
     if (should_include_channel(*channel)) {
       new_channels_vec.push_back(RecursiveCopyFlatBuffer(channel, &fbb));
     }

@@ -76,7 +76,8 @@ struct SwerveModule {
 // Represents all the modules in a swerve drivetrain.
 struct SwerveModules {
   void PopulateFalconsVector(std::vector<std::shared_ptr<TalonFX>> *falcons) {
-    CHECK_NOTNULL(falcons)->push_back(front_left->rotation);
+    CHECK(falcons != nullptr);
+    falcons->push_back(front_left->rotation);
     falcons->push_back(front_left->translation);
 
     falcons->push_back(front_right->rotation);

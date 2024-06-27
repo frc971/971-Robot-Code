@@ -137,7 +137,8 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
   // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
   // to ease implementation of the aos::fbs::Vector internals.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
-    return FromFlatbuffer(*CHECK_NOTNULL(other));
+    CHECK(other != nullptr);
+    return FromFlatbuffer(*other);
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
@@ -348,7 +349,8 @@ class SubTableStatic : public ::aos::fbs::Table {
   // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
   // to ease implementation of the aos::fbs::Vector internals.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
-    return FromFlatbuffer(*CHECK_NOTNULL(other));
+    CHECK(other != nullptr);
+    return FromFlatbuffer(*other);
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
@@ -1460,8 +1462,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_vector_of_structs()) {
-      if (!CHECK_NOTNULL(add_vector_of_structs())
-               ->FromFlatbuffer(other.vector_of_structs())) {
+      ::aos::fbs::Vector<aos::fbs::testing::SubStruct, 3, true, 0>
+          *added_vector_of_structs = add_vector_of_structs();
+      CHECK(added_vector_of_structs != nullptr);
+      if (!added_vector_of_structs->FromFlatbuffer(other.vector_of_structs())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1469,8 +1473,12 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_unspecified_length_vector_of_strings()) {
-      if (!CHECK_NOTNULL(add_unspecified_length_vector_of_strings())
-               ->FromFlatbuffer(other.unspecified_length_vector_of_strings())) {
+      ::aos::fbs::Vector<::aos::fbs::String<0>, 0, false, 0>
+          *added_unspecified_length_vector_of_strings =
+              add_unspecified_length_vector_of_strings();
+      CHECK(added_unspecified_length_vector_of_strings != nullptr);
+      if (!added_unspecified_length_vector_of_strings->FromFlatbuffer(
+              other.unspecified_length_vector_of_strings())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1478,8 +1486,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_vector_of_tables()) {
-      if (!CHECK_NOTNULL(add_vector_of_tables())
-               ->FromFlatbuffer(other.vector_of_tables())) {
+      ::aos::fbs::Vector<aos::fbs::testing::SubTableStatic, 3, false, 0>
+          *added_vector_of_tables = add_vector_of_tables();
+      CHECK(added_vector_of_tables != nullptr);
+      if (!added_vector_of_tables->FromFlatbuffer(other.vector_of_tables())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1487,8 +1497,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_vector_aligned()) {
-      if (!CHECK_NOTNULL(add_vector_aligned())
-               ->FromFlatbuffer(other.vector_aligned())) {
+      ::aos::fbs::Vector<int32_t, 3, true, 64> *added_vector_aligned =
+          add_vector_aligned();
+      CHECK(added_vector_aligned != nullptr);
+      if (!added_vector_aligned->FromFlatbuffer(other.vector_aligned())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1496,8 +1508,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_vector_of_strings()) {
-      if (!CHECK_NOTNULL(add_vector_of_strings())
-               ->FromFlatbuffer(other.vector_of_strings())) {
+      ::aos::fbs::Vector<::aos::fbs::String<10>, 3, false, 0>
+          *added_vector_of_strings = add_vector_of_strings();
+      CHECK(added_vector_of_strings != nullptr);
+      if (!added_vector_of_strings->FromFlatbuffer(other.vector_of_strings())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1505,8 +1519,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_vector_of_scalars()) {
-      if (!CHECK_NOTNULL(add_vector_of_scalars())
-               ->FromFlatbuffer(other.vector_of_scalars())) {
+      ::aos::fbs::Vector<int32_t, 3, true, 0> *added_vector_of_scalars =
+          add_vector_of_scalars();
+      CHECK(added_vector_of_scalars != nullptr);
+      if (!added_vector_of_scalars->FromFlatbuffer(other.vector_of_scalars())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1514,8 +1530,11 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_unspecified_length_string()) {
-      if (!CHECK_NOTNULL(add_unspecified_length_string())
-               ->FromFlatbuffer(other.unspecified_length_string())) {
+      ::aos::fbs::String<0> *added_unspecified_length_string =
+          add_unspecified_length_string();
+      CHECK(added_unspecified_length_string != nullptr);
+      if (!added_unspecified_length_string->FromFlatbuffer(
+              other.unspecified_length_string())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1523,8 +1542,11 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_unspecified_length_vector()) {
-      if (!CHECK_NOTNULL(add_unspecified_length_vector())
-               ->FromFlatbuffer(other.unspecified_length_vector())) {
+      ::aos::fbs::Vector<uint8_t, 0, true, 0> *added_unspecified_length_vector =
+          add_unspecified_length_vector();
+      CHECK(added_unspecified_length_vector != nullptr);
+      if (!added_unspecified_length_vector->FromFlatbuffer(
+              other.unspecified_length_vector())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1532,8 +1554,10 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_included_table()) {
-      if (!CHECK_NOTNULL(add_included_table())
-               ->FromFlatbuffer(other.included_table())) {
+      aos::fbs::testing::included::IncludedTableStatic *added_included_table =
+          add_included_table();
+      CHECK(added_included_table != nullptr);
+      if (!added_included_table->FromFlatbuffer(other.included_table())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1541,7 +1565,9 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_subtable()) {
-      if (!CHECK_NOTNULL(add_subtable())->FromFlatbuffer(other.subtable())) {
+      aos::fbs::testing::SubTableStatic *added_subtable = add_subtable();
+      CHECK(added_subtable != nullptr);
+      if (!added_subtable->FromFlatbuffer(other.subtable())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1549,7 +1575,9 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.has_string()) {
-      if (!CHECK_NOTNULL(add_string())->FromFlatbuffer(other.string())) {
+      ::aos::fbs::String<20> *added_string = add_string();
+      CHECK(added_string != nullptr);
+      if (!added_string->FromFlatbuffer(other.string())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1565,7 +1593,8 @@ class TestTableStatic : public ::aos::fbs::Table {
   // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
   // to ease implementation of the aos::fbs::Vector internals.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
-    return FromFlatbuffer(*CHECK_NOTNULL(other));
+    CHECK(other != nullptr);
+    return FromFlatbuffer(*other);
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
@@ -1585,86 +1614,124 @@ class TestTableStatic : public ::aos::fbs::Table {
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_vector_of_structs())
-             ->FromFlatbuffer(other.vector_of_structs)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<aos::fbs::testing::SubStruct, 3, true, 0>
+          *added_vector_of_structs = add_vector_of_structs();
+      CHECK(added_vector_of_structs != nullptr);
+      if (!added_vector_of_structs->FromFlatbuffer(other.vector_of_structs)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_unspecified_length_vector_of_strings())
-             ->FromFlatbuffer(other.unspecified_length_vector_of_strings)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<::aos::fbs::String<0>, 0, false, 0>
+          *added_unspecified_length_vector_of_strings =
+              add_unspecified_length_vector_of_strings();
+      CHECK(added_unspecified_length_vector_of_strings != nullptr);
+      if (!added_unspecified_length_vector_of_strings->FromFlatbuffer(
+              other.unspecified_length_vector_of_strings)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_vector_of_tables())
-             ->FromFlatbuffer(other.vector_of_tables)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<aos::fbs::testing::SubTableStatic, 3, false, 0>
+          *added_vector_of_tables = add_vector_of_tables();
+      CHECK(added_vector_of_tables != nullptr);
+      if (!added_vector_of_tables->FromFlatbuffer(other.vector_of_tables)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_vector_aligned())
-             ->FromFlatbuffer(other.vector_aligned)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<int32_t, 3, true, 64> *added_vector_aligned =
+          add_vector_aligned();
+      CHECK(added_vector_aligned != nullptr);
+      if (!added_vector_aligned->FromFlatbuffer(other.vector_aligned)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_vector_of_strings())
-             ->FromFlatbuffer(other.vector_of_strings)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<::aos::fbs::String<10>, 3, false, 0>
+          *added_vector_of_strings = add_vector_of_strings();
+      CHECK(added_vector_of_strings != nullptr);
+      if (!added_vector_of_strings->FromFlatbuffer(other.vector_of_strings)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_vector_of_scalars())
-             ->FromFlatbuffer(other.vector_of_scalars)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<int32_t, 3, true, 0> *added_vector_of_scalars =
+          add_vector_of_scalars();
+      CHECK(added_vector_of_scalars != nullptr);
+      if (!added_vector_of_scalars->FromFlatbuffer(other.vector_of_scalars)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_unspecified_length_string())
-             ->FromFlatbuffer(other.unspecified_length_string)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::String<0> *added_unspecified_length_string =
+          add_unspecified_length_string();
+      CHECK(added_unspecified_length_string != nullptr);
+      if (!added_unspecified_length_string->FromFlatbuffer(
+              other.unspecified_length_string)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_unspecified_length_vector())
-             ->FromFlatbuffer(other.unspecified_length_vector)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::Vector<uint8_t, 0, true, 0> *added_unspecified_length_vector =
+          add_unspecified_length_vector();
+      CHECK(added_unspecified_length_vector != nullptr);
+      if (!added_unspecified_length_vector->FromFlatbuffer(
+              other.unspecified_length_vector)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     if (other.included_table) {
-      if (!CHECK_NOTNULL(add_included_table())
-               ->FromFlatbuffer(*other.included_table)) {
+      aos::fbs::testing::included::IncludedTableStatic *added_included_table =
+          add_included_table();
+      CHECK(added_included_table != nullptr);
+      if (!added_included_table->FromFlatbuffer(*other.included_table)) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1672,7 +1739,9 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     if (other.subtable) {
-      if (!CHECK_NOTNULL(add_subtable())->FromFlatbuffer(*other.subtable)) {
+      aos::fbs::testing::SubTableStatic *added_subtable = add_subtable();
+      CHECK(added_subtable != nullptr);
+      if (!added_subtable->FromFlatbuffer(*other.subtable)) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1682,10 +1751,14 @@ class TestTableStatic : public ::aos::fbs::Table {
     // Unconditionally copy strings/vectors, even if it will just end up
     // being 0-length (this maintains consistency with the flatbuffer Pack()
     // behavior).
-    if (!CHECK_NOTNULL(add_string())->FromFlatbuffer(other.string)) {
-      // Fail if we were unable to copy (e.g., if we tried to copy in a long
-      // vector and do not have the space for it).
-      return false;
+    {
+      ::aos::fbs::String<20> *added_string = add_string();
+      CHECK(added_string != nullptr);
+      if (!added_string->FromFlatbuffer(other.string)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
     }
 
     set_scalar(other.scalar);

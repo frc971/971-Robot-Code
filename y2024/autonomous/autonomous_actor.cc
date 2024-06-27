@@ -51,8 +51,10 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop,
           event_loop
               ->MakeFetcher<::y2024::control_loops::superstructure::Status>(
                   "/superstructure")),
-      robot_constants_(CHECK_NOTNULL(robot_constants)),
-      auto_splines_() {}
+      robot_constants_(robot_constants),
+      auto_splines_() {
+  CHECK(robot_constants_ != nullptr);
+}
 
 void AutonomousActor::Replan() {
   AutonomousMode mode = robot_constants_->common()->autonomous_mode();

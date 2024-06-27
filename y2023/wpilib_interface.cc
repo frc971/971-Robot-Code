@@ -133,7 +133,7 @@ class Falcon {
     // device temp is not timesynced so don't add it to the list of signals
     device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
 
-    CHECK_NOTNULL(signals);
+    CHECK(signals != nullptr);
 
     supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
     signals->push_back(&supply_voltage_);

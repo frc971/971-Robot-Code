@@ -312,8 +312,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         superstructure_(superstructure_event_loop.get()),
         test_event_loop_(MakeEventLoop("test", roborio_)),
         constants_fetcher_(test_event_loop_.get()),
-        simulated_robot_constants_(
-            CHECK_NOTNULL(&constants_fetcher_.constants())),
+        simulated_robot_constants_(&constants_fetcher_.constants()),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(

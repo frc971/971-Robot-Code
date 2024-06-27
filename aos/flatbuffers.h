@@ -87,10 +87,12 @@ class PreallocatedAllocator : public FixedAllocatorBase {
   }
 
   uint8_t *data() final {
-    return reinterpret_cast<uint8_t *>(CHECK_NOTNULL(data_));
+    CHECK(data_ != nullptr);
+    return reinterpret_cast<uint8_t *>(data_);
   }
   const uint8_t *data() const final {
-    return reinterpret_cast<const uint8_t *>(CHECK_NOTNULL(data_));
+    CHECK(data_ != nullptr);
+    return reinterpret_cast<const uint8_t *>(data_);
   }
   size_t size() const final { return size_; }
 

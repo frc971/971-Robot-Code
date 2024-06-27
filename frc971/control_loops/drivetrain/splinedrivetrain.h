@@ -48,15 +48,23 @@ class SplineDrivetrain {
   // Accessor for the current goal state, pretty much only present for debugging
   // purposes.
   ::Eigen::Matrix<double, 5, 1> CurrentGoalState() const {
-    return executing_spline_ ? CHECK_NOTNULL(current_trajectory())
-                                   ->GoalState(current_xva_(0), current_xva_(1))
-                             : ::Eigen::Matrix<double, 5, 1>::Zero();
+    if (executing_spline_) {
+      const FinishedTrajectory *finished = current_trajectory();
+      CHECK(finished != nullptr);
+      return finished->GoalState(current_xva_(0), current_xva_(1));
+    } else {
+      return ::Eigen::Matrix<double, 5, 1>::Zero();
+    }
   }
 
   bool IsAtEnd() const {
-    return executing_spline_ ? CHECK_NOTNULL(current_trajectory())
-                                   ->is_at_end(current_xva_.block<2, 1>(0, 0))
-                             : true;
+    if (!executing_spline_) {
+      return true;
+    }
+
+    const FinishedTrajectory *finished = current_trajectory();
+    CHECK(finished != nullptr);
+    return finished->is_at_end(current_xva_.block<2, 1>(0, 0));
   }
 
   size_t trajectory_count() const { return trajectories_.size(); }

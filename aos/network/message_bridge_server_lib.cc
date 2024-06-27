@@ -809,12 +809,12 @@ void MessageBridgeServer::HandleData(const Message *message) {
     }
 
     CHECK_LT(message_header->channel_index(), channels_.size());
-    CHECK_NOTNULL(channels_[message_header->channel_index()])
-        ->HandleDelivery(
-            message->header.rcvinfo.rcv_assoc_id,
-            message->header.rcvinfo.rcv_ssn,
-            absl::Span<const uint8_t>(message->data(), message->size),
-            message->partial_deliveries, &server_status_);
+    ChannelState *channel = channels_[message_header->channel_index()].get();
+    CHECK(channel != nullptr);
+    channel->HandleDelivery(
+        message->header.rcvinfo.rcv_assoc_id, message->header.rcvinfo.rcv_ssn,
+        absl::Span<const uint8_t>(message->data(), message->size),
+        message->partial_deliveries, &server_status_);
     if (VLOG_IS_ON(2)) {
       message->LogRcvInfo();
     }

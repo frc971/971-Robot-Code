@@ -155,9 +155,9 @@ void StarterClient::SendCommands(
       if (is_multi_node) {
         node_offsets.push_back(builder.fbb()->CreateString(node_name));
       }
-      const ApplicationStatus *last_status =
-          CHECK_NOTNULL(FindApplicationStatus(*status_fetchers_[node_name],
-                                              command.application));
+      const ApplicationStatus *last_status = FindApplicationStatus(
+          *status_fetchers_[node_name], command.application);
+      CHECK(last_status != nullptr);
       current_commands_[node_name].push_back(CommandStatus{
           .expected_state = ExpectedStateForCommand(command.command),
           .application = std::string(command.application),
@@ -207,7 +207,8 @@ bool StarterClient::CheckCommandsSucceeded() {
     const Status &status = *status_fetchers_[pair.first];
     for (const auto &command : pair.second) {
       const ApplicationStatus *application_status =
-          CHECK_NOTNULL(FindApplicationStatus(status, command.application));
+          FindApplicationStatus(status, command.application);
+      CHECK(application_status != nullptr);
       if (application_status->state() == command.expected_state) {
         if (command.expected_state == State::RUNNING &&
             application_status->id() == command.old_id) {

@@ -164,8 +164,8 @@ void ScopedDataChannel::Send(const ::flatbuffers::DetachedBuffer &buffer) {
 
 void ScopedDataChannel::Send(struct mbuf *buffer) {
   // TODO(austin): Checking isn't right, handle errors more gracefully.
-  CHECK_RAWRTC(
-      rawrtc_data_channel_send(CHECK_NOTNULL(data_channel_), buffer, true));
+  CHECK(data_channel_ != nullptr);
+  CHECK_RAWRTC(rawrtc_data_channel_send(data_channel_, buffer, true));
 }
 
 uint64_t ScopedDataChannel::buffered_amount() {
@@ -173,8 +173,8 @@ uint64_t ScopedDataChannel::buffered_amount() {
 
   // TODO(austin): Not implemented yet...
   uint64_t result;
-  CHECK_RAWRTC(rawrtc_data_channel_get_buffered_amount(
-      &result, CHECK_NOTNULL(data_channel_)));
+  CHECK(data_channel_ != nullptr);
+  CHECK_RAWRTC(rawrtc_data_channel_get_buffered_amount(&result, data_channel_));
   return result;
 }
 

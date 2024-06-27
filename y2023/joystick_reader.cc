@@ -533,7 +533,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       auto builder = target_selector_hint_sender_.MakeBuilder();
       auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
       hint_builder.add_substation_pickup(true);
-      hint_builder.add_robot_side(CHECK_NOTNULL(current_setpoint_)->side);
+      CHECK(current_setpoint_ != nullptr);
+      hint_builder.add_robot_side(current_setpoint_->side);
       if (builder.Send(hint_builder.Finish()) != aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending target selector hint failed.\n");
       }
@@ -542,7 +543,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
       hint_builder.add_row(placing_row.value());
       hint_builder.add_spot(placing_spot.value());
-      hint_builder.add_robot_side(CHECK_NOTNULL(current_setpoint_)->side);
+      CHECK(current_setpoint_ != nullptr);
+      hint_builder.add_robot_side(current_setpoint_->side);
       if (builder.Send(hint_builder.Finish()) != aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending target selector hint failed.\n");
       }

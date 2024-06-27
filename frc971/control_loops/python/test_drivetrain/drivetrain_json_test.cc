@@ -33,8 +33,9 @@ TEST_F(DrivetrainJsonTest, DrivetrainLoop) {
       "frc971/control_loops/python/test_drivetrain/"
       "drivetrain_dog_motor_plant.json");
 
-  StateFeedbackLoop<4, 2, 2> json_loop = MakeStateFeedbackLoop<4, 2, 2>(
-      *CHECK_NOTNULL(coeffs.message().drivetrain_loop()));
+  CHECK(coeffs.message().drivetrain_loop() != nullptr);
+  StateFeedbackLoop<4, 2, 2> json_loop =
+      MakeStateFeedbackLoop<4, 2, 2>(*coeffs.message().drivetrain_loop());
   for (size_t index = 0; index < 4; ++index) {
     ASSERT_TRUE(coeffs.span().size() > 0u);
     made_loop.set_index(index);
@@ -80,8 +81,9 @@ TEST_F(DrivetrainJsonTest, HybridLoop) {
       "frc971/control_loops/python/test_drivetrain/"
       "hybrid_velocity_drivetrain.json");
 
+  CHECK(coeffs.message().hybrid_velocity_drivetrain_loop() != nullptr);
   HybridLoop json_loop = MakeHybridStateFeedbackLoop<2, 2, 2>(
-      *CHECK_NOTNULL(coeffs.message().hybrid_velocity_drivetrain_loop()));
+      *coeffs.message().hybrid_velocity_drivetrain_loop());
   for (size_t index = 0; index < 4; ++index) {
     ASSERT_TRUE(coeffs.span().size() > 0u);
     made_loop.set_index(index);

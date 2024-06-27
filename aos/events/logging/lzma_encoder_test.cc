@@ -4,6 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/buffer_encoder_param_test.h"
+#include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
 
 DECLARE_int32(lzma_threads);
@@ -62,8 +63,7 @@ INSTANTIATE_TEST_SUITE_P(
 // corrupted.
 TEST_F(BufferEncoderBaseTest, CorruptedBuffer) {
   std::uniform_int_distribution<int> quantity_distribution(20, 60);
-  const char *const test_dir = CHECK_NOTNULL(getenv("TEST_TMPDIR"));
-  const std::string file_path = std::string(test_dir) + "/foo";
+  const std::string file_path = aos::testing::TestTmpDir() + "/foo";
 
   std::vector<std::vector<uint8_t>> encoded_buffers;
   {

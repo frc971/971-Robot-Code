@@ -127,7 +127,8 @@ size_t SnappyEncoder::DetachedBufferSource::Available() const {
 }
 
 const char *SnappyEncoder::DetachedBufferSource::Peek(size_t *length) {
-  *CHECK_NOTNULL(length) = data_.size() - index_into_first_buffer_;
+  CHECK(length != nullptr);
+  *length = data_.size() - index_into_first_buffer_;
   return reinterpret_cast<char *>(data_.data()) + index_into_first_buffer_;
 }
 

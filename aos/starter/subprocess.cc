@@ -637,7 +637,7 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
                             util::Top *top) {
   UpdateFileState();
 
-  CHECK_NOTNULL(builder);
+  CHECK(builder != nullptr);
   auto name_fbs = builder->CreateString(name_);
 
   const bool valid_pid = pid_ > 0 && status_ != aos::starter::State::STOPPED;

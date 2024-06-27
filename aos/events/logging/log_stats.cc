@@ -128,7 +128,10 @@ class ChannelStats {
       : channel_(channel),
         config_(factory->configuration()),
         factory_(factory),
-        schema_(CHECK_NOTNULL(schema)),
+        schema_([&]() {
+          CHECK(schema != nullptr);
+          return schema;
+        }()),
         destination_node_(destination_node),
         flatbuffer_type_(schema) {
     // Multi-node channel

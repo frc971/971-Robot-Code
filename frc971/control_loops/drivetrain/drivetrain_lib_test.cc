@@ -75,7 +75,8 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
     // Run for enough time to allow the gyro/imu zeroing code to run.
     RunFor(std::chrono::seconds(15));
     CHECK(drivetrain_status_fetcher_.Fetch());
-    EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->zeroing())->zeroed());
+    CHECK(drivetrain_status_fetcher_->zeroing() != nullptr);
+    EXPECT_TRUE(drivetrain_status_fetcher_->zeroing()->zeroed());
   }
   virtual ~DrivetrainTest() {}
 
@@ -97,10 +98,11 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
 
   void VerifyNearSplineGoal() {
     drivetrain_status_fetcher_.Fetch();
+    CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
     const double expected_x =
-        CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+        drivetrain_status_fetcher_->trajectory_logging()->x();
     const double expected_y =
-        CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
+        drivetrain_status_fetcher_->trajectory_logging()->y();
     const double estimated_x = drivetrain_status_fetcher_->x();
     const double estimated_y = drivetrain_status_fetcher_->y();
     const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
@@ -114,15 +116,16 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
     do {
       RunFor(dt());
       EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
-    } while (!CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
-                  ->is_executed());
+      CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
+    } while (!drivetrain_status_fetcher_->trajectory_logging()->is_executed());
   }
 
   void VerifyDownEstimator() {
     EXPECT_TRUE(drivetrain_status_fetcher_.Fetch());
     // TODO(james): Handle Euler angle singularities...
+    CHECK(drivetrain_status_fetcher_->down_estimator() != nullptr);
     const double down_estimator_yaw =
-        CHECK_NOTNULL(drivetrain_status_fetcher_->down_estimator())->yaw();
+        drivetrain_status_fetcher_->down_estimator()->yaw();
     const double localizer_yaw = drivetrain_status_fetcher_->theta();
     EXPECT_LT(std::abs(aos::math::DiffAngle(down_estimator_yaw, localizer_yaw)),
               1e-2);
@@ -636,8 +639,9 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   // Check that we are pointed the right direction:
   drivetrain_status_fetcher_.Fetch();
   auto actual = drivetrain_plant_.state();
+  CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
   const double expected_theta =
-      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->theta();
+      drivetrain_status_fetcher_->trajectory_logging()->theta();
   // As a sanity check, compare both against absolute angle and the spline's
   // goal angle.
   EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), 0.0), 5e-2);
@@ -739,10 +743,9 @@ TEST_F(DrivetrainTest, SplineStop) {
     EXPECT_EQ(0.0, drivetrain_output_fetcher_->right_voltage());
     // The goal should be null after stopping.
     ASSERT_TRUE(drivetrain_status_fetcher_.Fetch());
-    EXPECT_FALSE(CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
-                     ->has_x());
-    EXPECT_FALSE(CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
-                     ->has_y());
+    CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
+    EXPECT_FALSE(drivetrain_status_fetcher_->trajectory_logging()->has_x());
+    EXPECT_FALSE(drivetrain_status_fetcher_->trajectory_logging()->has_y());
   }
 }
 
@@ -808,10 +811,9 @@ TEST_F(DrivetrainTest, SplineRestart) {
 
   // The goal should be empty.
   drivetrain_status_fetcher_.Fetch();
-  EXPECT_FALSE(
-      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->has_x());
-  EXPECT_FALSE(
-      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->has_y());
+  CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
+  EXPECT_FALSE(drivetrain_status_fetcher_->trajectory_logging()->has_x());
+  EXPECT_FALSE(drivetrain_status_fetcher_->trajectory_logging()->has_y());
 }
 
 class DrivetrainBackwardsParamTest
@@ -970,10 +972,11 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
   // Since the voltage error compensation is disabled, expect that we will have
   // *failed* to reach our goal.
   drivetrain_status_fetcher_.Fetch();
+  CHECK(drivetrain_status_fetcher_->trajectory_logging() != nullptr);
   const double expected_x =
-      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+      drivetrain_status_fetcher_->trajectory_logging()->x();
   const double expected_y =
-      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
+      drivetrain_status_fetcher_->trajectory_logging()->y();
   const double estimated_x = drivetrain_status_fetcher_->x();
   const double estimated_y = drivetrain_status_fetcher_->y();
   const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
@@ -1497,17 +1500,18 @@ TEST_F(DrivetrainTest, FillSplineBuffer) {
     // We should always just have the past kNumStoredSplines available.
     drivetrain_status_fetcher_.Fetch();
 
-    ASSERT_EQ(expected_splines.size(),
-              CHECK_NOTNULL(drivetrain_status_fetcher_.get()
-                                ->trajectory_logging()
-                                ->available_splines())
-                  ->size());
+    CHECK(drivetrain_status_fetcher_.get()
+              ->trajectory_logging()
+              ->available_splines() != nullptr);
+    ASSERT_EQ(expected_splines.size(), drivetrain_status_fetcher_.get()
+                                           ->trajectory_logging()
+                                           ->available_splines()
+                                           ->size());
     for (size_t ii = 0; ii < expected_splines.size(); ++ii) {
-      EXPECT_EQ(expected_splines[ii],
-                CHECK_NOTNULL(drivetrain_status_fetcher_.get()
-                                  ->trajectory_logging()
-                                  ->available_splines())
-                    ->Get(ii));
+      EXPECT_EQ(expected_splines[ii], drivetrain_status_fetcher_.get()
+                                          ->trajectory_logging()
+                                          ->available_splines()
+                                          ->Get(ii));
     }
   }
 }
@@ -1529,19 +1533,13 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
   RunFor(chrono::seconds(5));
 
   drivetrain_status_fetcher_.Fetch();
-  EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
-                  ->frozen());
-  EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
-                  ->have_target());
-  EXPECT_EQ(
-      1.0,
-      CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())->x());
-  EXPECT_EQ(
-      1.0,
-      CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())->y());
-  EXPECT_FLOAT_EQ(
-      M_PI_4, CHECK_NOTNULL(drivetrain_status_fetcher_->line_follow_logging())
-                  ->theta());
+  ASSERT_TRUE(drivetrain_status_fetcher_->line_follow_logging() != nullptr);
+  EXPECT_TRUE(drivetrain_status_fetcher_->line_follow_logging()->frozen());
+  EXPECT_TRUE(drivetrain_status_fetcher_->line_follow_logging()->have_target());
+  EXPECT_EQ(1.0, drivetrain_status_fetcher_->line_follow_logging()->x());
+  EXPECT_EQ(1.0, drivetrain_status_fetcher_->line_follow_logging()->y());
+  EXPECT_FLOAT_EQ(M_PI_4,
+                  drivetrain_status_fetcher_->line_follow_logging()->theta());
 
   // Should have run off the end of the target, running along the y=x line.
   EXPECT_LT(1.0, drivetrain_plant_.GetPosition().x());

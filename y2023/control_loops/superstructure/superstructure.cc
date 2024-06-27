@@ -134,10 +134,14 @@ std::optional<double> Superstructure::LateralOffsetForTimeOfFlight(
   if (reading > kInvalidReading || !std::isfinite(reading)) {
     return std::nullopt;
   }
-  const TimeOfFlight *calibration = CHECK_NOTNULL(
-      CHECK_NOTNULL(constants_fetcher_.constants().robot())->tof());
+  auto robot = constants_fetcher_.constants().robot();
+  CHECK(robot != nullptr);
+  const TimeOfFlight *calibration =
+      constants_fetcher_.constants().robot()->tof();
+  CHECK(calibration != nullptr);
   // TODO(james): Use a generic interpolation table class.
-  auto table = CHECK_NOTNULL(calibration->interpolation_table());
+  auto table = calibration->interpolation_table();
+  CHECK(table != nullptr);
   CHECK_EQ(2u, table->size());
   double x1 = table->Get(0)->tof_reading();
   double x2 = table->Get(1)->tof_reading();

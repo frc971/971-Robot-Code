@@ -264,12 +264,12 @@ bool Localizer::UseAprilTag(uint64_t target_id) {
 
   switch (utils_.Alliance()) {
     case aos::Alliance::kRed:
-      ignore_tags =
-          CHECK_NOTNULL(constants_fetcher_.constants().ignore_targets()->red());
+      ignore_tags = constants_fetcher_.constants().ignore_targets()->red();
+      CHECK(ignore_tags != nullptr);
       break;
     case aos::Alliance::kBlue:
-      ignore_tags = CHECK_NOTNULL(
-          constants_fetcher_.constants().ignore_targets()->blue());
+      ignore_tags = constants_fetcher_.constants().ignore_targets()->blue();
+      CHECK(ignore_tags != nullptr);
       break;
     case aos::Alliance::kInvalid:
       return true;

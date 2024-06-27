@@ -5,9 +5,15 @@
 
 namespace aos {
 
-SimpleChannel::SimpleChannel(const Channel *channel)
-    : name(CHECK_NOTNULL(CHECK_NOTNULL(channel)->name())->str()),
-      type(CHECK_NOTNULL(CHECK_NOTNULL(channel)->type())->str()) {}
+SimpleChannel::SimpleChannel(const Channel *channel) {
+  CHECK(channel != nullptr);
+  const flatbuffers::String *channel_name = channel->name();
+  CHECK(channel_name != nullptr);
+  name = channel_name->str();
+  const flatbuffers::String *channel_type = channel->type();
+  CHECK(channel_type != nullptr);
+  type = channel_type->str();
+}
 
 std::string SimpleChannel::DebugString() const {
   return absl::StrCat("{ ", name, ", ", type, "}");

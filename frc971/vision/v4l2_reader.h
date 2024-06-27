@@ -107,8 +107,9 @@ class V4L2ReaderBase {
     }
 
     absl::Span<const char> DataSpan(size_t image_size) {
-      return absl::Span<const char>(
-          reinterpret_cast<char *>(CHECK_NOTNULL(data_pointer)), image_size);
+      CHECK(data_pointer != nullptr);
+      return absl::Span<const char>(reinterpret_cast<char *>(data_pointer),
+                                    image_size);
     }
 
     aos::Sender<CameraImage> sender;

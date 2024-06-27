@@ -979,14 +979,16 @@ TEST_F(ConfigurationDeathTest, GetNodeOrDie) {
 TEST_F(ConfigurationTest, GetNodeFromHostname) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
-  EXPECT_EQ("pi1",
-            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
-                ->name()
-                ->string_view());
-  EXPECT_EQ("pi2", CHECK_NOTNULL(
-                       GetNodeFromHostname(&config.message(), "raspberrypi2"))
-                       ->name()
-                       ->string_view());
+  {
+    const Node *pi1 = GetNodeFromHostname(&config.message(), "raspberrypi");
+    ASSERT_TRUE(pi1 != nullptr);
+    EXPECT_EQ("pi1", pi1->name()->string_view());
+  }
+  {
+    const Node *pi2 = GetNodeFromHostname(&config.message(), "raspberrypi2");
+    ASSERT_TRUE(pi2 != nullptr);
+    EXPECT_EQ("pi2", pi2->name()->string_view());
+  }
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "raspberrypi3"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "localhost"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));
@@ -995,22 +997,26 @@ TEST_F(ConfigurationTest, GetNodeFromHostname) {
 TEST_F(ConfigurationTest, GetNodeFromHostnames) {
   FlatbufferDetachedBuffer<Configuration> config =
       ReadConfig(ArtifactPath("aos/testdata/good_multinode_hostnames.json"));
-  EXPECT_EQ("pi1",
-            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "raspberrypi"))
-                ->name()
-                ->string_view());
-  EXPECT_EQ("pi2", CHECK_NOTNULL(
-                       GetNodeFromHostname(&config.message(), "raspberrypi2"))
-                       ->name()
-                       ->string_view());
-  EXPECT_EQ("pi2", CHECK_NOTNULL(
-                       GetNodeFromHostname(&config.message(), "raspberrypi3"))
-                       ->name()
-                       ->string_view());
-  EXPECT_EQ("pi2",
-            CHECK_NOTNULL(GetNodeFromHostname(&config.message(), "other"))
-                ->name()
-                ->string_view());
+  {
+    const Node *pi1 = GetNodeFromHostname(&config.message(), "raspberrypi");
+    ASSERT_TRUE(pi1 != nullptr);
+    EXPECT_EQ("pi1", pi1->name()->string_view());
+  }
+  {
+    const Node *pi2 = GetNodeFromHostname(&config.message(), "raspberrypi2");
+    ASSERT_TRUE(pi2 != nullptr);
+    EXPECT_EQ("pi2", pi2->name()->string_view());
+  }
+  {
+    const Node *pi2 = GetNodeFromHostname(&config.message(), "raspberrypi3");
+    ASSERT_TRUE(pi2 != nullptr);
+    EXPECT_EQ("pi2", pi2->name()->string_view());
+  }
+  {
+    const Node *pi2 = GetNodeFromHostname(&config.message(), "other");
+    ASSERT_TRUE(pi2 != nullptr);
+    EXPECT_EQ("pi2", pi2->name()->string_view());
+  }
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "raspberrypi4"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "localhost"));
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));

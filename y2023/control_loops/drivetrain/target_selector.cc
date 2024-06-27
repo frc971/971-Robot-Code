@@ -78,7 +78,7 @@ TargetSelector::PossibleScoringPositions(
       [possible_grids, hint]() {
         aos::SizedArray<const localizer::ScoringRow *, 3> rows;
         for (const localizer::ScoringGrid *grid : possible_grids) {
-          CHECK_NOTNULL(grid);
+          CHECK(grid != nullptr);
           switch (hint->row()) {
             case RowSelectionHint::BOTTOM:
               rows.push_back(grid->bottom());
@@ -95,7 +95,7 @@ TargetSelector::PossibleScoringPositions(
       }();
   aos::SizedArray<const frc971::vision::Position *, 3> positions;
   for (const localizer::ScoringRow *row : possible_rows) {
-    CHECK_NOTNULL(row);
+    CHECK(row != nullptr);
     switch (hint->spot()) {
       case SpotSelectionHint::LEFT:
         positions.push_back(row->left_cone());

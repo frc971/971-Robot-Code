@@ -14,7 +14,8 @@ namespace {
 // appropriate.
 Eigen::Matrix<float, 4, 4> FlatbufferToTransformationMatrix(
     const frc971::vision::sift::TransformationMatrix &flatbuffer) {
-  CHECK_EQ(16u, CHECK_NOTNULL(flatbuffer.data())->size());
+  CHECK(flatbuffer.data() != nullptr);
+  CHECK_EQ(16u, flatbuffer.data()->size());
   Eigen::Matrix<float, 4, 4> result;
   result.setIdentity();
   for (int row = 0; row < 4; ++row) {

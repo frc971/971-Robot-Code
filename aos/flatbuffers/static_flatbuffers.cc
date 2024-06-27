@@ -558,25 +558,35 @@ std::string MakeObjectCopier(const std::vector<FieldData> &fields) {
       // Unconditionally copy strings/vectors, even if it will just end up
       // being 0-length (this maintains consistency with the flatbuffer Pack()
       // behavior).
-      if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other.%s)) {
-        // Fail if we were unable to copy (e.g., if we tried to copy in a long
-        // vector and do not have the space for it).
-        return false;
-      }
-      )code",
-                                           field.name, field.name));
-    } else {
-      // Tables are stored as unique_ptr<FooTable>
-      copiers.emplace_back(absl::StrFormat(R"code(
-      if (other.%s) {
-        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(*other.%s)) {
+      {
+        %s* added_%s = add_%s();
+        CHECK(added_%s != nullptr);
+        if (!added_%s->FromFlatbuffer(other.%s)) {
           // Fail if we were unable to copy (e.g., if we tried to copy in a long
           // vector and do not have the space for it).
           return false;
         }
       }
       )code",
-                                           field.name, field.name, field.name));
+                                           field.full_type, field.name,
+                                           field.name, field.name, field.name,
+                                           field.name));
+    } else {
+      // Tables are stored as unique_ptr<FooTable>
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other.%s) {
+        %s* added_%s = add_%s();
+        CHECK(added_%s != nullptr);
+        if (!added_%s->FromFlatbuffer(*other.%s)) {
+          // Fail if we were unable to copy (e.g., if we tried to copy in a long
+          // vector and do not have the space for it).
+          return false;
+        }
+      }
+      )code",
+                                           field.name, field.full_type,
+                                           field.name, field.name, field.name,
+                                           field.name, field.name));
     }
   }
   return absl::StrFormat(
@@ -622,14 +632,18 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
     } else {
       copiers.emplace_back(absl::StrFormat(R"code(
       if (other.has_%s()) {
-        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other.%s())) {
+        %s* added_%s = add_%s();
+        CHECK(added_%s != nullptr);
+        if (!added_%s->FromFlatbuffer(other.%s())) {
           // Fail if we were unable to copy (e.g., if we tried to copy in a long
           // vector and do not have the space for it).
           return false;
         }
       }
       )code",
-                                           field.name, field.name, field.name));
+                                           field.name, field.full_type,
+                                           field.name, field.name, field.name,
+                                           field.name, field.name));
     }
   }
   return absl::StrFormat(
@@ -646,7 +660,8 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
   // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
   // to ease implementation of the aos::fbs::Vector internals.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
-    return FromFlatbuffer(*CHECK_NOTNULL(other));
+    CHECK(other != nullptr);
+    return FromFlatbuffer(*other);
   }
 )code",
       absl::StrJoin(copiers, "\n"));

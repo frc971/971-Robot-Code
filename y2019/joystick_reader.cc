@@ -244,9 +244,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure_goal_offset = superstructure_goal_builder.Finish();
     }
-    superstructure::Goal *mutable_superstructure_goal = CHECK_NOTNULL(
+    superstructure::Goal *mutable_superstructure_goal =
         GetMutableTemporaryPointer(*main_superstructure_goal_builder.fbb(),
-                                   superstructure_goal_offset));
+                                   superstructure_goal_offset);
+    CHECK(mutable_superstructure_goal != nullptr);
 
     {
       auto builder = target_selector_hint_sender_.MakeBuilder();
@@ -585,18 +586,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       AOS_LOG(INFO, "Releasing due to button\n");
     }
 
+    auto mutable_suction = mutable_superstructure_goal->mutable_suction();
+    CHECK(mutable_suction != nullptr);
     if (switch_ball_) {
-      CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
-          ->mutate_gamepiece_mode(0);
+      mutable_suction->mutate_gamepiece_mode(0);
     } else {
-      CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
-          ->mutate_gamepiece_mode(1);
+      mutable_suction->mutate_gamepiece_mode(1);
     }
 
     vision_control_.set_flip_image(elevator_wrist_pos_.wrist < 0);
 
-    CHECK_NOTNULL(mutable_superstructure_goal->mutable_suction())
-        ->mutate_grab_piece(grab_piece_);
+    mutable_suction->mutate_grab_piece(grab_piece_);
 
     mutable_superstructure_goal->mutable_elevator()->mutate_unsafe_goal(
         elevator_wrist_pos_.elevator);

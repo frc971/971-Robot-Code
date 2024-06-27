@@ -297,8 +297,9 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
           log_namer_->MakeTimestampWriter(f.event_loop_channel);
     }
     if (f.wants_contents_writer) {
+      CHECK(f.timestamp_node != nullptr);
       f.contents_writer = log_namer_->MakeForwardedTimestampWriter(
-          f.event_loop_channel, CHECK_NOTNULL(f.timestamp_node));
+          f.event_loop_channel, f.timestamp_node);
     }
   }
 
@@ -426,8 +427,9 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
           log_namer_->MakeTimestampWriter(f.event_loop_channel);
     }
     if (f.wants_contents_writer) {
+      CHECK(f.timestamp_node != nullptr);
       f.contents_writer = log_namer_->MakeForwardedTimestampWriter(
-          f.event_loop_channel, CHECK_NOTNULL(f.timestamp_node));
+          f.event_loop_channel, f.timestamp_node);
     }
 
     // Mark each channel with data as not written.  That triggers each channel

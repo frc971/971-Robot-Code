@@ -245,7 +245,7 @@ class NodePrinter {
         }
         VLOG(1) << "Listening on " << name << " " << type;
 
-        CHECK_NOTNULL(channel->schema());
+        CHECK(channel->schema() != nullptr);
         event_loop_->MakeRawWatcher(channel, [this, channel, start_time,
                                               end_time](
                                                  const aos::Context &context,

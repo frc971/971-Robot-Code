@@ -321,7 +321,7 @@ void Starter::SendStatus() {
 }
 
 void Starter::AddChannel(const aos::Channel *channel) {
-  CHECK_NOTNULL(channel);
+  CHECK(channel != nullptr);
   std::unique_ptr<aos::ipc_lib::MemoryMappedQueue> queue =
       std::make_unique<aos::ipc_lib::MemoryMappedQueue>(
           shm_base_, FLAGS_permissions, event_loop_.configuration(), channel);

@@ -489,8 +489,8 @@ const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
     const OldPosition &state,
     const frc971::vision::calibration::CameraCalibration *calibration,
     std::optional<RejectionReason> *rejection_reason) const {
-  CHECK_NOTNULL(rejection_reason);
-  CHECK_NOTNULL(calibration);
+  CHECK(rejection_reason != nullptr);
+  CHECK(calibration != nullptr);
   // Per the CameraCalibration specification, we can actually determine whether
   // the camera is the turret camera just from the presence of the
   // turret_extrinsics member.

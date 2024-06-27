@@ -41,7 +41,8 @@ void DualImuBlender::HandleDualImu(const frc971::imu::DualImu *dual_imu) {
           dual_imu_blender_status_sender_.MakeStaticBuilder();
 
   frc971::IMUValuesStatic *imu_values =
-      CHECK_NOTNULL(imu_values_batch_builder_->add_readings()->emplace_back());
+      imu_values_batch_builder_->add_readings()->emplace_back();
+  CHECK(imu_values != nullptr);
 
   imu_values->set_pico_timestamp_us(dual_imu->board_timestamp_us());
   imu_values->set_monotonic_timestamp_ns(dual_imu->kernel_timestamp());

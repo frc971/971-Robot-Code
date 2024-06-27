@@ -108,7 +108,9 @@ class AllocatorResizeableBuffer {
 
   void Allocate(size_t new_capacity) {
     void *const old = storage_.release();
-    storage_.reset(CHECK_NOTNULL(F::Realloc(old, capacity_, new_capacity)));
+    void *new_ptr = F::Realloc(old, capacity_, new_capacity);
+    CHECK(new_ptr != nullptr);
+    storage_.reset(new_ptr);
     capacity_ = new_capacity;
   }
 

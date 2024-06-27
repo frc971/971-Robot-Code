@@ -24,11 +24,8 @@ inline const char *ElementaryTypeName(
 class FlatbufferType final {
  public:
   // Implicit on purpose, to allow freely creating a FlatbufferType.
-  FlatbufferType(const flatbuffers::TypeTable *type_table)
-      : type_table_(CHECK_NOTNULL(type_table)) {}
-  FlatbufferType(const reflection::Schema *schema)
-      : schema_(CHECK_NOTNULL(schema)),
-        object_(DCHECK_NOTNULL(schema->root_table())) {}
+  FlatbufferType(const flatbuffers::TypeTable *type_table);
+  FlatbufferType(const reflection::Schema *schema);
 
   // This is deliberately copyable, for ease of memory management. It is cheap
   // to pass by value.
@@ -114,11 +111,9 @@ class FlatbufferType final {
 
  private:
   explicit FlatbufferType(const reflection::Schema *schema,
-                          const reflection::Object *object)
-      : schema_(DCHECK_NOTNULL(schema)), object_(DCHECK_NOTNULL(object)) {}
+                          const reflection::Object *object);
   explicit FlatbufferType(const reflection::Schema *schema,
-                          const reflection::Enum *fb_enum)
-      : schema_(DCHECK_NOTNULL(schema)), enum_(DCHECK_NOTNULL(fb_enum)) {}
+                          const reflection::Enum *fb_enum);
 
   const reflection::Type *ReflectionType(int index) const;
   const reflection::Field *ReflectionObjectField(int index) const;

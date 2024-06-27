@@ -422,7 +422,7 @@ void McapLogger::WriteMessage(uint16_t channel_id, const Channel *channel,
   if (!wrote_configuration_) {
     WriteConfigurationMessage();
   }
-  CHECK_NOTNULL(context.data);
+  CHECK(context.data != nullptr);
 
   message_counts_[channel_id]++;
 

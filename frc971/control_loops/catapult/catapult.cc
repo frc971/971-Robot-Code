@@ -64,7 +64,7 @@ Catapult::Iterate(const CatapultGoal *catapult_goal,
         std::optional<double> solution = catapult_mpc_.Next();
 
         if (!solution.has_value()) {
-          CHECK_NOTNULL(catapult_voltage);
+          CHECK(catapult_voltage != nullptr);
           *catapult_voltage = 0.0;
           if (catapult_mpc_.started()) {
             ++shot_count_;
@@ -73,7 +73,7 @@ Catapult::Iterate(const CatapultGoal *catapult_goal,
           }
         } else {
           // TODO(austin): Voltage error?
-          CHECK_NOTNULL(catapult_voltage);
+          CHECK(catapult_voltage != nullptr);
           if (current_horizon_ == 1) {
             battery_voltage = 12.0;
           }

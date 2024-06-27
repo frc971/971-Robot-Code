@@ -51,7 +51,8 @@ class ErrorCounter {
   static void InitializeStaticFbs(Static *builder) {
     CHECK(builder->reserve(kNumErrors));
     for (size_t ii = 0; ii < kNumErrors; ++ii) {
-      auto element = CHECK_NOTNULL(builder->emplace_back());
+      auto element = builder->emplace_back();
+      CHECK(element != nullptr);
       element->set_error(static_cast<Error>(ii));
       element->set_count(0);
     }
@@ -65,7 +66,7 @@ class ErrorCounter {
   void InvalidateBuffer() { vector_ = nullptr; }
 
   void IncrementError(Error error) {
-    CHECK_NOTNULL(vector_);
+    CHECK(vector_ != nullptr);
     DCHECK_LT(static_cast<size_t>(error), vector_->size());
     Count *counter = vector_->GetMutableObject(static_cast<size_t>(error));
     counter->mutate_count(counter->count() + 1);
@@ -73,7 +74,7 @@ class ErrorCounter {
 
   // Sets all the error counts to zero.
   void ResetCounts() {
-    CHECK_NOTNULL(vector_);
+    CHECK(vector_ != nullptr);
     DCHECK_EQ(vector_->size(), kNumErrors) << this << " vector " << vector_;
     for (size_t ii = 0; ii < kNumErrors; ++ii) {
       vector_->GetMutableObject(ii)->mutate_count(0);

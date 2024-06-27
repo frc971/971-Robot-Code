@@ -17,22 +17,26 @@ std::unique_ptr<StateFeedbackPlantCoefficients<
     number_of_states, number_of_inputs, number_of_outputs>>
 MakeStateFeedbackPlantCoefficients(
     const fbs::StateFeedbackPlantCoefficients &coefficients) {
+  CHECK(coefficients.a() != nullptr);
+  CHECK(coefficients.b() != nullptr);
+  CHECK(coefficients.c() != nullptr);
+  CHECK(coefficients.d() != nullptr);
+  CHECK(coefficients.u_max() != nullptr);
+  CHECK(coefficients.u_min() != nullptr);
+  CHECK(coefficients.u_limit_coefficient() != nullptr);
+  CHECK(coefficients.u_limit_constant() != nullptr);
+
   return std::make_unique<StateFeedbackPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>(
-      ToEigenOrDie<number_of_states, number_of_states>(
-          *CHECK_NOTNULL(coefficients.a())),
-      ToEigenOrDie<number_of_states, number_of_inputs>(
-          *CHECK_NOTNULL(coefficients.b())),
-      ToEigenOrDie<number_of_outputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.c())),
-      ToEigenOrDie<number_of_outputs, number_of_inputs>(
-          *CHECK_NOTNULL(coefficients.d())),
-      ToEigenOrDie<number_of_inputs, 1>(*CHECK_NOTNULL(coefficients.u_max())),
-      ToEigenOrDie<number_of_inputs, 1>(*CHECK_NOTNULL(coefficients.u_min())),
+      ToEigenOrDie<number_of_states, number_of_states>(*coefficients.a()),
+      ToEigenOrDie<number_of_states, number_of_inputs>(*coefficients.b()),
+      ToEigenOrDie<number_of_outputs, number_of_states>(*coefficients.c()),
+      ToEigenOrDie<number_of_outputs, number_of_inputs>(*coefficients.d()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_max()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_min()),
       ToEigenOrDie<number_of_inputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.u_limit_coefficient())),
-      ToEigenOrDie<number_of_inputs, 1>(
-          *CHECK_NOTNULL(coefficients.u_limit_constant())),
+          *coefficients.u_limit_coefficient()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_limit_constant()),
       std::chrono::nanoseconds(coefficients.dt()), coefficients.delayed_u());
 }
 
@@ -41,12 +45,12 @@ std::unique_ptr<StateFeedbackControllerCoefficients<
     number_of_states, number_of_inputs, number_of_outputs>>
 MakeStateFeedbackControllerCoefficients(
     const fbs::StateFeedbackControllerCoefficients &coefficients) {
+  CHECK(coefficients.k() != nullptr);
+  CHECK(coefficients.kff() != nullptr);
   return std::make_unique<StateFeedbackControllerCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>(
-      ToEigenOrDie<number_of_inputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.k())),
-      ToEigenOrDie<number_of_inputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.kff())));
+      ToEigenOrDie<number_of_inputs, number_of_states>(*coefficients.k()),
+      ToEigenOrDie<number_of_inputs, number_of_states>(*coefficients.kff()));
 }
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>
@@ -54,14 +58,15 @@ std::unique_ptr<StateFeedbackObserverCoefficients<
     number_of_states, number_of_inputs, number_of_outputs>>
 MakeStateFeedbackObserverCoefficients(
     const fbs::StateFeedbackObserverCoefficients &coefficients) {
+  CHECK(coefficients.kalman_gain() != nullptr);
+  CHECK(coefficients.q() != nullptr);
+  CHECK(coefficients.r() != nullptr);
   return std::make_unique<StateFeedbackObserverCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>(
       ToEigenOrDie<number_of_states, number_of_outputs>(
-          *CHECK_NOTNULL(coefficients.kalman_gain())),
-      ToEigenOrDie<number_of_states, number_of_states>(
-          *CHECK_NOTNULL(coefficients.q())),
-      ToEigenOrDie<number_of_outputs, number_of_outputs>(
-          *CHECK_NOTNULL(coefficients.r())),
+          *coefficients.kalman_gain()),
+      ToEigenOrDie<number_of_states, number_of_states>(*coefficients.q()),
+      ToEigenOrDie<number_of_outputs, number_of_outputs>(*coefficients.r()),
       coefficients.delayed_u());
 }
 

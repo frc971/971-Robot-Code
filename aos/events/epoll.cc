@@ -193,7 +193,9 @@ void EPoll::ForgetClosedFd(int fd) {
 }
 
 void EPoll::SetEvents(int fd, uint32_t events) {
-  DoEpollCtl(CHECK_NOTNULL(GetEventData(fd)), events);
+  EventData *event_data;
+  CHECK((event_data = GetEventData(fd)) != nullptr);
+  DoEpollCtl(event_data, events);
 }
 
 // Removes fd from the event loop.
@@ -257,12 +259,14 @@ void EPoll::InOutEventData::DoCallbacks(uint32_t events) {
 }
 
 void EPoll::EnableEvents(int fd, uint32_t events) {
-  EventData *const event_data = CHECK_NOTNULL(GetEventData(fd));
+  EventData *const event_data = GetEventData(fd);
+  CHECK(event_data != nullptr);
   DoEpollCtl(event_data, event_data->events | events);
 }
 
 void EPoll::DisableEvents(int fd, uint32_t events) {
-  EventData *const event_data = CHECK_NOTNULL(GetEventData(fd));
+  EventData *const event_data = GetEventData(fd);
+  CHECK(event_data != nullptr);
   DoEpollCtl(event_data, event_data->events & ~events);
 }
 

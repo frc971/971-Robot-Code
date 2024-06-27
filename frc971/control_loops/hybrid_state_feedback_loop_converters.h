@@ -15,22 +15,28 @@ std::unique_ptr<StateFeedbackHybridPlantCoefficients<
     number_of_states, number_of_inputs, number_of_outputs>>
 MakeStateFeedbackHybridPlantCoefficients(
     const fbs::StateFeedbackHybridPlantCoefficients &coefficients) {
+  CHECK(coefficients.a_continuous() != nullptr);
+  CHECK(coefficients.b_continuous() != nullptr);
+  CHECK(coefficients.c() != nullptr);
+  CHECK(coefficients.d() != nullptr);
+  CHECK(coefficients.u_max() != nullptr);
+  CHECK(coefficients.u_min() != nullptr);
+  CHECK(coefficients.u_limit_coefficient() != nullptr);
+  CHECK(coefficients.u_limit_constant() != nullptr);
+
   return std::make_unique<StateFeedbackHybridPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>(
       ToEigenOrDie<number_of_states, number_of_states>(
-          *CHECK_NOTNULL(coefficients.a_continuous())),
+          *coefficients.a_continuous()),
       ToEigenOrDie<number_of_states, number_of_inputs>(
-          *CHECK_NOTNULL(coefficients.b_continuous())),
-      ToEigenOrDie<number_of_outputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.c())),
-      ToEigenOrDie<number_of_outputs, number_of_inputs>(
-          *CHECK_NOTNULL(coefficients.d())),
-      ToEigenOrDie<number_of_inputs, 1>(*CHECK_NOTNULL(coefficients.u_max())),
-      ToEigenOrDie<number_of_inputs, 1>(*CHECK_NOTNULL(coefficients.u_min())),
+          *coefficients.b_continuous()),
+      ToEigenOrDie<number_of_outputs, number_of_states>(*coefficients.c()),
+      ToEigenOrDie<number_of_outputs, number_of_inputs>(*coefficients.d()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_max()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_min()),
       ToEigenOrDie<number_of_inputs, number_of_states>(
-          *CHECK_NOTNULL(coefficients.u_limit_coefficient())),
-      ToEigenOrDie<number_of_inputs, 1>(
-          *CHECK_NOTNULL(coefficients.u_limit_constant())),
+          *coefficients.u_limit_coefficient()),
+      ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_limit_constant()),
       coefficients.delayed_u());
 }
 
@@ -39,14 +45,17 @@ std::unique_ptr<HybridKalmanCoefficients<number_of_states, number_of_inputs,
                                          number_of_outputs>>
 MakeHybridKalmanCoefficients(
     const fbs::HybridKalmanCoefficients &coefficients) {
+  CHECK(coefficients.q_continuous() != nullptr);
+  CHECK(coefficients.r_continuous() != nullptr);
+  CHECK(coefficients.p_steady_state() != nullptr);
   return std::make_unique<HybridKalmanCoefficients<
       number_of_states, number_of_inputs, number_of_outputs>>(
       ToEigenOrDie<number_of_states, number_of_states>(
-          *CHECK_NOTNULL(coefficients.q_continuous())),
+          *coefficients.q_continuous()),
       ToEigenOrDie<number_of_outputs, number_of_outputs>(
-          *CHECK_NOTNULL(coefficients.r_continuous())),
+          *coefficients.r_continuous()),
       ToEigenOrDie<number_of_states, number_of_states>(
-          *CHECK_NOTNULL(coefficients.p_steady_state())),
+          *coefficients.p_steady_state()),
       coefficients.delayed_u());
 }
 template <int number_of_states, int number_of_inputs, int number_of_outputs>

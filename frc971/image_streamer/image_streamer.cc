@@ -175,9 +175,10 @@ class ChannelSource : public GstSampleSource {
 
     GST_BUFFER_PTS(buffer) = image.monotonic_timestamp_ns();
 
-    GstCaps *caps = CHECK_NOTNULL(gst_caps_new_simple(
+    GstCaps *caps = gst_caps_new_simple(
         "video/x-raw", "width", G_TYPE_INT, image.cols(), "height", G_TYPE_INT,
-        image.rows(), "format", G_TYPE_STRING, "YUY2", nullptr));
+        image.rows(), "format", G_TYPE_STRING, "YUY2", nullptr);
+    CHECK(caps != nullptr);
 
     GstSample *sample = gst_sample_new(buffer, caps, nullptr, nullptr);
 
@@ -314,7 +315,8 @@ void WebsocketHandler::OnSample(GstSample *sample) {
   }
 
   if (sender_.valid()) {
-    const GstCaps *caps = CHECK_NOTNULL(gst_sample_get_caps(sample));
+    const GstCaps *caps = gst_sample_get_caps(sample);
+    CHECK(caps != nullptr);
     CHECK_GT(gst_caps_get_size(caps), 0U);
     const GstStructure *str = gst_caps_get_structure(caps, 0);
 
@@ -324,7 +326,8 @@ void WebsocketHandler::OnSample(GstSample *sample) {
     CHECK(gst_structure_get_int(str, "width", &width));
     CHECK(gst_structure_get_int(str, "height", &height));
 
-    GstBuffer *buffer = CHECK_NOTNULL(gst_sample_get_buffer(sample));
+    GstBuffer *buffer = gst_sample_get_buffer(sample);
+    CHECK(buffer != nullptr);
 
     const gsize size = gst_buffer_get_size(buffer);
 
@@ -410,7 +413,7 @@ Connection::Connection(::seasocks::WebSocket *sock, ::seasocks::Server *server)
   {
     GstObject *ice = nullptr;
     g_object_get(G_OBJECT(webrtcbin_), "ice-agent", &ice, nullptr);
-    CHECK_NOTNULL(ice);
+    CHECK(ice != nullptr);
 
     g_object_set(ice, "min-rtp-port", FLAGS_min_port, "max-rtp-port",
                  FLAGS_max_port, nullptr);
@@ -419,7 +422,7 @@ Connection::Connection(::seasocks::WebSocket *sock, ::seasocks::Server *server)
     {
       GstObject *nice = nullptr;
       g_object_get(ice, "agent", &nice, nullptr);
-      CHECK_NOTNULL(nice);
+      CHECK(nice != nullptr);
 
       g_object_set(nice, "upnp", false, nullptr);
       g_object_unref(nice);

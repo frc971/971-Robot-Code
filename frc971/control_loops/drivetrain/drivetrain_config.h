@@ -43,9 +43,11 @@ struct LineFollowConfig {
     if (fbs == nullptr) {
       return {};
     }
+    CHECK(fbs->q() != nullptr);
+    CHECK(fbs->r() != nullptr);
     return LineFollowConfig{
-        .Q = ToEigenOrDie<3, 3>(*CHECK_NOTNULL(fbs->q())),
-        .R = ToEigenOrDie<2, 2>(*CHECK_NOTNULL(fbs->r())),
+        .Q = ToEigenOrDie<3, 3>(*fbs->q()),
+        .R = ToEigenOrDie<2, 2>(*fbs->r()),
         .max_controllable_offset = fbs->max_controllable_offset()};
   }
 };
@@ -71,9 +73,10 @@ struct SplineFollowerConfig {
     if (fbs == nullptr) {
       return {};
     }
-    return SplineFollowerConfig{
-        .Q = ToEigenOrDie<5, 5>(*CHECK_NOTNULL(fbs->q())),
-        .R = ToEigenOrDie<2, 2>(*CHECK_NOTNULL(fbs->r()))};
+    CHECK(fbs->q() != nullptr);
+    CHECK(fbs->r() != nullptr);
+    return SplineFollowerConfig{.Q = ToEigenOrDie<5, 5>(*fbs->q()),
+                                .R = ToEigenOrDie<2, 2>(*fbs->r())};
   }
 };
 
@@ -205,36 +208,45 @@ struct DrivetrainConfig {
         fbs_copy = std::make_shared<
             aos::FlatbufferDetachedBuffer<fbs::DrivetrainConfig>>(
             aos::RecursiveCopyFlatBuffer(&fbs));
+    CHECK(fbs_copy->message().loop_config()->drivetrain_loop() != nullptr);
+    CHECK(fbs_copy->message().loop_config()->velocity_drivetrain_loop() !=
+          nullptr);
+    CHECK(fbs_copy->message().loop_config()->kalman_drivetrain_loop() !=
+          nullptr);
+    CHECK(
+        fbs_copy->message().loop_config()->hybrid_velocity_drivetrain_loop() !=
+        nullptr);
+    CHECK(fbs.imu_transform() != nullptr);
     return {
 #define ASSIGN(field) .field = fbs.field()
       ASSIGN(shifter_type), ASSIGN(loop_type), ASSIGN(gyro_type),
           ASSIGN(imu_type),
           .make_drivetrain_loop =
               [fbs_copy]() {
-                return MakeStateFeedbackLoop<4, 2, 2>(*CHECK_NOTNULL(
-                    fbs_copy->message().loop_config()->drivetrain_loop()));
+                return MakeStateFeedbackLoop<4, 2, 2>(
+                    *fbs_copy->message().loop_config()->drivetrain_loop());
               },
           .make_v_drivetrain_loop =
               [fbs_copy]() {
                 return MakeStateFeedbackLoop<2, 2, 2>(
-                    *CHECK_NOTNULL(fbs_copy->message()
-                                       .loop_config()
-                                       ->velocity_drivetrain_loop()));
+                    *fbs_copy->message()
+                         .loop_config()
+                         ->velocity_drivetrain_loop());
               },
           .make_kf_drivetrain_loop =
               [fbs_copy]() {
                 return MakeStateFeedbackLoop<7, 2, 4>(
-                    *CHECK_NOTNULL(fbs_copy->message()
-                                       .loop_config()
-                                       ->kalman_drivetrain_loop()));
+                    *fbs_copy->message()
+                         .loop_config()
+                         ->kalman_drivetrain_loop());
               },
 #if defined(__linux__)
           .make_hybrid_drivetrain_velocity_loop =
               [fbs_copy]() {
                 return MakeHybridStateFeedbackLoop<2, 2, 2>(
-                    *CHECK_NOTNULL(fbs_copy->message()
-                                       .loop_config()
-                                       ->hybrid_velocity_drivetrain_loop()));
+                    *fbs_copy->message()
+                         .loop_config()
+                         ->hybrid_velocity_drivetrain_loop());
               },
 #endif
           .dt = std::chrono::nanoseconds(fbs.loop_config()->dt()),
@@ -253,8 +265,7 @@ struct DrivetrainConfig {
           ASSIGN(wheel_non_linearity), ASSIGN(quickturn_wheel_multiplier),
           ASSIGN(wheel_multiplier),
           ASSIGN(pistol_grip_shift_enables_line_follow),
-          .imu_transform =
-              ToEigenOrDie<3, 3>(*CHECK_NOTNULL(fbs.imu_transform())),
+          .imu_transform = ToEigenOrDie<3, 3>(*fbs.imu_transform()),
           ASSIGN(is_simulated),
           .down_estimator_config =
               aos::UnpackFlatbuffer(fbs.down_estimator_config()),

@@ -2,6 +2,8 @@
 
 #include "gmock/gmock.h"
 
+#include "aos/testing/tmpdir.h"
+
 namespace aos::logger::testing {
 
 // Verifies that Clear affects the sizes as expected.
@@ -39,8 +41,8 @@ TEST_P(BufferEncoderTest, ClearAndSizes) {
 // it comes back out the same.
 TEST_P(BufferEncoderTest, RoundTrip) {
   std::uniform_int_distribution<int> quantity_distribution(20, 60);
-  const char *const test_dir = CHECK_NOTNULL(getenv("TEST_TMPDIR"));
-  const std::string file_path = std::string(test_dir) + "/foo";
+  const std::string test_dir = aos::testing::TestTmpDir();
+  const std::string file_path = test_dir + "/foo";
 
   std::vector<std::vector<uint8_t>> encoded_buffers;
   {

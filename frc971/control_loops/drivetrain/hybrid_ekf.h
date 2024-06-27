@@ -741,7 +741,8 @@ class HybridEkf {
     }
     if (obs->h == nullptr) {
       CHECK(obs->make_h != nullptr);
-      obs->h = CHECK_NOTNULL(obs->make_h->MakeExpectedObservations(*state, *P));
+      obs->h = obs->make_h->MakeExpectedObservations(*state, *P);
+      CHECK(obs->h != nullptr);
     }
     CorrectImpl(obs, state, P);
   }

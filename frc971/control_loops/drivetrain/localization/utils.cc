@@ -109,7 +109,8 @@ std::optional<aos::monotonic_clock::duration> LocalizationUtils::ClockOffset(
 // verbosity here seems appropriate.
 Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
     const frc971::vision::calibration::TransformationMatrix &flatbuffer) {
-  CHECK_EQ(16u, CHECK_NOTNULL(flatbuffer.data())->size());
+  CHECK(flatbuffer.data() != nullptr);
+  CHECK_EQ(16u, flatbuffer.data()->size());
   Eigen::Matrix<double, 4, 4> result;
   result.setIdentity();
   for (int row = 0; row < 4; ++row) {

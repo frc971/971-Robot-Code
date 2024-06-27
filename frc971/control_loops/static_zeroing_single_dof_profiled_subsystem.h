@@ -80,8 +80,8 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
         range(frc971::constants::Range::FromFlatbuffer(common->range())),
         zeroing_constants(aos::UnpackFlatbuffer(zeroing)),
         make_integral_loop([this]() {
-          return MakeStateFeedbackLoop<3, 1, 1>(
-              *CHECK_NOTNULL(loop_params->message().loop()));
+          CHECK(loop_params->message().loop() != nullptr);
+          return MakeStateFeedbackLoop<3, 1, 1>(*loop_params->message().loop());
         }),
         loop_params(std::make_shared<aos::FlatbufferDetachedBuffer<
                         StaticZeroingSingleDOFProfiledSubsystemCommonParams>>(
@@ -280,7 +280,7 @@ bool StaticZeroingSingleDOFProfiledSubsystem<
     Profile>::Correct(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
                       const typename ZeroingEstimator::Position *position,
                       bool disabled) {
-  CHECK_NOTNULL(position);
+  CHECK(position != nullptr);
   profiled_subsystem_.Correct(*position);
 
   if (profiled_subsystem_.error()) {
@@ -444,7 +444,7 @@ flatbuffers::Offset<ProfiledJointStatus>
 StaticZeroingSingleDOFProfiledSubsystem<
     ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
     Profile>::MakeStatus(flatbuffers::FlatBufferBuilder *status_fbb) {
-  CHECK_NOTNULL(status_fbb);
+  CHECK(status_fbb != nullptr);
 
   typename ProfiledJointStatus::Builder status_builder =
       profiled_subsystem_

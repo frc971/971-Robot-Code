@@ -6,6 +6,33 @@
 
 namespace aos {
 
+FlatbufferType::FlatbufferType(const flatbuffers::TypeTable *type_table) {
+  CHECK(type_table != nullptr);
+  type_table_ = type_table;
+}
+FlatbufferType::FlatbufferType(const reflection::Schema *schema) {
+  CHECK(schema != nullptr);
+  schema_ = schema;
+  DCHECK(schema->root_table() != nullptr);
+  object_ = schema->root_table();
+}
+
+FlatbufferType::FlatbufferType(const reflection::Schema *schema,
+                               const reflection::Object *object) {
+  CHECK(schema != nullptr);
+  schema_ = schema;
+  DCHECK(object != nullptr);
+  object_ = object;
+}
+
+FlatbufferType::FlatbufferType(const reflection::Schema *schema,
+                               const reflection::Enum *fb_enum) {
+  CHECK(schema != nullptr);
+  schema_ = schema;
+  CHECK(fb_enum != nullptr);
+  enum_ = fb_enum;
+}
+
 bool FlatbufferType::IsSequence() const {
   if (type_table_) {
     return type_table_->st != flatbuffers::ST_ENUM;
