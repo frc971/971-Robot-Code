@@ -3,6 +3,10 @@
         "sha256": "1e3c502a0a8205338fc74dadbfa321f8a0965441b39501e36796a47b4017b642",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/bokeh-3.4.1-py3-none-any.whl"
     },
+    "casadi==3.6.5": {
+        "sha256": "8bbfb2eb8cb6b9e2384814d6427e48bcf6df049bf7ed05b0a58bb311a1fbf18c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/casadi-3.6.5-cp39-none-manylinux2014_x86_64.whl"
+    },
     "certifi==2022.9.24": {
         "sha256": "90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/certifi-2022.9.24-py3-none-any.whl"
