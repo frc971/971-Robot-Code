@@ -9,7 +9,7 @@ import sys
 import gflags
 import glog
 
-from frc971.control_loops.swerve.dynamics import swerve_physics
+from frc971.control_loops.swerve.numpy_dynamics import swerve_physics
 
 FLAGS = gflags.FLAGS
 
