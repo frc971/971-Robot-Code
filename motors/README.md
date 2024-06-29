@@ -3,7 +3,7 @@
 1. Install Teensy Loader [here](https://www.pjrc.com/teensy/loader_mac.html).
 
 ## Make changes
-1. Most of the code lives in `/motors/driver_station_2*`. `/motors/button_board*` is deprecated.
+1. Most of the code lives in `/motors/driver_station_2*`. 
 
 ## Deploy
 1. Build driver station. This outputs a file `bazel-bin/motors/driver_station_2.hex`.

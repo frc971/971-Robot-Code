@@ -136,29 +136,6 @@ cc_library(
 ]
 
 cc_binary(
-    name = "button_board.elf",
-    srcs = [
-        "button_board.cc",
-    ],
-    target_compatible_with = ["@platforms//os:none"],
-    deps = [
-        ":util",
-        "//motors/core",
-        "//motors/peripheral:adc",
-        "//motors/peripheral:can",
-        "//motors/print:usb",
-        "//motors/usb",
-        "//motors/usb:cdc",
-        "//motors/usb:hid",
-    ],
-)
-
-hex_from_elf(
-    name = "button_board",
-    target_compatible_with = ["@platforms//os:none"],
-)
-
-cc_binary(
     name = "simple_receiver.elf",
     srcs = [
         "simple_receiver.cc",
