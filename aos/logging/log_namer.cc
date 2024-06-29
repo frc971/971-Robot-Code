@@ -14,6 +14,9 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+#include "aos/configuration.h"
+#include "aos/time/time.h"
+
 #if defined(__clang)
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #elif defined(__GNUC__)
@@ -49,8 +52,11 @@ void AllocateLogName(char **filename, const char *directory,
         PLOG(FATAL) << "readdir(" << d << ") failed";
       }
     } else {
-      const std::string format_string = std::string(basename) + "-%d";
-      if (sscanf(dir->d_name, format_string.c_str(), &index) == 1) {
+      char previous_date[512];
+      // Look for previous index and date
+      const std::string format_string = std::string(basename) + "-%d_%s";
+      if (sscanf(dir->d_name, format_string.c_str(), &index, &previous_date) ==
+          2) {
         if (index >= fileindex) {
           fileindex = index + 1;
         }
@@ -68,7 +74,13 @@ void AllocateLogName(char **filename, const char *directory,
     previous[0] = '\0';
     LOG(INFO) << "Could not find " << path;
   }
-  if (asprintf(filename, "%s/%s-%03d", directory, basename, fileindex) == -1) {
+  // Remove subsecond accuracy (after the ".").  We don't need it, and it makes
+  // the string very long
+  std::string time_short = aos::ToString(aos::realtime_clock::now());
+  time_short = time_short.substr(0, time_short.find("."));
+
+  if (asprintf(filename, "%s/%s-%03d_%s", directory, basename, fileindex,
+               time_short.c_str()) == -1) {
     PLOG(FATAL) << "couldn't create final name";
   }
   // Fix basename formatting.
