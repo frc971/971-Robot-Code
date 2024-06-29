@@ -103,6 +103,38 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "driver_station_2_lib",
+    srcs = ["driver_station_2.cc"],
+    hdrs = ["driver_station_2.h"],
+    target_compatible_with = ["@platforms//os:none"],
+    deps = [
+        ":util",
+        "//motors/core",
+        "//motors/peripheral:adc",
+        "//motors/peripheral:can",
+        "//motors/print:usb",
+        "//motors/usb",
+        "//motors/usb:cdc",
+        "//motors/usb:hid",
+    ],
+)
+
+[
+    cc_binary(
+        name = "driver_station_2.elf",
+        target_compatible_with = ["@platforms//os:none"],
+        deps = [":driver_station_2_lib"],
+    ),
+]
+
+[
+    hex_from_elf(
+        name = "driver_station_2",
+        target_compatible_with = ["@platforms//os:none"],
+    ),
+]
+
 cc_binary(
     name = "button_board.elf",
     srcs = [
