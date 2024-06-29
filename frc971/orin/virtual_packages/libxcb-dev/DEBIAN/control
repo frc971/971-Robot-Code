@@ -1,0 +1,7 @@
+Package: libxcb-dev
+Version: 1.15-1
+Architecture: arm64
+Depends: libxcb1-dev
+Maintainer: Jim Ostrowski <yimmy13@gmail.com>
+Provides: libxcb-dev
+Description: Adapter for libxcb-dev

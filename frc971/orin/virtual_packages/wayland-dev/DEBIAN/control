@@ -1,0 +1,7 @@
+Package: wayland-dev
+Version: 1.21.0-1
+Architecture: arm64
+Depends: libwayland-dev
+Maintainer: Jim Ostrowski <yimmy13@gmail.com>
+Provides: wayland-dev
+Description: Adapter for wayland-dev
