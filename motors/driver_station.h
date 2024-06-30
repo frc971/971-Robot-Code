@@ -39,11 +39,6 @@ enum abs_Measurement_State {
 };
 
 typedef struct {
-  uint16_t enc0_trim;
-  uint16_t enc1_trim;
-} ENCODER_TRIMS_S;
-
-typedef struct {
   abs_Measurement_State state;
   uint32_t period;
   uint32_t width;
