@@ -12,7 +12,7 @@ echo "Setting hwclock on Orins"
 
 for orin in $ORIN_LIST; do
     echo "========================================================"
-    echo "Setting clock for ${ROBOT_PREFIX}71.10${orin}"
+    echo "Setting clock for 10.${ROBOT_PREFIX}.71.10${orin}"
     echo "========================================================"
     current_time=`sudo hwclock`
     IFS="."

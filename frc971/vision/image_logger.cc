@@ -75,6 +75,8 @@ int main(int argc, char *argv[]) {
     });
   }
 
+  LOG(INFO) << "Starting image_logger; will wait on joystick enabled to start "
+               "logging";
   event_loop.OnRun([]() {
     errno = 0;
     setpriority(PRIO_PROCESS, 0, -20);
