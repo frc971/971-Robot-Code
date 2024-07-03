@@ -57,7 +57,6 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_nvidia_cccl//:cccl",
-        "@com_github_nvidia_cuco//:cuco",
     ],
 )
 
