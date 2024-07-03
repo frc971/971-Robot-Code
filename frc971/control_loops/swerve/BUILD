@@ -129,11 +129,13 @@ run_binary(
     outs = [
         "dynamics.cc",
         "dynamics.h",
+        "dynamics.py",
     ],
     args = [
         "--output_base=$(BINDIR)/",
         "--cc_output_path=$(location :dynamics.cc)",
         "--h_output_path=$(location :dynamics.h)",
+        "--py_output_path=$(location :dynamics.py)",
     ],
     tool = ":generate_physics",
 )
@@ -144,5 +146,20 @@ cc_library(
     hdrs = ["dynamics.h"],
     deps = [
         "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+py_binary(
+    name = "dynamics_sim",
+    srcs = [
+        "dynamics.py",
+        "dynamics_sim.py",
+    ],
+    deps = [
+        "//frc971/control_loops/python:controls",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
     ],
 )
