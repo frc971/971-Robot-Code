@@ -43,14 +43,21 @@ cc_library(
         "-Wl,-rpath",
         "-Wl,.",
     ],
-    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
-    deps = [
-        "@ctre_phoenix6_api_cpp_athena//:api-cpp",
-        "@ctre_phoenix6_api_cpp_headers//:api-cpp",
-        "@ctre_phoenix6_tools_athena//:tools",
-        "@ctre_phoenix6_tools_headers//:tools",
-    ],
+    deps = select({
+        "//tools/platforms/hardware:roborio": [
+          "@ctre_phoenix6_api_cpp_headers//:api-cpp",
+          "@ctre_phoenix6_api_cpp_athena//:api-cpp",
+          "@ctre_phoenix6_tools_athena//:tools",
+          "@ctre_phoenix6_tools_headers//:tools",
+          "//third_party:wpilib"
+        ],
+        "@platforms//cpu:arm64": [
+          "@ctre_phoenix6_arm64//:headers",
+          "@ctre_phoenix6_arm64//:shared_libraries_lib",
+        ],
+        "//conditions:default": [":unavailable"],
+    }),
 )
 
 cc_library(

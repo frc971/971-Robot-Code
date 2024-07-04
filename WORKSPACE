@@ -180,6 +180,10 @@ load(
     patchelf_debs = "files",
 )
 load(
+    "//debian:phoenix6.bzl",
+    phoenix6_debs = "files",
+)
+load(
     "//debian:postgresql_amd64.bzl",
     postgresql_amd64_debs = "files",
 )
@@ -238,6 +242,8 @@ generate_repositories_for_debs(libtinfo5_arm64_debs)
 generate_repositories_for_debs(xvfb_amd64_debs)
 
 generate_repositories_for_debs(clang_amd64_debs)
+
+generate_repositories_for_debs(phoenix6_debs)
 
 local_repository(
     name = "com_grail_bazel_toolchain",
@@ -853,6 +859,49 @@ cc_library(
     sha256 = "7bd8e9950c3e62a3c6ce967e3491c438ba08effde51d434f85b756fa004fbec9",
     urls = [
         "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.33.0/cci-5.33.0-linuxathena.zip",
+    ],
+)
+
+http_archive(
+    name = "ctre_phoenix6_arm64",
+    build_file_content = """
+filegroup(
+    name = 'shared_libraries',
+    srcs = [
+        'usr/lib/phoenix6/libCTRE_PhoenixTools.so',
+        'usr/lib/phoenix6/libCTRE_Phoenix6.so',
+    ],
+    visibility = ['//visibility:public'],
+    target_compatible_with = ['@platforms//cpu:arm64'],
+)
+
+# TODO(max): Use cc_import once they add a defines property.
+# See: https://github.com/bazelbuild/bazel/issues/19753
+cc_library(
+    name = "shared_libraries_lib",
+    visibility = ['//visibility:public'],
+    srcs = [
+        'usr/lib/phoenix6/libCTRE_PhoenixTools.so',
+        'usr/lib/phoenix6/libCTRE_Phoenix6.so',
+    ],
+    target_compatible_with = ['@platforms//cpu:arm64'],
+)
+
+cc_library(
+    name = 'headers',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['usr/include/phoenix6/**/*.hpp', 'usr/include/phoenix6/**/*.h']),
+    includes = ["usr/include/phoenix6/"],
+    target_compatible_with = ['@platforms//cpu:arm64'],
+    defines = [
+        "UNIT_LIB_DISABLE_FMT",
+        "UNIT_LIB_ENABLE_IOSTREAM"
+    ],
+)
+""",
+    sha256 = "635b19f019d1283749fb23a95ad9e13ddd9d5013cff4c838303d898e7d9556bd",
+    urls = [
+        "https://software.frc971.org/Build-Dependencies/phoenix6_24.2.0_5.4.2024.tar.gz",
     ],
 )
 

@@ -60,6 +60,10 @@ load(
     patchelf_debs = "files",
 )
 load(
+    ":phoenix6.bzl",
+    phoenix6_debs = "files",
+)
+load(
     ":postgresql_amd64.bzl",
     postgresql_amd64_debs = "files",
 )
@@ -251,6 +255,12 @@ download_packages(
         "libtinfo5",
         "zlib1g",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "phoenix6",
+    files = phoenix6_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
