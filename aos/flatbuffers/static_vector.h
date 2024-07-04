@@ -735,7 +735,7 @@ class String : public Vector<char, kStaticLength, true, 0, true> {
       : VectorType(buffer, parent) {}
   virtual ~String() {}
   void SetString(std::string_view string) {
-    CHECK_LT(string.size(), VectorType::capacity());
+    CHECK_LE(string.size(), VectorType::capacity());
     VectorType::resize_inline(string.size(), SetZero::kNo);
     memcpy(VectorType::data(), string.data(), string.size());
   }

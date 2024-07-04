@@ -5,16 +5,18 @@ import argparse
 import csv
 import math
 import os
+import tempfile
 import webbrowser
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
 
 import numpy as np
 from bokeh.io import output_notebook
 from bokeh.models import ColumnDataSource, HoverTool, Legend, LegendItem
 from bokeh.palettes import Category20, Viridis256
-from bokeh.plotting import figure, show, output_file
+import bokeh.plotting as plotting
 from tabulate import tabulate
 
 
@@ -169,19 +171,24 @@ def print_binned_data(binned_data: BinnedData) -> None:
 
 
 def plot_bar(binned_data: BinnedData) -> None:
-    filename = "plot.html"
-    output_file(filename, title="Message Encode Time Plot Stacked Bar Graph")
+    temp_dir = Path(tempfile.mkdtemp(dir=os.getenv("TEST_TMPDIR", "/tmp")))
+    file_path = temp_dir / "plot.html"
+
+    # Set up the plot.
+    plotting.output_file(file_path,
+                         title="Message Encode Time Plot Stacked Bar Graph")
 
     # Adjust width based on bin count for readability.
     plot_width = max(1200, 50 * len(binned_data.bins))
 
-    p = figure(x_range=[bin.bin_range for bin in binned_data.bins],
-               title='Message Encode Time by Type over Event Loop Time',
-               x_axis_label='Event Loop Time Bins',
-               y_axis_label='Total Message Encode Time (ms)',
-               width=plot_width,
-               height=600,
-               tools="")
+    p = plotting.figure(
+        x_range=[bin.bin_range for bin in binned_data.bins],
+        title='Message Encode Time by Type over Event Loop Time',
+        x_axis_label='Event Loop Time Bins',
+        y_axis_label='Total Message Encode Time (ms)',
+        width=plot_width,
+        height=600,
+        tools="")
 
     source_data = {'bin_edges': [bin.bin_range for bin in binned_data.bins]}
     for message_type in binned_data.top_type_names + ['other']:
@@ -232,11 +239,12 @@ def plot_bar(binned_data: BinnedData) -> None:
     p.xgrid.grid_line_color = None
     p.axis.minor_tick_line_color = None
     p.outline_line_color = None
+    plotting.save(p)
 
-    file_path = os.path.realpath(filename)
+    assert file_path.exists(), f"File '{file_path}' does not exist"
     print('\n')
     print(f"Plot saved to '{file_path}'")
-    webbrowser.open('file://' + file_path)
+    webbrowser.open('file://' + str(file_path))
 
 
 def main():
