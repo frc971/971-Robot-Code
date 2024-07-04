@@ -7,6 +7,10 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <set>
+#include <string>
+#include <string_view>
+#include <utility>
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
@@ -29,6 +33,10 @@ DEFINE_string(_bash_autocomplete_word, "",
 DEFINE_bool(all, false,
             "If true, print out the channels for all nodes, not just the "
             "channels which are visible on this node.");
+
+DEFINE_bool(
+    canonical, false,
+    "If true, print out the canonical channel names instead of the aliases.");
 
 namespace aos {
 namespace {
@@ -109,12 +117,46 @@ bool CliUtilInfo::Initialize(
     }
 
     if (channel_name.empty() && message_type.empty()) {
+      // Just print all the channels (or the ones that pass through the filter).
+      // Sort them before doing so.
       std::cout << "Channels:\n";
+      std::set<std::pair<std::string, std::string>> channels_to_print;
       for (const aos::Channel *channel : *channels) {
         if (FLAGS_all || channel_filter(channel)) {
-          std::cout << channel->name()->c_str() << ' '
-                    << channel->type()->c_str() << '\n';
+          if (FLAGS_canonical) {
+            channels_to_print.emplace(channel->name()->c_str(),
+                                      channel->type()->c_str());
+          } else {
+            std::set<std::string> aliases = configuration::GetChannelAliases(
+                event_loop->configuration(), channel->name()->string_view(),
+                channel->type()->string_view(), "", event_loop->node());
+            CHECK_GT(aliases.size(), 0u);
+            if (aliases.size() == 1) {
+              // There were no aliases. Just print the canonical name.
+              channels_to_print.emplace(channel->name()->str(),
+                                        channel->type()->str());
+            } else {
+              // Assume that the shortest alias (excluding the input name) is
+              // the base alias, and use that.
+              // TODO(Sanjay): Consider having GetChannelAliases return a
+              // hierarchical list instead.
+              CHECK_EQ(aliases.erase(channel->name()->str()), 1u);
+              auto it = aliases.begin();
+              std::string_view shortest_alias = *it;
+              while (it != aliases.end()) {
+                if (shortest_alias.size() > it->size()) {
+                  shortest_alias = *it;
+                }
+                ++it;
+              }
+              channels_to_print.emplace(std::string(shortest_alias),
+                                        channel->type()->c_str());
+            }
+          }
         }
+      }
+      for (const auto &[name, type] : channels_to_print) {
+        std::cout << name << ' ' << type << '\n';
       }
       return true;
     }
@@ -122,7 +164,15 @@ bool CliUtilInfo::Initialize(
     std::vector<const aos::Channel *> found_channels_now;
     bool found_exact = false;
     for (const aos::Channel *channel : *channels) {
-      if (channel->name()->c_str() != channel_name) {
+      const std::set<std::string> aliases =
+          aos::configuration::GetChannelAliases(
+              event_loop->configuration(), channel->name()->string_view(),
+              channel->type()->string_view(), "", event_loop->node());
+      if (auto it = std::find_if(aliases.begin(), aliases.end(),
+                                 [channel_name](const std::string &alias) {
+                                   return alias == channel_name;
+                                 });
+          it == aliases.end()) {
         continue;
       }
 
@@ -187,27 +237,33 @@ void CliUtilInfo::Autocomplete(
   if (!unique_match && (editing_message || editing_channel)) {
     for (const aos::Channel *channel : *config_msg->channels()) {
       if (FLAGS_all || channel_filter(channel)) {
+        const std::set<std::string> aliases =
+            aos::configuration::GetChannelAliases(
+                config_msg, channel->name()->string_view(),
+                channel->type()->string_view(), "", event_loop->node());
         // Suggest only message types if the message type argument is being
         // entered.
         if (editing_message) {
-          // Then, filter for only channel names that match exactly and types
-          // that begin with message_type.
-          if (channel->name()->string_view() == channel_name &&
+          // Then, filter for channel names that exactly match one of the
+          // aliases and types that begin with message_type.
+          if (aliases.contains(std::string(channel_name)) &&
               channel->type()->string_view().find(message_type) == 0) {
             std::cout << '\'' << channel->type()->c_str() << "' ";
           }
-        } else if (channel->name()->string_view().find(channel_name) == 0) {
-          // If the message type empty, then return full autocomplete.
+        } else if (auto it =
+                       std::find_if(aliases.begin(), aliases.end(),
+                                    [channel_name](const std::string &alias) {
+                                      return alias.find(channel_name) == 0;
+                                    });
+                   it != aliases.end()) {
+          // If the message type is empty, then return full autocomplete.
           // Otherwise, since the message type is poulated yet not being edited,
           // the user must be editing the channel name alone, in which case only
           // suggest channel names, not pairs.
-          // If _split_complete flag is set then dont return
-          // pairs of values
           if (!FLAGS__zsh_compatability && message_type.empty()) {
-            std::cout << '\'' << channel->name()->c_str() << ' '
-                      << channel->type()->c_str() << "' ";
+            std::cout << '\'' << *it << ' ' << channel->type()->c_str() << "' ";
           } else {
-            std::cout << '\'' << channel->name()->c_str() << "' ";
+            std::cout << '\'' << *it << "' ";
           }
         }
       }
