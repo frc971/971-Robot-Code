@@ -1,8 +1,8 @@
 {
   "constants": [
     {
-      "team": 6971,
-      "data": {% include 'y2024_swerve/constants/6971.json' %}
+      "team": 9971,
+      "data": {% include 'y2024_swerve/constants/9971.json' %}
     },
     {
       "team": 7971,

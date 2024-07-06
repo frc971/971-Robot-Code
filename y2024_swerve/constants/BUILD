@@ -36,8 +36,8 @@ jinja2_template(
     name = "constants_unvalidated.json",
     src = "constants.jinja2.json",
     includes = [
-        "6971.json",
         "7971.json",
+        "9971.json",
         "common.jinja2",
         "common.json",
         "//y2024_swerve/constants/calib_files",
