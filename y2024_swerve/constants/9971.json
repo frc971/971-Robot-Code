@@ -5,10 +5,32 @@
 
 {
   "robot": {
-    "front_left_zeroing_constants":  {{ front_left_zero | tojson(indent=2)}},
-    "front_right_zeroing_constants":  {{ front_right_zero | tojson(indent=2)}},
-    "back_left_zeroing_constants":  {{ back_left_zero | tojson(indent=2)}},
-    "back_right_zeroing_constants":  {{ back_right_zero | tojson(indent=2)}},
+    "swerve_zeroing": {
+      {% set _ = front_left_zero.update(
+          {
+              "measured_absolute_position" : 1.332417183729859
+          }
+      ) %}
+      {% set _ = front_right_zero.update(
+          {
+              "measured_absolute_position" : 3.4927918912411986
+          }
+      ) %}
+      {% set _ = back_left_zero.update(
+          {
+              "measured_absolute_position" : 3.241233979895719
+          }
+      ) %}
+      {% set _ = back_right_zero.update(
+          {
+              "measured_absolute_position" : 6.25249062612849
+          }
+      ) %}
+      "front_left":  {{ front_left_zero | tojson(indent=2)}},
+      "front_right":  {{ front_right_zero | tojson(indent=2)}},
+      "back_left":  {{ back_left_zero | tojson(indent=2)}},
+      "back_right":  {{ back_right_zero | tojson(indent=2)}}
+    },
     "cameras": [
       {
         "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_imu-9971-0_cam-24-10_2024-02-24_16-44-05.json' %}

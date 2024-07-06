@@ -5,6 +5,15 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 package(default_visibility = ["//visibility:public"])
 
 static_flatbuffer(
+    name = "swerve_zeroing_fbs",
+    srcs = ["swerve_zeroing.fbs"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/zeroing:constants_fbs",
+    ],
+)
+
+static_flatbuffer(
     name = "swerve_drivetrain_goal_fbs",
     srcs = ["swerve_drivetrain_goal.fbs"],
 )

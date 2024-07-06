@@ -4,6 +4,10 @@ namespace frc971.control_loops.swerve;
 
 table SwerveModulePosition {
   // Position of the mag encoder for the rotation of the module.
+  // Zero shall be when the bevel gear on the wheel is on the right side of
+  // the wheel and the wheel is aligned to the X axis of the robot.
+  // Positive rotation is when the wheel is rotated counter-clockwise when
+  // looking at the robot from above (same as positive for robot yaw).
   rotation_position: frc971.AbsolutePosition (id: 0);
 }
 

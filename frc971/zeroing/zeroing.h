@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "flatbuffers/flatbuffers.h"
 
 #include "frc971/constants.h"
@@ -80,6 +81,7 @@ class MoveDetector {
   // by buffer_size.
   bool Update(const PositionBuffer &position_buffer, size_t buffer_size,
               double zeroing_threshold) {
+    CHECK_LT(0u, buffer_size);
     bool moving = true;
     Position position(position_buffer);
     if (buffered_samples_.size() < buffer_size) {
@@ -103,6 +105,7 @@ class MoveDetector {
       }
     }
     buffered_samples_idx_ = (buffered_samples_idx_ + 1) % buffer_size;
+
     return moving;
   }
 
