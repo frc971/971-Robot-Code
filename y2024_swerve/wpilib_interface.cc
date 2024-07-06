@@ -8,6 +8,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_can_position_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
+#include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/pdp_fetcher.h"
@@ -58,9 +59,18 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop
                 ->MakeSender<frc971::control_loops::swerve::PositionStatic>(
                     "/drivetrain")),
-        modules_(modules) {
+        modules_(modules),
+        gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
+            "/drivetrain")) {
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
+  }
+
+  void Start() override { AddToDMA(&imu_yaw_rate_reader_); }
+
+  void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
+    imu_yaw_rate_input_ = ::std::move(sensor);
+    imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
 
   void RunIteration() override {
@@ -80,6 +90,36 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                                             swerve_position_constants);
 
       builder.CheckOk(builder.Send());
+    }
+
+    {
+      auto builder = gyro_sender_.MakeBuilder();
+      ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
+          builder.MakeBuilder<::frc971::sensors::GyroReading>();
+      // +/- 2000 deg / sec
+      constexpr double kMaxVelocity = 4000;  // degrees / second
+      constexpr double kVelocityRadiansPerSecond =
+          kMaxVelocity / 360 * (2.0 * M_PI);
+
+      // Only part of the full range is used to prevent being 100% on or off.
+      constexpr double kScaledRangeLow = 0.1;
+      constexpr double kScaledRangeHigh = 0.9;
+
+      constexpr double kPWMFrequencyHz = 200;
+      double velocity_duty_cycle =
+          imu_yaw_rate_reader_.last_width() * kPWMFrequencyHz;
+
+      constexpr double kDutyCycleScale =
+          1 / (kScaledRangeHigh - kScaledRangeLow);
+      // scale from 0.1 - 0.9 to 0 - 1
+      double rescaled_velocity_duty_cycle =
+          (velocity_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
+
+      if (!std::isnan(rescaled_velocity_duty_cycle)) {
+        gyro_reading_builder.add_velocity((rescaled_velocity_duty_cycle - 0.5) *
+                                          kVelocityRadiansPerSecond);
+      }
+      builder.CheckOk(builder.Send(gyro_reading_builder.Finish()));
     }
   }
 
@@ -121,6 +161,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_position_sender_;
 
   frc971::wpilib::swerve::SwerveModules modules_;
+
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
+  frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -263,6 +307,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_back_right_encoder(
         make_encoder(0), std::make_unique<frc::DigitalInput>(0));
+
+    sensor_reader.set_yaw_rate_input(std::make_unique<frc::DigitalInput>(25));
 
     AddLoop(&sensor_reader_event_loop);
 

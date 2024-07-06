@@ -161,6 +161,7 @@ cc_binary(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
+        "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:can_sensor_reader",
         "//frc971/wpilib:joystick_sender",
         "//frc971/wpilib:pdp_fetcher",
