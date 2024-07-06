@@ -40,6 +40,7 @@ import {plotSuperstructure as plot2023Superstructure} from '../../y2023/control_
 import {plotVision as plot2023Corrections} from '../../y2023/localizer/corrections_plotter'
 import {plotLocalizer as plot2023Localizer} from '../../y2023/localizer/localizer_plotter'
 import {plotClimber as plot2024Climber, plotIntake as plot2024Intake, plotSuperstructure as plot2024Superstructure} from '../../y2024/control_loops/superstructure/superstructure_plotter'
+import {plotSwerve} from '../../y2024_swerve/control_loops/swerve_plotter'
 import {plotVision as plot2024Corrections} from '../../y2024/localizer/corrections_plotter'
 import {plotLocalizer as plot2024Localizer} from '../../y2024/localizer/localizer_plotter'
 import {plotDownEstimator} from '../control_loops/drivetrain/down_estimator_plotter';
@@ -107,6 +108,7 @@ const plotIndex = new Map<string, PlotState>([
   ['2024 Vision', new PlotState(plotDiv, plot2024Corrections)],
   ['2024 Localizer', new PlotState(plotDiv, plot2024Localizer)],
   ['2024 Superstructure', new PlotState(plotDiv, plot2024Superstructure)],
+  ['2024 Swerve', new PlotState(plotDiv, plotSwerve)],
   ['2024 Climber', new PlotState(plotDiv, plot2024Climber)],
   ['2024 Intake', new PlotState(plotDiv, plot2024Intake)],
   ['2023 Vision', new PlotState(plotDiv, plot2023Corrections)],

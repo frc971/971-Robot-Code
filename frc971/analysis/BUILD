@@ -34,6 +34,7 @@ ts_project(
         "//y2024/control_loops/superstructure:superstructure_plotter",
         "//y2024/localizer:corrections_plotter",
         "//y2024/localizer:localizer_plotter",
+        "//y2024_swerve/control_loops:swerve_plotter",
     ],
 )
 
