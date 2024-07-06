@@ -599,7 +599,7 @@ std::string MakeObjectCopier(const std::vector<FieldData> &fields) {
   // after a call to FromFlatbufferObject().
   // This is a deep copy, and will call FromFlatbufferObject on
   // any constituent objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+  [[nodiscard]] bool FromFlatbuffer([[maybe_unused]] const Flatbuffer::NativeTableType &other) {
     Clear();
     %s
     return true;
@@ -653,7 +653,7 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
+  [[nodiscard]] bool FromFlatbuffer([[maybe_unused]] const Flatbuffer &other) {
     Clear();
     %s
     return true;

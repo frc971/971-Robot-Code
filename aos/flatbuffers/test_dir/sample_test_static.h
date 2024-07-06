@@ -125,7 +125,7 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
+  [[nodiscard]] bool FromFlatbuffer([[maybe_unused]] const Flatbuffer &other) {
     Clear();
 
     if (other.has_field()) {
@@ -148,7 +148,8 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
   // after a call to FromFlatbufferObject().
   // This is a deep copy, and will call FromFlatbufferObject on
   // any constituent objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+  [[nodiscard]] bool FromFlatbuffer(
+      [[maybe_unused]] const Flatbuffer::NativeTableType &other) {
     Clear();
 
     set_field(other.field);
@@ -333,7 +334,7 @@ class SubTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
+  [[nodiscard]] bool FromFlatbuffer([[maybe_unused]] const Flatbuffer &other) {
     Clear();
 
     if (other.has_baz()) {
@@ -360,7 +361,8 @@ class SubTableStatic : public ::aos::fbs::Table {
   // after a call to FromFlatbufferObject().
   // This is a deep copy, and will call FromFlatbufferObject on
   // any constituent objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+  [[nodiscard]] bool FromFlatbuffer(
+      [[maybe_unused]] const Flatbuffer::NativeTableType &other) {
     Clear();
 
     set_baz(other.baz);
@@ -1454,7 +1456,7 @@ class TestTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
+  [[nodiscard]] bool FromFlatbuffer([[maybe_unused]] const Flatbuffer &other) {
     Clear();
 
     if (other.has_substruct()) {
@@ -1604,7 +1606,8 @@ class TestTableStatic : public ::aos::fbs::Table {
   // after a call to FromFlatbufferObject().
   // This is a deep copy, and will call FromFlatbufferObject on
   // any constituent objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+  [[nodiscard]] bool FromFlatbuffer(
+      [[maybe_unused]] const Flatbuffer::NativeTableType &other) {
     Clear();
 
     if (other.substruct) {
