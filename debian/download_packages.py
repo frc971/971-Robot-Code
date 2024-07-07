@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from collections import namedtuple
 import sys
 import os
 import os.path
@@ -9,6 +10,48 @@ import tempfile
 import urllib.request
 import argparse
 import hashlib
+
+DistroInfo = namedtuple('DistroInfo',
+                        ['sources_list', 'url_keys', 'public_keys'])
+
+_DISTROS = {
+    "ubuntu":
+    DistroInfo(
+        """deb http://us.archive.ubuntu.com/ubuntu/ {release} main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ {release} main restricted
+
+deb http://security.ubuntu.com/ubuntu {release}-security main restricted
+deb-src http://security.ubuntu.com/ubuntu {release}-security main restricted
+
+deb http://us.archive.ubuntu.com/ubuntu/ {release} universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ {release} universe
+deb http://us.archive.ubuntu.com/ubuntu/ {release}-updates universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ {release}-updates universe
+
+deb http://us.archive.ubuntu.com/ubuntu/ {release}-updates main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ {release}-updates main restricted
+
+deb http://us.archive.ubuntu.com/ubuntu {release}-backports main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu {release}-backports main restricted""",
+        [], ['3B4FE6ACC0B21F32', '871920D1991BC93C']),
+    "debian":
+    DistroInfo(
+        """deb http://deb.debian.org/debian/ {release} main contrib non-free
+deb-src http://deb.debian.org/debian/ {release} main contrib non-free
+
+deb https://security.debian.org/debian-security {release}-security main contrib non-free
+deb-src https://security.debian.org/debian-security {release}-security main contrib non-free
+
+deb http://deb.debian.org/debian/ {release}-updates main contrib non-free
+deb-src http://deb.debian.org/debian/ {release}-updates main contrib non-free
+
+deb http://deb.debian.org/debian {release}-backports main contrib non-free
+deb-src http://deb.debian.org/debian {release}-backports main contrib non-free""",
+        [
+            "https://ftp-master.debian.org/keys/archive-key-11.asc",
+            "https://ftp-master.debian.org/keys/archive-key-11-security.asc"
+        ], []),
+}
 
 
 def initialize_apt(apt_dir, apt_args, args):
@@ -21,31 +64,28 @@ def initialize_apt(apt_dir, apt_args, args):
     os.mkdir(os.path.join(apt_dir, 'var', 'lib', 'dpkg'))
     with open(os.path.join(apt_dir, 'var', 'lib', 'dpkg', 'status'), 'w'):
         pass
+    distro = _DISTROS[args.distro]
     with open(os.path.join(apt_dir, 'etc', 'apt', 'sources.list'), 'w') as f:
-        f.write("""
-deb http://deb.debian.org/debian/ {release} main contrib non-free
-deb-src http://deb.debian.org/debian/ {release} main contrib non-free
-
-deb https://security.debian.org/debian-security {release}-security main contrib non-free
-deb-src https://security.debian.org/debian-security {release}-security main contrib non-free
-
-deb http://deb.debian.org/debian/ {release}-updates main contrib non-free
-deb-src http://deb.debian.org/debian/ {release}-updates main contrib non-free
-
-deb http://deb.debian.org/debian {release}-backports main contrib non-free
-deb-src http://deb.debian.org/debian {release}-backports main contrib non-free
-""".format(release=args.release))
-    for key in args.apt_key:
+        f.write(distro.sources_list.format(release=args.release))
+    for key in args.apt_key + distro.url_keys:
         basename = os.path.basename(key)
         urllib.request.urlretrieve(
             key, os.path.join(apt_dir, 'etc', 'apt', 'trusted.gpg.d',
                               basename))
+    for key in distro.public_keys:
+        subprocess.check_call([
+            "apt-key", "--keyring",
+            os.path.join(apt_dir, 'etc', 'apt', 'trusted.gpg'), "adv",
+            "--keyserver", "keyserver.ubuntu.com", "--recv-key", key
+        ])
+
     subprocess.check_call(["apt-get"] + apt_args + ["update"])
 
 
 def get_deps(apt_args, package):
     env = dict(os.environ)
-    del env['LD_LIBRARY_PATH']
+    if 'LD_LIBRARY_PATH' in env:
+        del env['LD_LIBRARY_PATH']
     out = subprocess.check_output(["apt-rdepends"] + apt_args + [package],
                                   env=env)
     deps = out.splitlines()
@@ -116,7 +156,8 @@ def download_deps(apt_args, packages, excludes, force_includes,
     force_exclude_deps = get_all_deps(apt_args, force_excludes)
     deps -= force_exclude_deps
     env = dict(os.environ)
-    del env['LD_LIBRARY_PATH']
+    if 'LD_LIBRARY_PATH' in env:
+        del env['LD_LIBRARY_PATH']
     subprocess.check_call([b"apt-get"] + [a.encode('utf-8')
                                           for a in apt_args] + [b"download"] +
                           list(map_virtual_packages(deps)),
@@ -188,6 +229,11 @@ def main(argv):
                         type=str,
                         default="amd64",
                         help="Architecture to download files for.")
+    parser.add_argument("--distro",
+                        type=str,
+                        default="debian",
+                        choices=_DISTROS.keys(),
+                        help="Architecture to download files for.")
     parser.add_argument(
         "--apt-dir",
         type=str,
@@ -198,17 +244,13 @@ def main(argv):
         ]))
     parser.add_argument("--release",
                         type=str,
-                        default="bullseye",
-                        help="Debian release to use.")
-    parser.add_argument(
-        "--apt-key",
-        type=str,
-        action="append",
-        default=[
-            "https://ftp-master.debian.org/keys/archive-key-11.asc",
-            "https://ftp-master.debian.org/keys/archive-key-11-security.asc",
-        ],
-        help="URL of an additional apt archive key to trust.")
+                        default="bookworm",
+                        help="Debian/Ubuntu release to use.")
+    parser.add_argument("--apt-key",
+                        type=str,
+                        action="append",
+                        default=[],
+                        help="URL of an additional apt archive key to trust.")
     parser.add_argument("package", nargs="+", help="The packages to download.")
     args = parser.parse_args(argv[1:])
     if args.apt_dir:
