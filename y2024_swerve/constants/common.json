@@ -1,3 +1,7 @@
 "common": {
-
+  "swerve_positions_constants": {
+    {% set pi = 3.141592653589793 %}
+    "relative_encoder_scale": {{ 2.0 * pi / 4096 }},
+    "absolute_encoder_scale": {{ 2.0 * pi }}
+  }
 }

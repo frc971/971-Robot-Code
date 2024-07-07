@@ -156,6 +156,7 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
@@ -164,6 +165,7 @@ cc_binary(
         "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",
         "//frc971/wpilib/swerve:swerve_drivetrain_writer",
+        "//y2024_swerve/constants:constants_fbs",
     ],
 )
 

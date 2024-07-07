@@ -4,6 +4,7 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_can_position_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
@@ -13,6 +14,7 @@
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024_swerve/constants.h"
+#include "y2024_swerve/constants/constants_generated.h"
 
 ABSL_FLAG(bool, ctre_diag_server, false,
           "If true, enable the diagnostics server for interacting with "
@@ -45,9 +47,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(aos::ShmEventLoop *event_loop,
                std::shared_ptr<const constants::Values> values,
+               const Constants *robot_constants,
                frc971::wpilib::swerve::SwerveModules modules)
       : ::frc971::wpilib::SensorReader(event_loop),
         values_(values),
+        robot_constants_(robot_constants),
         drivetrain_position_sender_(
             event_loop
                 ->MakeSender<frc971::control_loops::swerve::PositionStatic>(
@@ -61,10 +65,17 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     {
       auto builder = drivetrain_position_sender_.MakeStaticBuilder();
 
-      modules_.front_left->PopulatePosition(builder->add_front_left());
-      modules_.front_right->PopulatePosition(builder->add_front_right());
-      modules_.back_left->PopulatePosition(builder->add_back_left());
-      modules_.back_right->PopulatePosition(builder->add_back_right());
+      auto swerve_position_constants =
+          robot_constants_->common()->swerve_positions_constants();
+
+      modules_.front_left->PopulatePosition(builder->add_front_left(),
+                                            swerve_position_constants);
+      modules_.front_right->PopulatePosition(builder->add_front_right(),
+                                             swerve_position_constants);
+      modules_.back_left->PopulatePosition(builder->add_back_left(),
+                                           swerve_position_constants);
+      modules_.back_right->PopulatePosition(builder->add_back_right(),
+                                            swerve_position_constants);
 
       builder.CheckOk(builder.Send());
     }
@@ -102,6 +113,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
  private:
   std::shared_ptr<const constants::Values> values_;
 
+  const Constants *robot_constants_;
+
   aos::Sender<frc971::control_loops::swerve::PositionStatic>
       drivetrain_position_sender_;
 
@@ -120,6 +133,18 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     aos::FlatbufferDetachedBuffer<aos::Configuration> config =
         aos::configuration::ReadConfig("aos_config.json");
+
+    frc971::constants::WaitForConstants<y2024_swerve::Constants>(
+        &config.message());
+
+    ::aos::ShmEventLoop constant_fetcher_event_loop(&config.message());
+
+    frc971::constants::ConstantsFetcher<Constants> constants_fetcher(
+        &constant_fetcher_event_loop);
+
+    const Constants *robot_constants = &constants_fetcher.constants();
+
+    AddLoop(&constant_fetcher_event_loop);
 
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
     std::vector<std::shared_ptr<TalonFX>> falcons;
@@ -213,7 +238,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 3
     aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     sensor_reader_event_loop.set_name("SensorReader");
-    SensorReader sensor_reader(&sensor_reader_event_loop, values, modules);
+    SensorReader sensor_reader(&sensor_reader_event_loop, values,
+                               robot_constants, modules);
 
     sensor_reader.set_front_left_encoder(
         make_encoder(3), std::make_unique<frc::DigitalInput>(3));

@@ -1,3 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -27,7 +29,14 @@ cc_library(
         "swerve_module.h",
     ],
     deps = [
+        ":swerve_constants_fbs",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:talonfx",
     ],
+)
+
+static_flatbuffer(
+    name = "swerve_constants_fbs",
+    srcs = ["swerve_constants.fbs"],
+    visibility = ["//visibility:public"],
 )
