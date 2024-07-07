@@ -11,6 +11,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/time",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
     ],
