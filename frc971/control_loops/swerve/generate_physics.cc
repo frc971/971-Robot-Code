@@ -27,9 +27,11 @@ DEFINE_string(output_base, "",
               "Path to strip off the front of the output paths.");
 DEFINE_string(cc_output_path, "", "Path to write generated header code to");
 DEFINE_string(h_output_path, "", "Path to write generated cc code to");
+DEFINE_string(py_output_path, "", "Path to write generated py code to");
 
 DEFINE_bool(symbolic, false, "If true, write everything out symbolically.");
 
+using SymEngine::abs;
 using SymEngine::add;
 using SymEngine::atan2;
 using SymEngine::Basic;
@@ -212,6 +214,108 @@ class SwerveSimulation {
     VLOG(1) << "angular_accel = " << ccode(*angular_accel_);
   }
 
+  // Writes the physics out to the provided .py path.
+  void WritePy(std::string_view py_path) {
+    std::vector<std::string> result_py;
+
+    result_py.emplace_back("#!/usr/bin/python3");
+    result_py.emplace_back("");
+    result_py.emplace_back("import numpy");
+    result_py.emplace_back("import math");
+    result_py.emplace_back("from math import sin, cos, fabs");
+    result_py.emplace_back("");
+
+    result_py.emplace_back("def atan2(y, x):");
+    result_py.emplace_back("    if x < 0:");
+    result_py.emplace_back("        return -math.atan2(y, x)");
+    result_py.emplace_back("    else:");
+    result_py.emplace_back("        return math.atan2(y, x)");
+
+    result_py.emplace_back("def swerve_physics(t, X, U_func):");
+    // result_py.emplace_back("    print(X)");
+    result_py.emplace_back("    result = numpy.empty([25, 1])");
+    result_py.emplace_back("    X = X.reshape(25, 1)");
+    result_py.emplace_back("    U = U_func(X)");
+    result_py.emplace_back("");
+
+    // Start by writing out variables matching each of the symbol names we use
+    // so we don't have to modify the computed equations too much.
+    for (size_t m = 0; m < kNumModules; ++m) {
+      result_py.emplace_back(
+          absl::Substitute("    thetas$0 = X[$1, 0]", m, m * 4));
+      result_py.emplace_back(
+          absl::Substitute("    omegas$0 = X[$1, 0]", m, m * 4 + 2));
+      result_py.emplace_back(
+          absl::Substitute("    omegad$0 = X[$1, 0]", m, m * 4 + 3));
+    }
+
+    result_py.emplace_back(
+        absl::Substitute("    theta = X[$0, 0]", kNumModules * 4 + 2));
+    result_py.emplace_back(
+        absl::Substitute("    vx = X[$0, 0]", kNumModules * 4 + 3));
+    result_py.emplace_back(
+        absl::Substitute("    vy = X[$0, 0]", kNumModules * 4 + 4));
+    result_py.emplace_back(
+        absl::Substitute("    omega = X[$0, 0]", kNumModules * 4 + 5));
+
+    result_py.emplace_back(
+        absl::Substitute("    fx = X[$0, 0]", kNumModules * 4 + 6));
+    result_py.emplace_back(
+        absl::Substitute("    fy = X[$0, 0]", kNumModules * 4 + 7));
+    result_py.emplace_back(
+        absl::Substitute("    moment = X[$0, 0]", kNumModules * 4 + 8));
+
+    // Now do the same for the inputs.
+    for (size_t m = 0; m < kNumModules; ++m) {
+      result_py.emplace_back(absl::Substitute("    Is$0 = U[$1, 0]", m, m * 2));
+      result_py.emplace_back(
+          absl::Substitute("    Id$0 = U[$1, 0]", m, m * 2 + 1));
+    }
+
+    result_py.emplace_back("");
+
+    // And then write out the derivative of each state.
+    for (size_t m = 0; m < kNumModules; ++m) {
+      result_py.emplace_back(
+          absl::Substitute("    result[$0, 0] = omegas$1", m * 4, m));
+      result_py.emplace_back(
+          absl::Substitute("    result[$0, 0] = omegad$1", m * 4 + 1, m));
+
+      result_py.emplace_back(absl::Substitute(
+          "    result[$0, 0] = $1", m * 4 + 2, ccode(*modules_[m].alphas_eqn)));
+      result_py.emplace_back(absl::Substitute(
+          "    result[$0, 0] = $1", m * 4 + 3, ccode(*modules_[m].alphad_eqn)));
+    }
+
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = vx", kNumModules * 4));
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = vy", kNumModules * 4 + 1));
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = omega", kNumModules * 4 + 2));
+
+    result_py.emplace_back(absl::Substitute("    result[$0, 0] = $1",
+                                            kNumModules * 4 + 3,
+                                            ccode(*accel_.get(0, 0))));
+    result_py.emplace_back(absl::Substitute("    result[$0, 0] = $1",
+                                            kNumModules * 4 + 4,
+                                            ccode(*accel_.get(1, 0))));
+    result_py.emplace_back(absl::Substitute(
+        "    result[$0, 0] = $1", kNumModules * 4 + 5, ccode(*angular_accel_)));
+
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = 0.0", kNumModules * 4 + 6));
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = 0.0", kNumModules * 4 + 7));
+    result_py.emplace_back(
+        absl::Substitute("    result[$0, 0] = 0.0", kNumModules * 4 + 8));
+
+    result_py.emplace_back("");
+    result_py.emplace_back("    return result.reshape(25,)\n");
+
+    aos::util::WriteStringToFileOrDie(py_path, absl::StrJoin(result_py, "\n"));
+  }
+
   // Writes the physics out to the provided .cc and .h path.
   void Write(std::string_view cc_path, std::string_view h_path) {
     std::vector<std::string> result_cc;
@@ -370,7 +474,8 @@ class SwerveSimulation {
     result.alphad = symbol(absl::StrFormat("alphad%u", m));
 
     // Velocity of the module in field coordinates
-    DenseMatrix robot_velocity = DenseMatrix(2, 1, {vx_, vy_});
+    DenseMatrix robot_velocity = DenseMatrix(2, 1);
+    mul_dense_dense(R(theta_), DenseMatrix(2, 1, {vx_, vy_}), robot_velocity);
     VLOG(1) << "robot velocity: " << robot_velocity.__str__();
 
     // Velocity of the contact patch in field coordinates
@@ -398,15 +503,15 @@ class SwerveSimulation {
     VLOG(1);
     VLOG(1) << "wheel ground velocity: " << wheel_ground_velocity.__str__();
 
-    RCP<const Basic> slip_angle =
-        atan2(wheel_ground_velocity.get(1, 0), wheel_ground_velocity.get(0, 0));
+    RCP<const Basic> slip_angle = neg(atan2(wheel_ground_velocity.get(1, 0),
+                                            wheel_ground_velocity.get(0, 0)));
 
     VLOG(1);
     VLOG(1) << "slip angle: " << slip_angle->__str__();
 
     RCP<const Basic> slip_ratio =
         div(sub(mul(r_w_, result.omegad), wheel_ground_velocity.get(0, 0)),
-            wheel_ground_velocity.get(0, 0));
+            abs(wheel_ground_velocity.get(0, 0)));
     VLOG(1);
     VLOG(1) << "Slip ratio " << slip_ratio->__str__();
 
@@ -425,7 +530,7 @@ class SwerveSimulation {
     // alphas = ...
     RCP<const Basic> lhms =
         mul(add(neg(wb_), mul(add(rs_, rp_), sub(integer(1), div(rb1_, rp_)))),
-            mul(div(r_w_, rb2_), Fwx));
+            mul(div(r_w_, rb2_), neg(Fwx)));
     RCP<const Basic> lhs = add(add(Ms, div(mul(Jsm_, result.Is), Gs_)), lhms);
     RCP<const Basic> rhs = add(Jsm_, div(div(Js_, Gs_), Gs_));
     RCP<const Basic> accel_steer_eqn = simplify(div(lhs, rhs));
@@ -443,7 +548,7 @@ class SwerveSimulation {
 
     RCP<const Basic> drive_eqn = sub(
         add(mul(neg(Jdm_), div(alphamd, Gd_)), mul(Ktd_, div(result.Id, Gd_))),
-        mul(Fwx, r_w_));
+        mul(neg(Fwx), r_w_));
 
     VLOG(1) << "drive_eqn: " << drive_eqn->__str__();
 
@@ -566,8 +671,10 @@ int main(int argc, char **argv) {
 
   frc971::control_loops::swerve::SwerveSimulation sim;
 
-  if (!FLAGS_cc_output_path.empty() && !FLAGS_h_output_path.empty()) {
+  if (!FLAGS_cc_output_path.empty() && !FLAGS_h_output_path.empty() &&
+      !FLAGS_py_output_path.empty()) {
     sim.Write(FLAGS_cc_output_path, FLAGS_h_output_path);
+    sim.WritePy(FLAGS_py_output_path);
   }
 
   return 0;
