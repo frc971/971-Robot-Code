@@ -20,10 +20,10 @@ http_archive(
 
 http_archive(
     name = "bazel_skylib",
-    sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
+    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
     ],
 )
 
@@ -103,10 +103,9 @@ pip_configure(
 
 http_archive(
     name = "rules_pkg",
-    sha256 = "8c20f74bca25d2d442b327ae26768c02cf3c99e93fad0381f32be9aab1967675",
+    sha256 = "cad05f864a32799f6f9022891de91ac78f30e0fa07dc68abac92a628121b5b11",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.8.1/rules_pkg-0.8.1.tar.gz",
-        "https://github.com/bazelbuild/rules_pkg/releases/download/0.8.1/rules_pkg-0.8.1.tar.gz",
+        "https://github.com/bazelbuild/rules_pkg/releases/download/1.0.0/rules_pkg-1.0.0.tar.gz",
     ],
 )
 
@@ -684,19 +683,18 @@ http_archive(
     name = "com_google_googletest",
     patch_args = ["-p1"],
     patches = ["//third_party/googletest:googletest.patch"],
-    sha256 = "5c6d595243de011f8ce8cc68050cc0490726786e80cdfd6555ebfe148d920407",
-    strip_prefix = "googletest-356fc301251378e0f6fa6aa794d73714202887ac",
-    urls = ["https://github.com/google/googletest/archive/356fc301251378e0f6fa6aa794d73714202887ac.zip"],
+    sha256 = "8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7",
+    strip_prefix = "googletest-1.14.0",
+    urls = ["https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz"],
 )
 
-# External dependency: Google Benchmark; has no Bazel build.
 http_archive(
     name = "com_github_google_benchmark",
     patch_args = ["-p1"],
     patches = ["//third_party/google-benchmark:benchmark.patch"],
-    sha256 = "6430e4092653380d9dc4ccb45a1e2dc9259d581f4866dc0759713126056bc1d7",
-    strip_prefix = "benchmark-1.7.1",
-    urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.1.tar.gz"],
+    sha256 = "3e7059b6b11fb1bbe28e33e02519398ca94c1818874ebed18e504dc6f709be45",
+    strip_prefix = "benchmark-1.8.4",
+    urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.8.4.tar.gz"],
 )
 
 http_archive(
