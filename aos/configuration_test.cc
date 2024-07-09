@@ -240,6 +240,9 @@ TEST_F(ConfigurationTest, GetChannelMultinode) {
   EXPECT_THAT(GetChannel(config, "/batman", ".aos.bar", "app1", pi1),
               aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
+  // Tests that node specific maps get ignored
+  EXPECT_EQ(GetChannel(config, "/batman", ".aos.bar", "", nullptr), nullptr);
+
   // Tests that a root map/rename fails with a node specific map for the wrong
   // node.
   EXPECT_EQ(GetChannel(config, "/batman", ".aos.bar", "app1", pi2), nullptr);
