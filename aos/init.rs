@@ -194,7 +194,7 @@ impl CxxFlag {
     /// Sets the command gFlag to the specified value.
     fn set_option(name: &str, value: &OsStr) -> Result<(), SetFlagError> {
         unsafe {
-            let name = CString::new(name.clone()).expect("Flag name may not have NUL");
+            let name = CString::new(name).expect("Flag name may not have NUL");
             let value = CString::new(value.as_bytes()).expect("Arg may not have NUL");
             if ffi::aos::SetCommandLineOption(name.as_ptr(), value.as_ptr()) {
                 Ok(())

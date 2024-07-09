@@ -509,6 +509,7 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/containers:resizeable_buffer",
+        "//aos/ipc_lib:data_alignment",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
@@ -847,5 +848,14 @@ rust_library(
         "//aos/events:event_loop_runtime",
         "//aos/events:shm_event_loop_rs",
         "//aos/events:simulated_event_loop_rs",
+    ],
+)
+
+cc_library(
+    name = "shared_span",
+    hdrs = ["shared_span.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
     ],
 )

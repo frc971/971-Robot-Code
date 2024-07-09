@@ -88,17 +88,25 @@ class SimulatedEventLoopFactory {
 
   // Starts executing the event loops unconditionally until Exit is called or
   // all the nodes have shut down.
-  void Run();
+  // All Run*() methods return an unexpected value if there is either an
+  // internal fault that can still be recovered from gracefully or if a user
+  // application called Exit() with a Status.
+  Result<void> Run();
   // Executes the event loops for a duration.
-  void RunFor(distributed_clock::duration duration);
+  Result<void> RunFor(distributed_clock::duration duration);
   // Executes the event loops until a time.
-  // Returns true if there are still events remaining.
-  bool RunUntil(aos::realtime_clock::time_point time,
-                const aos::Node *node = nullptr);
+  // Returns kEventsRemaining if there are still events remaining.
+  // Returns an unexpected value if there was an error.
+  enum class RunEndState {
+    kEventsRemaining,
+    kFinishedEventProcessing,
+  };
+  Result<RunEndState> RunUntil(aos::realtime_clock::time_point time,
+                               const aos::Node *node = nullptr);
 
   // Stops executing all event loops.  Meant to be called from within an event
   // loop handler.
-  void Exit();
+  void Exit(Result<void> status = {});
 
   std::unique_ptr<ExitHandle> MakeExitHandle();
 
@@ -157,6 +165,10 @@ class SimulatedEventLoopFactory {
   friend class NodeEventLoopFactory;
   friend class SimulatedFactoryExitHandle;
 
+  // Returns the contents of exit_status_ (or a successful Result<> if
+  // exit_status_ is nullopt), and clears the exit status.
+  Result<void> GetAndClearExitStatus();
+
   const Configuration *const configuration_;
   EventSchedulerScheduler scheduler_scheduler_;
 
@@ -170,6 +182,12 @@ class SimulatedEventLoopFactory {
   std::vector<const Node *> nodes_;
 
   int exit_handle_count_ = 0;
+
+  // Once exit_status_ is set once, we will not set it again until we have
+  // actually exited. This is to try to provide consistent behavior in cases
+  // where Exit() is called multiple times before Run() is aactually terminates
+  // execution.
+  std::optional<Result<void>> exit_status_{};
 };
 
 // This class holds all the state required to be a single node.

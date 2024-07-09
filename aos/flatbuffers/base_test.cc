@@ -7,32 +7,46 @@
 #include "gtest/gtest.h"
 
 namespace aos::fbs::testing {
-// Tests that PaddedSize() behaves as expected.
-TEST(BaseTest, PaddedSize) {
-  EXPECT_EQ(0, PaddedSize(0, 4));
-  EXPECT_EQ(4, PaddedSize(4, 4));
-  EXPECT_EQ(8, PaddedSize(5, 4));
-  EXPECT_EQ(8, PaddedSize(6, 4));
-  EXPECT_EQ(8, PaddedSize(7, 4));
+// Tests that AlignOffset() behaves as expected.
+TEST(BaseTest, AlignOffset) {
+  EXPECT_EQ(0, AlignOffset(0, 4));
+  EXPECT_EQ(4, AlignOffset(4, 4));
+  EXPECT_EQ(8, AlignOffset(5, 4));
+  EXPECT_EQ(8, AlignOffset(6, 4));
+  EXPECT_EQ(8, AlignOffset(7, 4));
 }
 
-inline constexpr size_t kDefaultSize = 16;
+// Tests that AlignOffset handles the alignment point being nonzero.  This shows
+// up when you want 8 byte alignment 4 bytes into the start of the buffer, and
+// don't want to pad out the front of the buffer.
+TEST(BaseTest, AlignOffsetWithOffset) {
+  EXPECT_EQ(4, AlignOffset(4, 4, 4));
+
+  EXPECT_EQ(4, AlignOffset(0, 8, 4));
+  EXPECT_EQ(4, AlignOffset(1, 8, 4));
+  EXPECT_EQ(4, AlignOffset(2, 8, 4));
+  EXPECT_EQ(4, AlignOffset(3, 8, 4));
+  EXPECT_EQ(4, AlignOffset(4, 8, 4));
+  EXPECT_EQ(12, AlignOffset(5, 8, 4));
+}
+
+inline constexpr size_t kDefaultSize = AlignedVectorAllocator::kAlignment * 2;
 template <typename T>
 class AllocatorTest : public ::testing::Test {
  protected:
   AllocatorTest() : allocator_(std::make_unique<T>()) {}
-  std::vector<uint8_t> buffer_;
+  alignas(64) std::array<uint8_t, kDefaultSize> buffer_;
   // unique_ptr so that we can destroy the allocator at will.
   std::unique_ptr<T> allocator_;
 };
 
 template <>
 AllocatorTest<SpanAllocator>::AllocatorTest()
-    : buffer_(kDefaultSize),
-      allocator_(std::make_unique<SpanAllocator>(
+    : allocator_(std::make_unique<SpanAllocator>(
           std::span<uint8_t>{buffer_.data(), buffer_.size()})) {}
 
-using AllocatorTypes = ::testing::Types<SpanAllocator, VectorAllocator>;
+using AllocatorTypes = ::testing::Types<SpanAllocator, AlignedVectorAllocator,
+                                        FixedStackAllocator<kDefaultSize>>;
 TYPED_TEST_SUITE(AllocatorTest, AllocatorTypes);
 
 // Tests that we can create and not use a VectorAllocator.
@@ -77,8 +91,24 @@ TYPED_TEST(AllocatorTest, InsertBytes) {
   this->allocator_->Deallocate(span);
 }
 
+// Tests that all allocators return data aligned to the requested alignment.
+TYPED_TEST(AllocatorTest, Alignment) {
+  for (size_t alignment : {4, 8, 16, 32, 64}) {
+    std::span<uint8_t> span =
+        this->allocator_->Allocate(kDefaultSize, alignment, SetZero::kYes)
+            .value();
+    EXPECT_EQ(reinterpret_cast<size_t>(span.data()) % alignment, 0);
+    this->allocator_->Deallocate(span);
+  }
+}
+
 // Tests that we can remove bytes from an arbitrary spot in the buffer.
 TYPED_TEST(AllocatorTest, RemoveBytes) {
+  // Deletion doesn't require resizing, so we don't need to worry about it being
+  // larger than the alignment to test everything.  The test requires the size
+  // to be < 255 to store the sentinal values.
+  const size_t kDefaultSize = 128;
+
   const size_t half_size = kDefaultSize / 2;
   std::span<uint8_t> span =
       this->allocator_->Allocate(kDefaultSize, 4, SetZero::kYes).value();
@@ -134,7 +164,7 @@ TEST(SpanAllocatorTest, OverInsert) {
   std::vector<uint8_t> buffer(kDefaultSize);
   SpanAllocator allocator({buffer.data(), buffer.size()});
   std::span<uint8_t> span =
-      allocator.Allocate(kDefaultSize, 0, SetZero::kYes).value();
+      allocator.Allocate(kDefaultSize, 1, SetZero::kYes).value();
   EXPECT_EQ(kDefaultSize, span.size());
   EXPECT_FALSE(
       allocator.InsertBytes(span.data(), 1u, 0, SetZero::kYes).has_value());
@@ -154,7 +184,8 @@ class TestResizeableObject : public ResizeableObject {
   virtual ~TestResizeableObject() {}
   using ResizeableObject::SubObject;
   bool InsertBytes(void *insertion_point, size_t bytes) {
-    return ResizeableObject::InsertBytes(insertion_point, bytes, SetZero::kYes);
+    return ResizeableObject::InsertBytes(insertion_point, bytes, SetZero::kYes)
+        .has_value();
   }
   TestResizeableObject(TestResizeableObject &&) = default;
 
@@ -188,7 +219,6 @@ class TestResizeableObject : public ResizeableObject {
   TestObject &GetObject(size_t index) { return objects_.at(index); }
 
   size_t Alignment() const override { return 64; }
-  size_t AbsoluteOffsetOffset() const override { return 0; }
 
  private:
   std::vector<TestObject> objects_;
@@ -201,7 +231,7 @@ class ResizeableObjectTest : public ::testing::Test {
       : object_(allocator_.Allocate(kInitialSize, 4, SetZero::kYes).value(),
                 &allocator_) {}
   ~ResizeableObjectTest() { allocator_.Deallocate(object_.buffer()); }
-  VectorAllocator allocator_;
+  AlignedVectorAllocator allocator_;
   TestResizeableObject object_;
 };
 

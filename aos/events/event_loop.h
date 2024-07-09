@@ -1,6 +1,5 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_H_
 #define AOS_EVENTS_EVENT_LOOP_H_
-
 #include <sched.h>
 
 #include <atomic>
@@ -11,6 +10,7 @@
 #include "absl/container/btree_set.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
+#include "tl/expected.hpp"
 
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
@@ -24,8 +24,10 @@
 #include "aos/ftrace.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/shared_span.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
+#include "aos/util/status.h"
 #include "aos/uuid.h"
 
 DECLARE_bool(timing_reports);
@@ -89,8 +91,6 @@ class RawFetcher {
   Ftrace ftrace_;
 };
 
-using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
-
 // Holds storage for a span object and the data referenced by that span for
 // compatibility with SharedSpan users. If constructed with MakeSharedSpan, span
 // points to only the aligned segment of the entire data.
@@ -112,8 +112,6 @@ std::pair<SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(size_t size);
 // and as a building block to implement typed senders.
 class RawSender {
  public:
-  using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
-
   enum class [[nodiscard]] Error {
     // Represents success and no error
     kOk,
@@ -166,7 +164,8 @@ class RawSender {
 
   // Sends a single block of data by refcounting it to avoid copies.  The data
   // must not change after being passed into Send. The remote arguments have the
-  // same meaning as in Send above.
+  // same meaning as in Send above.  Note: some implmementations will have to
+  // copy anyways, but other implementations can skip the copy.
   Error Send(const SharedSpan data);
   Error Send(const SharedSpan data,
              monotonic_clock::time_point monotonic_remote_time,
@@ -693,6 +692,13 @@ class EventLoop {
   // Fetcher before using it.
   template <typename T>
   Fetcher<T> TryMakeFetcher(const std::string_view channel_name) {
+    // Note: This could be done with SFINAE, but then you don't get as good an
+    // error message and the main benefit of SFINAE is to be able to make
+    // compilation *not* fail if we e.g. had another MakeFetcher overload that
+    // could take static flatbuffers.
+    static_assert(std::is_base_of<flatbuffers::Table, T>::value,
+                  "Fetchers must be created with raw flatbuffer types---static "
+                  "flatbuffers are currently not supported with fetchers.");
     const Channel *const channel = GetChannel<T>(channel_name);
     if (channel == nullptr) {
       return Fetcher<T>();
@@ -1032,7 +1038,12 @@ class ExitHandle {
   //
   // This means no more events will be processed, but any currently being
   // processed will finish.
-  virtual void Exit() = 0;
+  virtual void Exit(Result<void> result) = 0;
+  // Overload for a successful exit---equivalent to if we specified a default
+  // parameter for Exit(), except that autocxx does not understand default
+  // arguments and so needs an explicit overload to keep rust happy
+  // (https://github.com/google/autocxx/issues/563).
+  void Exit() { Exit({}); }
 };
 
 }  // namespace aos

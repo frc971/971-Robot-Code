@@ -55,7 +55,7 @@ regular flatbuffer API. It provides the following objects/interfaces to work wit
   templated `aos::fbs::Builder` object is provided which can
   take an allocator and then provide the relevant table class to the user.
 * We provide an `Allocator` class and various implementations (e.g., a
-  `VectorAllocator` backed by an `std::vector`) for managing the memory into
+  `AlignedVectorAllocator` backed by an `std::vector`) for managing the memory into
   which the `Builder` will serialize the flatbuffer.
 * A new `MakeStaticBuilder` method is provided on the `aos::Sender` class which
   constructs an `aos::fbs::Builder` to allow you to construct a message to be
@@ -92,7 +92,7 @@ comments on the respective class declarations.
 In order to handle alignment correctly in our `Builder` and `Allocator` classes,
 we end up forcing the `Builder` to be able to accept semi-arbitrarily aligned
 buffers in order to ease the `Allocator` implementation (e.g., the
-`VectorAllocator` uses a `std::vector` internally which does not necessarily
+`AlignedVectorAllocator` uses a `std::vector` internally which does not necessarily
 align its memory). The `Builder` then adds padding as needed and passes an
 appropriately aligned buffer down to the `Table` class.
 
@@ -299,7 +299,7 @@ TEST_F(StaticFlatbuffersTest, PopulateMethodConversionExample) {
   aos::FlatbufferDetachedBuffer<TestTable> fbb_finished = fbb.Release();
 
   // Using the static flatbuffer API.
-  aos::fbs::VectorAllocator allocator;
+  aos::fbs::AlignedVectorAllocator allocator;
   Builder<TestTableStatic> static_builder(&allocator);
   PopulateStatic(CHECK_NOTNULL(static_builder.get()->add_subtable()));
 

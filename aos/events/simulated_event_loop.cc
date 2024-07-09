@@ -135,7 +135,7 @@ class SimulatedFactoryExitHandle : public ExitHandle {
     --factory_->exit_handle_count_;
   }
 
-  void Exit() override { factory_->Exit(); }
+  void Exit(Result<void> status) override { factory_->Exit(status); }
 
  private:
   SimulatedEventLoopFactory *const factory_;
@@ -1559,7 +1559,15 @@ void NodeEventLoopFactory::Shutdown() {
   channels_.clear();
 }
 
-void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
+Result<void> SimulatedEventLoopFactory::GetAndClearExitStatus() {
+  std::optional<Result<void>> exit_status;
+  // Clear the stored exit_status_ and extract it to be returned.
+  exit_status_.swap(exit_status);
+  return exit_status.value_or(Result<void>{});
+}
+
+Result<void> SimulatedEventLoopFactory::RunFor(
+    monotonic_clock::duration duration) {
   // This sets running to true too.
   scheduler_scheduler_.RunFor(duration);
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
@@ -1569,14 +1577,20 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
       }
     }
   }
+  return GetAndClearExitStatus();
 }
 
-bool SimulatedEventLoopFactory::RunUntil(realtime_clock::time_point now,
-                                         const aos::Node *node) {
-  bool ran_until_time = scheduler_scheduler_.RunUntil(
-      now, &GetNodeEventLoopFactory(node)->scheduler_, [this, &node](void) {
-        return GetNodeEventLoopFactory(node)->realtime_offset();
-      });
+Result<SimulatedEventLoopFactory::RunEndState>
+SimulatedEventLoopFactory::RunUntil(realtime_clock::time_point now,
+                                    const aos::Node *node) {
+  RunEndState ran_until_time =
+      scheduler_scheduler_.RunUntil(
+          now, &GetNodeEventLoopFactory(node)->scheduler_,
+          [this, &node](void) {
+            return GetNodeEventLoopFactory(node)->realtime_offset();
+          })
+          ? RunEndState::kEventsRemaining
+          : RunEndState::kFinishedEventProcessing;
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
       for (SimulatedEventLoop *loop : node->event_loops_) {
@@ -1584,9 +1598,11 @@ bool SimulatedEventLoopFactory::RunUntil(realtime_clock::time_point now,
       }
     }
   }
-  return ran_until_time;
+  return GetAndClearExitStatus().transform(
+      [ran_until_time]() { return ran_until_time; });
 }
-void SimulatedEventLoopFactory::Run() {
+
+Result<void> SimulatedEventLoopFactory::Run() {
   // This sets running to true too.
   scheduler_scheduler_.Run();
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
@@ -1596,9 +1612,17 @@ void SimulatedEventLoopFactory::Run() {
       }
     }
   }
+  return GetAndClearExitStatus();
 }
 
-void SimulatedEventLoopFactory::Exit() { scheduler_scheduler_.Exit(); }
+void SimulatedEventLoopFactory::Exit(Result<void> status) {
+  if (!exit_status_.has_value()) {
+    exit_status_ = std::move(status);
+  } else {
+    VLOG(1) << "Exit status is already set; not setting it again.";
+  }
+  scheduler_scheduler_.Exit();
+}
 
 std::unique_ptr<ExitHandle> SimulatedEventLoopFactory::MakeExitHandle() {
   return std::make_unique<SimulatedFactoryExitHandle>(this);

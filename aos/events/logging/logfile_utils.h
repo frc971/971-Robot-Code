@@ -489,12 +489,6 @@ class UnpackedMessageHeader {
   // pointer to track.
   absl::Span<const uint8_t> span;
 
-  // Used to be able to mutate the data in the span. This is only used for
-  // mutating the message inside of LogReader for the Before Send Callback. It
-  // is safe in this case since there is only one caller to Send, and the data
-  // is not mutated after Send is called.
-  uint8_t *mutable_data() { return const_cast<uint8_t *>(span.data()); }
-
   char actual_data[];
 
  private:
@@ -526,7 +520,13 @@ struct Message {
 
   size_t monotonic_timestamp_boot = 0xffffff;
 
-  std::shared_ptr<UnpackedMessageHeader> data;
+  // Pointer to the unpacked header.
+  std::shared_ptr<UnpackedMessageHeader> header;
+
+  // Pointer to a pointer to the span with the flatbuffer to publish in it.  The
+  // second layer of indirection lets us modify all copies of a message when
+  // sending inside the log reader.
+  std::shared_ptr<SharedSpan> data;
 
   bool operator<(const Message &m2) const;
   bool operator<=(const Message &m2) const;
@@ -554,7 +554,10 @@ struct TimestampedMessage {
 
   BootTimestamp monotonic_timestamp_time;
 
-  std::shared_ptr<UnpackedMessageHeader> data;
+  // Pointer to a pointer to the data.  If the outer pointer isn't populated, no
+  // data exists to send, we only have the timestamps. If the inner pointer is
+  // nullptr, the user has marked the message as something to not send.
+  std::shared_ptr<SharedSpan> data;
 };
 
 std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m);
@@ -807,14 +810,8 @@ class SplitTimestampBootMerger {
   // Boot merger for just timestamps.  Any data read from here is to be ignored.
   std::unique_ptr<BootMerger> timestamp_boot_merger_;
 
-  // The callback requires us to convert each message to a TimestampedMessage.
-  std::deque<TimestampedMessage> timestamp_messages_;
-
-  // Storage for the next timestamp message to return.  This is separate so we
-  // can convert them back to a Message.
-  //
-  // TODO(austin): It would be nice to not have to convert...
-  std::optional<Message> next_timestamp_;
+  // Deque of all the timestamp messages.
+  std::deque<Message> timestamp_messages_;
 
   // Start times for each boot.
   std::vector<monotonic_clock::time_point> monotonic_start_time_;

@@ -46,10 +46,18 @@ class ShmEventLoop : public EventLoop {
   void operator=(ShmEventLoop const &) = delete;
 
   // Runs the event loop until Exit is called, or ^C is caught.
-  void Run();
-  // Exits the event loop.  Async safe.
+  Result<void> Run();
+  // Exits the event loop.  async-signal-safe (see
+  // https://man7.org/linux/man-pages/man7/signal-safety.7.html).
+  // Will result in Run() returning a successful result when called.
   void Exit();
 
+  // Exits the event loop with the provided status. Thread-safe, but not
+  // async-safe.
+  void ExitWithStatus(Result<void> status = {});
+
+  // Constructs an exit handle for the EventLoop. The provided ExitHandle uses
+  // ExitWithStatus().
   std::unique_ptr<ExitHandle> MakeExitHandle();
 
   aos::monotonic_clock::time_point monotonic_now() const override {
@@ -183,6 +191,21 @@ class ShmEventLoop : public EventLoop {
 
   // Only set during Run().
   std::unique_ptr<ipc_lib::SignalFd> signalfd_;
+
+  // Calls to Exit() are guaranteed to be thread-safe, so the exit_status_mutex_
+  // guards access to the exit_status_.
+  aos::stl_mutex exit_status_mutex_;
+  // Once exit_status_ is set once, we will not set it again until we have
+  // actually exited. This is to try to provide consistent behavior in cases
+  // where Exit() is called multiple times before Run() is aactually terminates
+  // execution.
+  std::optional<Result<void>> exit_status_{};
+  // Used by the Exit() call to provide an async-safe way of indicating that
+  // Exit() was called.
+  // Will be set once Exit() or ExitWithStatus() has been called.
+  // Note: std::atomic<> is not necessarily guaranteed to be lock-free, although
+  // std::atomic_flag is, and so is safe to use in Exit().
+  std::atomic_flag observed_exit_ = ATOMIC_FLAG_INIT;
 };
 
 }  // namespace aos

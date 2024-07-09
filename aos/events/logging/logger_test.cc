@@ -155,9 +155,15 @@ TEST_F(LoggerTest, MutateCallback) {
   // passing in a separate config.
   LogReader reader(logfile, &config_.message());
 
-  reader.AddBeforeSendCallback("/test", [](aos::examples::Ping *ping) {
-    ping->mutate_value(ping->value() + 1);
-  });
+  const uint8_t *data_ptr = nullptr;
+  reader.AddBeforeSendCallback<aos::examples::Ping>(
+      "/test",
+      [&data_ptr](aos::examples::Ping *ping,
+                  const TimestampedMessage &timestamped_message) -> SharedSpan {
+        ping->mutate_value(ping->value() + 10000);
+        data_ptr = timestamped_message.data.get()->get()->data();
+        return *timestamped_message.data;
+      });
 
   // This sends out the fetched messages and advances time to the start of the
   // log file.
@@ -170,15 +176,21 @@ TEST_F(LoggerTest, MutateCallback) {
 
   // Confirm that the ping and pong counts both match, and the value also
   // matches.
-  int ping_count = 10;
-  test_event_loop->MakeWatcher("/test",
-                               [&ping_count](const examples::Ping &ping) {
-                                 ++ping_count;
-                                 EXPECT_EQ(ping.value(), ping_count);
-                               });
+  int ping_count = 10010;
+  test_event_loop->MakeWatcher(
+      "/test",
+      [&test_event_loop, &data_ptr, &ping_count](const examples::Ping &ping) {
+        ++ping_count;
+        EXPECT_EQ(ping.value(), ping_count);
+        // Since simulated event loops (especially log replay) refcount the
+        // shared data, we can verify if the right data got published by
+        // verifying that the actual pointer to the flatbuffer matches.  This
+        // only is guarenteed to hold during this callback.
+        EXPECT_EQ(test_event_loop->context().data, data_ptr);
+      });
 
   reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
-  EXPECT_EQ(ping_count, 2010);
+  EXPECT_EQ(ping_count, 12010);
 }
 
 // Tests calling StartLogging twice.

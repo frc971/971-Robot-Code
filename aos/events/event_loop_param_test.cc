@@ -1,6 +1,7 @@
 #include "aos/events/event_loop_param_test.h"
 
 #include <chrono>
+#include <filesystem>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -3795,6 +3796,49 @@ TEST_P(AbstractEventLoopTest, SendingTooFastWithLongDuration) {
   // Since queue_size messages have been sent, and little time has elapsed,
   // this should return an error.
   EXPECT_EQ(SendTestMessage(sender1), RawSender::Error::kMessagesSentTooFast);
+}
+
+// Tests that we can exit with a default constructor and that Run() will
+// indicate a successful exit.
+TEST_P(AbstractEventLoopTest, ExitHandleExitSuccessful) {
+  auto loop = MakePrimary();
+  std::unique_ptr<ExitHandle> exit_handle = MakeExitHandle();
+  bool happened = false;
+
+  loop->OnRun([&exit_handle, &happened]() {
+    happened = true;
+    exit_handle->Exit();
+  });
+
+  EXPECT_TRUE(Run().has_value());
+  EXPECT_TRUE(happened);
+}
+
+// Tests that we can exit with an error Status and have that returned via the
+// Run() method.
+TEST_P(AbstractEventLoopTest, ExitHandleExitFailure) {
+  auto loop = MakePrimary();
+  std::unique_ptr<ExitHandle> exit_handle = MakeExitHandle();
+  bool happened = false;
+
+  loop->OnRun([&exit_handle, &happened]() {
+    happened = true;
+    exit_handle->Exit(Error::MakeUnexpectedError("Hello, World!"));
+    // The second Exit() should not affect the final return value.
+    exit_handle->Exit(Error::MakeUnexpectedError("Hello, World! 2"));
+  });
+  const int line = __LINE__ - 4;
+
+  Result<void> status = Run();
+
+  EXPECT_TRUE(happened);
+  EXPECT_FALSE(status.has_value());
+  EXPECT_EQ(std::string("Hello, World!"), status.error().message());
+  ASSERT_TRUE(status.error().source_location().has_value());
+  EXPECT_EQ(std::string("event_loop_param_test.cc"),
+            std::filesystem::path(status.error().source_location()->file_name())
+                .filename());
+  EXPECT_EQ(line, status.error().source_location()->line());
 }
 
 }  // namespace aos::testing

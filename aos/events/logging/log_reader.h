@@ -21,7 +21,6 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/logging/replay_channels.h"
 #include "aos/events/logging/replay_timing_generated.h"
-#include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/message_bridge_server_generated.h"
@@ -103,7 +102,7 @@ class LogReader {
   LogReader(LogFilesContainer log_files,
             const Configuration *replay_configuration = nullptr,
             const ReplayChannels *replay_channels = nullptr);
-  ~LogReader();
+  virtual ~LogReader();
 
   // Registers all the callbacks to send the log file data out on an event loop
   // created in event_loop_factory.  This also updates time to be at the start
@@ -116,7 +115,8 @@ class LogReader {
   // Registers all the callbacks to send the log file data out to an event loop
   // factory.  This does not start replaying or change the current distributed
   // time of the factory.  It does change the monotonic clocks to be right.
-  void RegisterWithoutStarting(SimulatedEventLoopFactory *event_loop_factory);
+  virtual void RegisterWithoutStarting(
+      SimulatedEventLoopFactory *event_loop_factory);
   // Runs the log until the last start time.  Register above is defined as:
   // Register(...) {
   //   RegisterWithoutStarting
@@ -323,6 +323,8 @@ class LogReader {
 
   std::string_view name() const { return log_files_.name(); }
 
+  const LogFilesContainer &log_files() const { return log_files_; }
+
   // Set whether to exit the SimulatedEventLoopFactory when we finish reading
   // the logfile.
   void set_exit_on_finish(bool exit_on_finish) {
@@ -346,16 +348,24 @@ class LogReader {
   // implementation. And, the callback is called only once one the Sender's Node
   // if the channel is forwarded.
   //
+  // The callback should have a signature like:
+  //   [](aos::examples::Ping *ping,
+  //      const TimestampedMessage &timestamped_message) -> SharedSpan {
+  //          if (drop) {
+  //            return nullptr;
+  //          } else {
+  //            return *timestamped_message.data;
+  //          }
+  //      }
+  //
+  // If nullptr is returned, the message will not be sent.
+  //
   // See multinode_logger_test for examples of usage.
-  template <typename Callback>
+  template <typename MessageType, typename Callback>
   void AddBeforeSendCallback(std::string_view channel_name,
                              Callback &&callback) {
     CHECK(!AreStatesInitialized())
         << ": Cannot add callbacks after calling Register";
-
-    using MessageType = typename std::remove_pointer<
-        typename event_loop_internal::watch_message_type_trait<
-            decltype(&Callback::operator())>::message_type>::type;
 
     const Channel *channel = configuration::GetChannel(
         logged_configuration(), channel_name,
@@ -373,9 +383,16 @@ class LogReader {
         << ":{ \"name\": \"" << channel_name << "\", \"type\": \""
         << MessageType::GetFullyQualifiedName() << "\" }";
 
-    before_send_callbacks_[channel_index] = [callback](void *message) {
-      callback(flatbuffers::GetMutableRoot<MessageType>(
-          reinterpret_cast<char *>(message)));
+    before_send_callbacks_[channel_index] =
+        [callback](TimestampedMessage &timestamped_message) -> SharedSpan {
+      // Note: the const_cast is because SharedSpan is defined to be a pointer
+      // to const data, even though it wraps mutable data.
+      // TODO(austin): Refactor to make it non-const properly to drop the const
+      // cast.
+      return callback(flatbuffers::GetMutableRoot<MessageType>(
+                          reinterpret_cast<char *>(const_cast<uint8_t *>(
+                              timestamped_message.data.get()->get()->data()))),
+                      timestamped_message);
     };
   }
 
@@ -460,7 +477,7 @@ class LogReader {
           std::function<void()> notice_realtime_end, const Node *node,
           ThreadedBuffering threading,
           std::unique_ptr<const ReplayChannelIndices> replay_channel_indices,
-          const std::vector<std::function<void(void *message)>>
+          const std::vector<std::function<SharedSpan(TimestampedMessage &)>>
               &before_send_callbacks);
 
     // Connects up the timestamp mappers.
@@ -705,8 +722,9 @@ class LogReader {
           std::max(monotonic_now(), next_time + clock_offset()));
     }
 
-    // Sends a buffer on the provided channel index.
-    bool Send(const TimestampedMessage &&timestamped_message);
+    // Sends a buffer on the provided channel index.  Returns true if the
+    // message was actually sent, and false otherwise.
+    bool Send(TimestampedMessage &&timestamped_message);
 
     void MaybeSetClockOffset();
     std::chrono::nanoseconds clock_offset() const { return clock_offset_; }
@@ -886,7 +904,7 @@ class LogReader {
     // indices of the channels to replay for the Node represented by
     // the instance of LogReader::State.
     std::unique_ptr<const ReplayChannelIndices> replay_channel_indices_;
-    const std::vector<std::function<void(void *message)>>
+    const std::vector<std::function<SharedSpan(TimestampedMessage &)>>
         before_send_callbacks_;
   };
 
@@ -934,7 +952,8 @@ class LogReader {
 
   // The callbacks that will be called before sending a message indexed by the
   // channel index from the logged_configuration
-  std::vector<std::function<void(void *message)>> before_send_callbacks_;
+  std::vector<std::function<SharedSpan(TimestampedMessage &)>>
+      before_send_callbacks_;
 
   // If true, the replay timer will ignore any missing data.  This is used
   // during startup when we are bootstrapping everything and trying to get to

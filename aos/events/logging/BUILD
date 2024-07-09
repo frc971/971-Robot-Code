@@ -463,7 +463,6 @@ cc_library(
         "//aos:condition",
         "//aos:uuid",
         "//aos/events:event_loop",
-        "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/mutex",
         "//aos/network:message_bridge_server_fbs",
@@ -929,6 +928,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":multinode_logger_test_lib",
+        "//aos/flatbuffers:base",
     ],
 )
 

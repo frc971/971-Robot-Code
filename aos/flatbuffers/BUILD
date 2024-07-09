@@ -19,13 +19,22 @@ cc_library(
 
 cc_library(
     name = "base",
-    srcs = ["base.cc"],
-    hdrs = ["base.h"],
+    srcs = [
+        "base.cc",
+    ],
+    hdrs = [
+        "base.h",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos:shared_span",
+        "//aos/containers:resizeable_buffer",
+        "//aos/ipc_lib:data_alignment",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

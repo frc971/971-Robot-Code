@@ -37,20 +37,17 @@ ResizeableObject::ResizeableObject(ResizeableObject &&other)
   }
 }
 
-bool ResizeableObject::InsertBytes(void *insertion_point, size_t bytes,
-                                   SetZero set_zero) {
+std::optional<std::span<uint8_t>> ResizeableObject::InsertBytes(
+    void *insertion_point, size_t bytes, SetZero set_zero) {
   // See comments on InsertBytes() declaration and in FixObjects()
   // implementation below.
-  CHECK_LT(buffer_.data(), reinterpret_cast<const uint8_t *>(insertion_point))
+  CHECK_LT(reinterpret_cast<const void *>(buffer_.data()),
+           reinterpret_cast<const void *>(insertion_point))
       << ": Insertion may not be prior to the start of the buffer.";
-  // Check that we started off with a properly aligned size.
-  // Doing this CHECK earlier is tricky because if done in the constructor then
-  // it executes prior to the Alignment() implementation being available.
-  CHECK_EQ(0u, buffer_.size() % Alignment());
   // Note that we will round up the size to the current alignment, so that we
   // ultimately end up only adjusting the buffer size by a multiple of its
   // alignment, to avoid having to do any more complicated bookkeeping.
-  const size_t aligned_bytes = PaddedSize(bytes, Alignment());
+  const size_t aligned_bytes = AlignOffset(bytes, Alignment());
   if (parent_ != nullptr) {
     return parent_->InsertBytes(insertion_point, aligned_bytes, set_zero);
   } else {
@@ -59,14 +56,16 @@ bool ResizeableObject::InsertBytes(void *insertion_point, size_t bytes,
             ->InsertBytes(insertion_point, aligned_bytes, Alignment(),
                           set_zero);
     if (!new_buffer.has_value()) {
-      return false;
+      return std::nullopt;
     }
-    UpdateBuffer(new_buffer.value(),
-                 new_buffer.value().data() +
-                     (reinterpret_cast<const uint8_t *>(insertion_point) -
-                      buffer_.data()),
-                 aligned_bytes);
-    return true;
+    std::span<uint8_t> inserted_data(
+        new_buffer.value().data() +
+            (reinterpret_cast<const uint8_t *>(insertion_point) -
+             buffer_.data()),
+        aligned_bytes);
+    UpdateBuffer(new_buffer.value(), inserted_data.data(),
+                 inserted_data.size());
+    return inserted_data;
   }
 }
 
@@ -78,16 +77,9 @@ void ResizeableObject::UpdateBuffer(std::span<uint8_t> new_buffer,
   ObserveBufferModification();
 }
 
-std::span<uint8_t> ResizeableObject::BufferForObject(
-    size_t absolute_offset, size_t size, size_t terminal_alignment) {
-  const size_t padded_size = PaddedSize(size, terminal_alignment);
-  std::span<uint8_t> padded_buffer =
-      internal::GetSubSpan(buffer_, absolute_offset, padded_size);
-  std::span<uint8_t> object_buffer =
-      internal::GetSubSpan(padded_buffer, 0, size);
-  std::span<uint8_t> padding = internal::GetSubSpan(padded_buffer, size);
-  internal::ClearSpan(padding);
-  return object_buffer;
+std::span<uint8_t> ResizeableObject::BufferForObject(size_t absolute_offset,
+                                                     size_t size) {
+  return internal::GetSubSpan(buffer_, absolute_offset, size);
 }
 
 void ResizeableObject::FixObjects(void *modification_point,
@@ -103,8 +95,7 @@ void ResizeableObject::FixObjects(void *modification_point,
         object.inline_entry < modification_point) {
       if (*object.inline_entry != 0) {
         CHECK_EQ(static_cast<const void *>(
-                     static_cast<const uint8_t *>(absolute_offset) +
-                     CHECK_NOTNULL(object.object)->AbsoluteOffsetOffset()),
+                     static_cast<const uint8_t *>(absolute_offset)),
                  DereferenceOffset(object.inline_entry));
         *object.inline_entry += bytes_inserted;
         CHECK_GE(DereferenceOffset(object.inline_entry), modification_point)
@@ -119,8 +110,7 @@ void ResizeableObject::FixObjects(void *modification_point,
     // We only need to update the object's buffer if it currently exists.
     if (object.object != nullptr) {
       std::span<uint8_t> subbuffer = BufferForObject(
-          *object.absolute_offset, object.object->buffer_.size(),
-          object.object->Alignment());
+          *object.absolute_offset, object.object->buffer_.size());
       // By convention (enforced in InsertBytes()), the modification_point shall
       // not be at the start of the subobjects data buffer; it may be the byte
       // just past the end of the buffer. This makes it so that is unambiguous
@@ -136,39 +126,8 @@ void ResizeableObject::FixObjects(void *modification_point,
   }
 }
 
-std::optional<std::span<uint8_t>> VectorAllocator::Allocate(
-    size_t size, size_t /*alignment*/, SetZero set_zero) {
-  CHECK(buffer_.empty()) << ": Must deallocate before calling Allocate().";
-  buffer_.resize(size);
-  if (set_zero == SetZero::kYes) {
-    memset(buffer_.data(), 0, buffer_.size());
-  }
-  return std::span<uint8_t>{buffer_.data(), buffer_.size()};
-}
-
-std::optional<std::span<uint8_t>> VectorAllocator::InsertBytes(
-    void *insertion_point, size_t bytes, size_t /*alignment*/, SetZero) {
-  const ssize_t insertion_index =
-      reinterpret_cast<uint8_t *>(insertion_point) - buffer_.data();
-  CHECK_LE(0, insertion_index);
-  CHECK_LE(insertion_index, static_cast<ssize_t>(buffer_.size()));
-  buffer_.insert(buffer_.begin() + insertion_index, bytes, 0);
-  return std::span<uint8_t>{buffer_.data(), buffer_.size()};
-}
-
-std::span<uint8_t> VectorAllocator::RemoveBytes(
-    std::span<uint8_t> remove_bytes) {
-  const ssize_t removal_index = remove_bytes.data() - buffer_.data();
-  CHECK_LE(0, removal_index);
-  CHECK_LE(removal_index, static_cast<ssize_t>(buffer_.size()));
-  CHECK_LE(removal_index + remove_bytes.size(), buffer_.size());
-  buffer_.erase(buffer_.begin() + removal_index,
-                buffer_.begin() + removal_index + remove_bytes.size());
-  return {buffer_.data(), buffer_.size()};
-}
-
 std::optional<std::span<uint8_t>> SpanAllocator::Allocate(size_t size,
-                                                          size_t /*alignment*/,
+                                                          size_t alignment,
                                                           SetZero set_zero) {
   CHECK(!allocated_);
   if (size > buffer_.size()) {
@@ -179,6 +138,10 @@ std::optional<std::span<uint8_t>> SpanAllocator::Allocate(size_t size,
   }
   allocated_size_ = size;
   allocated_ = true;
+  CHECK_GT(alignment, 0u);
+  CHECK_EQ(buffer_.size() % alignment, 0u)
+      << ": Buffer isn't a multiple of alignment " << alignment << " long, is "
+      << buffer_.size() << " long";
   return internal::GetSubSpan(buffer_, buffer_.size() - size);
 }
 
@@ -221,6 +184,97 @@ std::span<uint8_t> SpanAllocator::RemoveBytes(std::span<uint8_t> remove_bytes) {
 void SpanAllocator::Deallocate(std::span<uint8_t>) {
   CHECK(allocated_) << ": Called Deallocate() without a prior allocation.";
   allocated_ = false;
+}
+
+AlignedVectorAllocator::~AlignedVectorAllocator() {
+  CHECK(buffer_.empty())
+      << ": Must deallocate before destroying the AlignedVectorAllocator.";
+}
+
+std::optional<std::span<uint8_t>> AlignedVectorAllocator::Allocate(
+    size_t size, size_t /*alignment*/, fbs::SetZero set_zero) {
+  CHECK(buffer_.empty()) << ": Must deallocate before calling Allocate().";
+  buffer_.resize(((size + kAlignment - 1) / kAlignment) * kAlignment);
+  allocated_size_ = size;
+  if (set_zero == fbs::SetZero::kYes) {
+    memset(buffer_.data(), 0, buffer_.size());
+  }
+
+  return std::span<uint8_t>{data(), allocated_size_};
+}
+
+std::optional<std::span<uint8_t>> AlignedVectorAllocator::InsertBytes(
+    void *insertion_point, size_t bytes, size_t /*alignment*/,
+    fbs::SetZero set_zero) {
+  DCHECK_GE(reinterpret_cast<const uint8_t *>(insertion_point), data());
+  DCHECK_LE(reinterpret_cast<const uint8_t *>(insertion_point),
+            data() + allocated_size_);
+  const size_t buffer_offset =
+      reinterpret_cast<const uint8_t *>(insertion_point) - data();
+  // TODO(austin): This has an extra memcpy in it that isn't strictly needed
+  // when we resize.  Remove it if performance is a concern.
+  const size_t absolute_buffer_offset =
+      reinterpret_cast<const uint8_t *>(insertion_point) - buffer_.data();
+  const size_t previous_size = buffer_.size();
+
+  buffer_.resize(((allocated_size_ + bytes + kAlignment - 1) / kAlignment) *
+                 kAlignment);
+
+  // Now, we've got space both before and after the block of data.  Move the
+  // data after to the end, and the data before to the start.
+
+  const size_t new_space_after = buffer_.size() - previous_size;
+
+  // Move the rest of the data to be end aligned.  If the buffer wasn't resized,
+  // this will be a nop.
+  memmove(buffer_.data() + absolute_buffer_offset + new_space_after,
+          buffer_.data() + absolute_buffer_offset,
+          previous_size - absolute_buffer_offset);
+
+  // Now, move the data at the front to be aligned too.
+  memmove(buffer_.data() + buffer_.size() - (allocated_size_ + bytes),
+          buffer_.data() + previous_size - allocated_size_,
+          allocated_size_ - (previous_size - absolute_buffer_offset));
+
+  if (set_zero == fbs::SetZero::kYes) {
+    memset(data() - bytes + buffer_offset, 0, bytes);
+  }
+  allocated_size_ += bytes;
+
+  return std::span<uint8_t>{data(), allocated_size_};
+}
+
+std::span<uint8_t> AlignedVectorAllocator::RemoveBytes(
+    std::span<uint8_t> remove_bytes) {
+  const ssize_t removal_index = remove_bytes.data() - buffer_.data();
+  const size_t old_start_index = buffer_.size() - allocated_size_;
+  CHECK_LE(static_cast<ssize_t>(old_start_index), removal_index);
+  CHECK_LE(removal_index, static_cast<ssize_t>(buffer_.size()));
+  CHECK_LE(removal_index + remove_bytes.size(), buffer_.size());
+  uint8_t *old_buffer_start = buffer_.data() + old_start_index;
+  memmove(old_buffer_start + remove_bytes.size(), old_buffer_start,
+          removal_index - old_start_index);
+  allocated_size_ -= remove_bytes.size();
+
+  return std::span<uint8_t>{data(), allocated_size_};
+}
+
+void AlignedVectorAllocator::Deallocate(std::span<uint8_t>) {
+  if (!released_) {
+    CHECK(!buffer_.empty())
+        << ": Called Deallocate() without a prior allocation.";
+  }
+  released_ = false;
+  buffer_.resize(0);
+}
+
+aos::SharedSpan AlignedVectorAllocator::Release() {
+  absl::Span<uint8_t> span{data(), allocated_size_};
+  std::shared_ptr<SharedSpanHolder> result = std::make_shared<SharedSpanHolder>(
+      std::move(buffer_), absl::Span<const uint8_t>());
+  result->span = span;
+  released_ = true;
+  return aos::SharedSpan(result, &(result->span));
 }
 
 namespace internal {

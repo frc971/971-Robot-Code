@@ -1301,7 +1301,7 @@ LogReader::State::State(
     std::function<void()> notice_realtime_end, const Node *node,
     LogReader::State::ThreadedBuffering threading,
     std::unique_ptr<const ReplayChannelIndices> replay_channel_indices,
-    const std::vector<std::function<void(void *message)>>
+    const std::vector<std::function<SharedSpan(TimestampedMessage &)>>
         &before_send_callbacks)
     : timestamp_mapper_(std::move(timestamp_mapper)),
       timestamp_queue_strategy_(timestamp_queue_strategy),
@@ -1416,7 +1416,7 @@ void LogReader::State::SendMessageTimings() {
   timing_statistics_sender_.CheckOk(builder.Send(timing_builder.Finish()));
 }
 
-bool LogReader::State::Send(const TimestampedMessage &&timestamped_message) {
+bool LogReader::State::Send(TimestampedMessage &&timestamped_message) {
   aos::RawSender *sender = channels_[timestamped_message.channel_index].get();
   CHECK(sender);
   uint32_t remote_queue_index = 0xffffffff;
@@ -1506,21 +1506,31 @@ bool LogReader::State::Send(const TimestampedMessage &&timestamped_message) {
                  ->boot_uuid());
   }
 
+  SharedSpan to_send;
   // Right before sending allow the user to process the message.
   if (before_send_callbacks_[timestamped_message.channel_index]) {
-    // Only channels that are forwarded and sent from this State's node will be
-    // in the queue_index_map_
-    if (queue_index_map_[timestamped_message.channel_index]) {
-      before_send_callbacks_[timestamped_message.channel_index](
-          timestamped_message.data->mutable_data());
+    // Only channels which are forwarded and on the destination node have
+    // channel_source_state_ set to non-null.  See RegisterDuringStartup.
+    if (channel_source_state_[timestamped_message.channel_index] == nullptr) {
+      // It is safe in this case since there is only one caller to Send, and the
+      // data is not mutated after Send is called.
+      to_send = before_send_callbacks_[timestamped_message.channel_index](
+          timestamped_message);
+      *timestamped_message.data.get() = to_send;
+    } else {
+      to_send = *timestamped_message.data;
     }
+    if (!to_send) {
+      return false;
+    }
+  } else {
+    to_send = *timestamped_message.data;
   }
 
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
   const RawSender::Error err = sender->Send(
-      SharedSpan(timestamped_message.data, &timestamped_message.data->span),
-      timestamped_message.monotonic_remote_time.time,
+      std::move(to_send), timestamped_message.monotonic_remote_time.time,
       timestamped_message.realtime_remote_time,
       timestamped_message.monotonic_remote_transmit_time.time,
       remote_queue_index,

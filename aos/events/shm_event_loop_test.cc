@@ -57,7 +57,13 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     return loop;
   }
 
-  void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }
+  Result<void> Run() override {
+    return CHECK_NOTNULL(primary_event_loop_)->Run();
+  }
+
+  std::unique_ptr<ExitHandle> MakeExitHandle() override {
+    return CHECK_NOTNULL(primary_event_loop_)->MakeExitHandle();
+  }
 
   void Exit() override { CHECK_NOTNULL(primary_event_loop_)->Exit(); }
 
@@ -66,7 +72,7 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
   }
 
  private:
-  ::aos::ShmEventLoop *primary_event_loop_;
+  ::aos::ShmEventLoop *primary_event_loop_ = nullptr;
 };
 
 auto CommonParameters() {
@@ -294,6 +300,21 @@ TEST_P(ShmEventLoopTest, DelayedPhasedLoop) {
   factory()->Run();
 
   EXPECT_EQ(times.size(), 2u);
+}
+
+// Tests that the ShmEventLoop::Exit() method causes the ShmEventLoop to return
+// with a successful status.
+TEST_P(ShmEventLoopTest, SuccessfulExitTest) {
+  auto loop1 = factory()->MakePrimary("primary");
+  auto exit_handle = factory()->MakeExitHandle();
+
+  loop1->OnRun([this, &exit_handle]() {
+    factory()->Exit();
+    // The second Exit() call should get ignored.
+    exit_handle->Exit(aos::Error::MakeUnexpectedError("Hello, World!"));
+  });
+
+  EXPECT_TRUE(factory()->Run().has_value());
 }
 
 // Test GetWatcherSharedMemory in a few basic scenarios.

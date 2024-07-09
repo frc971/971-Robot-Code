@@ -1,5 +1,6 @@
 #ifndef AOS_FLATBUFFERS_BASE_H_
 #define AOS_FLATBUFFERS_BASE_H_
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -11,21 +12,31 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "flatbuffers/base.h"
 #include "glog/logging.h"
 
+#include "aos/containers/resizeable_buffer.h"
+#include "aos/ipc_lib/data_alignment.h"
+#include "aos/shared_span.h"
+
 namespace aos::fbs {
+
 using ::flatbuffers::soffset_t;
 using ::flatbuffers::uoffset_t;
 using ::flatbuffers::voffset_t;
 
-// Returns the smallest multiple of alignment that is greater than or equal to
-// size.
-constexpr size_t PaddedSize(size_t size, size_t alignment) {
+// Returns the offset into the buffer needed to provide 'alignment' alignment
+// 'aligned_offset' bytes after the returned offset.  This assumes that the
+// first 'starting_offset' bytes are spoken for.
+constexpr size_t AlignOffset(size_t starting_offset, size_t alignment,
+                             size_t aligned_offset = 0) {
   // We can be clever with bitwise operations by assuming that aligment is a
   // power of two. Or we can just be clearer about what we mean and eat a few
   // integer divides.
-  return (((size - 1) / alignment) + 1) * alignment;
+  return (((starting_offset + aligned_offset - 1) / alignment) + 1) *
+             alignment -
+         aligned_offset;
 }
 
 // Used as a parameter to methods where we are messing with memory and may or
@@ -109,11 +120,6 @@ class ResizeableObject {
   ResizeableObject(ResizeableObject &&other);
   // Required alignment of this object.
   virtual size_t Alignment() const = 0;
-  // Offset from the start of buffer() to the actual start of the object in
-  // question (this is important for vectors, where the vector itself cannot
-  // have internal padding, and so the start of the vector may be offset from
-  // the start of the buffer to handle alignment).
-  virtual size_t AbsoluteOffsetOffset() const = 0;
   // Causes bytes bytes to be inserted between insertion_point - 1 and
   // insertion_point.
   // If requested, the new bytes will be cleared to zero; otherwise they will be
@@ -123,9 +129,10 @@ class ResizeableObject {
   // implementation, and is merely a requirement that any buffer growth occur
   // only on the inside or past the end of the vector, and not prior to the
   // start of the vector.
-  // Returns true on success, false on failure (e.g., if the allocator has no
-  // memory available).
-  bool InsertBytes(void *insertion_point, size_t bytes, SetZero set_zero);
+  // Returns a span of the inserted bytes on success, nullopt on failure (e.g.,
+  // if the allocator has no memory available).
+  std::optional<std::span<uint8_t>> InsertBytes(void *insertion_point,
+                                                size_t bytes, SetZero set_zero);
   // Called *after* the internal buffer_ has been swapped out and *after* the
   // object tree has been traversed and fixed.
   virtual void ObserveBufferModification() {}
@@ -144,12 +151,9 @@ class ResizeableObject {
   const void *PointerForAbsoluteOffset(const size_t absolute_offset) {
     return buffer_.data() + absolute_offset;
   }
-  // Returns a span at the requested offset into the buffer. terminal_alignment
-  // does not align the start of the buffer; instead, it ensures that the memory
-  // from absolute_offset + size until the next multiple of terminal_alignment
-  // is set to all zeroes.
-  std::span<uint8_t> BufferForObject(size_t absolute_offset, size_t size,
-                                     size_t terminal_alignment);
+  // Returns a span at the requested offset into the buffer for the requested
+  // size.
+  std::span<uint8_t> BufferForObject(size_t absolute_offset, size_t size);
   // When memory has been inserted/removed, this iterates over the sub-objects
   // and notifies/adjusts them appropriately.
   // This will be called after buffer_ has been updated, and:
@@ -174,8 +178,9 @@ class ResizeableObject {
 class Allocator {
  public:
   virtual ~Allocator() {}
-  // Allocates memory of the requested size and alignment. alignment is not
+  // Allocates memory of the requested size and alignment. alignment is
   // guaranteed.
+  //
   // On failure to allocate the requested size, returns nullopt;
   // Never returns a partial span.
   // The span will be initialized to zero upon request.
@@ -183,16 +188,19 @@ class Allocator {
   // Deallocate() has been called. In order to adjust the size of the buffer,
   // call InsertBytes() and RemoveBytes().
   [[nodiscard]] virtual std::optional<std::span<uint8_t>> Allocate(
-      size_t size, size_t alignment_hint, SetZero set_zero) = 0;
+      size_t size, size_t alignment, SetZero set_zero) = 0;
   // Identical to Allocate(), but dies on failure.
-  [[nodiscard]] std::span<uint8_t> AllocateOrDie(size_t size,
-                                                 size_t alignment_hint,
+  [[nodiscard]] std::span<uint8_t> AllocateOrDie(size_t size, size_t alignment,
                                                  SetZero set_zero) {
     std::optional<std::span<uint8_t>> span =
-        Allocate(size, alignment_hint, set_zero);
+        Allocate(size, alignment, set_zero);
     CHECK(span.has_value()) << ": Failed to allocate " << size << " bytes.";
     CHECK_EQ(size, span.value().size())
         << ": Failed to allocate " << size << " bytes.";
+    CHECK_EQ(reinterpret_cast<size_t>(span.value().data()) % alignment, 0u)
+        << "Failed to allocate data of length " << size << " with alignment "
+        << alignment;
+
     return span.value();
   }
   // Increases the size of the buffer by inserting bytes bytes immediately
@@ -217,33 +225,6 @@ class Allocator {
   // If Allocate() has been called, Deallocate() must be called prior to
   // destroying the Allocator.
   virtual void Deallocate(std::span<uint8_t> buffer) = 0;
-};
-
-// Allocator that uses an std::vector to allow arbitrary-sized allocations.
-// Does not provide any alignment guarantees.
-class VectorAllocator : public Allocator {
- public:
-  VectorAllocator() {}
-  ~VectorAllocator() {
-    CHECK(buffer_.empty())
-        << ": Must deallocate before destroying the VectorAllocator.";
-  }
-  std::optional<std::span<uint8_t>> Allocate(size_t size, size_t /*alignment*/,
-                                             SetZero set_zero) override;
-  std::optional<std::span<uint8_t>> InsertBytes(void *insertion_point,
-                                                size_t bytes,
-                                                size_t /*alignment*/,
-                                                SetZero /*set_zero*/) override;
-  std::span<uint8_t> RemoveBytes(std::span<uint8_t> remove_bytes) override;
-
-  void Deallocate(std::span<uint8_t>) override {
-    CHECK(!buffer_.empty())
-        << ": Called Deallocate() without a prior allocation.";
-    buffer_.resize(0);
-  }
-
- private:
-  std::vector<uint8_t> buffer_;
 };
 
 // Allocator that allocates all of its memory within a provided span. To match
@@ -278,17 +259,59 @@ class SpanAllocator : public Allocator {
   size_t allocated_size_ = 0;
 };
 
+// Allocator that uses an AllocatorResizeableBuffer to allow arbitrary-sized
+// allocations.  Aligns the end of the buffer to an alignment of
+// kChannelDataAlignment.
+class AlignedVectorAllocator : public fbs::Allocator {
+ public:
+  static constexpr size_t kAlignment = aos::kChannelDataAlignment;
+  AlignedVectorAllocator() {}
+  ~AlignedVectorAllocator();
+
+  std::optional<std::span<uint8_t>> Allocate(size_t size, size_t alignment,
+                                             fbs::SetZero set_zero) override;
+
+  std::optional<std::span<uint8_t>> InsertBytes(void *insertion_point,
+                                                size_t bytes, size_t alignment,
+                                                fbs::SetZero set_zero) override;
+
+  std::span<uint8_t> RemoveBytes(std::span<uint8_t> remove_bytes) override;
+
+  void Deallocate(std::span<uint8_t>) override;
+
+  // Releases the data which has been allocated from this allocator to the
+  // caller.  This is needed because Deallocate actually frees the memory.
+  aos::SharedSpan Release();
+
+ private:
+  struct SharedSpanHolder {
+    aos::AllocatorResizeableBuffer<aos::AlignedReallocator<kAlignment>> buffer;
+    absl::Span<const uint8_t> span;
+  };
+  uint8_t *data() { return buffer_.data() + buffer_.size() - allocated_size_; }
+
+  aos::AllocatorResizeableBuffer<aos::AlignedReallocator<kAlignment>> buffer_;
+
+  // The size of the data that has been returned from Allocate.  This counts
+  // from the end of buffer_.
+  size_t allocated_size_ = 0u;
+  // If true, the data has been released from buffer_, and we don't own it
+  // anymore.  This enables Deallocate to properly handle the case when the user
+  // releases the memory, but the Builder still needs to clean up.
+  bool released_ = false;
+};
+
 // Allocates and owns a fixed-size memory buffer on the stack.
 //
 // This provides a convenient Allocator for use with the aos::fbs::Builder
 // in realtime code instead of trying to use the VectorAllocator.
-template <std::size_t N>
+template <std::size_t N, std::size_t alignment = 64>
 class FixedStackAllocator : public SpanAllocator {
  public:
   FixedStackAllocator() : SpanAllocator({buffer_, sizeof(buffer_)}) {}
 
  private:
-  uint8_t buffer_[N];
+  alignas(alignment) uint8_t buffer_[N];
 };
 
 namespace internal {
@@ -323,4 +346,5 @@ struct TableMover {
 };
 }  // namespace internal
 }  // namespace aos::fbs
+
 #endif  // AOS_FLATBUFFERS_BASE_H_
