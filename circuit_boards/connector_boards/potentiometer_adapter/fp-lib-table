@@ -1,3 +1,0 @@
-(fp_lib_table
-  (lib (name "potentiometer")(type "KiCad")(uri "${KIPRJMOD}/potentiometer.pretty")(options "")(descr ""))
-)

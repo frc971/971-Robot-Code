@@ -1,3 +1,0 @@
-(fp_lib_table
-  (lib (name RspPiPicoIMU)(type KiCad)(uri ${KIPRJMOD}/RspPiPicoIMU.pretty)(options "")(descr ""))
-)
