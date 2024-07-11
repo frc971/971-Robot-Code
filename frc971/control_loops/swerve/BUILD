@@ -165,3 +165,16 @@ py_binary(
         "@pip//scipy",
     ],
 )
+
+py_test(
+    name = "physics_test",
+    srcs = [
+        "dynamics.py",
+        "physics_test.py",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        "@pip//casadi",
+        "@pip//numpy",
+    ],
+)
