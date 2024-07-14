@@ -108,6 +108,64 @@ TEST(RealtimeDeathTest, Fatal) {
       "Cute message here");
 }
 
+TEST(RealtimeDeathTest, Malloc) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        volatile int *a = reinterpret_cast<volatile int *>(malloc(sizeof(int)));
+        *a = 5;
+        EXPECT_EQ(*a, 5);
+      },
+      "RAW: Malloced");
+}
+
+TEST(RealtimeDeathTest, Realloc) {
+  EXPECT_DEATH(
+      {
+        void *a = malloc(sizeof(int));
+        ScopedRealtime rt;
+        volatile int *b =
+            reinterpret_cast<volatile int *>(realloc(a, sizeof(int) * 2));
+        *b = 5;
+        EXPECT_EQ(*b, 5);
+      },
+      "RAW: Delete");  // realloc free first, then allocates
+}
+
+TEST(RealtimeDeathTest, Calloc) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        volatile int *a =
+            reinterpret_cast<volatile int *>(calloc(1, sizeof(int)));
+        *a = 5;
+        EXPECT_EQ(*a, 5);
+      },
+      "RAW: Malloced");
+}
+
+TEST(RealtimeDeathTest, New) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        volatile int *a = new int;
+        *a = 5;
+        EXPECT_EQ(*a, 5);
+      },
+      "RAW: Malloced");
+}
+
+TEST(RealtimeDeathTest, NewArray) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        volatile int *a = new int[3];
+        *a = 5;
+        EXPECT_EQ(*a, 5);
+      },
+      "RAW: Malloced");
+}
+
 // Tests that the signal handler drops RT permission and prints out a real
 // backtrace instead of crashing on the resulting mallocs.
 TEST(RealtimeDeathTest, SignalHandler) {
