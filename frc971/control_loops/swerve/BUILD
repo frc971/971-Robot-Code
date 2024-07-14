@@ -130,12 +130,14 @@ run_binary(
         "dynamics.cc",
         "dynamics.h",
         "dynamics.py",
+        "numpy_dynamics.py",
     ],
     args = [
         "--output_base=$(BINDIR)/",
         "--cc_output_path=$(location :dynamics.cc)",
         "--h_output_path=$(location :dynamics.h)",
-        "--py_output_path=$(location :dynamics.py)",
+        "--py_output_path=$(location :numpy_dynamics.py)",
+        "--casadi_py_output_path=$(location :dynamics.py)",
     ],
     tool = ":generate_physics",
 )
@@ -152,8 +154,8 @@ cc_library(
 py_binary(
     name = "dynamics_sim",
     srcs = [
-        "dynamics.py",
         "dynamics_sim.py",
+        "numpy_dynamics.py",
     ],
     deps = [
         "//frc971/control_loops/python:controls",
