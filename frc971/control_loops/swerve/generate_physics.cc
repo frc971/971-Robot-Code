@@ -78,11 +78,15 @@ struct Module {
 
   DenseMatrix contact_patch_velocity;
   DenseMatrix wheel_ground_velocity;
+  DenseMatrix wheel_slip_velocity;
   RCP<const Basic> slip_angle;
   RCP<const Basic> slip_ratio;
 
+  RCP<const Basic> Ms;
   RCP<const Basic> Fwx;
   RCP<const Basic> Fwy;
+  DenseMatrix F;
+  DenseMatrix mounting_location;
 
   // Acceleration contribution from this module.
   DenseMatrix accel;
@@ -131,7 +135,7 @@ class SwerveSimulation {
       caster_ = symbol("caster");
       contact_patch_length_ = symbol("Lcp");
     } else {
-      Cx_ = real_double(5 * 9.8 / 0.05 / 4.0);
+      Cx_ = real_double(25.0 * 9.8 / 4.0 / 0.05);
       Cy_ = real_double(5 * 9.8 / 0.05 / 4.0);
 
       rw_ = real_double(2 * 0.0254);
@@ -153,7 +157,7 @@ class SwerveSimulation {
       Gd3_ = div(rb1_, rb2_);
       Gd_ = mul(mul(Gd1_, Gd2_), Gd3_);
 
-      Js_ = real_double(0.1);
+      Js_ = real_double(0.001);
 
       Gs_ = real_double(35.0 / 468.0);
       wb_ = real_double(0.725);
@@ -182,7 +186,6 @@ class SwerveSimulation {
     atheta_ = symbol("atheta");
 
     // Now, compute the accelerations due to the disturbance forces.
-    angular_accel_ = div(moment, J_);
     DenseMatrix external_accel = DenseMatrix(2, 1, {div(fx, m_), div(fy, m_)});
 
     // And compute the physics contributions from each module.
@@ -214,10 +217,10 @@ class SwerveSimulation {
     add_dense_dense(temp1, modules_[2].accel, temp2);
     add_dense_dense(temp2, modules_[3].accel, accel_);
 
-    angular_accel_ = add(angular_accel_, modules_[0].angular_accel);
-    angular_accel_ = add(angular_accel_, modules_[1].angular_accel);
-    angular_accel_ = add(angular_accel_, modules_[2].angular_accel);
-    angular_accel_ = simplify(add(angular_accel_, modules_[3].angular_accel));
+    angular_accel_ =
+        add(div(moment, J_),
+            add(add(modules_[0].angular_accel, modules_[1].angular_accel),
+                add(modules_[2].angular_accel, modules_[3].angular_accel)));
 
     VLOG(1) << "accel(0, 0) = " << ccode(*accel_.get(0, 0));
     VLOG(1) << "accel(1, 0) = " << ccode(*accel_.get(1, 0));
@@ -551,20 +554,20 @@ class SwerveSimulation {
     }
 
     result_py.emplace_back(
-        absl::Substitute("    result[$0, 0] = omega", kNumModules * 4));
+        absl::Substitute("    result[$0, 0] = vx", kNumModules * 4 + 0));
     result_py.emplace_back(
-        absl::Substitute("    result[$0, 0] = vx", kNumModules * 4 + 1));
+        absl::Substitute("    result[$0, 0] = vy", kNumModules * 4 + 1));
     result_py.emplace_back(
-        absl::Substitute("    result[$0, 0] = vy", kNumModules * 4 + 2));
+        absl::Substitute("    result[$0, 0] = omega", kNumModules * 4 + 2));
 
-    result_py.emplace_back(absl::Substitute(
-        "    result[$0, 0] = $1", kNumModules * 4 + 3, ccode(*angular_accel_)));
     result_py.emplace_back(absl::Substitute("    result[$0, 0] = $1",
-                                            kNumModules * 4 + 4,
+                                            kNumModules * 4 + 3,
                                             ccode(*accel_.get(0, 0))));
     result_py.emplace_back(absl::Substitute("    result[$0, 0] = $1",
-                                            kNumModules * 4 + 5,
+                                            kNumModules * 4 + 4,
                                             ccode(*accel_.get(1, 0))));
+    result_py.emplace_back(absl::Substitute(
+        "    result[$0, 0] = $1", kNumModules * 4 + 5, ccode(*angular_accel_)));
 
     result_py.emplace_back(
         absl::Substitute("    result[$0, 0] = 0.0", kNumModules * 4 + 6));
@@ -576,115 +579,122 @@ class SwerveSimulation {
     result_py.emplace_back("");
     result_py.emplace_back(
         "    return casadi.Function('xdot', [X, U], [result])");
-    result_py.emplace_back("");
-    result_py.emplace_back(
-        "# Returns the velocity of the wheel in steer module coordinates.");
-    result_py.emplace_back("def contact_patch_velocity(i, X, U):");
-    WriteCasadiVariables(&result_py);
-    result_py.emplace_back(
-        "    result = casadi.SX.sym('contact_patch_velocity', 2, 1)");
 
-    for (size_t m = 0; m < kNumModules; ++m) {
-      if (m == 0) {
-        result_py.emplace_back("    if i == 0:");
-      } else {
-        result_py.emplace_back(absl::Substitute("    elif i == $0:", m));
-      }
-      for (int j = 0; j < 2; ++j) {
-        result_py.emplace_back(absl::Substitute(
-            "        result[$0, 0] = $1", j,
-            ccode(*modules_[m].contact_patch_velocity.get(j, 0))));
-      }
-    }
-    result_py.emplace_back("    else:");
-    result_py.emplace_back(
-        "        raise ValueError(\"Invalid module number\")");
-    result_py.emplace_back(
-        "    return casadi.Function('contact_patch_velocity', [X, U], "
-        "[result])");
-    result_py.emplace_back("");
-    result_py.emplace_back(
-        "# Returns the velocity of the wheel in steer module coordinates.");
-    result_py.emplace_back("def wheel_ground_velocity(i, X, U):");
-    WriteCasadiVariables(&result_py);
-    result_py.emplace_back(
-        "    result = casadi.SX.sym('ground_wheel_velocity', 2, 1)");
+    DefineVector2dFunction(
+        "contact_patch_velocity",
+        "# Returns the velocity of the wheel in global coordinates.",
+        [](const Module &m, int dimension) {
+          return ccode(*m.contact_patch_velocity.get(dimension, 0));
+        },
+        &result_py);
+    DefineVector2dFunction(
+        "wheel_ground_velocity",
+        "# Returns the velocity of the wheel in steer module coordinates.",
+        [](const Module &m, int dimension) {
+          return ccode(*m.wheel_ground_velocity.get(dimension, 0));
+        },
+        &result_py);
 
-    for (size_t m = 0; m < kNumModules; ++m) {
-      if (m == 0) {
-        result_py.emplace_back("    if i == 0:");
-      } else {
-        result_py.emplace_back(absl::Substitute("    elif i == $0:", m));
-      }
-      for (int j = 0; j < 2; ++j) {
-        result_py.emplace_back(absl::Substitute(
-            "        result[$0, 0] = $1", j,
-            ccode(*modules_[m].wheel_ground_velocity.get(j, 0))));
-      }
-    }
-    result_py.emplace_back("    else:");
-    result_py.emplace_back(
-        "        raise ValueError(\"Invalid module number\")");
-    result_py.emplace_back(
-        "    return casadi.Function('wheel_ground_velocity', [X, U], "
-        "[result])");
+    DefineVector2dFunction(
+        "wheel_slip_velocity",
+        "# Returns the difference in velocities of the wheel surface and the "
+        "ground.",
+        [](const Module &m, int dimension) {
+          return ccode(*m.wheel_slip_velocity.get(dimension, 0));
+        },
+        &result_py);
 
-    result_py.emplace_back("");
-    result_py.emplace_back("# Returns the slip angle of the ith wheel.");
-    result_py.emplace_back("def slip_angle(i, X, U):");
-    WriteCasadiVariables(&result_py);
-    for (size_t m = 0; m < kNumModules; ++m) {
-      if (m == 0) {
-        result_py.emplace_back("    if i == 0:");
-      } else {
-        result_py.emplace_back(absl::Substitute("    elif i == $0:", m));
-      }
-      result_py.emplace_back(absl::Substitute(
-          "        return casadi.Function('slip_angle', [X, U], [$0])",
-          ccode(*modules_[m].slip_angle)));
-    }
-    result_py.emplace_back("    raise ValueError(\"Invalid module number\")");
-    result_py.emplace_back("");
-    result_py.emplace_back("# Returns the slip ratio of the ith wheel.");
-    result_py.emplace_back("def slip_ratio(i, X, U):");
-    WriteCasadiVariables(&result_py);
-    for (size_t m = 0; m < kNumModules; ++m) {
-      if (m == 0) {
-        result_py.emplace_back("    if i == 0:");
-      } else {
-        result_py.emplace_back(absl::Substitute("    elif i == $0:", m));
-      }
-      result_py.emplace_back(absl::Substitute(
-          "        return casadi.Function('slip_ratio', [X, U], [$0])",
-          ccode(*modules_[m].slip_ratio)));
-    }
-    result_py.emplace_back("    raise ValueError(\"Invalid module number\")");
+    DefineScalarFunction(
+        "slip_angle", "Returns the slip angle of the ith wheel",
+        [](const Module &m) { return ccode(*m.slip_angle); }, &result_py);
+    DefineScalarFunction(
+        "slip_ratio", "Returns the slip ratio of the ith wheel",
+        [](const Module &m) { return ccode(*m.slip_ratio); }, &result_py);
+    DefineScalarFunction(
+        "module_angular_accel",
+        "Returns the angular acceleration of the robot due to the ith wheel",
+        [](const Module &m) { return ccode(*m.angular_accel); }, &result_py);
 
-    result_py.emplace_back("");
-    result_py.emplace_back(
-        "# Returns the force on the wheel in steer module coordinates.");
-    result_py.emplace_back("def wheel_force(i, X, U):");
-    WriteCasadiVariables(&result_py);
-    result_py.emplace_back("    result = casadi.SX.sym('Fw', 2, 1)");
+    DefineVector2dFunction(
+        "wheel_force",
+        "Returns the force on the wheel in steer module coordinates",
+        [](const Module &m, int dimension) {
+          return ccode(*std::vector<RCP<const Basic>>{m.Fwx, m.Fwy}[dimension]);
+        },
+        &result_py);
 
-    for (size_t m = 0; m < kNumModules; ++m) {
-      if (m == 0) {
-        result_py.emplace_back("    if i == 0:");
-      } else {
-        result_py.emplace_back(absl::Substitute("    elif i == $0:", m));
-      }
-      result_py.emplace_back(absl::Substitute("        result[0, 0] = $0",
-                                              ccode(*modules_[m].Fwx)));
-      result_py.emplace_back(absl::Substitute("        result[1, 0] = $0",
-                                              ccode(*modules_[m].Fwy)));
-    }
-    result_py.emplace_back("    else:");
-    result_py.emplace_back(
-        "        raise ValueError(\"Invalid module number\")");
-    result_py.emplace_back(
-        "    return casadi.Function('wheel_force', [X, U], [result])");
+    DefineVector2dFunction(
+        "F", "Returns the force on the wheel in absolute coordinates",
+        [](const Module &m, int dimension) {
+          return ccode(*m.F.get(dimension, 0));
+        },
+        &result_py);
+
+    DefineVector2dFunction(
+        "mounting_location",
+        "Returns the mounting location of wheel in robot coordinates",
+        [](const Module &m, int dimension) {
+          return ccode(*m.mounting_location.get(dimension, 0));
+        },
+        &result_py);
+
+    DefineScalarFunction(
+        "Ms", "Returns the self aligning moment of the ith wheel",
+        [this](const Module &m) {
+          return ccode(*(div(m.Ms, add(Jsm_, div(div(Js_, Gs_), Gs_)))));
+        },
+        &result_py);
 
     aos::util::WriteStringToFileOrDie(py_path, absl::StrJoin(result_py, "\n"));
+  }
+
+  void DefineScalarFunction(
+      std::string_view name, std::string_view documentation,
+      std::function<std::string(const Module &)> scalar_fn,
+      std::vector<std::string> *result_py) {
+    result_py->emplace_back("");
+    result_py->emplace_back(absl::Substitute("# $0.", documentation));
+    result_py->emplace_back(absl::Substitute("def $0(i, X, U):", name));
+    WriteCasadiVariables(result_py);
+    for (size_t m = 0; m < kNumModules; ++m) {
+      if (m == 0) {
+        result_py->emplace_back("    if i == 0:");
+      } else {
+        result_py->emplace_back(absl::Substitute("    elif i == $0:", m));
+      }
+      result_py->emplace_back(
+          absl::Substitute("        return casadi.Function('$0', [X, U], [$1])",
+                           name, scalar_fn(modules_[m])));
+    }
+    result_py->emplace_back("    raise ValueError(\"Invalid module number\")");
+  }
+
+  void DefineVector2dFunction(
+      std::string_view name, std::string_view documentation,
+      std::function<std::string(const Module &, int)> scalar_fn,
+      std::vector<std::string> *result_py) {
+    result_py->emplace_back("");
+    result_py->emplace_back(absl::Substitute("# $0.", documentation));
+    result_py->emplace_back(absl::Substitute("def $0(i, X, U):", name));
+    WriteCasadiVariables(result_py);
+    result_py->emplace_back(
+        absl::Substitute("    result = casadi.SX.sym('$0', 2, 1)", name));
+    for (size_t m = 0; m < kNumModules; ++m) {
+      if (m == 0) {
+        result_py->emplace_back("    if i == 0:");
+      } else {
+        result_py->emplace_back(absl::Substitute("    elif i == $0:", m));
+      }
+      for (int j = 0; j < 2; ++j) {
+        result_py->emplace_back(absl::Substitute("        result[$0, 0] = $1",
+                                                 j, scalar_fn(modules_[m], j)));
+      }
+    }
+    result_py->emplace_back("    else:");
+    result_py->emplace_back(
+        "        raise ValueError(\"Invalid module number\")");
+    result_py->emplace_back(absl::Substitute(
+        "    return casadi.Function('$0', [X, U], [result])", name));
   }
 
  private:
@@ -694,6 +704,7 @@ class SwerveSimulation {
     VLOG(1) << "Solving module " << m;
 
     Module result;
+    result.mounting_location = mounting_location;
 
     result.Is = symbol(absl::StrFormat("Is%u", m));
     result.Id = symbol(absl::StrFormat("Id%u", m));
@@ -719,7 +730,7 @@ class SwerveSimulation {
     DenseMatrix temp_matrix2 = DenseMatrix(2, 1);
     result.contact_patch_velocity = DenseMatrix(2, 1);
 
-    mul_dense_dense(R(theta_), mounting_location, temp_matrix);
+    mul_dense_dense(R(theta_), result.mounting_location, temp_matrix);
     add_dense_dense(angle_cross(temp_matrix, omega_), robot_velocity,
                     temp_matrix2);
     mul_dense_dense(R(add(theta_, result.thetas)),
@@ -737,6 +748,18 @@ class SwerveSimulation {
     mul_dense_dense(R(neg(add(result.thetas, theta_))),
                     result.contact_patch_velocity,
                     result.wheel_ground_velocity);
+
+    // Compute the relative velocity between the wheel surface and the ground in
+    // the wheel coordinate system.
+    result.wheel_slip_velocity = DenseMatrix(2, 1);
+    DenseMatrix wheel_velocity =
+        DenseMatrix(2, 1, {mul(rw_, result.omegad), integer(0)});
+    DenseMatrix negative_wheel_ground_velocity =
+        DenseMatrix(2, 1,
+                    {neg(result.wheel_ground_velocity.get(0, 0)),
+                     neg(result.wheel_ground_velocity.get(1, 0))});
+    add_dense_dense(negative_wheel_ground_velocity, wheel_velocity,
+                    result.wheel_slip_velocity);
 
     VLOG(1);
     VLOG(1) << "wheel ground velocity: "
@@ -759,10 +782,10 @@ class SwerveSimulation {
     result.Fwx = simplify(mul(Cx_, result.slip_ratio));
     result.Fwy = simplify(mul(Cy_, result.slip_angle));
 
-    RCP<const Basic> Ms =
-        mul(result.Fwy, add(div(contact_patch_length_, integer(3)), caster_));
+    result.Ms = mul(neg(result.Fwy),
+                    add(div(contact_patch_length_, integer(3)), caster_));
     VLOG(1);
-    VLOG(1) << "Ms " << Ms->__str__();
+    VLOG(1) << "Ms " << result.Ms->__str__();
     VLOG(1);
     VLOG(1) << "Fwx " << result.Fwx->__str__();
     VLOG(1);
@@ -772,7 +795,8 @@ class SwerveSimulation {
     RCP<const Basic> lhms =
         mul(add(neg(wb_), mul(add(rs_, rp_), sub(integer(1), div(rb1_, rp_)))),
             mul(div(rw_, rb2_), neg(result.Fwx)));
-    RCP<const Basic> lhs = add(add(Ms, div(mul(Jsm_, result.Is), Gs_)), lhms);
+    RCP<const Basic> lhs =
+        add(add(result.Ms, div(mul(Jsm_, result.Is), Gs_)), lhms);
     RCP<const Basic> rhs = add(Jsm_, div(div(Js_, Gs_), Gs_));
     RCP<const Basic> accel_steer_eqn = simplify(div(lhs, rhs));
 
@@ -813,16 +837,14 @@ class SwerveSimulation {
         simplify(solve_solution->get_args()[1]->get_args()[0]);
     VLOG(1) << "drive_accel: " << drive_accel->__str__();
 
-    DenseMatrix mat_output = DenseMatrix(2, 1);
-    mul_dense_dense(R(add(theta_, result.thetas)),
-                    DenseMatrix(2, 1, {result.Fwx, result.Fwy}), mat_output);
-
     // Compute the resulting force from the module.
-    DenseMatrix F = mat_output;
+    result.F = DenseMatrix(2, 1);
+    mul_dense_dense(R(add(theta_, result.thetas)),
+                    DenseMatrix(2, 1, {result.Fwx, result.Fwy}), result.F);
 
-    RCP<const Basic> torque = simplify(force_cross(mounting_location, F));
+    RCP<const Basic> torque = force_cross(result.mounting_location, result.F);
     result.accel = DenseMatrix(2, 1);
-    mul_dense_scalar(F, pow(m_, minus_one), result.accel);
+    mul_dense_scalar(result.F, pow(m_, minus_one), result.accel);
     result.angular_accel = div(torque, J_);
     VLOG(1);
     VLOG(1) << "angular_accel = " << result.angular_accel->__str__();
