@@ -734,7 +734,7 @@ class SwerveSimulation {
     add_dense_dense(angle_cross(temp_matrix, omega_), robot_velocity,
                     temp_matrix2);
     mul_dense_dense(R(add(theta_, result.thetas)),
-                    DenseMatrix(2, 1, {caster_, integer(0)}), temp_matrix);
+                    DenseMatrix(2, 1, {neg(caster_), integer(0)}), temp_matrix);
     add_dense_dense(temp_matrix2,
                     angle_cross(temp_matrix, add(omega_, result.omegas)),
                     result.contact_patch_velocity);

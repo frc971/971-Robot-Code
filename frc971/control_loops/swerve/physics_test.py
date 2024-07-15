@@ -67,7 +67,7 @@ def wrap_module(fn, i):
     return lambda X, U: numpy.array(evaluated_fn(X, U))
 
 
-class TestHPolytope(unittest.TestCase):
+class TestSwervePhysics(unittest.TestCase):
     I = numpy.zeros((8, 1))
 
     def setUp(self):
@@ -137,7 +137,7 @@ class TestHPolytope(unittest.TestCase):
 
                     assert_array_almost_equal(
                         patch_velocity,
-                        (dynamics.ROBOT_WIDTH / numpy.sqrt(2.0) +
+                        (dynamics.ROBOT_WIDTH / numpy.sqrt(2.0) -
                          dynamics.CASTER) * omega * numpy.array([[
                              -numpy.sin(theta + module_center_of_mass_angle)
                          ], [numpy.cos(theta + module_center_of_mass_angle)]]))
@@ -154,8 +154,7 @@ class TestHPolytope(unittest.TestCase):
                         self.I)
 
                     assert_array_almost_equal(
-                        patch_velocity,
-                        dynamics.CASTER * omega *
+                        patch_velocity, -dynamics.CASTER * omega *
                         numpy.array([[-numpy.sin(theta)], [numpy.cos(theta)]]))
 
             # Now, test that the rotation back to wheel coordinates works.
