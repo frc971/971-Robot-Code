@@ -126,7 +126,7 @@ cc_binary(
 )
 
 run_binary(
-    name = "dynamics_codegen",
+    name = "dynamics_codegen_cc",
     outs = [
         "dynamics.cc",
         "dynamics.h",
@@ -139,6 +139,32 @@ run_binary(
         "--h_output_path=$(location :dynamics.h)",
         "--py_output_path=$(location :numpy_dynamics.py)",
         "--casadi_py_output_path=$(location :dynamics.py)",
+    ],
+    tool = ":generate_physics",
+)
+
+run_binary(
+    name = "dynamics_codegen_nocaster",
+    outs = [
+        "nocaster_dynamics.py",
+    ],
+    args = [
+        "--caster=0.0",
+        "--output_base=$(BINDIR)/",
+        "--casadi_py_output_path=$(location :nocaster_dynamics.py)",
+    ],
+    tool = ":generate_physics",
+)
+
+run_binary(
+    name = "dynamics_codegen_bigcaster",
+    outs = [
+        "bigcaster_dynamics.py",
+    ],
+    args = [
+        "--caster=0.05",
+        "--output_base=$(BINDIR)/",
+        "--casadi_py_output_path=$(location :bigcaster_dynamics.py)",
     ],
     tool = ":generate_physics",
 )
@@ -170,7 +196,9 @@ py_binary(
 py_test(
     name = "physics_test",
     srcs = [
+        "bigcaster_dynamics.py",
         "dynamics.py",
+        "nocaster_dynamics.py",
         "physics_test.py",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],

@@ -34,6 +34,7 @@ ABSL_FLAG(std::string, py_output_path, "",
           "Path to write generated py code to");
 ABSL_FLAG(std::string, casadi_py_output_path, "",
           "Path to write casadi generated py code to");
+ABSL_FLAG(double, caster, 0.01, "Caster in meters for the module.");
 
 ABSL_FLAG(bool, symbolic, false, "If true, write everything out symbolically.");
 
@@ -56,6 +57,7 @@ using SymEngine::RCP;
 using SymEngine::real_double;
 using SymEngine::RealDouble;
 using SymEngine::Set;
+using SymEngine::sign;
 using SymEngine::simplify;
 using SymEngine::sin;
 using SymEngine::solve;
@@ -173,7 +175,7 @@ class SwerveSimulation {
 
       robot_width_ = real_double(24.75 * 0.0254);
 
-      caster_ = real_double(0.01);
+      caster_ = real_double(absl::GetFlag(FLAGS_caster));
       contact_patch_length_ = real_double(0.02);
     }
 
@@ -377,6 +379,14 @@ class SwerveSimulation {
     result_cc.emplace_back("#include <cmath>");
     result_cc.emplace_back("");
     result_cc.emplace_back("namespace frc971::control_loops::swerve {");
+    result_cc.emplace_back("namespace {");
+    result_cc.emplace_back("");
+    result_cc.emplace_back("double sign(double x) {");
+    result_cc.emplace_back("  return (x > 0) - (x < 0);");
+    result_cc.emplace_back("}");
+
+    result_cc.emplace_back("");
+    result_cc.emplace_back("}  // namespace");
     result_cc.emplace_back("");
     result_cc.emplace_back("Eigen::Matrix<double, 25, 1> SwervePhysics(");
     result_cc.emplace_back(
@@ -470,8 +480,9 @@ class SwerveSimulation {
 
   void WriteCasadiVariables(std::vector<std::string> *result_py) {
     result_py->emplace_back("    sin = casadi.sin");
+    result_py->emplace_back("    sign = casadi.sign");
     result_py->emplace_back("    cos = casadi.cos");
-    result_py->emplace_back("    atan2 = half_atan2");
+    result_py->emplace_back("    atan2 = sin_atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -525,10 +536,8 @@ class SwerveSimulation {
         absl::Substitute("ROBOT_WIDTH = $0", ccode(*robot_width_)));
     result_py.emplace_back(absl::Substitute("CASTER = $0", ccode(*caster_)));
     result_py.emplace_back("");
-    result_py.emplace_back("def half_atan2(y, x):");
-    result_py.emplace_back(
-        "    return casadi.fmod(casadi.atan2(y, x) + casadi.pi * 3.0 / 2.0, "
-        "casadi.pi) - casadi.pi / 2.0");
+    result_py.emplace_back("def sin_atan2(y, x):");
+    result_py.emplace_back("    return casadi.sin(casadi.atan2(y, x))");
     result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
@@ -787,8 +796,12 @@ class SwerveSimulation {
     result.Fwx = simplify(mul(Cx_, result.slip_ratio));
     result.Fwy = simplify(mul(Cy_, result.slip_angle));
 
+    // The self-aligning moment needs to flip when the module flips direction.
     result.Ms = mul(neg(result.Fwy),
-                    add(div(contact_patch_length_, integer(3)), caster_));
+                    add(div(mul(sign(result.wheel_ground_velocity.get(0, 0)),
+                                contact_patch_length_),
+                            integer(3)),
+                        caster_));
     VLOG(1);
     VLOG(1) << "Ms " << result.Ms->__str__();
     VLOG(1);
