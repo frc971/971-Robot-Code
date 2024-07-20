@@ -26,8 +26,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/context.h"

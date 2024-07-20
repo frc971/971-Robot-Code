@@ -12,8 +12,9 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/testing:tmpdir",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -62,7 +63,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

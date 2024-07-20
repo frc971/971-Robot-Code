@@ -4,7 +4,10 @@
 #include <functional>
 #include <string_view>
 
-#include "glog/logging.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -15,28 +18,30 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/vision_generated.h"
 
-DEFINE_string(board_template_path, "",
-              "If specified, write an image to the specified path for the "
-              "charuco board pattern.");
-DEFINE_bool(coarse_pattern, true, "If true, use coarse arucos; else, use fine");
-DEFINE_uint32(gray_threshold, 0,
-              "If > 0, threshold image based on this grayscale value");
-DEFINE_bool(large_board, true, "If true, use the large calibration board.");
-DEFINE_uint32(
-    min_charucos, 10,
+ABSL_FLAG(std::string, board_template_path, "",
+          "If specified, write an image to the specified path for the "
+          "charuco board pattern.");
+ABSL_FLAG(bool, coarse_pattern, true,
+          "If true, use coarse arucos; else, use fine");
+ABSL_FLAG(uint32_t, gray_threshold, 0,
+          "If > 0, threshold image based on this grayscale value");
+ABSL_FLAG(bool, large_board, true, "If true, use the large calibration board.");
+ABSL_FLAG(
+    uint32_t, min_charucos, 10,
     "The mininum number of aruco targets in charuco board required to match.");
-DEFINE_uint32(min_id, 0, "Minimum valid charuco id");
-DEFINE_uint32(max_diamonds, 0,
-              "Maximum number of diamonds to see.  Set to 0 for no limit");
-DEFINE_uint32(max_id, 15, "Maximum valid charuco id");
-DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
-DEFINE_bool(
-    draw_axes, false,
+ABSL_FLAG(uint32_t, min_id, 0, "Minimum valid charuco id");
+ABSL_FLAG(uint32_t, max_diamonds, 0,
+          "Maximum number of diamonds to see.  Set to 0 for no limit");
+ABSL_FLAG(uint32_t, max_id, 15, "Maximum valid charuco id");
+ABSL_FLAG(bool, visualize, false, "Whether to visualize the resulting data.");
+ABSL_FLAG(
+    bool, draw_axes, false,
     "Whether to draw axes on the resulting data-- warning, may cause crashes.");
 
-DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
+ABSL_FLAG(uint32_t, disable_delay, 100,
+          "Time after an issue to disable tracing at.");
 
-DECLARE_bool(enable_ftrace);
+ABSL_DECLARE_FLAG(bool, enable_ftrace);
 
 namespace frc971::vision {
 namespace chrono = std::chrono;
@@ -121,13 +126,14 @@ ImageCallback::ImageCallback(
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
     if (age > max_age_) {
-      if (FLAGS_enable_ftrace) {
+      if (absl::GetFlag(FLAGS_enable_ftrace)) {
         ftrace_.FormatMessage("Too late receiving image, age: %f\n",
                               age_double);
-        if (FLAGS_disable_delay > 0) {
+        if (absl::GetFlag(FLAGS_disable_delay) > 0) {
           if (!disabling_) {
-            timer_fn_->Schedule(event_loop_->monotonic_now() +
-                                chrono::milliseconds(FLAGS_disable_delay));
+            timer_fn_->Schedule(
+                event_loop_->monotonic_now() +
+                chrono::milliseconds(absl::GetFlag(FLAGS_disable_delay)));
             disabling_ = true;
           }
         } else {
@@ -175,28 +181,32 @@ void CharucoExtractor::SetupTargetData() {
   if (target_type_ == TargetType::kCharuco ||
       target_type_ == TargetType::kAruco) {
     dictionary_ = cv::aruco::getPredefinedDictionary(
-        FLAGS_large_board ? cv::aruco::DICT_5X5_250 : cv::aruco::DICT_6X6_250);
+        absl::GetFlag(FLAGS_large_board) ? cv::aruco::DICT_5X5_250
+                                         : cv::aruco::DICT_6X6_250);
 
     if (target_type_ == TargetType::kCharuco) {
-      LOG(INFO) << "Using " << (FLAGS_large_board ? "large" : "small")
+      LOG(INFO) << "Using "
+                << (absl::GetFlag(FLAGS_large_board) ? "large" : "small")
                 << " charuco board with "
-                << (FLAGS_coarse_pattern ? "coarse" : "fine") << " pattern";
-      board_ =
-          (FLAGS_large_board
-               ? (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
-                                             12, 9, 0.06, 0.04666, dictionary_)
-                                       : cv::aruco::CharucoBoard::create(
-                                             25, 18, 0.03, 0.0233, dictionary_))
-               : (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
-                                             7, 5, 0.04, 0.025, dictionary_)
-                                       // TODO(jim): Need to figure out what
-                                       // size is for small board, fine pattern
-                                       : cv::aruco::CharucoBoard::create(
-                                             7, 5, 0.03, 0.0233, dictionary_)));
-      if (!FLAGS_board_template_path.empty()) {
+                << (absl::GetFlag(FLAGS_coarse_pattern) ? "coarse" : "fine")
+                << " pattern";
+      board_ = (absl::GetFlag(FLAGS_large_board)
+                    ? (absl::GetFlag(FLAGS_coarse_pattern)
+                           ? cv::aruco::CharucoBoard::create(
+                                 12, 9, 0.06, 0.04666, dictionary_)
+                           : cv::aruco::CharucoBoard::create(
+                                 25, 18, 0.03, 0.0233, dictionary_))
+                    : (absl::GetFlag(FLAGS_coarse_pattern)
+                           ? cv::aruco::CharucoBoard::create(7, 5, 0.04, 0.025,
+                                                             dictionary_)
+                           // TODO(jim): Need to figure out what
+                           // size is for small board, fine pattern
+                           : cv::aruco::CharucoBoard::create(7, 5, 0.03, 0.0233,
+                                                             dictionary_)));
+      if (!absl::GetFlag(FLAGS_board_template_path).empty()) {
         cv::Mat board_image;
         board_->draw(cv::Size(600, 500), board_image, 10, 1);
-        cv::imwrite(FLAGS_board_template_path, board_image);
+        cv::imwrite(absl::GetFlag(FLAGS_board_template_path), board_image);
       }
     }
   } else if (target_type_ == TargetType::kCharucoDiamond) {
@@ -244,7 +254,7 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
     // TODO<Jim>: Either track this down or reimplement drawAxes
     if (result.z() < 0.01) {
       LOG(INFO) << "Skipping, due to z value too small: " << result.z();
-    } else if (FLAGS_draw_axes == true) {
+    } else if (absl::GetFlag(FLAGS_draw_axes) == true) {
       result /= result.z();
       if (target_type_ == TargetType::kCharuco ||
           target_type_ == TargetType::kAprilTag) {
@@ -353,12 +363,13 @@ void CharucoExtractor::ProcessImage(
           .count();
 
   // Have found this useful if there is blurry / noisy images
-  if (FLAGS_gray_threshold > 0) {
+  if (absl::GetFlag(FLAGS_gray_threshold) > 0) {
     cv::Mat gray;
     cv::cvtColor(rgb_image, gray, cv::COLOR_BGR2GRAY);
 
     cv::Mat thresh;
-    cv::threshold(gray, thresh, FLAGS_gray_threshold, 255, cv::THRESH_BINARY);
+    cv::threshold(gray, thresh, absl::GetFlag(FLAGS_gray_threshold), 255,
+                  cv::THRESH_BINARY);
     cv::cvtColor(thresh, rgb_image, cv::COLOR_GRAY2RGB);
   }
 
@@ -382,7 +393,7 @@ void CharucoExtractor::ProcessImage(
       std::vector<cv::Point2f> charuco_corners;
 
       // If enough aruco markers detected for the Charuco board
-      if (marker_ids.size() >= FLAGS_min_charucos) {
+      if (marker_ids.size() >= absl::GetFlag(FLAGS_min_charucos)) {
         // Run everything twice, once with the calibration, and once
         // without. This lets us both collect data to calibrate the
         // intrinsics of the camera (to determine the intrinsics from
@@ -403,7 +414,7 @@ void CharucoExtractor::ProcessImage(
             charuco_corners_with_calibration, charuco_ids_with_calibration,
             calibration_.CameraIntrinsics(), calibration_.CameraDistCoeffs());
 
-        if (charuco_ids.size() >= FLAGS_min_charucos) {
+        if (charuco_ids.size() >= absl::GetFlag(FLAGS_min_charucos)) {
           cv::aruco::drawDetectedCornersCharuco(
               rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
 
@@ -432,12 +443,14 @@ void CharucoExtractor::ProcessImage(
           }
         } else {
           VLOG(2) << "Age: " << age_double << ", not enough charuco IDs, got "
-                  << charuco_ids.size() << ", needed " << FLAGS_min_charucos;
+                  << charuco_ids.size() << ", needed "
+                  << absl::GetFlag(FLAGS_min_charucos);
         }
       } else {
         VLOG(2) << "Age: " << age_double
                 << ", not enough marker IDs for charuco board, got "
-                << marker_ids.size() << ", needed " << FLAGS_min_charucos;
+                << marker_ids.size() << ", needed "
+                << absl::GetFlag(FLAGS_min_charucos);
       }
     } else if (target_type_ == TargetType::kAruco ||
                target_type_ == TargetType::kAprilTag) {
@@ -466,14 +479,15 @@ void CharucoExtractor::ProcessImage(
       // Should be at least one, and no more than FLAGS_max_diamonds.
       // Different calibration routines will require different values for this
       if (diamond_ids.size() > 0 &&
-          (FLAGS_max_diamonds == 0 ||
-           diamond_ids.size() <= FLAGS_max_diamonds)) {
+          (absl::GetFlag(FLAGS_max_diamonds) == 0 ||
+           diamond_ids.size() <= absl::GetFlag(FLAGS_max_diamonds))) {
         // TODO<Jim>: Could probably make this check more general than
         // requiring range of ids
         bool all_valid_ids = true;
         for (uint i = 0; i < 4; i++) {
           uint id = diamond_ids[0][i];
-          if ((id < FLAGS_min_id) || (id > FLAGS_max_id)) {
+          if ((id < absl::GetFlag(FLAGS_min_id)) ||
+              (id > absl::GetFlag(FLAGS_max_id))) {
             all_valid_ids = false;
             LOG(INFO) << "Got invalid charuco id: " << id;
           }
@@ -505,7 +519,8 @@ void CharucoExtractor::ProcessImage(
         } else {
           VLOG(2) << "Found too many number of diamond markers, which likely "
                      "means false positives were detected: "
-                  << diamond_ids.size() << " > " << FLAGS_max_diamonds;
+                  << diamond_ids.size() << " > "
+                  << absl::GetFlag(FLAGS_max_diamonds);
         }
       }
     } else {

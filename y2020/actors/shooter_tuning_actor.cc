@@ -6,7 +6,8 @@
 #include <sstream>
 #include <utility>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/init.h"
 #include "frc971/autonomous/base_autonomous_actor.h"

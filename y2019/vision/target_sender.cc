@@ -4,6 +4,7 @@
 #include <random>
 #include <thread>
 
+#include "aos/init.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/events/socket_types.h"
@@ -18,7 +19,8 @@
 
 // This has to be last to preserve compatibility with other headers using AOS
 // logging.
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
@@ -162,13 +164,9 @@ void TargetProcessPool::RunThread() {
 }
 
 int main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
   using namespace y2019::vision;
   using frc971::jevois::CameraCommand;
-  // gflags::ParseCommandLineFlags(&argc, &argv, false);
-  FLAGS_logtostderr = true;
-  google::InitGoogleLogging(argv[0]);
+  aos::InitGoogle(&argc, &argv);
 
   int itsDev = open_terminos("/dev/ttyS0");
   frc971::jevois::CobsPacketizer<frc971::jevois::uart_to_camera_size()> cobs;

@@ -8,8 +8,6 @@
 
 #include <string_view>
 
-#include "glog/logging.h"
-
 namespace aos {
 
 // Manages interacting with ftrace. Silently hides many errors, because they are
@@ -33,12 +31,7 @@ class Ftrace {
 
   // Turns tracing off, or CHECK-fails if tracing is inaccessible. Does nothing
   // if tracing is currently available but off.
-  void TurnOffOrDie() {
-    CHECK(on_fd_ != -1)
-        << ": Failed to open tracing_on earlier, cannot turn off tracing";
-    char zero = '0';
-    CHECK_EQ(write(on_fd_, &zero, 1), 1) << ": Failed to turn tracing off";
-  }
+  void TurnOffOrDie();
 
  private:
   int message_fd_, on_fd_;

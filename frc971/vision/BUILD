@@ -53,8 +53,9 @@ cc_binary(
         "//aos/logging:log_namer",
         "//aos/util:filesystem_fbs",
         "//frc971/input:joystick_state_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -150,8 +151,9 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/scoped:scoped_fd",
         "//aos/util:threaded_consumer",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -175,7 +177,8 @@ cc_library(
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "@com_github_foxglove_schemas//:schemas",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@org_tuxfamily_eigen//:eigen",
@@ -270,7 +273,8 @@ cc_library(
     deps = [
         "//aos/util:math",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -313,7 +317,8 @@ cc_binary(
         "//aos:init",
         "//frc971/vision:visualize_robot",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
     ],
@@ -329,7 +334,8 @@ cc_library(
     deps = [
         "//aos/scoped:scoped_fd",
         "//aos/util:file",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -433,7 +439,8 @@ cc_library(
     deps = [
         "//frc971/vision:calibration_fbs",
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -445,7 +452,8 @@ cc_test(
     deps = [
         "//aos/testing:googletest",
         "//frc971/vision:vision_util_lib",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

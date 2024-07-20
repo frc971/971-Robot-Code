@@ -54,9 +54,10 @@ cc_binary(
         "//third_party:cudart",
         "//third_party/apriltag",
         "//y2024_swerve/constants:constants_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
         "@com_github_nvidia_cccl//:cccl",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

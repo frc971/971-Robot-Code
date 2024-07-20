@@ -16,6 +16,10 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+
 #include "aos/util/file.h"
 
 // The casts required to read datastructures from sockets trip - Wcast - align.
@@ -23,9 +27,9 @@
 #pragma clang diagnostic ignored "-Wcast-align"
 #endif
 
-DEFINE_string(interface, "", "network interface");
-DEFINE_bool(disable_ipv6, false, "disable ipv6");
-DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");
+ABSL_FLAG(std::string, interface, "", "network interface");
+ABSL_FLAG(bool, disable_ipv6, false, "disable ipv6");
+ABSL_FLAG(int32_t, rmem, 0, "If nonzero, set rmem to this size.");
 
 // The Type of Service.
 // https://www.tucny.com/Home/dscp-tos
@@ -39,8 +43,8 @@ DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");
 // to zero. Those two bits are the "Explicit Congestion Notification" bits. They
 // are controlled by the IP stack itself (and used by the router). We don't
 // control that via the TOS value we set here.
-DEFINE_int32(
-    sctp_tos, 176,
+ABSL_FLAG(
+    int32_t, sctp_tos, 176,
     "The Type-Of-Service value to use. Defaults to a critical priority. "
     "Always set values here whose two least significant bits are set to zero. "
     "When using tcpdump, the `tos` field may show the least significant two "
@@ -88,7 +92,7 @@ std::vector<uint8_t> GenerateSecureRandomSequence(size_t count) {
 }  // namespace
 
 bool Ipv6Enabled() {
-  if (FLAGS_disable_ipv6) {
+  if (absl::GetFlag(FLAGS_disable_ipv6)) {
     return false;
   }
   int fd = socket(AF_INET6, SOCK_SEQPACKET, IPPROTO_SCTP);
@@ -151,8 +155,9 @@ struct sockaddr_storage ResolveSocket(std::string_view host, int port,
       t_addr6->sin6_family = addrinfo_result->ai_family;
       t_addr6->sin6_port = htons(port);
 
-      if (FLAGS_interface.size() > 0) {
-        t_addr6->sin6_scope_id = if_nametoindex(FLAGS_interface.c_str());
+      if (absl::GetFlag(FLAGS_interface).size() > 0) {
+        t_addr6->sin6_scope_id =
+            if_nametoindex(absl::GetFlag(FLAGS_interface).c_str());
       }
 
       break;
@@ -295,7 +300,7 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
     // Set up Type-Of-Service.
     //
     // See comments for the --sctp_tos flag for more information.
-    int tos = IPTOS_DSCP(FLAGS_sctp_tos);
+    int tos = IPTOS_DSCP(absl::GetFlag(FLAGS_sctp_tos));
     PCHECK(setsockopt(fd_, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) == 0);
   }
   {
@@ -683,8 +688,8 @@ void SctpReadWrite::DoSetMaxSize() {
   // The SO_RCVBUF option (also controlled by net.core.rmem_default) needs to be
   // decently large but the actual size can be measured by tuning.  The defaults
   // should be fine.  If it isn't big enough, transmission will fail.
-  if (FLAGS_rmem > 0) {
-    size_t rmem = FLAGS_rmem;
+  if (absl::GetFlag(FLAGS_rmem) > 0) {
+    size_t rmem = absl::GetFlag(FLAGS_rmem);
     PCHECK(setsockopt(fd(), SOL_SOCKET, SO_RCVBUF, &rmem, sizeof(rmem)) == 0);
   }
 }

@@ -5,7 +5,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -1458,7 +1461,8 @@ TEST_P(AbstractEventLoopTest, AOSLogTimer) {
 // Verify that timer intervals and duration function properly.
 TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
   // Force a slower rate so we are guaranteed to have reports for our timer.
-  FLAGS_timing_report_ms = 2000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 2000);
 
   const int kCount = 5;
 
@@ -1586,8 +1590,8 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
 // Test that setting a default version string results in it getting populated
 // correctly.
 TEST_P(AbstractEventLoopTest, DefaultVersionStringInTimingReport) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_timing_report_ms = 1000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
 
   EventLoop::SetDefaultVersionString("default_version_string");
 
@@ -1625,8 +1629,8 @@ TEST_P(AbstractEventLoopTest, DefaultVersionStringInTimingReport) {
 // Test that overriding the default version string results in it getting
 // populated correctly.
 TEST_P(AbstractEventLoopTest, OverrideDersionStringInTimingReport) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_timing_report_ms = 1000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
 
   EventLoop::SetDefaultVersionString("default_version_string");
 
@@ -2101,7 +2105,8 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
 TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
   // Force a slower rate so we are guaranteed to have reports for our phased
   // loop.
-  FLAGS_timing_report_ms = 2000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 2000);
 
   const chrono::milliseconds kOffset = chrono::milliseconds(400);
   const int kCount = 5;
@@ -2237,7 +2242,8 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
 TEST_P(AbstractEventLoopTest, PhasedLoopChangingOffsetTest) {
   // Force a slower rate so we are guaranteed to have reports for our phased
   // loop.
-  FLAGS_timing_report_ms = 2000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 2000);
 
   const chrono::milliseconds kOffset = chrono::milliseconds(400);
   const chrono::milliseconds kInterval = chrono::milliseconds(1000);
@@ -2624,7 +2630,8 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleWithEarlierOffset) {
 
 // Tests that senders count correctly in the timing report.
 TEST_P(AbstractEventLoopTest, SenderTimingReport) {
-  FLAGS_timing_report_ms = 1000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = MakePrimary();
 
   auto loop2 = Make("watcher_loop");
@@ -2745,8 +2752,8 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
 // Tests that the RawSender::Send(void*, size_t) overload tracks things properly
 // in its timing report.
 TEST_P(AbstractEventLoopTest, CopySenderTimingReport) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_timing_report_ms = 1000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = Make();
   auto loop2 = MakePrimary();
 
@@ -2801,8 +2808,8 @@ TEST_P(AbstractEventLoopTest, CopySenderTimingReport) {
 
 // Tests that the RawSender::Send(SharedSpan) overload works.
 TEST_P(AbstractEventLoopTest, SharedSenderTimingReport) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_timing_report_ms = 1000;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = Make();
   auto loop2 = MakePrimary();
 
@@ -2863,7 +2870,7 @@ TEST_P(AbstractEventLoopTest, SharedSenderTimingReport) {
 
 // Tests that senders count correctly in the timing report.
 TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
-  FLAGS_timing_report_ms = 1000;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = MakePrimary();
   loop1->MakeWatcher("/test", [](const TestMessage &) {});
 
@@ -2930,7 +2937,7 @@ TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
 
 // Tests that fetchers count correctly in the timing report.
 TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
-  FLAGS_timing_report_ms = 1000;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = MakePrimary();
   auto loop2 = Make("sender_loop");
 

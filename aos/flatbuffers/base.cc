@@ -4,6 +4,9 @@
 
 #include <iomanip>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+
 namespace aos::fbs {
 
 namespace {

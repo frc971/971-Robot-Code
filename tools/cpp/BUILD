@@ -37,7 +37,9 @@ cc_library(
         "//tools:cpu_cortex_m0plus": [],
         # TODO(phil): Support this properly.
         #"//tools:cpu_cortex_m4f_k22": [],
-        "//conditions:default": ["//third_party/gperftools:tcmalloc"],
+        "//conditions:default": [],
+        # TODO(austin): Figure out how to make malloc hooks work with the new tcmalloc...
+        #"//conditions:default": ["@com_google_tcmalloc//tcmalloc"],
     }),
 )
 

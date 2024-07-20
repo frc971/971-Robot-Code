@@ -12,19 +12,20 @@
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/vision/blob_detector.h"
 
-DEFINE_string(pi, "pi3", "Node name to replay.");
-DEFINE_string(image_save_prefix, "/tmp/img",
-              "Prefix to use for saving images from the logfile.");
-DEFINE_bool(display, false, "If true, display the images with a timeout.");
-DEFINE_bool(detected_only, false,
-            "If true, only write images which had blobs (unfiltered) detected");
-DEFINE_bool(filtered_only, false,
-            "If true, only write images which had blobs (filtered) detected");
-DEFINE_bool(match_timestamps, false,
-            "If true, name the files based on the time since the robot was "
-            "enabled (match start). Only consider images during this time");
-DEFINE_string(logger_pi_log, "/tmp/logger_pi/", "Path to logger pi log");
-DEFINE_string(roborio_log, "/tmp/roborio/", "Path to roborio log");
+ABSL_FLAG(std::string, pi, "pi3", "Node name to replay.");
+ABSL_FLAG(std::string, image_save_prefix, "/tmp/img",
+          "Prefix to use for saving images from the logfile.");
+ABSL_FLAG(bool, display, false, "If true, display the images with a timeout.");
+ABSL_FLAG(bool, detected_only, false,
+          "If true, only write images which had blobs (unfiltered) detected");
+ABSL_FLAG(bool, filtered_only, false,
+          "If true, only write images which had blobs (filtered) detected");
+ABSL_FLAG(bool, match_timestamps, false,
+          "If true, name the files based on the time since the robot was "
+          "enabled (match start). Only consider images during this time");
+ABSL_FLAG(std::string, logger_pi_log, "/tmp/logger_pi/",
+          "Path to logger pi log");
+ABSL_FLAG(std::string, roborio_log, "/tmp/roborio/", "Path to roborio log");
 
 namespace y2022::vision {
 namespace {
@@ -47,8 +48,8 @@ void ReplayRoborio(ReplayData *data) {
   data->match_end = monotonic_clock::min_time;
 
   // Open logfiles
-  aos::logger::LogReader reader(
-      aos::logger::SortParts(aos::logger::FindLogs(FLAGS_roborio_log)));
+  aos::logger::LogReader reader(aos::logger::SortParts(
+      aos::logger::FindLogs(absl::GetFlag(FLAGS_roborio_log))));
   reader.Register();
   const aos::Node *roborio =
       aos::configuration::GetNode(reader.configuration(), "roborio");
@@ -140,7 +141,7 @@ T ClosestElement(const std::map<monotonic_clock::time_point, T> &map,
 
 // Extract images from the pi logs
 void ReplayPi(const ReplayData &data) {
-  if (FLAGS_match_timestamps) {
+  if (absl::GetFlag(FLAGS_match_timestamps)) {
     CHECK_NE(data.match_start, monotonic_clock::min_time)
         << "Can't use match timestamps if match never started";
     CHECK_NE(data.match_end, monotonic_clock::min_time)
@@ -148,11 +149,11 @@ void ReplayPi(const ReplayData &data) {
   }
 
   // Open logfiles
-  aos::logger::LogReader reader(
-      aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logger_pi_log)));
+  aos::logger::LogReader reader(aos::logger::SortParts(
+      aos::logger::FindLogs(absl::GetFlag(FLAGS_logger_pi_log))));
   reader.Register();
-  const aos::Node *pi =
-      aos::configuration::GetNode(reader.configuration(), FLAGS_pi);
+  const aos::Node *pi = aos::configuration::GetNode(reader.configuration(),
+                                                    absl::GetFlag(FLAGS_pi));
 
   std::unique_ptr<aos::EventLoop> event_loop =
       reader.event_loop_factory()->MakeEventLoop("player", pi);
@@ -171,7 +172,7 @@ void ReplayPi(const ReplayData &data) {
         const auto superstructure_state = ClosestElement(
             data.superstructure_states, event_loop->monotonic_now());
 
-        if (FLAGS_match_timestamps) {
+        if (absl::GetFlag(FLAGS_match_timestamps)) {
           if (event_loop->monotonic_now() < data.match_start) {
             // Ignore prematch images if we only care about ones during the
             // match
@@ -190,23 +191,24 @@ void ReplayPi(const ReplayData &data) {
         cv::cvtColor(image_color_mat, image_mat, cv::COLOR_YUV2BGR_YUYV);
 
         bool use_image = true;
-        if (FLAGS_detected_only || FLAGS_filtered_only) {
+        if (absl::GetFlag(FLAGS_detected_only) ||
+            absl::GetFlag(FLAGS_filtered_only)) {
           // TODO(milind): if adding target estimation here in the future,
           // undistortion is needed
           BlobDetector::BlobResult blob_result;
           BlobDetector::ExtractBlobs(image_mat, &blob_result);
 
-          use_image =
-              ((FLAGS_filtered_only ? blob_result.filtered_blobs.size()
-                                    : blob_result.unfiltered_blobs.size()) > 0);
+          use_image = ((absl::GetFlag(FLAGS_filtered_only)
+                            ? blob_result.filtered_blobs.size()
+                            : blob_result.unfiltered_blobs.size()) > 0);
         }
 
         if (use_image) {
-          if (!FLAGS_image_save_prefix.empty()) {
+          if (!absl::GetFlag(FLAGS_image_save_prefix).empty()) {
             std::stringstream image_name;
-            image_name << FLAGS_image_save_prefix;
+            image_name << absl::GetFlag(FLAGS_image_save_prefix);
 
-            if (FLAGS_match_timestamps) {
+            if (absl::GetFlag(FLAGS_match_timestamps)) {
               // Add the time since match start into the image for debugging.
               // We can match images with the game recording.
               image_name << "match_"
@@ -239,9 +241,12 @@ void ReplayPi(const ReplayData &data) {
 
             cv::imwrite(image_name.str(), image_mat);
           }
-          if (FLAGS_display) {
+          if (absl::GetFlag(FLAGS_display)) {
             cv::imshow("Display", image_mat);
-            cv::waitKey(FLAGS_detected_only || FLAGS_filtered_only ? 10 : 1);
+            cv::waitKey(absl::GetFlag(FLAGS_detected_only) ||
+                                absl::GetFlag(FLAGS_filtered_only)
+                            ? 10
+                            : 1);
           }
         }
       });

@@ -1,7 +1,10 @@
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+
 #include "frc971/imu/imu_calibrator.h"
 #include "frc971/math/interpolate.h"
 
-DECLARE_int32(imu_zeroing_buffer);
+ABSL_DECLARE_FLAG(int32_t, imu_zeroing_buffer);
 
 namespace frc971::imu {
 
@@ -26,7 +29,8 @@ void ImuCalibrator<Scalar>::InsertImu(size_t imu_index,
   const bool plausibly_stationary =
       reading.gyro.squaredNorm() < kGyroMaxZeroingValue * kGyroMaxZeroingValue;
   bool stationary = plausibly_stationary;
-  int earliest_affected_index = readings.size() - FLAGS_imu_zeroing_buffer;
+  int earliest_affected_index =
+      readings.size() - absl::GetFlag(FLAGS_imu_zeroing_buffer);
   for (size_t index = std::max(0, earliest_affected_index);
        index < readings.size(); ++index) {
     if (!plausibly_stationary) {
@@ -75,7 +79,8 @@ void ImuCalibrator<Scalar>::InsertImu(size_t imu_index,
 template <typename Scalar>
 void ImuCalibrator<Scalar>::EvaluateRelativeResiduals() {
   for (const auto &readings : imu_readings_) {
-    CHECK_LT(static_cast<size_t>(FLAGS_imu_zeroing_buffer * 2), readings.size())
+    CHECK_LT(static_cast<size_t>(absl::GetFlag(FLAGS_imu_zeroing_buffer) * 2),
+             readings.size())
         << ": Insufficient readings to perform calibration.";
   }
   Scalar base_clock = imu_readings_[origin_index_][0].capture_time_adjusted;

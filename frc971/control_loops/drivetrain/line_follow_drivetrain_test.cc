@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 
@@ -10,7 +10,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
 
-DECLARE_bool(plot);
+ABSL_DECLARE_FLAG(bool, plot);
 
 namespace chrono = ::std::chrono;
 
@@ -117,7 +117,7 @@ class LineFollowDrivetrainTest : public ::testing::Test {
   }
 
   void TearDown() override {
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       matplotlibcpp::figure();
       matplotlibcpp::plot(time_, simulation_ul_, {{"label", "ul"}});
       matplotlibcpp::plot(time_, simulation_ur_, {{"label", "ur"}});

@@ -107,7 +107,8 @@ cc_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//third_party/matplotlib-cpp",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
     ],
 )
 

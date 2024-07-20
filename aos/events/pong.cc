@@ -1,4 +1,6 @@
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/events/ping_generated.h"
@@ -7,14 +9,14 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 
-DEFINE_string(config, "pingpong_config.json", "Path to the config.");
+ABSL_FLAG(std::string, config, "pingpong_config.json", "Path to the config.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
   aos::EventLoop::SetDefaultVersionString("pong_version");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   ::aos::ShmEventLoop event_loop(&config.message());
 

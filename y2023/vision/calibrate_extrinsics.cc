@@ -17,19 +17,20 @@
 #include "y2023/constants/constants_generated.h"
 #include "y2023/vision/vision_util.h"
 
-DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
-DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_string(target_type, "charuco_diamond",
-              "Type of target: aruco|charuco|charuco_diamond");
-DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
-DEFINE_string(output_logs, "/tmp/calibration/",
-              "Output folder for visualization logs.");
-DEFINE_string(base_calibration, "",
-              "Intrinsics (and optionally extrinsics) to use for extrinsics "
-              "calibration.");
-DEFINE_string(output_calibration, "",
-              "Output json file to use for the resulting calibration "
-              "(intrinsics and extrinsics).");
+ABSL_FLAG(std::string, pi, "pi-7971-2", "Pi name to calibrate.");
+ABSL_FLAG(bool, plot, false, "Whether to plot the resulting data.");
+ABSL_FLAG(std::string, target_type, "charuco_diamond",
+          "Type of target: aruco|charuco|charuco_diamond");
+ABSL_FLAG(std::string, image_channel, "/camera",
+          "Channel to listen for images on");
+ABSL_FLAG(std::string, output_logs, "/tmp/calibration/",
+          "Output folder for visualization logs.");
+ABSL_FLAG(std::string, base_calibration, "",
+          "Intrinsics (and optionally extrinsics) to use for extrinsics "
+          "calibration.");
+ABSL_FLAG(std::string, output_calibration, "",
+          "Output json file to use for the resulting calibration "
+          "(intrinsics and extrinsics).");
 
 namespace frc971::vision {
 namespace chrono = std::chrono;
@@ -51,10 +52,11 @@ struct CalibrationAccumulatorState {
   std::unique_ptr<Calibration> extractor;
   void MaybeMakeExtractor() {
     if (imu_event_loop && pi_event_loop) {
-      TargetType target_type = TargetTypeFromString(FLAGS_target_type);
+      TargetType target_type =
+          TargetTypeFromString(absl::GetFlag(FLAGS_target_type));
       std::unique_ptr<aos::EventLoop> constants_event_loop =
           factory->MakeEventLoop("constants_fetcher", pi_event_loop->node());
-      if (FLAGS_base_calibration.empty()) {
+      if (absl::GetFlag(FLAGS_base_calibration).empty()) {
         frc971::constants::ConstantsFetcher<y2023::Constants> constants_fetcher(
             constants_event_loop.get());
         *intrinsics =
@@ -63,11 +65,12 @@ struct CalibrationAccumulatorState {
                 pi_event_loop->node()->name()->string_view()));
       } else {
         *intrinsics = aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
-            FLAGS_base_calibration);
+            absl::GetFlag(FLAGS_base_calibration));
       }
       extractor = std::make_unique<Calibration>(
-          factory, pi_event_loop.get(), imu_event_loop.get(), FLAGS_pi,
-          &intrinsics->message(), target_type, FLAGS_image_channel, data);
+          factory, pi_event_loop.get(), imu_event_loop.get(),
+          absl::GetFlag(FLAGS_pi), &intrinsics->message(), target_type,
+          absl::GetFlag(FLAGS_image_channel), data);
     }
   }
 };
@@ -75,7 +78,7 @@ struct CalibrationAccumulatorState {
 void Main(int argc, char **argv) {
   CalibrationData data;
   std::optional<uint16_t> pi_number =
-      aos::network::ParsePiOrOrinNumber(FLAGS_pi);
+      aos::network::ParsePiOrOrinNumber(absl::GetFlag(FLAGS_pi));
   CHECK(pi_number);
   const std::string pi_name = absl::StrCat("pi", *pi_number);
 
@@ -122,7 +125,8 @@ void Main(int argc, char **argv) {
           factory.MakeEventLoop("logger", pi_node);
       accumulator_state.logger = std::make_unique<aos::logger::Logger>(
           accumulator_state.logger_event_loop.get());
-      accumulator_state.logger->StartLoggingOnRun(FLAGS_output_logs);
+      accumulator_state.logger->StartLoggingOnRun(
+          absl::GetFlag(FLAGS_output_logs));
       accumulator_state.MaybeMakeExtractor();
     });
 
@@ -227,8 +231,9 @@ void Main(int argc, char **argv) {
       merged_calibration = aos::MergeFlatBuffers(&calibration.message(),
                                                  &solved_extrinsics.message());
 
-  if (!FLAGS_output_calibration.empty()) {
-    aos::WriteFlatbufferToJson(FLAGS_output_calibration, merged_calibration);
+  if (!absl::GetFlag(FLAGS_output_calibration).empty()) {
+    aos::WriteFlatbufferToJson(absl::GetFlag(FLAGS_output_calibration),
+                               merged_calibration);
   } else {
     LOG(WARNING) << "Calibration filename not provided, so not saving it";
   }
@@ -296,12 +301,12 @@ void Main(int argc, char **argv) {
                    nominal_board_to_world.inverse())
                    .transpose();
 
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     LOG(INFO) << "Showing visualization";
     Visualize(data, calibration_parameters);
   }
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     Plot(data, calibration_parameters);
   }
 }  // namespace vision

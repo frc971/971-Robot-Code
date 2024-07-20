@@ -1,7 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_RUNGE_KUTTA_H_
 #define FRC971_CONTROL_LOOPS_RUNGE_KUTTA_H_
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include <Eigen/Dense>
 
 #include "frc971/control_loops/runge_kutta_helpers.h"

@@ -2,7 +2,7 @@
 
 #include <queue>
 
-#include "gtest/gtest.h"
+#include "absl/flags/flag.h"
 
 #include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
@@ -15,8 +15,8 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_folder, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -77,10 +77,10 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 
-    if (!FLAGS_output_folder.empty()) {
+    if (!absl::GetFlag(FLAGS_output_folder).empty()) {
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_folder);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
     }
 
     test_event_loop_->OnRun([this]() { SetStartingPosition({3.0, 2.0, 0.0}); });

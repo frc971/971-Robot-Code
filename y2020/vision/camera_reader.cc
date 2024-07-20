@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include "absl/flags/flag.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -16,12 +17,12 @@
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 
-DEFINE_bool(skip_sift, false,
-            "If true don't run any feature extraction.  Just forward images.");
-DEFINE_bool(ransac_pose, false,
-            "If true, do pose estimate with RANSAC; else, use ITERATIVE mode.");
-DEFINE_bool(use_prev_pose, true,
-            "If true, use previous pose estimate as seed for next estimate.");
+ABSL_FLAG(bool, skip_sift, false,
+          "If true don't run any feature extraction.  Just forward images.");
+ABSL_FLAG(bool, ransac_pose, false,
+          "If true, do pose estimate with RANSAC; else, use ITERATIVE mode.");
+ABSL_FLAG(bool, use_prev_pose, true,
+          "If true, use previous pose estimate as seed for next estimate.");
 
 namespace frc971::vision {
 
@@ -160,7 +161,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::KeyPoint> keypoints;
 
   cv::Mat descriptors;
-  if (!FLAGS_skip_sift) {
+  if (!absl::GetFlag(FLAGS_skip_sift)) {
     sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
   }
 
@@ -176,7 +177,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   for (int image_idx = 0; image_idx < number_training_images(); ++image_idx) {
     // Then, match those features against our training data.
     std::vector<std::vector<cv::DMatch>> matches;
-    if (!FLAGS_skip_sift) {
+    if (!absl::GetFlag(FLAGS_skip_sift)) {
       matchers_[image_idx].knnMatch(/* queryDescriptors */ descriptors, matches,
                                     /* k */ 2);
     }
@@ -318,7 +319,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // it's sometimes bouncing between two possible poses.  Putting it
     // near the previous pose helps it converge to the previous pose
     // estimate (assuming it's valid).
-    if (FLAGS_use_prev_pose) {
+    if (absl::GetFlag(FLAGS_use_prev_pose)) {
       R_camera_field_vec = prev_camera_field_R_vec_list_[i].clone();
       T_camera_field = prev_camera_field_T_list_[i].clone();
       VLOG(2) << "Using previous match for training image " << i
@@ -326,13 +327,13 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     }
 
     // Compute the pose of the camera (global origin relative to camera)
-    if (FLAGS_ransac_pose) {
+    if (absl::GetFlag(FLAGS_ransac_pose)) {
       // RANSAC computation is designed to be more robust to outliers.
       // But, we found it bounces around a lot, even with identical points
       cv::solvePnPRansac(per_image_good_match.training_points_3d,
                          per_image_good_match.query_points, CameraIntrinsics(),
                          CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
-                         FLAGS_use_prev_pose);
+                         absl::GetFlag(FLAGS_use_prev_pose));
     } else {
       // ITERATIVE mode is potentially less robust to outliers, but we
       // found it to be more stable
@@ -340,7 +341,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       cv::solvePnP(per_image_good_match.training_points_3d,
                    per_image_good_match.query_points, CameraIntrinsics(),
                    CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
-                   FLAGS_use_prev_pose, cv::SOLVEPNP_ITERATIVE);
+                   absl::GetFlag(FLAGS_use_prev_pose), cv::SOLVEPNP_ITERATIVE);
     }
 
     // We are occasionally seeing NaN in the prior estimate, so checking for
@@ -451,7 +452,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
 void CameraReader::ReadImage() {
   if (!reader_->ReadLatestImage()) {
-    if (!FLAGS_skip_sift) {
+    if (!absl::GetFlag(FLAGS_skip_sift)) {
       LOG(INFO) << "No image, sleeping";
     }
     read_image_timer_->Schedule(event_loop_->monotonic_now() +

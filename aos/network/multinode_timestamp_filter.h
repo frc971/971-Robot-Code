@@ -8,7 +8,8 @@
 
 #include "Eigen/Dense"
 #include "absl/container/btree_set.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"

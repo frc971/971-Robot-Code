@@ -4,6 +4,7 @@
 #include <cmath>
 #include <thread>
 
+#include "absl/flags/flag.h"
 #include "opencv2/imgproc.hpp"
 
 #include "aos/events/event_loop.h"
@@ -15,7 +16,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
 
-DEFINE_string(image_png, "", "A set of PNG images");
+ABSL_FLAG(std::string, image_png, "", "A set of PNG images");
 
 namespace y2022::vision {
 
@@ -145,9 +146,9 @@ void CameraReader::ProcessImage(cv::Mat image_mat_distorted,
 
 void CameraReader::ReadImage() {
   // Path is for reading from the Disk.
-  if (FLAGS_image_png != "") {
+  if (absl::GetFlag(FLAGS_image_png) != "") {
     std::vector<cv::String> file_list;
-    cv::glob(FLAGS_image_png + "/*.png", file_list, false);
+    cv::glob(absl::GetFlag(FLAGS_image_png) + "/*.png", file_list, false);
     for (auto file : file_list) {
       // Sleep for 0.05 seconds in order to not reach the max number of messages
       // that can be sent in a second.

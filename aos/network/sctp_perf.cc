@@ -1,7 +1,9 @@
 #include <chrono>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
@@ -14,24 +16,24 @@
 #pragma clang diagnostic ignored "-Wcast-align"
 #endif
 
-DEFINE_string(config, "aos_config.json", "Path to the config.");
-DEFINE_uint32(port, 1323, "Port to run the sctp test on");
-DEFINE_uint32(payload_size, 1000, "Size of data to send in bytes");
-DEFINE_uint32(ttl, 0, "TTL in milliseconds");
-DEFINE_uint32(rx_size, 1000000,
-              "RX buffer size to set the max size to be in bytes.");
-DEFINE_string(host, "", "Server host (acts as server if unspecified)");
+ABSL_FLAG(std::string, config, "aos_config.json", "Path to the config.");
+ABSL_FLAG(uint32_t, port, 1323, "Port to run the sctp test on");
+ABSL_FLAG(uint32_t, payload_size, 1000, "Size of data to send in bytes");
+ABSL_FLAG(uint32_t, ttl, 0, "TTL in milliseconds");
+ABSL_FLAG(uint32_t, rx_size, 1000000,
+          "RX buffer size to set the max size to be in bytes.");
+ABSL_FLAG(std::string, host, "", "Server host (acts as server if unspecified)");
 
-DEFINE_bool(client, false,
-            "If true, then act as a client, otherwise act as a server");
-DEFINE_uint32(skip_first_n, 10,
-              "Skip the first 'n' messages when computing statistics.");
+ABSL_FLAG(bool, client, false,
+          "If true, then act as a client, otherwise act as a server");
+ABSL_FLAG(uint32_t, skip_first_n, 10,
+          "Skip the first 'n' messages when computing statistics.");
 
-DEFINE_string(sctp_auth_key_file, "",
-              "When set, use the provided key for SCTP authentication as "
-              "defined in RFC 4895");
+ABSL_FLAG(std::string, sctp_auth_key_file, "",
+          "When set, use the provided key for SCTP authentication as "
+          "defined in RFC 4895");
 
-DECLARE_bool(die_on_malloc);
+ABSL_DECLARE_FLAG(bool, die_on_malloc);
 
 namespace aos::message_bridge::perf {
 
@@ -40,15 +42,16 @@ namespace {
 using util::ReadFileToVecOrDie;
 
 SctpAuthMethod SctpAuthMethod() {
-  return FLAGS_sctp_auth_key_file.empty() ? SctpAuthMethod::kNoAuth
-                                          : SctpAuthMethod::kAuth;
+  return absl::GetFlag(FLAGS_sctp_auth_key_file).empty()
+             ? SctpAuthMethod::kNoAuth
+             : SctpAuthMethod::kAuth;
 }
 
 std::vector<uint8_t> GetSctpAuthKey() {
   if (SctpAuthMethod() == SctpAuthMethod::kNoAuth) {
     return {};
   }
-  return ReadFileToVecOrDie(FLAGS_sctp_auth_key_file);
+  return ReadFileToVecOrDie(absl::GetFlag(FLAGS_sctp_auth_key_file));
 }
 
 }  // namespace
@@ -59,12 +62,12 @@ class Server {
  public:
   Server(aos::ShmEventLoop *event_loop)
       : event_loop_(event_loop),
-        server_(2, "0.0.0.0", FLAGS_port, SctpAuthMethod()) {
+        server_(2, "0.0.0.0", absl::GetFlag(FLAGS_port), SctpAuthMethod()) {
     server_.SetAuthKey(GetSctpAuthKey());
     event_loop_->epoll()->OnReadable(server_.fd(),
                                      [this]() { MessageReceived(); });
-    server_.SetMaxReadSize(FLAGS_rx_size + 100);
-    server_.SetMaxWriteSize(FLAGS_rx_size + 100);
+    server_.SetMaxReadSize(absl::GetFlag(FLAGS_rx_size) + 100);
+    server_.SetMaxWriteSize(absl::GetFlag(FLAGS_rx_size) + 100);
 
     event_loop_->SetRuntimeRealtimePriority(5);
   }
@@ -76,7 +79,7 @@ class Server {
       LOG(INFO) << "Lost connection to client. Not sending";
       return;
     }
-    if (server_.Send(message, sac_assoc_id_, 0, FLAGS_ttl)) {
+    if (server_.Send(message, sac_assoc_id_, 0, absl::GetFlag(FLAGS_ttl))) {
       LOG(INFO) << "Server reply with " << message.size() << "B";
     } else {
       PLOG(FATAL) << "Failed to send";
@@ -140,11 +143,11 @@ class Client {
  public:
   Client(aos::ShmEventLoop *event_loop)
       : event_loop_(event_loop),
-        client_(FLAGS_host, FLAGS_port, 2, "0.0.0.0", FLAGS_port,
-                SctpAuthMethod()) {
+        client_(absl::GetFlag(FLAGS_host), absl::GetFlag(FLAGS_port), 2,
+                "0.0.0.0", absl::GetFlag(FLAGS_port), SctpAuthMethod()) {
     client_.SetAuthKey(GetSctpAuthKey());
-    client_.SetMaxReadSize(FLAGS_rx_size + 100);
-    client_.SetMaxWriteSize(FLAGS_rx_size + 100);
+    client_.SetMaxReadSize(absl::GetFlag(FLAGS_rx_size) + 100);
+    client_.SetMaxWriteSize(absl::GetFlag(FLAGS_rx_size) + 100);
 
     timer_ = event_loop_->AddTimer([this]() { Ping(); });
 
@@ -161,9 +164,9 @@ class Client {
   ~Client() { event_loop_->epoll()->DeleteFd(client_.fd()); }
 
   void Ping() {
-    std::string payload(FLAGS_payload_size, 'a');
+    std::string payload(absl::GetFlag(FLAGS_payload_size), 'a');
     sent_time_ = aos::monotonic_clock::now();
-    if (client_.Send(0, payload, FLAGS_ttl)) {
+    if (client_.Send(0, payload, absl::GetFlag(FLAGS_ttl))) {
       LOG(INFO) << "Sending " << payload.size() << "B";
     } else {
       PLOG(ERROR) << "Failed to send";
@@ -226,8 +229,9 @@ class Client {
             .count();
     avg_latency_ = (avg_latency_ * (count_ - 1) + elapsed_secs) / count_;
     // average one-way throughput
-    double throughput = FLAGS_payload_size * 2.0 / elapsed_secs;
-    double avg_throughput = FLAGS_payload_size * 2.0 / avg_latency_;
+    double throughput = absl::GetFlag(FLAGS_payload_size) * 2.0 / elapsed_secs;
+    double avg_throughput =
+        absl::GetFlag(FLAGS_payload_size) * 2.0 / avg_latency_;
     printf(
         "Round trip: %.2fms | %.2f KB/s | Avg RTL: %.2fms | %.2f KB/s | "
         "Count: %d\n",
@@ -240,25 +244,27 @@ class Client {
   SctpClient client_;
   aos::TimerHandler *timer_;
   double avg_latency_ = 0.0;
-  int count_ = -FLAGS_skip_first_n;
+  int count_ = -absl::GetFlag(FLAGS_skip_first_n);
 
   aos::monotonic_clock::time_point sent_time_;
 };
 
 int Main() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
-  if (FLAGS_client) {
-    CHECK(!FLAGS_host.empty()) << "Client Usage: `sctp_perf --client --host "
-                                  "abc.com --payload_size [bytes] "
-                                  "[--port PORT] [--config PATH]`";
+  if (absl::GetFlag(FLAGS_client)) {
+    CHECK(!absl::GetFlag(FLAGS_host).empty())
+        << "Client Usage: `sctp_perf --client --host "
+           "abc.com --payload_size [bytes] "
+           "[--port PORT] [--config PATH]`";
 
     Client client(&event_loop);
     event_loop.Run();
   } else {
-    CHECK(FLAGS_host.empty()) << "Server Usage: `sctp_perf [--config PATH]`";
+    CHECK(absl::GetFlag(FLAGS_host).empty())
+        << "Server Usage: `sctp_perf [--config PATH]`";
     Server server(&event_loop);
     event_loop.Run();
   }
@@ -269,12 +275,12 @@ int Main() {
 }  // namespace aos::message_bridge::perf
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(absl::StrCat(
+  absl::SetProgramUsageMessage(absl::StrCat(
       "Measure SCTP performance\n", "  Server Usage: `sctp_perf`\n",
       "  Client Usage: `sctp_perf --client --host abc.com`\n"));
   aos::InitGoogle(&argc, &argv);
 
   // Client and server need to malloc.
-  FLAGS_die_on_malloc = false;
+  absl::SetFlag(&FLAGS_die_on_malloc, false);
   return aos::message_bridge::perf::Main();
 }

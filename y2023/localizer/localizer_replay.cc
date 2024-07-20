@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -11,19 +11,19 @@
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
 #include "y2023/localizer/localizer.h"
 
-DEFINE_string(config, "y2023/aos_config.json",
-              "Name of the config file to replay using.");
-DEFINE_int32(team, 9971, "Team number to use for logfile replay.");
-DEFINE_string(output_folder, "/tmp/replayed",
-              "Name of the folder to write replayed logs to.");
+ABSL_FLAG(std::string, config, "y2023/aos_config.json",
+          "Name of the config file to replay using.");
+ABSL_FLAG(int32_t, team, 9971, "Team number to use for logfile replay.");
+ABSL_FLAG(std::string, output_folder, "/tmp/replayed",
+          "Name of the folder to write replayed logs to.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   // sort logfiles
   const std::vector<aos::logger::LogFile> logfiles =
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   const std::vector<std::string> nodes_to_log = {"imu"};
   std::vector<std::unique_ptr<aos::util::LoggerState>> loggers =
       aos::util::MakeLoggersForNodes(reader.event_loop_factory(), nodes_to_log,
-                                     FLAGS_output_folder);
+                                     absl::GetFlag(FLAGS_output_folder));
 
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {

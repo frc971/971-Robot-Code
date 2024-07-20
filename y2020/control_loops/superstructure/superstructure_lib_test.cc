@@ -3,7 +3,8 @@
 #include <chrono>
 #include <memory>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/log_reader.h"
@@ -21,12 +22,12 @@
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(output_file, "",
-              "If set, logs all channels to the provided logfile.");
-DEFINE_string(replay_logfile, "external/superstructure_replay/",
-              "Name of the logfile to read from and replay.");
-DEFINE_string(config, "y2020/aos_config.json",
-              "Name of the config file to replay using.");
+ABSL_FLAG(std::string, output_file, "",
+          "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, replay_logfile, "external/superstructure_replay/",
+          "Name of the logfile to read from and replay.");
+ABSL_FLAG(std::string, config, "y2020/aos_config.json",
+          "Name of the config file to replay using.");
 
 namespace y2020::control_loops::superstructure::testing {
 
@@ -263,8 +264,10 @@ class SuperstructureSimulation {
                accelerator_left_plant_->voltage_offset();
 
     // Confirm that we aren't drawing too much current.
-    CHECK_NEAR(accelerator_left_plant_->battery_current(accelerator_left_U),
-               0.0, 75.0);
+    CHECK_LE(accelerator_left_plant_->battery_current(accelerator_left_U),
+             75.0);
+    CHECK_GE(accelerator_left_plant_->battery_current(accelerator_left_U),
+             -75.0);
 
     ::Eigen::Matrix<double, 1, 1> accelerator_right_U;
     accelerator_right_U
@@ -272,8 +275,10 @@ class SuperstructureSimulation {
                accelerator_right_plant_->voltage_offset();
 
     // Confirm that we aren't drawing too much current.
-    CHECK_NEAR(accelerator_right_plant_->battery_current(accelerator_right_U),
-               0.0, 75.0);
+    CHECK_LE(accelerator_right_plant_->battery_current(accelerator_right_U),
+             75.0);
+    CHECK_GE(accelerator_right_plant_->battery_current(accelerator_right_U),
+             -75.0);
 
     ::Eigen::Matrix<double, 1, 1> finisher_U;
     finisher_U << superstructure_output_fetcher_->finisher_voltage() +
@@ -281,7 +286,8 @@ class SuperstructureSimulation {
 
     // Confirm that we aren't drawing too much current.  2 motors -> twice the
     // lumped current since our model can't tell them apart.
-    CHECK_NEAR(finisher_plant_->battery_current(finisher_U), 0.0, 200.0);
+    CHECK_LE(finisher_plant_->battery_current(finisher_U), 200.0);
+    CHECK_GE(finisher_plant_->battery_current(finisher_U), -200.0);
 
     hood_plant_->Update(hood_U);
     intake_plant_->Update(intake_U);
@@ -440,11 +446,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
     set_team_id(::frc971::control_loops::testing::kTeamNumber);
 
-    if (!FLAGS_output_file.empty()) {
-      unlink(FLAGS_output_file.c_str());
+    if (!absl::GetFlag(FLAGS_output_file).empty()) {
+      unlink(absl::GetFlag(FLAGS_output_file).c_str());
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_file));
     }
   }
 
@@ -1143,7 +1149,7 @@ class SuperstructureReplayTest : public ::testing::Test {
  public:
   SuperstructureReplayTest()
       : reader_(aos::logger::SortParts(
-            aos::logger::FindLogs(FLAGS_replay_logfile))) {
+            aos::logger::FindLogs(absl::GetFlag(FLAGS_replay_logfile)))) {
     aos::network::OverrideTeamNumber(971);
 
     reader_.RemapLoggedChannel("/superstructure",
@@ -1168,12 +1174,12 @@ class SuperstructureReplayTest : public ::testing::Test {
     superstructure_status_fetcher_ =
         test_event_loop_->MakeFetcher<Status>("/superstructure");
 
-    if (!FLAGS_output_file.empty()) {
-      unlink(FLAGS_output_file.c_str());
+    if (!absl::GetFlag(FLAGS_output_file).empty()) {
+      unlink(absl::GetFlag(FLAGS_output_file).c_str());
       logger_event_loop_ =
           reader_.event_loop_factory()->MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_file));
     }
   }
 

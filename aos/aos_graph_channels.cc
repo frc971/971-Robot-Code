@@ -1,9 +1,10 @@
 #include <iomanip>
 #include <iostream>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
-#include "gflags/gflags.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -11,7 +12,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 
-DEFINE_string(skip, "", "Applications to skip, seperated by ;");
+ABSL_FLAG(std::string, skip, "", "Applications to skip, seperated by ;");
 
 struct ChannelState {
   const aos::Channel *channel = nullptr;
@@ -34,7 +35,7 @@ struct ChannelConnections {
 };
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Usage: \n"
       "  aos_graph_channels [args] logfile1 logfile2 ...\n"
       "\n"
@@ -49,7 +50,8 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Expected at least 1 logfile as an argument.";
   }
 
-  const std::vector<std::string> skip_list = absl::StrSplit(FLAGS_skip, ";");
+  const std::vector<std::string> skip_list =
+      absl::StrSplit(absl::GetFlag(FLAGS_skip), ";");
   aos::logger::LogReader reader(
       aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
 

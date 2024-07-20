@@ -1,13 +1,14 @@
 #include "frc971/vision/foxglove_image_converter_lib.h"
 
+#include "absl/flags/flag.h"
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-DEFINE_int32(jpeg_quality, 60,
-             "Compression quality of JPEGs, 0-100; lower numbers mean lower "
-             "quality and resulting image sizes.");
-DEFINE_uint32(max_period_ms, 100,
-              "Fastest period at which to convert images, to limit CPU usage.");
+ABSL_FLAG(int32_t, jpeg_quality, 60,
+          "Compression quality of JPEGs, 0-100; lower numbers mean lower "
+          "quality and resulting image sizes.");
+ABSL_FLAG(uint32_t, max_period_ms, 100,
+          "Fastest period at which to convert images, to limit CPU usage.");
 
 namespace frc971::vision {
 std::string_view ExtensionForCompression(ImageCompression compression) {
@@ -26,8 +27,9 @@ flatbuffers::Offset<foxglove::CompressedImage> CompressImage(
   // imencode doesn't let us pass in anything other than an std::vector, and
   // performance isn't yet a big enough issue to try to avoid the copy.
   std::vector<uint8_t> buffer;
-  CHECK(cv::imencode(absl::StrCat(".", format), image, buffer,
-                     {cv::IMWRITE_JPEG_QUALITY, FLAGS_jpeg_quality}));
+  CHECK(cv::imencode(
+      absl::StrCat(".", format), image, buffer,
+      {cv::IMWRITE_JPEG_QUALITY, absl::GetFlag(FLAGS_jpeg_quality)}));
   const flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
       fbb->CreateVector(buffer);
   const struct timespec timestamp_t = aos::time::to_timespec(eof);
@@ -52,7 +54,7 @@ FoxgloveImageConverter::FoxgloveImageConverter(aos::EventLoop *event_loop,
           [this, compression](const cv::Mat image,
                               const aos::monotonic_clock::time_point eof) {
             if (event_loop_->monotonic_now() >
-                (std::chrono::milliseconds(FLAGS_max_period_ms) +
+                (std::chrono::milliseconds(absl::GetFlag(FLAGS_max_period_ms)) +
                  sender_.monotonic_sent_time())) {
               auto builder = sender_.MakeBuilder();
               builder.CheckOk(builder.Send(

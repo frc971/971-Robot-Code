@@ -14,7 +14,8 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <vector>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "third_party/apriltag/common/g2d.h"
 
 #include "aos/time/time.h"

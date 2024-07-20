@@ -3,7 +3,8 @@
 #include <cmath>
 #include <numeric>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/wrap.h"

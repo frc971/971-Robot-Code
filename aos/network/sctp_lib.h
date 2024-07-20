@@ -11,9 +11,9 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/unique_malloc_ptr.h"
 

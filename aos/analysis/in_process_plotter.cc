@@ -3,9 +3,10 @@
 #include <algorithm>
 #include <ostream>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 

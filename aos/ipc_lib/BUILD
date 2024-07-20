@@ -15,8 +15,9 @@ cc_library(
         ":shm_observers",
         "//aos:macros",
         "//aos/util:compiler_memory_barrier",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -53,7 +54,8 @@ cc_library(
         ":aos_sync",
         ":core_lib",
         ":shared_mem_types",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -105,7 +107,7 @@ cc_binary(
         "//aos:init",
         "//aos/logging",
         "//aos/mutex",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -120,7 +122,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -134,7 +137,8 @@ cc_test(
         ":signalfd",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -149,7 +153,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":shm_observers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -160,7 +165,8 @@ cc_test(
     deps = [
         ":index32",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -172,7 +178,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":shm_observers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -183,7 +190,8 @@ cc_test(
     deps = [
         ":index",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -213,7 +221,8 @@ cc_library(
         "//aos/time",
         "//aos/util:compiler_memory_barrier",
         "//aos/util:top",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
@@ -266,6 +275,8 @@ cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
     srcs = ["lockless_queue_test.cc"],
+    # We don't want all the signal handlers registered, otherwise we can't fork.
+    args = ["--nobacktrace"],
     shard_count = 10,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -283,6 +294,8 @@ cc_test(
 cc_test(
     name = "lockless_queue_death_test",
     srcs = ["lockless_queue_death_test.cc"],
+    # We don't want all the signal handlers registered, otherwise we can't fork.
+    args = ["--nobacktrace"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event",
@@ -307,7 +320,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -320,7 +334,8 @@ cc_library(
         "//aos:realtime",
         "//aos/logging",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -334,7 +349,7 @@ cc_binary(
         ":latency_lib",
         "//aos:init",
         "//aos/events:epoll",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -349,7 +364,7 @@ cc_binary(
         "//aos:condition",
         "//aos:init",
         "//aos/mutex",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -363,7 +378,7 @@ cc_binary(
         ":latency_lib",
         "//aos:init",
         "//aos/events:epoll",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -377,7 +392,7 @@ cc_binary(
         ":latency_lib",
         "//aos:init",
         "//aos/events:epoll",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -407,7 +422,8 @@ cc_library(
         "//aos/ipc_lib:aos_sync",
         "//aos/time",
         "//aos/type_traits",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -442,7 +458,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

@@ -10,7 +10,8 @@ cc_library(
         "//aos/vision/image:camera_params",
         "//aos/vision/image:image_types",
         "//aos/vision/image:reader",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

@@ -3,7 +3,8 @@
 // This library provides utilities for converting between a frc971.fbs.Matrix
 // flatbuffer type and an Eigen::Matrix.
 // The interesting methods are ToEigen(), ToEigenOrDie(), and FromEigen().
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "tl/expected.hpp"
 #include <Eigen/Core>
 

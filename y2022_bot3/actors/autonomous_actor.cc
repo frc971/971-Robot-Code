@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/math.h"
@@ -12,7 +14,7 @@
 #include "y2022_bot3/constants.h"
 #include "y2022_bot3/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
+ABSL_FLAG(bool, spline_auto, false, "If true, define a spline autonomous mode");
 
 namespace y2022_bot3::actors {
 
@@ -84,7 +86,7 @@ void AutonomousActor::Replan() {
     return;
   }
   sent_starting_position_ = false;
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     test_spline_ =
         PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -135,7 +137,7 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     SplineAuto();
   }
 

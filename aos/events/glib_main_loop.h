@@ -247,7 +247,7 @@ GlibSignalCallback<Args...>::GlibSignalCallback(
       signal_handler_id_(g_signal_connect(
           instance, detailed_signal,
           G_CALLBACK(&GlibSignalCallback::InvokeSignal), user_data())) {
-  CHECK_GT(signal_handler_id_, 0);
+  CHECK_GT(signal_handler_id_, 0u);
   VLOG(1) << this << " connected glib signal with " << user_data() << " as "
           << signal_handler_id_ << " on " << instance << ": "
           << detailed_signal;

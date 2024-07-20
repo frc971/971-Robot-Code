@@ -1,6 +1,6 @@
 #include "aos/seasocks/seasocks_logger.h"
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 
 #include "seasocks/PrintfLogger.h"
 
@@ -8,17 +8,17 @@ namespace aos::seasocks {
 
 void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
   // Convert Seasocks error codes to glog.
-  int glog_level;
+  absl::LogSeverity log_level;
   switch (level) {
     case ::seasocks::Logger::Level::Info:
-      glog_level = google::INFO;
+      log_level = absl::LogSeverity::kInfo;
       break;
     case ::seasocks::Logger::Level::Warning:
-      glog_level = google::WARNING;
+      log_level = absl::LogSeverity::kWarning;
       break;
     case ::seasocks::Logger::Level::Error:
     case ::seasocks::Logger::Level::Severe:
-      glog_level = google::ERROR;
+      log_level = absl::LogSeverity::kError;
       break;
     case ::seasocks::Logger::Level::Debug:
     case ::seasocks::Logger::Level::Access:
@@ -26,10 +26,10 @@ void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
       if (!VLOG_IS_ON(1)) {
         return;
       }
-      glog_level = google::INFO;
+      log_level = absl::LogSeverity::kInfo;
       break;
   }
-  LOG_AT_LEVEL(glog_level) << "Seasocks: " << message;
+  LOG(LEVEL(log_level)) << "Seasocks: " << message;
 }
 
 }  // namespace aos::seasocks

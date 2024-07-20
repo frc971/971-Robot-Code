@@ -6,12 +6,13 @@
 #include "y2024_swerve/constants/constants_generated.h"
 #include "y2024_swerve/vision/vision_util.h"
 
-DEFINE_string(channel, "/camera", "Channel name");
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+ABSL_FLAG(std::string, channel, "/camera", "Channel name");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
 
 void GpuApriltagDetector() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   frc971::constants::WaitForConstants<y2024_swerve::Constants>(
       &config.message());
@@ -21,15 +22,15 @@ void GpuApriltagDetector() {
   const frc971::constants::ConstantsFetcher<y2024_swerve::Constants>
       calibration_data(&event_loop);
 
-  CHECK(FLAGS_channel.length() == 8);
-  int camera_id = std::stoi(FLAGS_channel.substr(7, 1));
+  CHECK(absl::GetFlag(FLAGS_channel).length() == 8);
+  int camera_id = std::stoi(absl::GetFlag(FLAGS_channel).substr(7, 1));
   const frc971::vision::calibration::CameraCalibration *calibration =
       y2024_swerve::vision::FindCameraCalibration(
           calibration_data.constants(),
           event_loop.node()->name()->string_view(), camera_id);
 
-  frc971::apriltag::ApriltagDetector detector(&event_loop, FLAGS_channel,
-                                              calibration);
+  frc971::apriltag::ApriltagDetector detector(
+      &event_loop, absl::GetFlag(FLAGS_channel), calibration);
 
   // TODO(austin): Figure out our core pinning strategy.
   // event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({5}));

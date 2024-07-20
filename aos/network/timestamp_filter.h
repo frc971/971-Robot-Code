@@ -7,8 +7,9 @@
 #include <cstdio>
 #include <deque>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"

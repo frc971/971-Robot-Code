@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "Eigen/Dense"
+#include "absl/flags/flag.h"
 #include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
 #include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
 #include <opencv2/highgui/highgui.hpp>
@@ -16,11 +17,11 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 
-DEFINE_bool(display_undistorted, false,
-            "If true, display the undistorted image.");
-DEFINE_string(save_path, "", "Where to store annotated images");
-DEFINE_bool(save_valid_only, false,
-            "If true, only save images with valid pose estimates");
+ABSL_FLAG(bool, display_undistorted, false,
+          "If true, display the undistorted image.");
+ABSL_FLAG(std::string, save_path, "", "Where to store annotated images");
+ABSL_FLAG(bool, save_valid_only, false,
+          "If true, only save images with valid pose estimates");
 
 namespace frc971::vision {
 using aos::distributed_clock;
@@ -232,8 +233,8 @@ void Calibration::HandleCharuco(
             << "\nT:" << tvecs_eigen[0].transpose().format(HeavyFmt);
   }
 
-  if (FLAGS_visualize) {
-    if (FLAGS_display_undistorted) {
+  if (absl::GetFlag(FLAGS_visualize)) {
+    if (absl::GetFlag(FLAGS_display_undistorted)) {
       const cv::Size image_size(rgb_image.cols, rgb_image.rows);
       cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
       cv::undistort(rgb_image, undistorted_rgb_image,
@@ -247,11 +248,11 @@ void Calibration::HandleCharuco(
     cv::waitKey(1);
   }
 
-  if (FLAGS_save_path != "") {
-    if (!FLAGS_save_valid_only || valid) {
+  if (absl::GetFlag(FLAGS_save_path) != "") {
+    if (!absl::GetFlag(FLAGS_save_valid_only) || valid) {
       static int img_count = 0;
       std::string image_name = absl::StrFormat("/img_%06d.png", img_count);
-      std::string path = FLAGS_save_path + image_name;
+      std::string path = absl::GetFlag(FLAGS_save_path) + image_name;
       VLOG(2) << "Saving image to " << path;
       cv::imwrite(path, rgb_image);
       img_count++;

@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 
+#include "absl/strings/str_format.h"
 #include "ceres/ceres.h"
 
 #include "aos/events/simulated_event_loop.h"
@@ -215,8 +216,23 @@ class DataAdapter {
 
 }  // namespace frc971::vision
 
-std::ostream &operator<<(std::ostream &os, ceres::examples::Pose3d pose);
-std::ostream &operator<<(std::ostream &os,
-                         ceres::examples::Constraint3d constraint);
+namespace ceres::examples {
+template <typename Sink>
+void AbslStringify(Sink &sink, ceres::examples::Pose3d pose) {
+  auto rpy = frc971::vision::PoseUtils::QuaternionToEulerAngles(pose.q);
+  absl::Format(&sink,
+               "{x: %.3f, y: %.3f, z: %.3f, roll: %.3f, pitch: "
+               "%.3f, yaw: %.3f}",
+               pose.p(0), pose.p(1), pose.p(2), rpy(0), rpy(1), rpy(2));
+}
+
+template <typename Sink>
+void AbslStringify(Sink &sink, ceres::examples::Constraint3d constraint) {
+  absl::Format(&sink, "{id_begin: %d, id_end: %d, pose: ", constraint.id_begin,
+               constraint.id_end);
+  AbslStringify(sink, constraint.t_be);
+  sink.Append("}");
+}
+}  // namespace ceres::examples
 
 #endif  // FRC971_VISION_TARGET_MAPPER_H_

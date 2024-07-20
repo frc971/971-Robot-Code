@@ -21,7 +21,8 @@
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace aos::logging::internal {
 namespace {

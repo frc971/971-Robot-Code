@@ -2,7 +2,10 @@
 #include <random>
 #include <string>
 
-#include "glog/logging.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 #include "opencv2/imgproc.hpp"
 #include "third_party/apriltag/apriltag.h"
@@ -20,14 +23,14 @@
 #include "frc971/orin/apriltag.h"
 #include "frc971/vision/vision_generated.h"
 
-DEFINE_int32(pixel_border, 10,
-             "Size of image border within which to reject detected corners");
-DEFINE_double(min_decision_margin, 50.0,
-              "Minimum decision margin (confidence) for an apriltag detection");
+ABSL_FLAG(int32_t, pixel_border, 10,
+          "Size of image border within which to reject detected corners");
+ABSL_FLAG(double, min_decision_margin, 50.0,
+          "Minimum decision margin (confidence) for an apriltag detection");
 
-DEFINE_bool(debug, false, "If true, write debug images.");
+ABSL_FLAG(bool, debug, false, "If true, write debug images.");
 
-DECLARE_int32(debug_blob_index);
+ABSL_DECLARE_FLAG(int32_t, debug_blob_index);
 
 // Get access to the intermediates of aprilrobotics.
 extern "C" {
@@ -240,7 +243,7 @@ apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
   tag_detector->nthreads = 6;
   tag_detector->wp = workerpool_create(tag_detector->nthreads);
   tag_detector->qtp.min_white_black_diff = 5;
-  tag_detector->debug = FLAGS_debug;
+  tag_detector->debug = absl::GetFlag(FLAGS_debug);
 
   return tag_detector;
 }
@@ -386,7 +389,7 @@ class CudaAprilTagDetector {
       apriltag_detection_t *det;
       zarray_get(aprilrobotics_detections_, i, &det);
 
-      if (det->decision_margin > FLAGS_min_decision_margin) {
+      if (det->decision_margin > absl::GetFlag(FLAGS_min_decision_margin)) {
         LOG(INFO) << "Found tag number " << det->id
                   << " hamming: " << det->hamming
                   << " margin: " << det->decision_margin;
@@ -1313,7 +1316,8 @@ class CudaAprilTagDetector {
       VLOG(1) << "Inspecting blob of size " << group.size() << " global start "
               << accumulated_size;
       for (size_t i = 0; i < group.size(); i++) {
-        if (group[i].blob_index() == (size_t)FLAGS_debug_blob_index) {
+        if (group[i].blob_index() ==
+            (size_t)absl::GetFlag(FLAGS_debug_blob_index)) {
           LOG(INFO) << "For idx " << i << " global " << accumulated_size + i
                     << "(" << group[i].x() << ", " << group[i].y()
                     << "), cuda: " << line_fit_points_cuda[accumulated_size + i]
@@ -1339,7 +1343,8 @@ class CudaAprilTagDetector {
       }
 
       for (size_t i = 0; i < group.size(); i++) {
-        if (group[i].blob_index() == (size_t)FLAGS_debug_blob_index) {
+        if (group[i].blob_index() ==
+            (size_t)absl::GetFlag(FLAGS_debug_blob_index)) {
           LOG(INFO) << "  Cuda error[" << i << "] -> "
                     << errors_device[accumulated_size + i] << ", filtered "
                     << filtered_errors_device[i + accumulated_size];
@@ -1508,8 +1513,10 @@ class CudaAprilTagDetector {
             << before_cuda << " vs " << us_cuda << " vs " << after_cuda;
         CHECK_EQ(peaks_device[accumulated_size + i].filtered_point_index,
                  accumulated_size + i);
-        CHECK_NEAR(peaks_device[accumulated_size + i].error,
-                   -filtered_errors_device[accumulated_size + i], 1e-3);
+        CHECK_LE(peaks_device[accumulated_size + i].error,
+                 -filtered_errors_device[accumulated_size + i] + 1e-3);
+        CHECK_GE(peaks_device[accumulated_size + i].error,
+                 -filtered_errors_device[accumulated_size + i] - 1e-3);
         if (is_peak_cuda) {
           CHECK_EQ(peaks_device[accumulated_size + i].blob_index,
                    group[0].blob_index())
@@ -1683,7 +1690,7 @@ class CudaAprilTagDetector {
       zarray_t *cluster;
       zarray_get(clusters, i, &cluster);
 
-      if (i == FLAGS_debug_blob_index) {
+      if (i == absl::GetFlag(FLAGS_debug_blob_index)) {
         LOG(INFO) << "cuda points for blob " << i << " are";
         for (size_t j = 0; j < sorted_blobs[i].size(); ++j) {
           LOG(INFO) << "  blob[" << j << "]: (" << sorted_blobs[i][j].x()
@@ -1715,10 +1722,15 @@ class CudaAprilTagDetector {
       QuadCorners cuda_corner = *quad_iterator;
 
       for (size_t point = 0; point < 4; ++point) {
-        CHECK_NEAR(quad_result.p[point][0], cuda_corner.corners[point][0],
-                   1e-3);
-        CHECK_NEAR(quad_result.p[point][1], cuda_corner.corners[point][1],
-                   1e-3);
+        constexpr double kEpsilon = 1e-3;
+        CHECK_LE(quad_result.p[point][0],
+                 cuda_corner.corners[point][0] + kEpsilon);
+        CHECK_GE(quad_result.p[point][0],
+                 cuda_corner.corners[point][0] - kEpsilon);
+        CHECK_LE(quad_result.p[point][1],
+                 cuda_corner.corners[point][1] + kEpsilon);
+        CHECK_GE(quad_result.p[point][1],
+                 cuda_corner.corners[point][1] - kEpsilon);
       }
     }
   }
@@ -1755,7 +1767,8 @@ class CudaAprilTagDetector {
       zarray_get(aprilrobotics_detections, i, &aprilrobotics_detection);
       zarray_get(gpu_detections, i, &gpu_detection);
 
-      bool valid = gpu_detection->decision_margin > FLAGS_min_decision_margin;
+      bool valid = gpu_detection->decision_margin >
+                   absl::GetFlag(FLAGS_min_decision_margin);
 
       LOG(INFO) << "Found GPU " << (valid ? "valid" : "invalid")
                 << " tag number " << gpu_detection->id
@@ -1774,8 +1787,8 @@ class CudaAprilTagDetector {
       zarray_get(aprilrobotics_detections, i, &aprilrobotics_detection);
       zarray_get(gpu_detections, i, &gpu_detection);
 
-      const bool valid =
-          gpu_detection->decision_margin > FLAGS_min_decision_margin;
+      const bool valid = gpu_detection->decision_margin >
+                         absl::GetFlag(FLAGS_min_decision_margin);
 
       // TODO(austin): Crank down the thresholds and figure out why these
       // deviate.  It should be the same function for both at this point.
@@ -2151,7 +2164,7 @@ TEST_F(AprilDetectionTest, ImageRepeat) {
     cuda_detector.DetectCPU(color_image.clone());
   }
   cuda_detector.Check(color_image.clone());
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     cuda_detector.WriteDebug(color_image);
   }
 }
@@ -2175,7 +2188,7 @@ TEST_P(SingleAprilDetectionTest, Image) {
   cuda_detector.DetectGPU(color_image.clone());
   cuda_detector.DetectCPU(color_image.clone());
   cuda_detector.Check(color_image.clone());
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     cuda_detector.WriteDebug(color_image);
   }
 }
@@ -2289,7 +2302,7 @@ TEST_F(AprilDetectionTest, Undistort) {
   cuda_detector.DetectGPU(color_image.clone());
   cuda_detector.DetectCPU(color_image.clone());
   cuda_detector.Check(color_image.clone());
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     cuda_detector.WriteDebug(color_image);
   }
 }
@@ -2314,7 +2327,7 @@ TEST_F(AprilDetectionTest, UndistortEdge) {
   cuda_detector.DetectGPU(color_image.clone());
   cuda_detector.DetectCPU(color_image.clone());
   cuda_detector.Check(color_image.clone());
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     cuda_detector.WriteDebug(color_image);
   }
 }

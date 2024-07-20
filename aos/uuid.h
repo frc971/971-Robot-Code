@@ -6,9 +6,10 @@
 #include <random>
 #include <string>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 namespace aos {
 

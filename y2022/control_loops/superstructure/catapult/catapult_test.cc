@@ -1,6 +1,7 @@
 #include "frc971/control_loops/catapult/catapult.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"

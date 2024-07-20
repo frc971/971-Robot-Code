@@ -3,14 +3,15 @@
 #include <iostream>
 
 #include "Eigen/Dense"
+#include "absl/flags/flag.h"
 
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
 
-DEFINE_double(proximal_voltage_error_uncertainty, 8.0,
-              "Proximal joint voltage error uncertainty.");
-DEFINE_double(distal_voltage_error_uncertainty, 2.0,
-              "Distal joint voltage error uncertainty.");
+ABSL_FLAG(double, proximal_voltage_error_uncertainty, 8.0,
+          "Proximal joint voltage error uncertainty.");
+ABSL_FLAG(double, distal_voltage_error_uncertainty, 2.0,
+          "Distal joint voltage error uncertainty.");
 
 namespace frc971::control_loops::arm {
 
@@ -21,8 +22,8 @@ namespace {
 ::Eigen::Matrix<double, 6, 6> Q_covariance(
     (::Eigen::DiagonalMatrix<double, 6>().diagonal() << ::std::pow(0.1, 2),
      ::std::pow(2.0, 2), ::std::pow(0.1, 2), ::std::pow(2.0, 2),
-     ::std::pow(FLAGS_proximal_voltage_error_uncertainty, 2),
-     ::std::pow(FLAGS_distal_voltage_error_uncertainty, 2))
+     ::std::pow(absl::GetFlag(FLAGS_proximal_voltage_error_uncertainty), 2),
+     ::std::pow(absl::GetFlag(FLAGS_distal_voltage_error_uncertainty), 2))
         .finished()
         .asDiagonal());
 }  // namespace
@@ -32,8 +33,8 @@ EKF::EKF(const Dynamics *dynamics) : dynamics_(dynamics) {
   Q_covariance =
       ((::Eigen::DiagonalMatrix<double, 6>().diagonal() << ::std::pow(0.1, 2),
         ::std::pow(2.0, 2), ::std::pow(0.1, 2), ::std::pow(2.0, 2),
-        ::std::pow(FLAGS_proximal_voltage_error_uncertainty, 2),
-        ::std::pow(FLAGS_distal_voltage_error_uncertainty, 2))
+        ::std::pow(absl::GetFlag(FLAGS_proximal_voltage_error_uncertainty), 2),
+        ::std::pow(absl::GetFlag(FLAGS_distal_voltage_error_uncertainty), 2))
            .finished()
            .asDiagonal());
   P_ = Q_covariance;

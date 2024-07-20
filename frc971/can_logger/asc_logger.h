@@ -4,8 +4,9 @@
 #include <iomanip>
 #include <iostream>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/event_loop.h"
 #include "frc971/can_logger/can_logging_generated.h"

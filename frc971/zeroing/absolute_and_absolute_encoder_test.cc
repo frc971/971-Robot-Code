@@ -1,6 +1,7 @@
 #include "frc971/zeroing/absolute_and_absolute_encoder.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 

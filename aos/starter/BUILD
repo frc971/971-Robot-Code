@@ -37,7 +37,8 @@ cc_library(
         "//aos/events:shm_event_loop",
         "//aos/util:scoped_pipe",
         "//aos/util:top",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -53,7 +54,8 @@ cc_library(
         "//aos:configuration",
         "//aos:macros",
         "//aos/events:shm_event_loop",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -179,7 +181,8 @@ cc_binary(
     deps = [
         ":starter_rpc_lib",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -245,7 +248,8 @@ cc_library(
     hdrs = ["irq_affinity_lib.h"],
     deps = [
         "//aos/scoped:scoped_fd",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -13,12 +13,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/declare.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/detached_buffer.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags_declare.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop.h"
@@ -36,7 +37,7 @@
 #include "aos/util/file.h"
 #include "aos/util/simulation_logger.h"
 
-DECLARE_bool(validate_timestamp_logger_nodes);
+ABSL_DECLARE_FLAG(bool, validate_timestamp_logger_nodes);
 
 namespace aos::util {
 

@@ -8,7 +8,7 @@
 // longer be valid.
 // TODO(james): Do something about that when the time comes--could just copy
 // the existing drivetrain config into this file and use it directly.
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
@@ -22,17 +22,18 @@
 #include "frc971/control_loops/drivetrain/trajectory_schema.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(logfile, "external/drivetrain_replay/",
-              "Name of the logfile to read from.");
-DEFINE_string(config, "y2020/aos_config.json",
-              "Name of the config file to replay using.");
+ABSL_FLAG(std::string, logfile, "external/drivetrain_replay/",
+          "Name of the logfile to read from.");
+ABSL_FLAG(std::string, config, "y2020/aos_config.json",
+          "Name of the config file to replay using.");
 
 namespace y2020::control_loops::drivetrain::testing {
 
 class DrivetrainReplayTest : public ::testing::Test {
  public:
   DrivetrainReplayTest()
-      : reader_(aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logfile))) {
+      : reader_(aos::logger::SortParts(
+            aos::logger::FindLogs(absl::GetFlag(FLAGS_logfile)))) {
     aos::network::OverrideTeamNumber(971);
 
     // TODO(james): Actually enforce not sending on the same buses as the

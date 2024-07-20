@@ -3,7 +3,8 @@
 #include <cmath>
 
 #include "absl/functional/bind_front.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace y2022::control_loops::superstructure {
 

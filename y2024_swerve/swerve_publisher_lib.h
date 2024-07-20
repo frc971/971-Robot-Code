@@ -1,8 +1,9 @@
 #ifndef Y2024_SWERVE_SWERVE_PUBLISHER_H_
 #define Y2024_SWERVE_SWERVE_PUBLISHER_H_
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"

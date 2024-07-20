@@ -9,14 +9,16 @@
 #include <cstring>
 #include <string_view>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
 
-DEFINE_int32(sinit_max_init_timeout, 0,
-             "Timeout in milliseconds for retrying the INIT packet when "
-             "connecting to the message bridge server");
+ABSL_FLAG(int32_t, sinit_max_init_timeout, 0,
+          "Timeout in milliseconds for retrying the INIT packet when "
+          "connecting to the message bridge server");
 
 namespace aos::message_bridge {
 
@@ -35,7 +37,7 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     initmsg.sinit_num_ostreams = streams;
     initmsg.sinit_max_instreams = streams;
     // Max timeout in milliseconds for the INIT packet.
-    initmsg.sinit_max_init_timeo = FLAGS_sinit_max_init_timeout;
+    initmsg.sinit_max_init_timeo = absl::GetFlag(FLAGS_sinit_max_init_timeout);
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_INITMSG, &initmsg,
                       sizeof(struct sctp_initmsg)) == 0);
   }

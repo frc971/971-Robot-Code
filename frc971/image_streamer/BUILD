@@ -42,7 +42,8 @@ cc_binary(
         "//third_party:gstreamer",
         "//third_party/seasocks",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

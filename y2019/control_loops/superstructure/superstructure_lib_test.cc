@@ -3,7 +3,8 @@
 #include <chrono>
 #include <memory>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "frc971/control_loops/capped_test_plant.h"

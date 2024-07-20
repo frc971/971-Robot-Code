@@ -1,3 +1,4 @@
+#include "absl/flags/flag.h"
 #include "ctre/phoenix/cci/Diagnostics_CCI.h"
 #include "ctre/phoenix6/TalonFX.hpp"
 
@@ -13,9 +14,9 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024_swerve/constants.h"
 
-DEFINE_bool(ctre_diag_server, false,
-            "If true, enable the diagnostics server for interacting with "
-            "devices on the CAN bus using Phoenix Tuner");
+ABSL_FLAG(bool, ctre_diag_server, false,
+          "If true, enable the diagnostics server for interacting with "
+          "devices on the CAN bus using Phoenix Tuner");
 
 using frc971::wpilib::CANSensorReader;
 using frc971::wpilib::TalonFX;
@@ -188,7 +189,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 2
     // Setup CAN
-    if (!FLAGS_ctre_diag_server) {
+    if (!absl::GetFlag(FLAGS_ctre_diag_server)) {
       c_Phoenix_Diagnostics_SetSecondsToStart(-1);
       c_Phoenix_Diagnostics_Dispose();
     }

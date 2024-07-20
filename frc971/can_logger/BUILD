@@ -11,7 +11,8 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -26,7 +27,8 @@ cc_library(
         ":can_logging_fbs",
         "//aos/events:shm_event_loop",
         "//aos/scoped:scoped_fd",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -51,7 +53,8 @@ cc_binary(
         "//aos:init",
         "//aos/events/logging:log_reader",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -67,6 +70,7 @@ cc_library(
         ":can_logging_fbs",
         "//aos/events:event_loop",
         "//aos/scoped:scoped_fd",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

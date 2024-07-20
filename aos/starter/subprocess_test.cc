@@ -6,10 +6,11 @@
 
 #include <ostream>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -25,15 +26,10 @@ namespace aos::starter::testing {
 
 class SubprocessTest : public ::testing::Test {
  protected:
-  SubprocessTest() : shm_dir_(aos::testing::TestTmpDir() + "/aos") {
-    FLAGS_shm_base = shm_dir_;
-
+  SubprocessTest() {
     // Nuke the shm dir:
-    aos::util::UnlinkRecursive(shm_dir_);
+    aos::util::UnlinkRecursive(absl::GetFlag(FLAGS_shm_base));
   }
-
-  gflags::FlagSaver flag_saver_;
-  std::string shm_dir_;
 };
 
 TEST_F(SubprocessTest, CaptureOutputs) {

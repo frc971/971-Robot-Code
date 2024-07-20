@@ -4,7 +4,7 @@
 // replayed, so that it can then be run through the plotting tool or analyzed
 // in some other way. The original drivetrain status data will be on the
 // /original/drivetrain channel.
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -15,12 +15,12 @@
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
   y2020::constants::InitValues();
 
   // open logfiles

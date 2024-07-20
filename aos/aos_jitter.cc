@@ -3,7 +3,8 @@
 #include <iomanip>
 #include <iostream>  // IWYU pragma: keep
 
-#include "gflags/gflags.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
@@ -12,15 +13,15 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/realtime.h"
 
-DEFINE_int32(priority, -1, "If set, the RT priority to run at.");
-DEFINE_double(max_jitter, 0.01,
-              "The max time in milliseconds between messages before marking it "
-              "as too late.");
-DEFINE_bool(print_jitter, true,
-            "If true, print jitter events.  These will impact RT performance.");
-DECLARE_bool(enable_ftrace);
-DEFINE_bool(print_latency_stats, false,
-            "If true, print latency stats.  These will impact RT performance.");
+ABSL_FLAG(int32_t, priority, -1, "If set, the RT priority to run at.");
+ABSL_FLAG(double, max_jitter, 0.01,
+          "The max time in milliseconds between messages before marking it "
+          "as too late.");
+ABSL_FLAG(bool, print_jitter, true,
+          "If true, print jitter events.  These will impact RT performance.");
+ABSL_DECLARE_FLAG(bool, enable_ftrace);
+ABSL_FLAG(bool, print_latency_stats, false,
+          "If true, print latency stats.  These will impact RT performance.");
 
 namespace aos {
 
@@ -37,7 +38,7 @@ class State {
           HandleMessage(context, message);
         });
 
-    if (FLAGS_print_latency_stats) {
+    if (absl::GetFlag(FLAGS_print_latency_stats)) {
       timer_handle_ = event_loop->AddTimer([this]() { PrintLatencyStats(); });
       timer_handle_->set_name("jitter");
       event_loop->OnRun([this, event_loop]() {
@@ -54,8 +55,9 @@ class State {
                              .count());
       if (context.monotonic_event_time >
           last_time_ + std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::duration<double>(FLAGS_max_jitter))) {
-        if (FLAGS_enable_ftrace) {
+                           std::chrono::duration<double>(
+                               absl::GetFlag(FLAGS_max_jitter)))) {
+        if (absl::GetFlag(FLAGS_enable_ftrace)) {
           ftrace_->FormatMessage(
               "Got high latency event on %s -> %.9f between messages",
               channel_name_.c_str(),
@@ -65,7 +67,7 @@ class State {
           ftrace_->TurnOffOrDie();
         }
 
-        if (FLAGS_print_jitter) {
+        if (absl::GetFlag(FLAGS_print_jitter)) {
           // Printing isn't realtime, but if someone wants to run as RT, they
           // should know this.  Bypass the warning.
           ScopedNotRealtime nrt;
@@ -138,8 +140,9 @@ int main(int argc, char **argv) {
         &ftrace, &(cli_info.event_loop.value()), channel));
   }
 
-  if (FLAGS_priority > 0) {
-    cli_info.event_loop->SetRuntimeRealtimePriority(FLAGS_priority);
+  if (absl::GetFlag(FLAGS_priority) > 0) {
+    cli_info.event_loop->SetRuntimeRealtimePriority(
+        absl::GetFlag(FLAGS_priority));
   }
 
   cli_info.event_loop->Run();

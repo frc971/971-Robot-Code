@@ -19,14 +19,17 @@
 #include <set>
 #include <string>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/time/time.h"
 #include "aos/util/top.h"
 
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
 
 namespace {
 
@@ -253,7 +256,7 @@ struct Thread {
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
   event_loop.SkipTimingReport();

@@ -1,8 +1,9 @@
 #include <chrono>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 
+#include "aos/init.h"
 #include "aos/logging/implementations.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
@@ -28,15 +29,15 @@
 //
 // https://photos.google.com/share/AF1QipPl34MOTPem2QmmTC3B21dL7GV2_HjxnseRrqxgR60TUasyIPliIuWmnH3yxuSNZw?key=cVhZLUYycXBIZlNTRy10cjZlWm0tcmlqQl9MTE13
 
-DEFINE_bool(plot, true, "If true, plot");
+ABSL_FLAG(bool, plot, true, "If true, plot");
 
-DEFINE_double(dx, 0.0, "Amount to disturb x at the start");
-DEFINE_double(dy, 0.0, "Amount to disturb y at the start");
-DEFINE_double(dt, 0.0, "Amount to disturb theta at the start");
-DEFINE_double(dvl, 0.0, "Amount to disturb vl at the start");
-DEFINE_double(dvr, 0.0, "Amount to disturb vr at the start");
+ABSL_FLAG(double, dx, 0.0, "Amount to disturb x at the start");
+ABSL_FLAG(double, dy, 0.0, "Amount to disturb y at the start");
+ABSL_FLAG(double, dt, 0.0, "Amount to disturb theta at the start");
+ABSL_FLAG(double, dvl, 0.0, "Amount to disturb vl at the start");
+ABSL_FLAG(double, dvr, 0.0, "Amount to disturb vr at the start");
 
-DEFINE_double(forward, 1.0, "Amount to drive forwards");
+ABSL_FLAG(double, forward, 1.0, "Amount to drive forwards");
 
 namespace chrono = ::std::chrono;
 
@@ -45,12 +46,13 @@ namespace frc971::control_loops::drivetrain {
 void Main() {
   const DrivetrainConfig<double> config =
       ::y2019::control_loops::drivetrain::GetDrivetrainConfig();
-  Trajectory trajectory(
-      DistanceSpline(Spline(Spline4To6(
-          (::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
-           -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
-              .finished()))),
-      &config, nullptr);
+  Trajectory trajectory(DistanceSpline(Spline(Spline4To6(
+                            (::Eigen::Matrix<double, 2, 4>() << 0.0,
+                             1.2 * absl::GetFlag(FLAGS_forward),
+                             -0.2 * absl::GetFlag(FLAGS_forward),
+                             absl::GetFlag(FLAGS_forward), 0.0, 0.0, 1.0, 1.0)
+                                .finished()))),
+                        &config, nullptr);
   trajectory.set_lateral_acceleration(2.0);
   trajectory.set_longitudinal_acceleration(1.0);
 
@@ -134,11 +136,11 @@ void Main() {
   FinishedTrajectory finished_trajectory(&config, &trajectory_buffer.message());
 
   ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
-  state(0, 0) = FLAGS_dx;
-  state(1, 0) = FLAGS_dy;
-  state(2, 0) = FLAGS_dt;
-  state(3, 0) = FLAGS_dvl;
-  state(4, 0) = FLAGS_dvr;
+  state(0, 0) = absl::GetFlag(FLAGS_dx);
+  state(1, 0) = absl::GetFlag(FLAGS_dy);
+  state(2, 0) = absl::GetFlag(FLAGS_dt);
+  state(3, 0) = absl::GetFlag(FLAGS_dvl);
+  state(4, 0) = absl::GetFlag(FLAGS_dvr);
   ::std::vector<double> simulation_t = length_plan_t;
   ::std::vector<double> simulation_x;
   ::std::vector<double> error_x;
@@ -190,7 +192,7 @@ void Main() {
     simulation_ur.push_back(U(1));
   }
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     matplotlibcpp::figure();
     matplotlibcpp::plot(plan_segment_center_distance, plan_type,
                         {{"label", "plan_type"}});
@@ -230,7 +232,7 @@ void Main() {
 }  // namespace frc971::control_loops::drivetrain
 
 int main(int argc, char **argv) {
-  ::gflags::ParseCommandLineFlags(&argc, &argv, false);
+  aos::InitGoogle(&argc, &argv);
   ::aos::network::OverrideTeamNumber(971);
   ::frc971::control_loops::drivetrain::Main();
   return 0;

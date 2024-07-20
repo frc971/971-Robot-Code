@@ -1,5 +1,7 @@
 #include "aos/network/timestamp_channel.h"
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
@@ -9,16 +11,16 @@
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 
-DECLARE_string(override_hostname);
+ABSL_DECLARE_FLAG(std::string, override_hostname);
 
 namespace aos::message_bridge::testing {
+
 class TimestampChannelTest : public ::testing::Test {
  protected:
   TimestampChannelTest()
       : config_(aos::configuration::ReadConfig(aos::testing::ArtifactPath(
             "aos/network/timestamp_channel_test_config.json"))) {
-    FLAGS_shm_base = aos::testing::TestTmpDir();
-    FLAGS_override_hostname = "pi1";
+    absl::SetFlag(&FLAGS_override_hostname, "pi1");
   }
   aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
 };

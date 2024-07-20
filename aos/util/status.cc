@@ -1,5 +1,9 @@
 #include "aos/util/status.h"
 
+#include "absl/log/log.h"
+
+#include "aos/containers/inlined_vector.h"
+
 namespace aos {
 namespace {
 // Constructs a string view from the provided buffer if it has data and

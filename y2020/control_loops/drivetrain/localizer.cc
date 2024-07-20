@@ -1,10 +1,12 @@
 #include "y2020/control_loops/drivetrain/localizer.h"
 
+#include "absl/flags/flag.h"
+
 #include "y2020/constants.h"
 
-DEFINE_bool(send_empty_debug, false,
-            "If true, send LocalizerDebug messages on every tick, even if "
-            "they would be empty.");
+ABSL_FLAG(bool, send_empty_debug, false,
+          "If true, send LocalizerDebug messages on every tick, even if "
+          "they would be empty.");
 
 namespace y2020::control_loops::drivetrain {
 
@@ -181,7 +183,7 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
       }
     }
   }
-  if (FLAGS_send_empty_debug || !debug_offsets.empty()) {
+  if (absl::GetFlag(FLAGS_send_empty_debug) || !debug_offsets.empty()) {
     const auto vector_offset =
         builder.fbb()->CreateVector(debug_offsets.data(), debug_offsets.size());
     const auto rejections_offset =

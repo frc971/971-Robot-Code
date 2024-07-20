@@ -410,10 +410,11 @@ And `ping_lib.cc` will be:
 #include "foo/ping_lib.h"
 
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/log.h"
+#include "absl/log/check.h"
 
-DEFINE_int32(sleep_ms, 10, "Time to sleep between pings");
+ABSL_FLAG(int32_t, sleep_ms, 10, "Time to sleep between pings");
 
 namespace aos {
 
@@ -487,7 +488,7 @@ used for all the application's interactions with the rest of the AOS system.
 In `ping_lib.cc`:
 
 ```cpp
-DEFINE_int32(sleep_ms, 10, "Time to sleep between pings");
+ABSL_FLAG(int32_t, sleep_ms, 10, "Time to sleep between pings");
 ```
 
 This creates a command-line flag `--sleep_ms` which can be accessed in the code
@@ -605,8 +606,8 @@ cc_library(
         ":pong_fbs",
         "//aos:json_to_flatbuffer",
         "//aos/events:event_loop",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log","@com_google_absl//absl/log:check",
     ],
 )
 ```
@@ -735,13 +736,13 @@ will create a `ping.cc`:
 #include "foo/ping_lib.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 // Provide a --config flag that can be used to point to the config that the
 // application will use. Generally defaulted to the actual path that will be
 // used on the real system (most applications default to a name of
 // aos_config.json, by convention).
-DEFINE_string(config, "foo/pingpong_config.json", "Path to the config.");
+ABSL_FLAG(std::string, config, "foo/pingpong_config.json", "Path to the config.");
 
 int main(int argc, char **argv) {
   // Various common initialization steps, including command line flag parsing.
@@ -781,7 +782,7 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 ```
@@ -880,7 +881,7 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 ```

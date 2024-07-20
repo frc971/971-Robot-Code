@@ -1,13 +1,15 @@
 #include "aos/events/pong_lib.h"
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/log.h"
 
 #include "aos/events/event_loop.h"
 #include "aos/events/ping_static.h"
 #include "aos/events/pong_static.h"
 
-DEFINE_bool(fetch, false, "Poll & fetch messages instead of using a watcher.");
-DEFINE_uint32(fetch_period_ms, 10, "Frequency at which to fetch.");
+ABSL_FLAG(bool, fetch, false,
+          "Poll & fetch messages instead of using a watcher.");
+ABSL_FLAG(uint32_t, fetch_period_ms, 10, "Frequency at which to fetch.");
 
 namespace aos {
 
@@ -15,7 +17,7 @@ Pong::Pong(EventLoop *event_loop)
     : event_loop_(event_loop),
       fetcher_(event_loop_->MakeFetcher<examples::Ping>("/test")),
       sender_(event_loop_->MakeSender<examples::PongStatic>("/test")) {
-  if (FLAGS_fetch) {
+  if (absl::GetFlag(FLAGS_fetch)) {
     event_loop_
         ->AddPhasedLoop(
             [this](int) {
@@ -23,7 +25,7 @@ Pong::Pong(EventLoop *event_loop)
                 HandlePing(*fetcher_.get());
               }
             },
-            std::chrono::milliseconds(FLAGS_fetch_period_ms))
+            std::chrono::milliseconds(absl::GetFlag(FLAGS_fetch_period_ms)))
         ->set_name("pong");
   } else {
     event_loop_->MakeWatcher(

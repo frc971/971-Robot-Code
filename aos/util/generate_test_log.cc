@@ -1,7 +1,7 @@
 #include <chrono>
 #include <memory>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
@@ -13,8 +13,8 @@
 #include "aos/init.h"
 #include "aos/testing/path.h"
 
-DEFINE_string(output_folder, "",
-              "Name of folder to write the generated logfile to.");
+ABSL_FLAG(std::string, output_folder, "",
+          "Name of folder to write the generated logfile to.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   std::unique_ptr<aos::EventLoop> log_writer_event_loop =
       event_loop_factory.MakeEventLoop("log_writer");
   aos::logger::Logger writer(log_writer_event_loop.get());
-  writer.StartLoggingOnRun(FLAGS_output_folder);
+  writer.StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
 
   event_loop_factory.RunFor(std::chrono::seconds(10));
   return 0;

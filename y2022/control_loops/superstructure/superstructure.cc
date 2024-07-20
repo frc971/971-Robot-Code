@@ -1,13 +1,15 @@
 #include "y2022/control_loops/superstructure/superstructure.h"
 
+#include "absl/flags/flag.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
-DEFINE_bool(ignore_distance, false,
-            "If true, ignore distance when shooting and obay joystick_reader");
+ABSL_FLAG(bool, ignore_distance, false,
+          "If true, ignore distance when shooting and obay joystick_reader");
 
 namespace y2022::control_loops::superstructure {
 
@@ -140,7 +142,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     constants::Values::ShotParams shot_params;
     const double distance_to_goal = aimer_.DistanceToGoal();
-    if (!FLAGS_ignore_distance && unsafe_goal->auto_aim() &&
+    if (!absl::GetFlag(FLAGS_ignore_distance) && unsafe_goal->auto_aim() &&
         values_->shot_interpolation_table.GetInRange(distance_to_goal,
                                                      &shot_params)) {
       flatbuffers::FlatBufferBuilder *catapult_goal_fbb =

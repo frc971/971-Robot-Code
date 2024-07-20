@@ -6,25 +6,26 @@
 #include "frc971/vision/ceres/pose_graph_3d_error_term.h"
 #include "frc971/vision/geometry.h"
 
-DEFINE_uint64(max_num_iterations, 100,
-              "Maximum number of iterations for the ceres solver");
-DEFINE_double(distortion_noise_scalar, 1.0,
-              "Scale the target pose distortion factor by this when computing "
-              "the noise.");
-DEFINE_int32(
-    frozen_target_id, 1,
+ABSL_FLAG(uint64_t, max_num_iterations, 100,
+          "Maximum number of iterations for the ceres solver");
+ABSL_FLAG(double, distortion_noise_scalar, 1.0,
+          "Scale the target pose distortion factor by this when computing "
+          "the noise.");
+ABSL_FLAG(
+    int32_t, frozen_target_id, 1,
     "Freeze the pose of this target so the map can have one fixed point.");
-DEFINE_int32(min_target_id, 1, "Minimum target id to solve for");
-DEFINE_int32(max_target_id, 8, "Maximum target id to solve for");
-DEFINE_bool(visualize_solver, false, "If true, visualize the solving process.");
+ABSL_FLAG(int32_t, min_target_id, 1, "Minimum target id to solve for");
+ABSL_FLAG(int32_t, max_target_id, 8, "Maximum target id to solve for");
+ABSL_FLAG(bool, visualize_solver, false,
+          "If true, visualize the solving process.");
 // This does seem like a strict threshold for a constaint to be considered an
 // outlier, but most inliers were very close together and this is what worked
 // best for map solving.
-DEFINE_double(outlier_std_devs, 1.0,
-              "Number of standard deviations above average error needed for a "
-              "constraint to be considered an outlier and get removed.");
-DEFINE_bool(do_map_fitting, false,
-            "Whether to do a final fit of the solved map to the original map");
+ABSL_FLAG(double, outlier_std_devs, 1.0,
+          "Number of standard deviations above average error needed for a "
+          "constraint to be considered an outlier and get removed.");
+ABSL_FLAG(bool, do_map_fitting, false,
+          "Whether to do a final fit of the solved map to the original map");
 
 namespace frc971::vision {
 Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
@@ -192,14 +193,16 @@ TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
     Q_vision(kOrientation3, kOrientation3) = std::pow(0.02, 2);
 
     // Add uncertainty for the 2 vision measurements (1 at start and 1 at end)
-    P += Q_vision * std::pow(detection_start.distance_from_camera *
-                                 (1.0 + FLAGS_distortion_noise_scalar *
-                                            detection_start.distortion_factor),
-                             2);
-    P += Q_vision * std::pow(detection_end.distance_from_camera *
-                                 (1.0 + FLAGS_distortion_noise_scalar *
-                                            detection_end.distortion_factor),
-                             2);
+    P += Q_vision *
+         std::pow(detection_start.distance_from_camera *
+                      (1.0 + absl::GetFlag(FLAGS_distortion_noise_scalar) *
+                                 detection_start.distortion_factor),
+                  2);
+    P += Q_vision *
+         std::pow(detection_end.distance_from_camera *
+                      (1.0 + absl::GetFlag(FLAGS_distortion_noise_scalar) *
+                                 detection_end.distortion_factor),
+                  2);
   }
 
   return P.inverse();
@@ -381,16 +384,17 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
   // algorithm has internal damping which mitigates this issue, but it is
   // better to properly constrain the gauge freedom. This can be done by
   // setting one of the poses as constant so the optimizer cannot change it.
-  CHECK_NE(poses->count(FLAGS_frozen_target_id), 0ul)
-      << "Got no poses for frozen target id " << FLAGS_frozen_target_id;
-  CHECK_GE(FLAGS_frozen_target_id, min_constraint_id)
-      << "target to freeze index " << FLAGS_frozen_target_id
+  CHECK_NE(poses->count(absl::GetFlag(FLAGS_frozen_target_id)), 0ul)
+      << "Got no poses for frozen target id "
+      << absl::GetFlag(FLAGS_frozen_target_id);
+  CHECK_GE(absl::GetFlag(FLAGS_frozen_target_id), min_constraint_id)
+      << "target to freeze index " << absl::GetFlag(FLAGS_frozen_target_id)
       << " must be in range of constraints, > " << min_constraint_id;
-  CHECK_LE(FLAGS_frozen_target_id, max_constraint_id)
-      << "target to freeze index " << FLAGS_frozen_target_id
+  CHECK_LE(absl::GetFlag(FLAGS_frozen_target_id), max_constraint_id)
+      << "target to freeze index " << absl::GetFlag(FLAGS_frozen_target_id)
       << " must be in range of constraints, < " << max_constraint_id;
   ceres::examples::MapOfPoses::iterator pose_start_iter =
-      poses->find(FLAGS_frozen_target_id);
+      poses->find(absl::GetFlag(FLAGS_frozen_target_id));
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
   problem->SetParameterBlockConstant(pose_start_iter->second.p.data());
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
@@ -401,7 +405,8 @@ TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   // Set up robot visualization.
   vis_robot_.ClearImage();
 
-  const size_t num_targets = FLAGS_max_target_id - FLAGS_min_target_id;
+  const size_t num_targets =
+      absl::GetFlag(FLAGS_max_target_id) - absl::GetFlag(FLAGS_min_target_id);
   // Translation and rotation error for each target
   const size_t num_residuals = num_targets * 6;
   // Set up the only cost function (also known as residual). This uses
@@ -470,7 +475,7 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   CHECK(problem != nullptr);
 
   ceres::Solver::Options options;
-  options.max_num_iterations = FLAGS_max_num_iterations;
+  options.max_num_iterations = absl::GetFlag(FLAGS_max_num_iterations);
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   options.minimizer_progress_to_stdout = false;
 
@@ -489,7 +494,7 @@ void TargetMapper::Solve(std::string_view field_name,
                                      &target_pose_problem_1);
   CHECK(SolveOptimizationProblem(&target_pose_problem_1))
       << "The target pose solve 1 was not successful, exiting.";
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     LOG(INFO) << "Displaying constraint graph before removing outliers";
     DisplayConstraintGraph();
     DisplaySolvedVsInitial();
@@ -503,13 +508,13 @@ void TargetMapper::Solve(std::string_view field_name,
                                      &target_pose_problem_2);
   CHECK(SolveOptimizationProblem(&target_pose_problem_2))
       << "The target pose solve 2 was not successful, exiting.";
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     LOG(INFO) << "Displaying constraint graph before removing outliers";
     DisplayConstraintGraph();
     DisplaySolvedVsInitial();
   }
 
-  if (FLAGS_do_map_fitting) {
+  if (absl::GetFlag(FLAGS_do_map_fitting)) {
     LOG(INFO) << "Solving the overall map's best alignment to the previous map";
     ceres::Problem map_fitting_problem(
         {.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP});
@@ -523,14 +528,15 @@ void TargetMapper::Solve(std::string_view field_name,
     LOG(INFO) << "H_frozen_actual: "
               << PoseUtils::Affine3dToPose3d(H_frozen_actual);
 
-    auto H_world_frozen =
-        PoseUtils::Pose3dToAffine3d(target_poses_[FLAGS_frozen_target_id]);
+    auto H_world_frozen = PoseUtils::Pose3dToAffine3d(
+        target_poses_[absl::GetFlag(FLAGS_frozen_target_id)]);
     auto H_world_frozenactual = H_world_frozen * H_frozen_actual;
 
     // Offset the solved poses to become the actual ones
     for (auto &[id, pose] : target_poses_) {
       // Don't offset targets we didn't solve for
-      if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
+      if (id < absl::GetFlag(FLAGS_min_target_id) ||
+          id > absl::GetFlag(FLAGS_max_target_id)) {
         continue;
       }
 
@@ -553,10 +559,10 @@ void TargetMapper::Solve(std::string_view field_name,
     aos::util::WriteStringToFileOrDie(output_path, map_json);
   }
 
-  for (TargetId id_start = FLAGS_min_target_id; id_start < FLAGS_max_target_id;
-       id_start++) {
-    for (TargetId id_end = id_start + 1; id_end <= FLAGS_max_target_id;
-         id_end++) {
+  for (TargetId id_start = absl::GetFlag(FLAGS_min_target_id);
+       id_start < absl::GetFlag(FLAGS_max_target_id); id_start++) {
+    for (TargetId id_end = id_start + 1;
+         id_end <= absl::GetFlag(FLAGS_max_target_id); id_end++) {
       auto H_start_end =
           PoseUtils::Pose3dToAffine3d(target_poses_.at(id_start)).inverse() *
           PoseUtils::Pose3dToAffine3d(target_poses_.at(id_end));
@@ -622,17 +628,19 @@ bool TargetMapper::operator()(const S *const translation,
           << PoseUtils::Affine3dToPose3d(ScalarAffineToDouble(H_frozen_actual));
 
   Affine3s H_world_frozen =
-      PoseUtils::Pose3dToAffine3d(target_poses_.at(FLAGS_frozen_target_id))
+      PoseUtils::Pose3dToAffine3d(
+          target_poses_.at(absl::GetFlag(FLAGS_frozen_target_id)))
           .cast<S>();
   Affine3s H_world_frozenactual = H_world_frozen * H_frozen_actual;
 
   size_t residual_index = 0;
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     vis_robot_.ClearImage();
   }
 
   for (const auto &[id, solved_pose] : target_poses_) {
-    if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
+    if (id < absl::GetFlag(FLAGS_min_target_id) ||
+        id > absl::GetFlag(FLAGS_max_target_id)) {
       continue;
     }
 
@@ -669,7 +677,7 @@ bool TargetMapper::operator()(const S *const translation,
     residual[residual_index++] =
         kRotationScalar * R_ideal_actual.angle() * R_ideal_actual.axis().z();
 
-    if (FLAGS_visualize_solver) {
+    if (absl::GetFlag(FLAGS_visualize_solver)) {
       LOG(INFO) << std::to_string(id) + std::string("-est") << " at "
                 << ScalarAffineToDouble(H_world_actual).matrix();
       vis_robot_.DrawFrameAxes(ScalarAffineToDouble(H_world_actual),
@@ -679,7 +687,7 @@ bool TargetMapper::operator()(const S *const translation,
                                std::to_string(id), cv::Scalar(255, 255, 255));
     }
   }
-  if (FLAGS_visualize_solver) {
+  if (absl::GetFlag(FLAGS_visualize_solver)) {
     cv::imshow("Target maps", vis_robot_.image_);
     cv::waitKey(0);
   }
@@ -763,12 +771,12 @@ void TargetMapper::RemoveOutlierConstraints() {
             // Remove constraints with errors significantly above
             // the average
             if (err.distance > stats_with_outliers_.avg_err.distance +
-                                   FLAGS_outlier_std_devs *
+                                   absl::GetFlag(FLAGS_outlier_std_devs) *
                                        stats_with_outliers_.std_dev.distance) {
               return true;
             }
             if (err.angle > stats_with_outliers_.avg_err.angle +
-                                FLAGS_outlier_std_devs *
+                                absl::GetFlag(FLAGS_outlier_std_devs) *
                                     stats_with_outliers_.std_dev.angle) {
               return true;
             }
@@ -812,14 +820,15 @@ void TargetMapper::DumpConstraints(std::string_view path) const {
   LOG(INFO) << "Dumping target constraints to " << path;
   std::ofstream fout(path.data());
   for (const auto &constraint : target_constraints_) {
-    fout << constraint << std::endl;
+    fout << absl::StrCat("", constraint) << std::endl;
   }
   fout.flush();
   fout.close();
 }
 
 void TargetMapper::PrintDiffs() const {
-  for (int id = FLAGS_min_target_id; id <= FLAGS_max_target_id; id++) {
+  for (int id = absl::GetFlag(FLAGS_min_target_id);
+       id <= absl::GetFlag(FLAGS_max_target_id); id++) {
     Eigen::Affine3d H_world_ideal =
         PoseUtils::Pose3dToAffine3d(ideal_target_poses_.at(id));
     Eigen::Affine3d H_world_solved =
@@ -839,20 +848,3 @@ void TargetMapper::PrintDiffs() const {
 }
 
 }  // namespace frc971::vision
-
-std::ostream &operator<<(std::ostream &os, ceres::examples::Pose3d pose) {
-  auto rpy = frc971::vision::PoseUtils::QuaternionToEulerAngles(pose.q);
-  os << absl::StrFormat(
-      "{x: %.3f, y: %.3f, z: %.3f, roll: %.3f, pitch: "
-      "%.3f, yaw: %.3f}",
-      pose.p(0), pose.p(1), pose.p(2), rpy(0), rpy(1), rpy(2));
-  return os;
-}
-
-std::ostream &operator<<(std::ostream &os,
-                         ceres::examples::Constraint3d constraint) {
-  os << absl::StrFormat("{id_begin: %d, id_end: %d, pose: ",
-                        constraint.id_begin, constraint.id_end)
-     << constraint.t_be << "}";
-  return os;
-}

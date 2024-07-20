@@ -65,7 +65,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -76,7 +77,8 @@ cc_test(
     deps = [
         ":epoll",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -196,7 +198,8 @@ cc_test(
         ":simulated_event_loop",
         "//aos/testing:googletest",
         "//aos/testing:path",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -214,7 +217,8 @@ cc_library(
         ":ping_fbs",
         ":pong_fbs",
         "//aos:json_to_flatbuffer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -231,7 +235,8 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -379,7 +384,8 @@ cc_library(
         ":event_loop",
         ":ping_fbs",
         ":pong_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -398,7 +404,8 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -430,7 +437,8 @@ cc_library(
         ":event_loop_fbs",
         "//aos:configuration",
         "//aos/util:error_counter",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -535,7 +543,8 @@ cc_library(
     deps = [
         "//aos:configuration_fbs",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -664,7 +673,8 @@ cc_test(
         ":simulated_event_loop",
         "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -707,7 +717,8 @@ cc_library(
     deps = [
         "//aos/events:shm_event_loop",
         "//third_party:gstreamer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -726,7 +737,8 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:path",
         "//third_party:gstreamer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

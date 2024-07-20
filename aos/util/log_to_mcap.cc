@@ -6,9 +6,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/reflection_generated.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
@@ -21,23 +22,23 @@
 #include "aos/util/clock_timepoints_schema.h"
 #include "aos/util/mcap_logger.h"
 
-DEFINE_string(node, "", "Node to replay from the perspective of.");
-DEFINE_string(output_path, "/tmp/log.mcap", "Log to output.");
-DEFINE_string(mode, "flatbuffer", "json or flatbuffer serialization.");
-DEFINE_bool(
-    canonical_channel_names, false,
+ABSL_FLAG(std::string, node, "", "Node to replay from the perspective of.");
+ABSL_FLAG(std::string, output_path, "/tmp/log.mcap", "Log to output.");
+ABSL_FLAG(std::string, mode, "flatbuffer", "json or flatbuffer serialization.");
+ABSL_FLAG(
+    bool, canonical_channel_names, false,
     "If set, use full channel names; by default, will shorten names to be the "
     "shortest possible version of the name (e.g., /aos instead of /pi/aos).");
-DEFINE_bool(compress, true, "Whether to use LZ4 compression in MCAP file.");
-DEFINE_bool(include_clocks, true,
-            "Whether to add a /clocks channel that publishes all nodes' clock "
-            "offsets.");
-DEFINE_bool(include_pre_start_messages, false,
-            "If set, *all* messages in the logfile will be included, including "
-            "any that may have occurred prior to the start of the log. This "
-            "can be used to see additional data, but given that data may be "
-            "incomplete prior to the start of the log, you should be careful "
-            "about interpretting data flow when using this flag.");
+ABSL_FLAG(bool, compress, true, "Whether to use LZ4 compression in MCAP file.");
+ABSL_FLAG(bool, include_clocks, true,
+          "Whether to add a /clocks channel that publishes all nodes' clock "
+          "offsets.");
+ABSL_FLAG(bool, include_pre_start_messages, false,
+          "If set, *all* messages in the logfile will be included, including "
+          "any that may have occurred prior to the start of the log. This "
+          "can be used to see additional data, but given that data may be "
+          "incomplete prior to the start of the log, you should be careful "
+          "about interpretting data flow when using this flag.");
 
 // Converts an AOS log to an MCAP log that can be fed into Foxglove. To try this
 // out, run:
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
   const std::set<std::string> logger_nodes = aos::logger::LoggerNodes(logfiles);
   CHECK_LT(0u, logger_nodes.size());
   const std::string logger_node = *logger_nodes.begin();
-  std::string replay_node = FLAGS_node;
+  std::string replay_node = absl::GetFlag(FLAGS_node);
   if (replay_node.empty()) {
     if (logger_nodes.size() == 1u) {
       LOG(INFO) << "Guessing \"" << logger_node
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config;
 
-  if (FLAGS_include_clocks) {
+  if (absl::GetFlag(FLAGS_include_clocks)) {
     aos::logger::LogReader config_reader(logfiles);
 
     if (aos::configuration::MultiNode(config_reader.configuration())) {
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<aos::ClockPublisher> clock_publisher;
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop;
-  CHECK(!FLAGS_output_path.empty());
+  CHECK(!absl::GetFlag(FLAGS_output_path).empty());
   std::unique_ptr<aos::McapLogger> relogger;
   auto startup_handler = [&relogger, &mcap_event_loop, &reader,
                           &clock_event_loop, &clock_publisher, &factory,
@@ -112,22 +113,23 @@ int main(int argc, char *argv[]) {
                                "files from multi-boot logs.";
     mcap_event_loop = reader.event_loop_factory()->MakeEventLoop("mcap", node);
     relogger = std::make_unique<aos::McapLogger>(
-        mcap_event_loop.get(), FLAGS_output_path,
-        FLAGS_mode == "flatbuffer" ? aos::McapLogger::Serialization::kFlatbuffer
-                                   : aos::McapLogger::Serialization::kJson,
-        FLAGS_canonical_channel_names
+        mcap_event_loop.get(), absl::GetFlag(FLAGS_output_path),
+        absl::GetFlag(FLAGS_mode) == "flatbuffer"
+            ? aos::McapLogger::Serialization::kFlatbuffer
+            : aos::McapLogger::Serialization::kJson,
+        absl::GetFlag(FLAGS_canonical_channel_names)
             ? aos::McapLogger::CanonicalChannelNames::kCanonical
             : aos::McapLogger::CanonicalChannelNames::kShortened,
-        FLAGS_compress ? aos::McapLogger::Compression::kLz4
-                       : aos::McapLogger::Compression::kNone);
-    if (FLAGS_include_clocks) {
+        absl::GetFlag(FLAGS_compress) ? aos::McapLogger::Compression::kLz4
+                                      : aos::McapLogger::Compression::kNone);
+    if (absl::GetFlag(FLAGS_include_clocks)) {
       clock_event_loop =
           reader.event_loop_factory()->MakeEventLoop("clock", node);
       clock_publisher = std::make_unique<aos::ClockPublisher>(
           &factory, clock_event_loop.get());
     }
   };
-  if (FLAGS_include_pre_start_messages) {
+  if (absl::GetFlag(FLAGS_include_pre_start_messages)) {
     // Note: This condition is subtly different from just using --fetch from
     // mcap_logger.cc. Namely, if there is >1 message on a given channel prior
     // to the logfile start, then fetching in the reader OnStart() is

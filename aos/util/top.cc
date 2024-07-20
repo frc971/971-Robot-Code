@@ -15,6 +15,8 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -22,7 +24,6 @@
 #include "absl/strings/str_split.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #define PF_KTHREAD 0x00200000
 
@@ -225,9 +226,8 @@ void Top::UpdateThreadReadings(pid_t pid, ProcessReadings &process) {
   // Verify we can open the directory.
   DIR *dir = opendir(task_dir.c_str());
   if (dir == nullptr) {
-    LOG_EVERY_T(WARNING, 10) << "Unable to open directory: " << task_dir
-                             << ", error: " << strerror(errno);
-    ;
+    LOG_EVERY_N_SEC(WARNING, 10) << "Unable to open directory: " << task_dir
+                                 << ", error: " << strerror(errno);
     return;
   }
 

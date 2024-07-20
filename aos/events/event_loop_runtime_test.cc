@@ -1,4 +1,5 @@
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_runtime_test_lib_rs_cxxgen.h"

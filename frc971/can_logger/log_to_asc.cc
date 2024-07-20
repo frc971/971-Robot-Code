@@ -5,8 +5,8 @@
 #include "frc971/can_logger/asc_logger.h"
 #include "frc971/can_logger/can_logging_generated.h"
 
-DEFINE_string(node, "", "Node to replay from the perspective of.");
-DEFINE_string(output_path, "/tmp/can_log.asc", "Log to output.");
+ABSL_FLAG(std::string, node, "", "Node to replay from the perspective of.");
+ABSL_FLAG(std::string, output_path, "/tmp/can_log.asc", "Log to output.");
 
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
-  std::string replay_node = FLAGS_node;
+  std::string replay_node = absl::GetFlag(FLAGS_node);
   if (replay_node.empty() && all_logs_from_same_node) {
     LOG(INFO) << "Guessing \"" << logger_node
               << "\" as node given that --node was not specified.";
@@ -43,14 +43,14 @@ int main(int argc, char *argv[]) {
           : aos::configuration::GetNode(reader.configuration(), replay_node);
 
   std::unique_ptr<aos::EventLoop> can_event_loop;
-  CHECK(!FLAGS_output_path.empty());
+  CHECK(!absl::GetFlag(FLAGS_output_path).empty());
   std::unique_ptr<frc971::can_logger::AscLogger> relogger;
 
   factory.GetNodeEventLoopFactory(node)->OnStartup([&relogger, &can_event_loop,
                                                     &reader, node]() {
     can_event_loop = reader.event_loop_factory()->MakeEventLoop("can", node);
     relogger = std::make_unique<frc971::can_logger::AscLogger>(
-        can_event_loop.get(), FLAGS_output_path);
+        can_event_loop.get(), absl::GetFlag(FLAGS_output_path));
   });
   reader.event_loop_factory()->Run();
   reader.Deregister();

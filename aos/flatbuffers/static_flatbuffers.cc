@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -19,7 +21,6 @@
 #include "flatbuffers/base.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #include "aos/flatbuffers/base.h"
 #include "aos/json_to_flatbuffer.h"

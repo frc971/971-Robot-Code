@@ -81,9 +81,10 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -93,7 +94,8 @@ cc_library(
     hdrs = ["file_operations.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -119,7 +121,9 @@ cc_library(
         ":file_operations",
         "//aos/time",
         "//aos/util:file",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
@@ -135,7 +139,8 @@ cc_test(
         "//aos/containers:resizeable_buffer",
         "//aos/testing:googletest",
         "//aos/testing:tmpdir",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -195,9 +200,10 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/network:remote_message_fbs",
         "//aos/util:file",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ] + select({
         "//tools:cpu_k8": [
@@ -220,8 +226,9 @@ cc_binary(
     deps = [
         ":logfile_utils",
         "//aos:init",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -265,7 +272,8 @@ cc_library(
         "//aos/containers:resizeable_buffer",
         "//aos/time",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -281,7 +289,8 @@ cc_test(
         ":buffer_encoder",
         ":buffer_encoder_param_test",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -302,7 +311,8 @@ cc_library(
         "//aos/containers:resizeable_buffer",
         "//aos/util:crc32",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
         "@snappy",
     ],
@@ -319,7 +329,8 @@ cc_test(
         ":buffer_encoder_param_test",
         ":snappy_encoder",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -340,7 +351,9 @@ cc_library(
         "//aos/containers:resizeable_buffer",
         "//third_party:lzma",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -363,7 +376,8 @@ cc_library(
         "//aos/containers:resizeable_buffer",
         "@aws_sdk//:core",
         "@aws_sdk//:s3",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
@@ -380,7 +394,9 @@ cc_test(
         ":buffer_encoder_param_test",
         ":lzma_encoder",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -399,7 +415,8 @@ cc_library(
         ":logger_fbs",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -418,7 +435,8 @@ cc_library(
         "//aos/containers:error_list",
         "//aos/containers:sized_array",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -546,8 +564,9 @@ cc_binary(
         "//aos:json_to_flatbuffer",
         "//aos:sha256",
         "//aos/events:simulated_event_loop",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -564,8 +583,9 @@ cc_library(
         "//aos:configuration",
         "//aos/events:simulated_event_loop",
         "//aos/network:multinode_timestamp_filter",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -583,8 +603,9 @@ cc_binary(
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/network:multinode_timestamp_filter",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -601,8 +622,9 @@ cc_binary(
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/network:multinode_timestamp_filter",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -618,8 +640,9 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/util:file",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -636,8 +659,9 @@ cc_binary(
         "//aos:json_to_flatbuffer",
         "//aos/events:simulated_event_loop",
         "//aos/time",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -660,8 +684,9 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/logging:log_namer",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -1009,8 +1034,9 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/events/logging:log_reader",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -1025,7 +1051,8 @@ cc_binary(
         "//aos:init",
         "//aos/containers:resizeable_buffer",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

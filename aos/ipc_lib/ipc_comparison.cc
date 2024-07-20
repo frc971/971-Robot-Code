@@ -26,7 +26,8 @@
 #include <thread>
 #include <utility>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 
 #include "aos/condition.h"
 #include "aos/init.h"
@@ -36,14 +37,15 @@
 #include "aos/realtime.h"
 #include "aos/time/time.h"
 
-DEFINE_string(method, "", "Which IPC method to use");
-DEFINE_int32(messages, 1000000, "How many messages to send back and forth");
-DEFINE_int32(client_cpu, 0, "CPU to pin client to");
-DEFINE_int32(server_cpu, 0, "CPU to pin server to");
-DEFINE_int32(client_priority, 1,
-             "Realtime priority for client. Negative for don't change");
-DEFINE_int32(server_priority, 1,
-             "Realtime priority for server. Negative for don't change");
+ABSL_FLAG(std::string, method, "", "Which IPC method to use");
+ABSL_FLAG(int32_t, messages, 1000000,
+          "How many messages to send back and forth");
+ABSL_FLAG(int32_t, client_cpu, 0, "CPU to pin client to");
+ABSL_FLAG(int32_t, server_cpu, 0, "CPU to pin server to");
+ABSL_FLAG(int32_t, client_priority, 1,
+          "Realtime priority for client. Negative for don't change");
+ABSL_FLAG(int32_t, server_priority, 1,
+          "Realtime priority for server. Negative for don't change");
 
 namespace aos {
 
@@ -761,63 +763,65 @@ class PosixNamedSemaphorePingPonger : public PosixSemaphorePingPonger {
   sem_t *ping_sem_, *pong_sem_;
 };
 
-int Main(int /*argc*/, char **argv) {
+int Main() {
   ::std::unique_ptr<PingPongerInterface> ping_ponger;
-  if (FLAGS_method == "pipe") {
+  if (absl::GetFlag(FLAGS_method) == "pipe") {
     ping_ponger.reset(new PipePingPonger());
-  } else if (FLAGS_method == "named_pipe") {
+  } else if (absl::GetFlag(FLAGS_method) == "named_pipe") {
     ping_ponger.reset(new NamedPipePingPonger());
-  } else if (FLAGS_method == "aos_mutex") {
+  } else if (absl::GetFlag(FLAGS_method) == "aos_mutex") {
     ping_ponger.reset(new AOSMutexPingPonger());
-  } else if (FLAGS_method == "aos_event") {
+  } else if (absl::GetFlag(FLAGS_method) == "aos_event") {
     ping_ponger.reset(new AOSEventPingPonger());
-  } else if (FLAGS_method == "pthread_mutex") {
+  } else if (absl::GetFlag(FLAGS_method) == "pthread_mutex") {
     ping_ponger.reset(new PthreadMutexPingPonger(false, false));
-  } else if (FLAGS_method == "pthread_mutex_pshared") {
+  } else if (absl::GetFlag(FLAGS_method) == "pthread_mutex_pshared") {
     ping_ponger.reset(new PthreadMutexPingPonger(true, false));
-  } else if (FLAGS_method == "pthread_mutex_pshared_pi") {
+  } else if (absl::GetFlag(FLAGS_method) == "pthread_mutex_pshared_pi") {
     ping_ponger.reset(new PthreadMutexPingPonger(true, true));
-  } else if (FLAGS_method == "pthread_mutex_pi") {
+  } else if (absl::GetFlag(FLAGS_method) == "pthread_mutex_pi") {
     ping_ponger.reset(new PthreadMutexPingPonger(false, true));
-  } else if (FLAGS_method == "eventfd") {
+  } else if (absl::GetFlag(FLAGS_method) == "eventfd") {
     ping_ponger.reset(new EventFDPingPonger());
-  } else if (FLAGS_method == "sysv_semaphore") {
+  } else if (absl::GetFlag(FLAGS_method) == "sysv_semaphore") {
     ping_ponger.reset(new SysvSemaphorePingPonger());
-  } else if (FLAGS_method == "sysv_queue") {
+  } else if (absl::GetFlag(FLAGS_method) == "sysv_queue") {
     ping_ponger.reset(new SysvQueuePingPonger());
-  } else if (FLAGS_method == "posix_semaphore_unnamed_shared") {
+  } else if (absl::GetFlag(FLAGS_method) == "posix_semaphore_unnamed_shared") {
     ping_ponger.reset(new PosixUnnamedSemaphorePingPonger(1));
-  } else if (FLAGS_method == "posix_semaphore_unnamed_unshared") {
+  } else if (absl::GetFlag(FLAGS_method) ==
+             "posix_semaphore_unnamed_unshared") {
     ping_ponger.reset(new PosixUnnamedSemaphorePingPonger(0));
-  } else if (FLAGS_method == "posix_semaphore_named") {
+  } else if (absl::GetFlag(FLAGS_method) == "posix_semaphore_named") {
     ping_ponger.reset(new PosixNamedSemaphorePingPonger());
-  } else if (FLAGS_method == "posix_queue") {
+  } else if (absl::GetFlag(FLAGS_method) == "posix_queue") {
     ping_ponger.reset(new PosixQueuePingPonger());
-  } else if (FLAGS_method == "unix_stream") {
+  } else if (absl::GetFlag(FLAGS_method) == "unix_stream") {
     ping_ponger.reset(new UnixPingPonger(SOCK_STREAM));
-  } else if (FLAGS_method == "unix_datagram") {
+  } else if (absl::GetFlag(FLAGS_method) == "unix_datagram") {
     ping_ponger.reset(new UnixPingPonger(SOCK_DGRAM));
-  } else if (FLAGS_method == "unix_seqpacket") {
+  } else if (absl::GetFlag(FLAGS_method) == "unix_seqpacket") {
     ping_ponger.reset(new UnixPingPonger(SOCK_SEQPACKET));
-  } else if (FLAGS_method == "tcp") {
+  } else if (absl::GetFlag(FLAGS_method) == "tcp") {
     ping_ponger.reset(new TCPPingPonger(false));
-  } else if (FLAGS_method == "tcp_nodelay") {
+  } else if (absl::GetFlag(FLAGS_method) == "tcp_nodelay") {
     ping_ponger.reset(new TCPPingPonger(true));
-  } else if (FLAGS_method == "udp") {
+  } else if (absl::GetFlag(FLAGS_method) == "udp") {
     ping_ponger.reset(new UDPPingPonger());
   } else {
-    fprintf(stderr, "Unknown IPC method to test '%s'\n", FLAGS_method.c_str());
-    ::gflags::ShowUsageWithFlags(argv[0]);
+    fprintf(stderr, "Unknown IPC method to test '%s'\n",
+            absl::GetFlag(FLAGS_method).c_str());
     return 1;
   }
 
   ::std::atomic<bool> done{false};
 
   ::std::thread server([&ping_ponger, &done]() {
-    if (FLAGS_server_priority > 0) {
-      SetCurrentThreadRealtimePriority(FLAGS_server_priority);
+    if (absl::GetFlag(FLAGS_server_priority) > 0) {
+      SetCurrentThreadRealtimePriority(absl::GetFlag(FLAGS_server_priority));
     }
-    SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_server_cpu}));
+    SetCurrentThreadAffinity(
+        MakeCpusetFromCpus({absl::GetFlag(FLAGS_server_cpu)}));
 
     while (!done) {
       const PingPongerInterface::Data *data = ping_ponger->Wait();
@@ -829,10 +833,11 @@ int Main(int /*argc*/, char **argv) {
     }
   });
 
-  if (FLAGS_client_priority > 0) {
-    SetCurrentThreadRealtimePriority(FLAGS_client_priority);
+  if (absl::GetFlag(FLAGS_client_priority) > 0) {
+    SetCurrentThreadRealtimePriority(absl::GetFlag(FLAGS_client_priority));
   }
-  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_client_cpu}));
+  SetCurrentThreadAffinity(
+      MakeCpusetFromCpus({absl::GetFlag(FLAGS_client_cpu)}));
 
   // Warm everything up.
   for (int i = 0; i < 1000; ++i) {
@@ -843,7 +848,7 @@ int Main(int /*argc*/, char **argv) {
 
   const monotonic_clock::time_point start = monotonic_clock::now();
 
-  for (int32_t i = 0; i < FLAGS_messages; ++i) {
+  for (int32_t i = 0; i < absl::GetFlag(FLAGS_messages); ++i) {
     PingPongerInterface::Data *to_send = ping_ponger->PingData();
     memset(*to_send, i % 123, sizeof(*to_send));
     const PingPongerInterface::Data *received = ping_ponger->Ping();
@@ -865,8 +870,10 @@ int Main(int /*argc*/, char **argv) {
   server.join();
 
   AOS_LOG(INFO, "Took %f seconds to send %" PRId32 " messages\n",
-          ::aos::time::DurationInSeconds(end - start), FLAGS_messages);
-  const chrono::nanoseconds per_message = (end - start) / FLAGS_messages;
+          ::aos::time::DurationInSeconds(end - start),
+          absl::GetFlag(FLAGS_messages));
+  const chrono::nanoseconds per_message =
+      (end - start) / absl::GetFlag(FLAGS_messages);
   if (per_message >= chrono::seconds(1)) {
     AOS_LOG(INFO, "More than 1 second per message ?!?\n");
   } else {
@@ -880,7 +887,7 @@ int Main(int /*argc*/, char **argv) {
 }  // namespace aos
 
 int main(int argc, char **argv) {
-  ::gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       ::std::string("Compares various forms of IPC. Usage:\n") + argv[0] +
       " --method=METHOD\n"
       "METHOD can be one of the following:\n"
@@ -905,7 +912,7 @@ int main(int argc, char **argv) {
       "\ttcp\n"
       "\ttcp_nodelay\n"
       "\tudp\n");
-  ::aos::InitGoogle(&argc, &argv);
+  aos::InitGoogle(&argc, &argv);
 
-  return ::aos::Main(argc, argv);
+  return ::aos::Main();
 }

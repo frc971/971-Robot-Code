@@ -10,8 +10,9 @@ extern "C" {
 #include "rawrtcc/utils.h"
 }
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 namespace aos::web_proxy {
 

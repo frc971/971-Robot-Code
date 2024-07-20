@@ -13,9 +13,10 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "glog/logging.h"
 
 #include "aos/scoped/scoped_fd.h"
 #include "aos/util/file.h"

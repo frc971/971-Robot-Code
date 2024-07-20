@@ -63,7 +63,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -203,7 +204,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -346,7 +348,8 @@ cc_library(
     deps = [
         "//aos/scoped:scoped_fd",
         "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
@@ -390,7 +393,8 @@ cc_library(
         ":process_info_fbs",
         "//aos/containers:ring_buffer",
         "//aos/events:event_loop",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -418,7 +422,8 @@ cc_library(
     hdrs = ["scoped_pipe.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -513,8 +518,9 @@ cc_library(
         ":config_validator_lib",
         "//aos:json_to_flatbuffer",
         "//aos/testing:googletest",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -527,7 +533,8 @@ cc_binary(
         ":foxglove_websocket_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:usage",
     ],
 )
 
@@ -561,7 +568,8 @@ cc_library(
         "//aos/events/logging:log_writer",
         "//aos/network:timestamp_channel",
         "//aos/testing:tmpdir",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -616,8 +624,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/containers:inlined_vector",
-        "@com_github_google_glog//:glog",
         "@com_github_tartanllama_expected",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

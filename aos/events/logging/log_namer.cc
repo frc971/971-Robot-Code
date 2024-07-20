@@ -6,9 +6,11 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 #include "aos/containers/error_list.h"
 #include "aos/containers/sized_array.h"
@@ -17,7 +19,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/uuid.h"
 
-DECLARE_int32(flush_size);
+ABSL_DECLARE_FLAG(int32_t, flush_size);
 
 namespace aos::logger {
 
@@ -762,7 +764,7 @@ MultiNodeLogNamer::MultiNodeLogNamer(std::unique_ptr<LogBackend> log_backend,
       encoder_factory_([](size_t max_message_size) {
         // TODO(austin): For slow channels, can we allocate less memory?
         return std::make_unique<DummyEncoder>(max_message_size,
-                                              FLAGS_flush_size);
+                                              absl::GetFlag(FLAGS_flush_size));
       }) {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {

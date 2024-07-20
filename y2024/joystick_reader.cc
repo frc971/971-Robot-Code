@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "absl/flags/flag.h"
+
 #include "aos/actions/actions.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
@@ -32,10 +34,10 @@ using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 using Side = frc971::control_loops::drivetrain::RobotSide;
 
-DEFINE_double(speaker_altitude_position_override, -1,
-              "If set, use this as the altitude angle for the fixed shot.");
-DEFINE_bool(allow_force_preload, false,
-            "If set, enable the kForcePreload button.");
+ABSL_FLAG(double, speaker_altitude_position_override, -1,
+          "If set, use this as the altitude angle for the fixed shot.");
+ABSL_FLAG(bool, allow_force_preload, false,
+          "If set, enable the kForcePreload button.");
 
 namespace y2024::input::joysticks {
 
@@ -140,7 +142,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           superstructure::NoteGoal::NONE);
     }
     auto shooter_goal = superstructure_goal_builder->add_shooter_goal();
-    shooter_goal->set_preloaded(FLAGS_allow_force_preload &&
+    shooter_goal->set_preloaded(absl::GetFlag(FLAGS_allow_force_preload) &&
                                 data.IsPressed(kForceLoad));
     if (data.IsPressed(kAutoAim)) {
       shooter_goal->set_auto_aim(
@@ -160,10 +162,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       catapult_goal->set_shot_velocity(robot_constants_->common()
                                            ->shooter_speaker_set_point()
                                            ->shot_velocity());
-      if (FLAGS_speaker_altitude_position_override > 0) {
+      if (absl::GetFlag(FLAGS_speaker_altitude_position_override) > 0) {
         PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
             shooter_goal->add_altitude_position(),
-            FLAGS_speaker_altitude_position_override);
+            absl::GetFlag(FLAGS_speaker_altitude_position_override));
       } else {
         PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
             shooter_goal->add_altitude_position(),

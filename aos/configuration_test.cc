@@ -1,8 +1,9 @@
 #include "aos/configuration.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/strip.h"
 #include "flatbuffers/reflection.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 

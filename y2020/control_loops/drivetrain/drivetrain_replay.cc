@@ -4,7 +4,7 @@
 // replayed, so that it can then be run through the plotting tool or analyzed
 // in some other way. The original drivetrain status data will be on the
 // /original/drivetrain channel.
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -21,12 +21,13 @@
 #include "y2020/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(config, "y2020/aos_config.json",
-              "Name of the config file to replay using.");
-DEFINE_string(output_folder, "/tmp/replayed",
-              "Name of the folder to write replayed logs to.");
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
-DEFINE_bool(log_all_nodes, false, "Whether to rerun the logger on every node.");
+ABSL_FLAG(std::string, config, "y2020/aos_config.json",
+          "Name of the config file to replay using.");
+ABSL_FLAG(std::string, output_folder, "/tmp/replayed",
+          "Name of the folder to write replayed logs to.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(bool, log_all_nodes, false,
+          "Whether to rerun the logger on every node.");
 
 // TODO(james): Currently, this replay produces logfiles that can't be read due
 // to time estimation issues. Pending the active refactorings of the
@@ -34,10 +35,10 @@ DEFINE_bool(log_all_nodes, false, "Whether to rerun the logger on every node.");
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   // sort logfiles
   const std::vector<aos::logger::LogFile> logfiles =
@@ -60,16 +61,17 @@ int main(int argc, char **argv) {
   reader.Register();
 
   std::vector<std::unique_ptr<aos::util::LoggerState>> loggers;
-  if (FLAGS_log_all_nodes) {
-    loggers = aos::util::MakeLoggersForAllNodes(reader.event_loop_factory(),
-                                                FLAGS_output_folder);
+  if (absl::GetFlag(FLAGS_log_all_nodes)) {
+    loggers = aos::util::MakeLoggersForAllNodes(
+        reader.event_loop_factory(), absl::GetFlag(FLAGS_output_folder));
   } else {
     // List of nodes to create loggers for (note: currently just roborio; this
     // code was refactored to allow easily adding new loggers to accommodate
     // debugging and potential future changes).
     const std::vector<std::string> nodes_to_log = {"roborio"};
-    loggers = aos::util::MakeLoggersForNodes(reader.event_loop_factory(),
-                                             nodes_to_log, FLAGS_output_folder);
+    loggers = aos::util::MakeLoggersForNodes(
+        reader.event_loop_factory(), nodes_to_log,
+        absl::GetFlag(FLAGS_output_folder));
   }
 
   const aos::Node *node = nullptr;

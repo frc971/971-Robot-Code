@@ -23,7 +23,8 @@ cc_library(
         "//aos:macros",
         "//aos/libc:aos_strerror",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -36,7 +37,8 @@ cc_library(
     deps = [
         "//aos:configuration",
         "//aos/time",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -49,7 +51,8 @@ cc_test(
     deps = [
         ":logging",
         "//aos/testing:googletest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -83,7 +86,8 @@ cc_library(
     deps = [
         ":dynamic_log_command_fbs",
         "//aos/events:shm_event_loop",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

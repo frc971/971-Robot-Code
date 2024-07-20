@@ -1,5 +1,8 @@
 #include "y2024/localizer/localizer.h"
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/log_writer.h"
@@ -14,9 +17,9 @@
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 #include "y2024/localizer/status_generated.h"
 
-DEFINE_string(output_folder, "",
-              "If set, logs all channels to the provided logfile.");
-DECLARE_double(max_distance_to_target);
+ABSL_FLAG(std::string, output_folder, "",
+          "If set, logs all channels to the provided logfile.");
+ABSL_DECLARE_FLAG(double, max_distance_to_target);
 
 namespace y2024::localizer::testing {
 
@@ -76,7 +79,7 @@ class LocalizerTest : public ::testing::Test {
                 ->MakeFetcher<frc971::controls::LocalizerOutput>("/localizer")),
         status_fetcher_(
             imu_test_event_loop_->MakeFetcher<Status>("/localizer")) {
-    FLAGS_max_distance_to_target = 100.0;
+    absl::SetFlag(&FLAGS_max_distance_to_target, 100.0);
     {
       aos::TimerHandler *timer = roborio_test_event_loop_->AddTimer([this]() {
         {
@@ -222,11 +225,11 @@ class LocalizerTest : public ::testing::Test {
     CHECK(status_fetcher_.Fetch());
     CHECK(status_fetcher_->imu()->zeroed());
 
-    if (!FLAGS_output_folder.empty()) {
+    if (!absl::GetFlag(FLAGS_output_folder).empty()) {
       logger_event_loop_ =
           event_loop_factory_.MakeEventLoop("logger", imu_node_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_folder);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_folder));
     }
   }
 
@@ -313,7 +316,7 @@ class LocalizerTest : public ::testing::Test {
   double pose_error_ratio_ = 0.1;
   double implied_yaw_error_ = 0.0;
 
-  gflags::FlagSaver flag_saver_;
+  absl::FlagSaver flag_saver_;
 };
 
 // Test a simple scenario with no errors where the robot should just drive

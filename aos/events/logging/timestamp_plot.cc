@@ -1,3 +1,4 @@
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 
@@ -7,13 +8,13 @@
 
 using aos::analysis::Plotter;
 
-DEFINE_bool(all, false, "If true, plot *all* the nodes at once");
-DEFINE_bool(bounds, false, "If true, plot the noncausal bounds too.");
-DEFINE_bool(samples, true, "If true, plot the samples too.");
+ABSL_FLAG(bool, all, false, "If true, plot *all* the nodes at once");
+ABSL_FLAG(bool, bounds, false, "If true, plot the noncausal bounds too.");
+ABSL_FLAG(bool, samples, true, "If true, plot the samples too.");
 
-DEFINE_string(offsets, "",
-              "Offsets to add to the monotonic clock for each node.  Use the "
-              "format of node=offset,node=offest");
+ABSL_FLAG(std::string, offsets, "",
+          "Offsets to add to the monotonic clock for each node.  Use the "
+          "format of node=offset,node=offest");
 
 // Simple C++ application to read the CSV files and use the in process plotter
 // to plot them.  This smokes the pants off gnuplot in terms of interactivity.
@@ -112,8 +113,9 @@ class NodePlotter {
  public:
   NodePlotter() : nodes_(Nodes()) {
     plotter_.AddFigure("Time");
-    if (!FLAGS_offsets.empty()) {
-      for (std::string_view nodeoffset : absl::StrSplit(FLAGS_offsets, ',')) {
+    if (!absl::GetFlag(FLAGS_offsets).empty()) {
+      for (std::string_view nodeoffset :
+           absl::StrSplit(absl::GetFlag(FLAGS_offsets), ',')) {
         std::vector<std::string_view> node_offset =
             absl::StrSplit(nodeoffset, '=');
         CHECK_EQ(node_offset.size(), 2u);
@@ -284,7 +286,7 @@ void NodePlotter::AddNodes(std::string_view node1, std::string_view node2) {
                        .color = "yellow",
                        .point_size = 2.0});
 
-  if (FLAGS_samples) {
+  if (absl::GetFlag(FLAGS_samples)) {
     plotter_.AddLine(samplefile12.first, samplefile12.second,
                      Plotter::LineOptions{
                          .label = absl::StrCat("sample ", node1, " ", node2),
@@ -299,7 +301,7 @@ void NodePlotter::AddNodes(std::string_view node1, std::string_view node2) {
                      });
   }
 
-  if (FLAGS_bounds) {
+  if (absl::GetFlag(FLAGS_bounds)) {
     plotter_.AddLine(
         noncausalfile12.first, noncausalfile12.second,
         Plotter::LineOptions{.label = absl::StrCat("nc ", node1, " ", node2),
@@ -316,7 +318,7 @@ void NodePlotter::AddNodes(std::string_view node1, std::string_view node2) {
 int Main(int argc, const char *const *argv) {
   NodePlotter plotter;
 
-  if (FLAGS_all) {
+  if (absl::GetFlag(FLAGS_all)) {
     const std::vector<std::pair<std::string, std::string>> connections =
         NodeConnections();
     for (std::pair<std::string, std::string> ab : connections) {

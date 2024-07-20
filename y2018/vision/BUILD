@@ -5,6 +5,7 @@ cc_binary(
     srcs = ["image_streamer.cc"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "//aos:init",
         "//aos/logging",
         "//aos/vision/blob:codec",
         "//aos/vision/events:epoll_events",
@@ -13,7 +14,7 @@ cc_binary(
         "//aos/vision/image:image_stream",
         "//aos/vision/image:reader",
         "//y2018:vision_proto",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

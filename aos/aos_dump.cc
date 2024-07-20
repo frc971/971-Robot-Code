@@ -2,37 +2,38 @@
 
 #include <iostream>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/usage.h"
 
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_int64(max_vector_size, 100,
-             "If positive, vectors longer than this will not be printed");
-DEFINE_bool(json, false, "If true, print fully valid JSON");
-DEFINE_bool(fetch, false,
-            "If true, fetch the current message on the channel first");
-DEFINE_bool(pretty, false,
-            "If true, pretty print the messages on multiple lines");
-DEFINE_bool(
-    pretty_max, false,
+ABSL_FLAG(int64_t, max_vector_size, 100,
+          "If positive, vectors longer than this will not be printed");
+ABSL_FLAG(bool, json, false, "If true, print fully valid JSON");
+ABSL_FLAG(bool, fetch, false,
+          "If true, fetch the current message on the channel first");
+ABSL_FLAG(bool, pretty, false,
+          "If true, pretty print the messages on multiple lines");
+ABSL_FLAG(
+    bool, pretty_max, false,
     "If true, expand every field to its own line (expands more than -pretty)");
-DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
-DEFINE_uint64(count, 0,
-              "If >0, aos_dump will exit after printing this many messages.");
-DEFINE_int32(rate_limit, 0,
-             "The minimum amount of time to wait in milliseconds before "
-             "sending another message");
-DEFINE_int32(timeout, -1,
-             "The max time in milliseconds to wait for messages before "
-             "exiting.  -1 means forever, 0 means don't wait.");
-DEFINE_bool(hex, false,
-            "Are integers in the messages printed in hex notation.");
+ABSL_FLAG(bool, print_timestamps, true, "If true, timestamps are printed.");
+ABSL_FLAG(uint64_t, count, 0,
+          "If >0, aos_dump will exit after printing this many messages.");
+ABSL_FLAG(int32_t, rate_limit, 0,
+          "The minimum amount of time to wait in milliseconds before "
+          "sending another message");
+ABSL_FLAG(int32_t, timeout, -1,
+          "The max time in milliseconds to wait for messages before "
+          "exiting.  -1 means forever, 0 means don't wait.");
+ABSL_FLAG(bool, hex, false,
+          "Are integers in the messages printed in hex notation.");
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       "Prints messages from arbitrary channels as they are received given a "
       "configuration file describing the channels to listen on.\nTypical "
       "Usage: aos_dump [--config path_to_config.json] channel_name "
@@ -56,18 +57,19 @@ int main(int argc, char **argv) {
 
   aos::Printer printer(
       {
-          .pretty = FLAGS_pretty,
-          .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
-          .pretty_max = FLAGS_pretty_max,
-          .print_timestamps = FLAGS_print_timestamps,
-          .json = FLAGS_json,
+          .pretty = absl::GetFlag(FLAGS_pretty),
+          .max_vector_size =
+              static_cast<size_t>(absl::GetFlag(FLAGS_max_vector_size)),
+          .pretty_max = absl::GetFlag(FLAGS_pretty_max),
+          .print_timestamps = absl::GetFlag(FLAGS_print_timestamps),
+          .json = absl::GetFlag(FLAGS_json),
           .distributed_clock = false,
-          .hex = FLAGS_hex,
+          .hex = absl::GetFlag(FLAGS_hex),
       },
       /*flush*/ true);
 
   for (const aos::Channel *channel : cli_info.found_channels) {
-    if (FLAGS_fetch) {
+    if (absl::GetFlag(FLAGS_fetch)) {
       const std::unique_ptr<aos::RawFetcher> fetcher =
           cli_info.event_loop->MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
@@ -75,11 +77,12 @@ int main(int argc, char **argv) {
       }
     }
 
-    if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
+    if (absl::GetFlag(FLAGS_count) > 0 &&
+        printer.message_count() >= absl::GetFlag(FLAGS_count)) {
       return 0;
     }
 
-    if (FLAGS_timeout == 0) {
+    if (absl::GetFlag(FLAGS_timeout) == 0) {
       continue;
     }
 
@@ -87,33 +90,36 @@ int main(int argc, char **argv) {
         channel, [channel, &printer, &cli_info, &next_send_time](
                      const aos::Context &context, const void * /*message*/) {
           if (context.monotonic_event_time > next_send_time) {
-            if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
+            if (absl::GetFlag(FLAGS_count) > 0 &&
+                printer.message_count() >= absl::GetFlag(FLAGS_count)) {
               return;
             }
 
             printer.PrintMessage(channel, context);
-            next_send_time = context.monotonic_event_time +
-                             std::chrono::milliseconds(FLAGS_rate_limit);
-            if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
+            next_send_time =
+                context.monotonic_event_time +
+                std::chrono::milliseconds(absl::GetFlag(FLAGS_rate_limit));
+            if (absl::GetFlag(FLAGS_count) > 0 &&
+                printer.message_count() >= absl::GetFlag(FLAGS_count)) {
               cli_info.event_loop->Exit();
             }
           }
         });
   }
 
-  if (FLAGS_timeout == 0) {
+  if (absl::GetFlag(FLAGS_timeout) == 0) {
     return 0;
   }
 
-  if (FLAGS_timeout > 0) {
+  if (absl::GetFlag(FLAGS_timeout) > 0) {
     aos::TimerHandler *handle = cli_info.event_loop->AddTimer(
         [event_loop = &cli_info.event_loop.value()]() { event_loop->Exit(); });
 
-    cli_info.event_loop->OnRun(
-        [handle, event_loop = &cli_info.event_loop.value()]() {
-          handle->Schedule(event_loop->monotonic_now() +
-                           std::chrono::milliseconds(FLAGS_timeout));
-        });
+    cli_info.event_loop->OnRun([handle,
+                                event_loop = &cli_info.event_loop.value()]() {
+      handle->Schedule(event_loop->monotonic_now() +
+                       std::chrono::milliseconds(absl::GetFlag(FLAGS_timeout)));
+    });
   }
 
   cli_info.event_loop->Run();

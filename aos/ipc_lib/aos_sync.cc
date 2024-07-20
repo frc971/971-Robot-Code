@@ -25,7 +25,8 @@
 #endif
 
 #include "absl/base/call_once.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/macros.h"
 #include "aos/util/compiler_memory_barrier.h"

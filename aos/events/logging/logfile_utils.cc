@@ -9,10 +9,11 @@
 #include <climits>
 #include <filesystem>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/snappy_encoder.h"
@@ -34,39 +35,38 @@
 #include "aos/events/logging/s3_fetcher.h"
 #endif
 
-DEFINE_int32(flush_size, 128 * 1024,
-             "Number of outstanding bytes to allow before flushing to disk.");
-DEFINE_double(
-    flush_period, 5.0,
-    "Max time to let data sit in the queue before flushing in seconds.");
+ABSL_FLAG(int32_t, flush_size, 128 * 1024,
+          "Number of outstanding bytes to allow before flushing to disk.");
+ABSL_FLAG(double, flush_period, 5.0,
+          "Max time to let data sit in the queue before flushing in seconds.");
 
-DEFINE_double(
-    max_network_delay, 1.0,
+ABSL_FLAG(
+    double, max_network_delay, 1.0,
     "Max time to assume a message takes to cross the network before we are "
     "willing to drop it from our buffers and assume it didn't make it.  "
     "Increasing this number can increase memory usage depending on the packet "
     "loss of your network or if the timestamps aren't logged for a message.");
 
-DEFINE_double(
-    max_out_of_order, -1,
+ABSL_FLAG(
+    double, max_out_of_order, -1,
     "If set, this overrides the max out of order duration for a log file.");
 
-DEFINE_bool(workaround_double_headers, true,
-            "Some old log files have two headers at the beginning.  Use the "
-            "last header as the actual header.");
+ABSL_FLAG(bool, workaround_double_headers, true,
+          "Some old log files have two headers at the beginning.  Use the "
+          "last header as the actual header.");
 
-DEFINE_bool(crash_on_corrupt_message, true,
-            "When true, MessageReader will crash the first time a message "
-            "with corrupted format is found. When false, the crash will be "
-            "suppressed, and any remaining readable messages will be "
-            "evaluated to present verified vs corrupted stats.");
+ABSL_FLAG(bool, crash_on_corrupt_message, true,
+          "When true, MessageReader will crash the first time a message "
+          "with corrupted format is found. When false, the crash will be "
+          "suppressed, and any remaining readable messages will be "
+          "evaluated to present verified vs corrupted stats.");
 
-DEFINE_bool(ignore_corrupt_messages, false,
-            "When true, and crash_on_corrupt_message is false, then any "
-            "corrupt message found by MessageReader be silently ignored, "
-            "providing access to all uncorrupted messages in a logfile.");
+ABSL_FLAG(bool, ignore_corrupt_messages, false,
+          "When true, and crash_on_corrupt_message is false, then any "
+          "corrupt message found by MessageReader be silently ignored, "
+          "providing access to all uncorrupted messages in a logfile.");
 
-DECLARE_bool(quiet_sorting);
+ABSL_DECLARE_FLAG(bool, quiet_sorting);
 
 namespace aos::logger {
 namespace {
@@ -280,11 +280,12 @@ void DetachedBufferWriter::FlushAtThreshold(
   // point queueing up any more data in memory. Also flush once we have enough
   // data queued up or if it has been long enough.
   while (encoder_->space() == 0 ||
-         encoder_->queued_bytes() > static_cast<size_t>(FLAGS_flush_size) ||
+         encoder_->queued_bytes() >
+             static_cast<size_t>(absl::GetFlag(FLAGS_flush_size)) ||
          encoder_->queue_size() >= IOV_MAX ||
-         (now > last_flush_time_ +
-                    chrono::duration_cast<chrono::nanoseconds>(
-                        chrono::duration<double>(FLAGS_flush_period)) &&
+         (now > last_flush_time_ + chrono::duration_cast<chrono::nanoseconds>(
+                                       chrono::duration<double>(absl::GetFlag(
+                                           FLAGS_flush_period))) &&
           encoder_->queued_bytes() != 0)) {
     VLOG(1) << "Chose to flush at " << now << ", last " << last_flush_time_
             << " queued bytes " << encoder_->queued_bytes();
@@ -1140,7 +1141,7 @@ SpanReader *LogReadersPool::BorrowReader(std::string_view id) {
     part_readers_.clear();
   }
   if (log_source_ == nullptr) {
-    part_readers_.emplace_back(id, FLAGS_quiet_sorting);
+    part_readers_.emplace_back(id, absl::GetFlag(FLAGS_quiet_sorting));
   } else {
     part_readers_.emplace_back(id, log_source_->GetDecoder(id));
   }
@@ -1168,7 +1169,8 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   // way that it can't happen anymore.  We've seen some logs where the body
   // parses as a header recently, so the simple solution of always looking is
   // failing us.
-  if (FLAGS_workaround_double_headers && !result.message().has_logger_sha1()) {
+  if (absl::GetFlag(FLAGS_workaround_double_headers) &&
+      !result.message().has_logger_sha1()) {
     while (true) {
       absl::Span<const uint8_t> maybe_header_data = span_reader->PeekMessage();
       if (maybe_header_data.empty()) {
@@ -1227,8 +1229,10 @@ MessageReader::MessageReader(SpanReader span_reader)
     : span_reader_(std::move(span_reader)),
       raw_log_file_header_(
           SizePrefixedFlatbufferVector<LogFileHeader>::Empty()) {
-  set_crash_on_corrupt_message_flag(FLAGS_crash_on_corrupt_message);
-  set_ignore_corrupt_messages_flag(FLAGS_ignore_corrupt_messages);
+  set_crash_on_corrupt_message_flag(
+      absl::GetFlag(FLAGS_crash_on_corrupt_message));
+  set_ignore_corrupt_messages_flag(
+      absl::GetFlag(FLAGS_ignore_corrupt_messages));
 
   std::optional<SizePrefixedFlatbufferVector<LogFileHeader>>
       raw_log_file_header = ReadHeader(&span_reader_);
@@ -1244,9 +1248,9 @@ MessageReader::MessageReader(SpanReader span_reader)
   total_verified_before_ = span_reader_.TotalConsumed();
 
   max_out_of_order_duration_ =
-      FLAGS_max_out_of_order > 0
+      absl::GetFlag(FLAGS_max_out_of_order) > 0
           ? chrono::duration_cast<chrono::nanoseconds>(
-                chrono::duration<double>(FLAGS_max_out_of_order))
+                chrono::duration<double>(absl::GetFlag(FLAGS_max_out_of_order)))
           : chrono::nanoseconds(log_file_header()->max_out_of_order_duration());
 
   VLOG(1) << "Opened " << span_reader_.filename() << " as node "
@@ -2622,7 +2626,8 @@ bool TimestampMapper::Queue() {
                messages.begin()->timestamp +
                        node_data.channels[msg->channel_index].time_to_live +
                        chrono::duration_cast<chrono::nanoseconds>(
-                           chrono::duration<double>(FLAGS_max_network_delay)) <
+                           chrono::duration<double>(
+                               absl::GetFlag(FLAGS_max_network_delay))) <
                    last_popped_message_time_) {
           messages.pop_front();
         }

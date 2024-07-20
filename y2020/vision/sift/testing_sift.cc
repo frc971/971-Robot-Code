@@ -1,6 +1,8 @@
 #include <memory>
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -10,15 +12,16 @@
 #include "y2020/vision/sift/fast_gaussian.h"
 #include "y2020/vision/sift/sift971.h"
 
-DEFINE_string(image, "", "Image to test with");
+ABSL_FLAG(std::string, image, "", "Image to test with");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   cv::setNumThreads(4);
 
-  const cv::Mat raw_image = cv::imread(FLAGS_image);
-  CHECK(!raw_image.empty()) << ": Failed to read: " << FLAGS_image;
+  const cv::Mat raw_image = cv::imread(absl::GetFlag(FLAGS_image));
+  CHECK(!raw_image.empty())
+      << ": Failed to read: " << absl::GetFlag(FLAGS_image);
   CHECK_EQ(CV_8UC3, raw_image.type());
 #if 0
   cv::Mat color_image;

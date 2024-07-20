@@ -1,6 +1,9 @@
 #include "frc971/vision/intrinsics_calibration_lib.h"
 
-DECLARE_bool(visualize);
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+
+ABSL_DECLARE_FLAG(bool, visualize);
 
 namespace frc971::vision {
 
@@ -49,13 +52,13 @@ IntrinsicsCalibration::IntrinsicsCalibration(
       calibration_folder_(calibration_folder),
       exit_handle_(exit_handle),
       exit_collection_(false) {
-  if (!FLAGS_visualize) {
+  if (!absl::GetFlag(FLAGS_visualize)) {
     // The only way to exit into the calibration routines is by hitting "q"
     // while visualization is running.  The event_loop doesn't pause enough
     // to handle ctrl-c exit requests
     LOG(INFO) << "Setting visualize to true, since currently the intrinsics "
                  "only works this way";
-    FLAGS_visualize = true;
+    absl::SetFlag(&FLAGS_visualize, true);
   }
   LOG(INFO) << "Hostname is: " << hostname_ << " and camera channel is "
             << camera_channel_;
@@ -73,7 +76,7 @@ void IntrinsicsCalibration::HandleCharuco(
     std::vector<std::vector<cv::Point2f>> charuco_corners, bool valid,
     std::vector<Eigen::Vector3d> rvecs_eigen,
     std::vector<Eigen::Vector3d> tvecs_eigen) {
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     // Reduce resolution displayed on remote viewer to prevent lag
     cv::resize(rgb_image, rgb_image,
                cv::Size(rgb_image.cols / 2, rgb_image.rows / 2));

@@ -17,25 +17,26 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
 
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
 
-DEFINE_bool(
-    _bash_autocomplete, false,
+ABSL_FLAG(
+    bool, _bash_autocomplete, false,
     "Internal use: Outputs channel list for use with autocomplete script.");
 
-DEFINE_bool(_zsh_compatability, false,
-            "Internal use: Force completion to complete either channels or "
-            "message_types, zsh doesn't handle spaces well.");
+ABSL_FLAG(bool, _zsh_compatability, false,
+          "Internal use: Force completion to complete either channels or "
+          "message_types, zsh doesn't handle spaces well.");
 
-DEFINE_string(_bash_autocomplete_word, "",
-              "Internal use: Current word being autocompleted");
+ABSL_FLAG(std::string, _bash_autocomplete_word, "",
+          "Internal use: Current word being autocompleted");
 
-DEFINE_bool(all, false,
-            "If true, print out the channels for all nodes, not just the "
-            "channels which are visible on this node.");
+ABSL_FLAG(bool, all, false,
+          "If true, print out the channels for all nodes, not just the "
+          "channels which are visible on this node.");
 
-DEFINE_bool(
-    canonical, false,
+ABSL_FLAG(
+    bool, canonical, false,
     "If true, print out the canonical channel names instead of the aliases.");
 
 namespace aos {
@@ -79,14 +80,15 @@ bool CliUtilInfo::Initialize(
     std::string_view channel_filter_description, bool expect_args) {
   // Don't generate failure output if the config doesn't exist while attempting
   // to autocomplete.
-  if (FLAGS__bash_autocomplete &&
-      (!(EndsWith(FLAGS_config, ".json") || EndsWith(FLAGS_config, ".bfbs")))) {
+  if (absl::GetFlag(FLAGS__bash_autocomplete) &&
+      (!(EndsWith(absl::GetFlag(FLAGS_config), ".json") ||
+         EndsWith(absl::GetFlag(FLAGS_config), ".bfbs")))) {
     std::cout << "COMPREPLY=()";
     return true;
   }
 
-  config = aos::configuration::MaybeReadConfig(FLAGS_config);
-  if (FLAGS__bash_autocomplete && !config.has_value()) {
+  config = aos::configuration::MaybeReadConfig(absl::GetFlag(FLAGS_config));
+  if (absl::GetFlag(FLAGS__bash_autocomplete) && !config.has_value()) {
     std::cout << "COMPREPLY=()";
     return true;
   }
@@ -111,7 +113,7 @@ bool CliUtilInfo::Initialize(
       ShiftArgs(argc, argv);
     }
 
-    if (FLAGS__bash_autocomplete) {
+    if (absl::GetFlag(FLAGS__bash_autocomplete)) {
       Autocomplete(channel_name, message_type, channel_filter);
       return true;
     }
@@ -122,8 +124,8 @@ bool CliUtilInfo::Initialize(
       std::cout << "Channels:\n";
       std::set<std::pair<std::string, std::string>> channels_to_print;
       for (const aos::Channel *channel : *channels) {
-        if (FLAGS_all || channel_filter(channel)) {
-          if (FLAGS_canonical) {
+        if (absl::GetFlag(FLAGS_all) || channel_filter(channel)) {
+          if (absl::GetFlag(FLAGS_canonical)) {
             channels_to_print.emplace(channel->name()->c_str(),
                                       channel->type()->c_str());
           } else {
@@ -187,7 +189,7 @@ bool CliUtilInfo::Initialize(
         continue;
       }
 
-      if (!FLAGS_all && !channel_filter(channel)) {
+      if (!absl::GetFlag(FLAGS_all) && !channel_filter(channel)) {
         LOG(FATAL) << "matched channel does not pass the channel filter: \""
                    << channel_filter_description
                    << "\" [matched channel info]: "
@@ -226,9 +228,11 @@ void CliUtilInfo::Autocomplete(
                     }) == 1;
 
   const bool editing_message =
-      !channel_name.empty() && FLAGS__bash_autocomplete_word == message_type;
+      !channel_name.empty() &&
+      absl::GetFlag(FLAGS__bash_autocomplete_word) == message_type;
   const bool editing_channel =
-      !editing_message && FLAGS__bash_autocomplete_word == channel_name;
+      !editing_message &&
+      absl::GetFlag(FLAGS__bash_autocomplete_word) == channel_name;
 
   std::cout << "COMPREPLY=(";
 
@@ -236,7 +240,7 @@ void CliUtilInfo::Autocomplete(
   // that were're editing one of the two positional arguments.
   if (!unique_match && (editing_message || editing_channel)) {
     for (const aos::Channel *channel : *config_msg->channels()) {
-      if (FLAGS_all || channel_filter(channel)) {
+      if (absl::GetFlag(FLAGS_all) || channel_filter(channel)) {
         const std::set<std::string> aliases =
             aos::configuration::GetChannelAliases(
                 config_msg, channel->name()->string_view(),
@@ -260,7 +264,8 @@ void CliUtilInfo::Autocomplete(
           // Otherwise, since the message type is poulated yet not being edited,
           // the user must be editing the channel name alone, in which case only
           // suggest channel names, not pairs.
-          if (!FLAGS__zsh_compatability && message_type.empty()) {
+          if (!absl::GetFlag(FLAGS__zsh_compatability) &&
+              message_type.empty()) {
             std::cout << '\'' << *it << ' ' << channel->type()->c_str() << "' ";
           } else {
             std::cout << '\'' << *it << "' ";

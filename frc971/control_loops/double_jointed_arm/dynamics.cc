@@ -1,6 +1,6 @@
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-DEFINE_bool(gravity, true, "If true, enable gravity.");
+ABSL_FLAG(bool, gravity, true, "If true, enable gravity.");
 
 namespace frc971::control_loops::arm {
 

@@ -4,6 +4,8 @@
 #include <functional>
 #include <string_view>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/event_loop_param_test.h"
@@ -479,10 +481,11 @@ TEST(SimulatedEventLoopTest, RunForTimerHandler) {
 
 // Tests that watchers have latency in simulation.
 TEST(SimulatedEventLoopTest, WatcherTimingReport) {
+  absl::FlagSaver flag_saver;
   SimulatedEventLoopTestFactory factory;
   factory.set_send_delay(std::chrono::microseconds(50));
 
-  FLAGS_timing_report_ms = 1000;
+  absl::SetFlag(&FLAGS_timing_report_ms, 1000);
   auto loop1 = factory.MakePrimary("primary");
   loop1->MakeWatcher("/test", [](const TestMessage &) {});
 

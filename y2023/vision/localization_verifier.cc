@@ -1,4 +1,6 @@
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/init.h"
 #include "frc971/constants/constants_sender_lib.h"
@@ -7,12 +9,13 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2023/localizer/localizer.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
 
-DEFINE_uint64(min_april_id, 1,
-              "Minimum april id to consider as part of the field and ignore");
-DEFINE_uint64(max_april_id, 8,
-              "Maximum april id to consider as part of the field and ignore");
+ABSL_FLAG(uint64_t, min_april_id, 1,
+          "Minimum april id to consider as part of the field and ignore");
+ABSL_FLAG(uint64_t, max_april_id, 8,
+          "Maximum april id to consider as part of the field and ignore");
 
 // This binary allows us to place extra april tags on the field and verify
 // that we can compute their field pose correctly
@@ -43,8 +46,8 @@ void HandleDetections(
 
   for (const auto *target_pose : *detections.target_poses()) {
     // Only look at april tags not part of the field
-    if (target_pose->id() >= FLAGS_min_april_id &&
-        target_pose->id() <= FLAGS_max_april_id) {
+    if (target_pose->id() >= absl::GetFlag(FLAGS_min_april_id) &&
+        target_pose->id() <= absl::GetFlag(FLAGS_max_april_id)) {
       continue;
     }
 
@@ -71,7 +74,7 @@ void HandleDetections(
 
 void LocalizationVerifierMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   frc971::constants::WaitForConstants<Constants>(&config.message());
 

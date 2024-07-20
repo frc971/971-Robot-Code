@@ -8,11 +8,12 @@
 #include <random>
 #include <string_view>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
-DEFINE_string(boot_uuid, "",
-              "If set, override the boot UUID to have this value instead.");
+ABSL_FLAG(std::string, boot_uuid, "",
+          "If set, override the boot UUID to have this value instead.");
 
 namespace aos {
 namespace {
@@ -184,8 +185,9 @@ UUID UUID::FromString(std::string_view str) {
 }
 
 UUID UUID::BootUUID() {
-  if (!FLAGS_boot_uuid.empty()) {
-    return UUID::FromString(FLAGS_boot_uuid);
+  auto flag = absl::GetFlag(FLAGS_boot_uuid);
+  if (!flag.empty()) {
+    return UUID::FromString(flag);
   }
 
   int fd = open("/proc/sys/kernel/random/boot_id", O_RDONLY);

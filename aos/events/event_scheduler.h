@@ -8,7 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"

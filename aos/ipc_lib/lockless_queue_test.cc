@@ -17,7 +17,7 @@
 #include <thread>
 #include <type_traits>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/epoll.h"
@@ -29,20 +29,20 @@
 #include "aos/realtime.h"
 #include "aos/util/phased_loop.h"
 
-DEFINE_int32(min_iterations, 100,
-             "Minimum number of stress test iterations to run");
-DEFINE_int32(duration, 5, "Number of seconds to test for");
-DEFINE_int32(print_rate, 60, "Number of seconds between status prints");
+ABSL_FLAG(int32_t, min_iterations, 100,
+          "Minimum number of stress test iterations to run");
+ABSL_FLAG(int32_t, duration, 5, "Number of seconds to test for");
+ABSL_FLAG(int32_t, print_rate, 60, "Number of seconds between status prints");
 
 // The roboRIO can only handle 10 threads before exploding.  Set the default for
 // ARM to 10.
-DEFINE_int32(thread_count,
+ABSL_FLAG(int32_t, thread_count,
 #if defined(__ARM_EABI__)
-             10,
+          10,
 #else
-             100,
+          100,
 #endif
-             "Number of threads to race");
+          "Number of threads to race");
 
 namespace aos::ipc_lib::testing {
 
@@ -299,7 +299,7 @@ TEST_F(LocklessQueueTest, Send) {
 
 // Races a bunch of sending threads to see if it all works.
 TEST_F(LocklessQueueTest, SendRace) {
-  const size_t kNumMessages = 10000 / FLAGS_thread_count;
+  const size_t kNumMessages = 10000 / absl::GetFlag(FLAGS_thread_count);
 
   ::std::mt19937 generator(0);
   ::std::uniform_int_distribution<> write_wrap_count_distribution(0, 10);
@@ -308,17 +308,19 @@ TEST_F(LocklessQueueTest, SendRace) {
   ::std::bernoulli_distribution should_read_result_distribution;
   ::std::bernoulli_distribution wrap_writes_distribution;
 
-  const chrono::seconds print_frequency(FLAGS_print_rate);
+  const chrono::seconds print_frequency(absl::GetFlag(FLAGS_print_rate));
 
-  QueueRacer racer(queue(), FLAGS_thread_count, kNumMessages);
+  QueueRacer racer(queue(), absl::GetFlag(FLAGS_thread_count), kNumMessages);
   const monotonic_clock::time_point start_time = monotonic_clock::now();
   const monotonic_clock::time_point end_time =
-      start_time + chrono::seconds(FLAGS_duration);
+      start_time + chrono::seconds(absl::GetFlag(FLAGS_duration));
 
   monotonic_clock::time_point monotonic_now = start_time;
   monotonic_clock::time_point next_print_time = start_time + print_frequency;
   uint64_t messages = 0;
-  for (int i = 0; i < FLAGS_min_iterations || monotonic_now < end_time; ++i) {
+  for (int i = 0;
+       i < absl::GetFlag(FLAGS_min_iterations) || monotonic_now < end_time;
+       ++i) {
     const bool race_reads = race_reads_distribution(generator);
     const bool set_should_read = set_should_read_distribution(generator);
     const bool should_read_result = should_read_result_distribution(generator);
@@ -402,7 +404,7 @@ TEST_F(LocklessQueueTestTooFast, MessagesSentTooFast) {
   PinForTest pin_cpu;
   uint64_t kNumMessages = 1000000;
   QueueRacer racer(queue(),
-                   {FLAGS_thread_count,
+                   {absl::GetFlag(FLAGS_thread_count),
                     kNumMessages,
                     {LocklessQueueSender::Result::GOOD,
                      LocklessQueueSender::Result::MESSAGES_SENT_TOO_FAST},

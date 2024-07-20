@@ -12,9 +12,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "flatbuffers/base.h"
-#include "glog/logging.h"
 
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/ipc_lib/data_alignment.h"

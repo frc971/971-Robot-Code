@@ -12,7 +12,8 @@
 #include "unsupported/Eigen/MatrixFunctions"
 
 #if defined(__linux__)
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/logging/logging.h"
 #endif

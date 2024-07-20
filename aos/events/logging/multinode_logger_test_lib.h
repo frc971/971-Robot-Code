@@ -1,8 +1,8 @@
 #ifndef AOS_EVENTS_LOGGING_MULTINODE_LOGGER_TEST_LIB_H
 #define AOS_EVENTS_LOGGING_MULTINODE_LOGGER_TEST_LIB_H
 
+#include "absl/flags/reflection.h"
 #include "absl/strings/str_format.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 
 #include "aos/events/event_loop.h"
@@ -172,7 +172,7 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
   void AddExtension(std::string_view extension);
 
-  gflags::FlagSaver flag_saver_;
+  absl::FlagSaver flag_saver_;
 
   // Config and factory.
   aos::FlatbufferDetachedBuffer<aos::Configuration> config_;

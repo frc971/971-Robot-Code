@@ -4,8 +4,10 @@
 #include <functional>
 #include <map>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"
@@ -13,53 +15,54 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 
-DEFINE_bool(timestamps_to_csv, false,
-            "If true, write all the time synchronization information to a set "
-            "of CSV files in /tmp/.  This should only be needed when debugging "
-            "time synchronization.");
+ABSL_FLAG(bool, timestamps_to_csv, false,
+          "If true, write all the time synchronization information to a set "
+          "of CSV files in /tmp/.  This should only be needed when debugging "
+          "time synchronization.");
 
-DEFINE_string(timestamp_csv_folder, "/tmp", "Folder to drop CSVs in");
+ABSL_FLAG(std::string, timestamp_csv_folder, "/tmp", "Folder to drop CSVs in");
 
-DEFINE_int32(max_invalid_distance_ns, 0,
-             "The max amount of time we will let the solver go backwards.");
+ABSL_FLAG(int32_t, max_invalid_distance_ns, 0,
+          "The max amount of time we will let the solver go backwards.");
 
-DEFINE_int32(debug_solve_number, -1,
-             "If nonzero, print out all the state for the provided solve "
-             "number.  This is typically used by solving once, taking note of "
-             "which solution failed to converge, and then re-running with "
-             "debug turned on for just that problem.");
+ABSL_FLAG(int32_t, debug_solve_number, -1,
+          "If nonzero, print out all the state for the provided solve "
+          "number.  This is typically used by solving once, taking note of "
+          "which solution failed to converge, and then re-running with "
+          "debug turned on for just that problem.");
 
-DEFINE_bool(bounds_offset_error, false,
-            "If true, use the offset to the bounds for solving instead of to "
-            "the interpolation lines.  This seems to make startup a bit "
-            "better, but won't track the middle as well.");
+ABSL_FLAG(bool, bounds_offset_error, false,
+          "If true, use the offset to the bounds for solving instead of to "
+          "the interpolation lines.  This seems to make startup a bit "
+          "better, but won't track the middle as well.");
 
-DEFINE_bool(
-    crash_on_solve_failure, true,
+ABSL_FLAG(
+    bool, crash_on_solve_failure, true,
     "If true, crash when the solver fails to converge.  If false, keep going.  "
     "This should only be set to false when trying to see if future problems "
     "would be solvable.  This won't process a valid log");
 
-DEFINE_bool(attempt_simultaneous_constrained_solve, true,
-            "If true, try the simultaneous, constrained solver.  If false, "
-            "only solve constrained problems sequentially.");
+ABSL_FLAG(bool, attempt_simultaneous_constrained_solve, true,
+          "If true, try the simultaneous, constrained solver.  If false, "
+          "only solve constrained problems sequentially.");
 
-DEFINE_bool(
-    remove_unlikely_constraints, true,
+ABSL_FLAG(
+    bool, remove_unlikely_constraints, true,
     "If true, when solving, try with our best guess at which constraints will "
     "be relevant and resolve if that proves wrong with an updated set.  For "
     "expensive problems, this reduces solve time significantly.");
 
-DEFINE_int32(solve_verbosity, 1, "Verbosity to use when debugging the solver.");
+ABSL_FLAG(int32_t, solve_verbosity, 1,
+          "Verbosity to use when debugging the solver.");
 
-DEFINE_bool(constrained_solve, true,
-            "If true, use the constrained solver.  If false, only solve "
-            "unconstrained.");
+ABSL_FLAG(bool, constrained_solve, true,
+          "If true, use the constrained solver.  If false, only solve "
+          "unconstrained.");
 
-#define SOLVE_VLOG_IS_ON(solve_number, v)                             \
-  (VLOG_IS_ON(v) ||                                                   \
-   (static_cast<int32_t>(solve_number) == FLAGS_debug_solve_number && \
-    v <= FLAGS_solve_verbosity))
+#define SOLVE_VLOG_IS_ON(solve_number, v)                           \
+  (VLOG_IS_ON(v) || (static_cast<int32_t>(solve_number) ==          \
+                         absl::GetFlag(FLAGS_debug_solve_number) && \
+                     v <= absl::GetFlag(FLAGS_solve_verbosity)))
 
 #define SOLVE_VLOG(solve_number, v) \
   LOG_IF(INFO, SOLVE_VLOG_IS_ON(solve_number, v))
@@ -77,7 +80,7 @@ const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, 0, ", ",
 
 template <class... Args>
 std::string CsvPath(Args &&...args) {
-  return absl::StrCat(FLAGS_timestamp_csv_folder, "/",
+  return absl::StrCat(absl::GetFlag(FLAGS_timestamp_csv_folder), "/",
                       std::forward<Args>(args)...);
 }
 }  // namespace
@@ -329,7 +332,7 @@ Problem::Derivatives TimestampProblem::ComputeDerivatives(
       std::pair<NoncausalTimestampFilter::Pointer,
                 std::tuple<chrono::nanoseconds, double, double>>
           offset_error =
-              FLAGS_bounds_offset_error
+              absl::GetFlag(FLAGS_bounds_offset_error)
                   ? filter.filter->BoundsOffsetError(
                         filter.b_filter, std::move(filter.pointer),
                         base_clock_[i], time_offsets(a_solution_index),
@@ -1049,7 +1052,8 @@ NewtonSolver::SolveConstrainedNewton(
             << " Considering constraint " << i << " from before";
         active_constraints.emplace_back(i);
         ++original_constraint_index;
-      } else if (derivatives.f(i) > 0.0 || !FLAGS_remove_unlikely_constraints) {
+      } else if (derivatives.f(i) > 0.0 ||
+                 !absl::GetFlag(FLAGS_remove_unlikely_constraints)) {
         SOLVE_VLOG(my_solve_number_, 1) << " Considering constraint " << i;
         active_constraints.emplace_back(i);
       }
@@ -1306,7 +1310,8 @@ NewtonSolver::SolveConstrainedNewton(
     }
   }
 
-  if (iteration > max_iterations && FLAGS_crash_on_solve_failure) {
+  if (iteration > max_iterations &&
+      absl::GetFlag(FLAGS_crash_on_solve_failure)) {
     LOG(ERROR) << "Failed to converge on solve " << my_solve_number_;
     return std::nullopt;
   }
@@ -1417,7 +1422,7 @@ void TimestampProblem::Debug() {
         // hitting this anymore.  I'm also likely the one who will be debugging
         // it next and would rather spend the time debugging it when I get a bug
         // report.
-        if (FLAGS_bounds_offset_error) {
+        if (absl::GetFlag(FLAGS_bounds_offset_error)) {
           gradients[i].emplace_back(
               std::string("- ") +
               filter.filter->DebugOffsetError(
@@ -1789,7 +1794,7 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
   CHECK_EQ(boots_->boots.size(), NodesCount());
   filters_per_node_.resize(NodesCount());
   last_monotonics_.resize(NodesCount(), BootTimestamp::epoch());
-  if (FLAGS_timestamps_to_csv && multi_node) {
+  if (absl::GetFlag(FLAGS_timestamps_to_csv) && multi_node) {
     fp_ = fopen(CsvPath("timestamp_noncausal_offsets.csv").c_str(), "w");
     fprintf(fp_, "# distributed");
     for (const Node *node : configuration::GetNodes(logged_configuration)) {
@@ -1925,7 +1930,7 @@ void MultiNodeNoncausalOffsetEstimator::Start(
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     std::vector<monotonic_clock::time_point> times) {
-  if (FLAGS_timestamps_to_csv) {
+  if (absl::GetFlag(FLAGS_timestamps_to_csv)) {
     std::fstream s(CsvPath("timestamp_noncausal_starttime.csv").c_str(),
                    s.trunc | s.out);
     CHECK(s.is_open());
@@ -2636,7 +2641,8 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
                                  SOLVE_VLOG_IS_ON(solver.my_solve_number(), 2),
                              solution_y);
 
-    if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+    if (iterations > kMaxIterations &&
+        absl::GetFlag(FLAGS_crash_on_solve_failure)) {
       UpdateSolution(std::move(solution));
       if (!FlushAndClose(false)) {
         return std::nullopt;
@@ -2646,7 +2652,7 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
     }
 
     if (!problem->ValidateSolution(solution, true)) {
-      if (!FLAGS_constrained_solve) {
+      if (!absl::GetFlag(FLAGS_constrained_solve)) {
         problem->ValidateSolution(solution, false);
         LOG(WARNING) << "Invalid solution, constraints not met for problem "
                      << solver.my_solve_number();
@@ -2671,7 +2677,7 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
           problem->set_base_clock(node_index, solution[node_index]);
         }
 
-        if (!FLAGS_attempt_simultaneous_constrained_solve) {
+        if (!absl::GetFlag(FLAGS_attempt_simultaneous_constrained_solve)) {
           VLOG(1) << "Falling back to sequential constrained Newton.";
           return SequentialSolution(problem, candidate_times, base_times);
         }
@@ -2687,7 +2693,8 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
         std::tie(std::ignore, std::ignore, solution_index, iterations) =
             *solver_result;
 
-        if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+        if (iterations > kMaxIterations &&
+            absl::GetFlag(FLAGS_crash_on_solve_failure)) {
           UpdateSolution(std::move(solution));
           if (!FlushAndClose(false)) {
             return std::nullopt;
@@ -2729,7 +2736,8 @@ bool MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
   // If times are close enough, drop the invalid time.
   const chrono::nanoseconds invalid_distance =
       InvalidDistance(result_times, solution);
-  if (invalid_distance <= chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
+  if (invalid_distance <=
+      chrono::nanoseconds(absl::GetFlag(FLAGS_max_invalid_distance_ns))) {
     VLOG(1) << "Times can't be compared by " << invalid_distance.count()
             << "ns";
     for (size_t i = 0; i < result_times.size(); ++i) {
@@ -2867,7 +2875,8 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
                                  SOLVE_VLOG_IS_ON(solver.my_solve_number(), 2),
                              solution_y);
 
-    if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+    if (iterations > kMaxIterations &&
+        absl::GetFlag(FLAGS_crash_on_solve_failure)) {
       UpdateSolution(std::move(solution));
       if (!FlushAndClose(false)) {
         return std::nullopt;
@@ -2881,7 +2890,7 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
     // CSV file so we can view the problem and figure out what to do.  The
     // results won't make sense.
     if (!problem->ValidateSolution(solution, true)) {
-      if (!FLAGS_constrained_solve) {
+      if (!absl::GetFlag(FLAGS_constrained_solve)) {
         // Do it non-quiet now.
         problem->ValidateSolution(solution, false);
 
@@ -2918,7 +2927,8 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         std::tie(std::ignore, std::ignore, solution_index, iterations) =
             *solver_result;
 
-        if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+        if (iterations > kMaxIterations &&
+            absl::GetFlag(FLAGS_crash_on_solve_failure)) {
           UpdateSolution(std::move(solution));
           if (!FlushAndClose(false)) {
             return std::nullopt;
@@ -3238,7 +3248,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         const chrono::nanoseconds invalid_distance =
             InvalidDistance(last_monotonics_, result_times);
         if (invalid_distance <=
-            chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
+            chrono::nanoseconds(absl::GetFlag(FLAGS_max_invalid_distance_ns))) {
           WriteFilter(next_filter, sample);
           return NextTimestamp();
         }

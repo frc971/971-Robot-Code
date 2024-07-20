@@ -105,7 +105,8 @@ cc_binary(
         ":constants_list_fbs",
         "//aos:init",
         "//aos:json_to_flatbuffer",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 

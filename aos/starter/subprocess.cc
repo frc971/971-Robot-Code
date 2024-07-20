@@ -15,9 +15,11 @@
 #include <ostream>
 #include <ratio>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "glog/logging.h"
 
 #include "aos/util/file.h"
 #include "aos/util/process_info_generated.h"
@@ -655,7 +657,7 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
       last_timing_report_ +
           // Leave a bit of margin on the timing report receipt time, to allow
           // for timing errors.
-          3 * std::chrono::milliseconds(FLAGS_timing_report_ms) >
+          3 * std::chrono::milliseconds(absl::GetFlag(FLAGS_timing_report_ms)) >
       event_loop_->monotonic_now());
   status_builder.add_last_stop_reason(stop_reason_);
   if (pid_ != -1) {

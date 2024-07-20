@@ -1,6 +1,7 @@
 #include "frc971/imu_reader/imu.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/util/crc32.h"
 

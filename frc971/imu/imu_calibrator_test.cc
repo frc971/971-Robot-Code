@@ -2,6 +2,7 @@
 
 #include <random>
 
+#include "absl/flags/reflection.h"
 #include "gtest/gtest.h"
 
 #include "frc971/imu/imu_calibrator_solver.h"
@@ -140,7 +141,7 @@ TEST(ImuCalibratorTest, BasicCalibrationTest) {
 // the IMU inputs; feeding in a sine wave works much better for allowing the
 // solver to estimate the offset.
 TEST(ImuCalibratorTest, TimeOffsetTest) {
-  gflags::FlagSaver flag_saver;
+  absl::FlagSaver flag_saver;
 
   std::vector<ImuConfig<double>> nominal_imus = {
       ImuConfig<double>{true, std::nullopt},

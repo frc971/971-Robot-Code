@@ -11,8 +11,9 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -33,8 +34,9 @@ cc_binary(
         "//frc971/constants:constants_sender_lib",
         "//frc971/constants/testdata:constants_data_fbs",
         "//frc971/constants/testdata:constants_list_fbs",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -61,6 +63,7 @@ cc_test(
         "//aos/testing:path",
         "//frc971/constants/testdata:constants_data_fbs",
         "//frc971/constants/testdata:constants_list_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

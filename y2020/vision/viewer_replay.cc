@@ -1,3 +1,4 @@
+#include "absl/flags/flag.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -8,9 +9,9 @@
 #include "aos/init.h"
 #include "frc971/vision/vision_generated.h"
 
-DEFINE_string(node, "pi1", "Node name to replay.");
-DEFINE_string(image_save_prefix, "/tmp/img",
-              "Prefix to use for saving images from the logfile.");
+ABSL_FLAG(std::string, node, "pi1", "Node name to replay.");
+ABSL_FLAG(std::string, image_save_prefix, "/tmp/img",
+          "Prefix to use for saving images from the logfile.");
 
 namespace frc971::vision {
 namespace {
@@ -22,7 +23,8 @@ void ViewerMain(int argc, char *argv[]) {
   reader.Register();
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
-    node = aos::configuration::GetNode(reader.configuration(), FLAGS_node);
+    node = aos::configuration::GetNode(reader.configuration(),
+                                       absl::GetFlag(FLAGS_node));
   }
   std::unique_ptr<aos::EventLoop> event_loop =
       reader.event_loop_factory()->MakeEventLoop("player", node);
@@ -38,7 +40,7 @@ void ViewerMain(int argc, char *argv[]) {
     }
 
     cv::imshow("Display", image_mat);
-    if (!FLAGS_image_save_prefix.empty()) {
+    if (!absl::GetFlag(FLAGS_image_save_prefix).empty()) {
       cv::imwrite("/tmp/img" + std::to_string(image_count++) + ".png",
                   image_mat);
     }

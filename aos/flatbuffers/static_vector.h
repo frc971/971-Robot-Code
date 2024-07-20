@@ -2,9 +2,10 @@
 #define AOS_FLATBUFFERS_STATIC_VECTOR_H_
 #include <span>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/base.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #include "aos/containers/inlined_vector.h"
 #include "aos/containers/sized_array.h"

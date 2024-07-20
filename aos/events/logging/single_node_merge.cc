@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
@@ -13,7 +13,7 @@
 // log.  It doesn't solve the timestamp problem, but is still quite useful for
 // debugging what happened in a log.
 
-DEFINE_string(node, "", "The node to dump sorted messages for");
+ABSL_FLAG(std::string, node, "", "The node to dump sorted messages for");
 
 namespace aos::logger {
 
@@ -39,7 +39,7 @@ int Main(int argc, char **argv) {
       // Filter the parts relevant to each node when building the mapper.
       mappers.emplace_back(std::make_unique<TimestampMapper>(
           node_name, log_files, TimestampQueueStrategy::kQueueTogether));
-      if (node_name == FLAGS_node) {
+      if (node_name == absl::GetFlag(FLAGS_node)) {
         node_mapper = mappers.back().get();
       }
     } else {
@@ -47,7 +47,8 @@ int Main(int argc, char **argv) {
     }
   }
 
-  CHECK(node_mapper != nullptr) << ": Failed to find node " << FLAGS_node;
+  CHECK(node_mapper != nullptr)
+      << ": Failed to find node " << absl::GetFlag(FLAGS_node);
 
   // Hook the peers up so data gets matched.
   for (std::unique_ptr<TimestampMapper> &mapper1 : mappers) {
@@ -61,7 +62,7 @@ int Main(int argc, char **argv) {
   // Now, read all the timestamps for each node.  This is simpler than the
   // logger on purpose.  It loads in *all* the timestamps in 1 go per node,
   // ignoring memory usage.
-  const Node *node = configuration::GetNode(config, FLAGS_node);
+  const Node *node = configuration::GetNode(config, absl::GetFlag(FLAGS_node));
 
   LOG(INFO) << "Reading all data for " << node->name()->string_view();
   const size_t node_index = configuration::GetNodeIndex(config, node);
@@ -74,7 +75,7 @@ int Main(int argc, char **argv) {
     if (m == nullptr) {
       break;
     }
-    std::cout << "on " << FLAGS_node << " from "
+    std::cout << "on " << absl::GetFlag(FLAGS_node) << " from "
               << config->nodes()
                      ->Get(configuration::GetNodeIndex(
                          config, config->channels()

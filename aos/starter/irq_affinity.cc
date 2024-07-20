@@ -15,12 +15,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
@@ -33,12 +34,13 @@
 #include "aos/util/file.h"
 #include "aos/util/top.h"
 
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
 
-DEFINE_string(user, "",
-              "Starter runs as though this user ran a SUID binary if set.");
-DEFINE_string(irq_config, "rockpi_config.json",
-              "File path of rockpi configuration");
+ABSL_FLAG(std::string, user, "",
+          "Starter runs as though this user ran a SUID binary if set.");
+ABSL_FLAG(std::string, irq_config, "rockpi_config.json",
+          "File path of rockpi configuration");
 
 namespace aos {
 
@@ -281,7 +283,7 @@ class IrqAffinity {
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  if (!FLAGS_user.empty()) {
+  if (!absl::GetFlag(FLAGS_user).empty()) {
     // Maintain root permissions as we switch to become the user so we can
     // actually manipulate priorities.
     PCHECK(prctl(PR_SET_SECUREBITS, SECBIT_NO_SETUID_FIXUP | SECBIT_NOROOT) ==
@@ -290,12 +292,12 @@ int main(int argc, char **argv) {
     uid_t uid;
     uid_t gid;
     {
-      struct passwd *user_data = getpwnam(FLAGS_user.c_str());
+      struct passwd *user_data = getpwnam(absl::GetFlag(FLAGS_user).c_str());
       if (user_data != nullptr) {
         uid = user_data->pw_uid;
         gid = user_data->pw_gid;
       } else {
-        LOG(FATAL) << "Could not find user " << FLAGS_user;
+        LOG(FATAL) << "Could not find user " << absl::GetFlag(FLAGS_user);
         return 1;
       }
     }
@@ -306,22 +308,22 @@ int main(int argc, char **argv) {
     constexpr int kUnchanged = -1;
     if (setresgid(/* ruid */ gid, /* euid */ gid,
                   /* suid */ kUnchanged) != 0) {
-      PLOG(FATAL) << "Failed to change GID to " << FLAGS_user;
+      PLOG(FATAL) << "Failed to change GID to " << absl::GetFlag(FLAGS_user);
     }
 
     if (setresuid(/* ruid */ uid, /* euid */ uid,
                   /* suid */ kUnchanged) != 0) {
-      PLOG(FATAL) << "Failed to change UID to " << FLAGS_user;
+      PLOG(FATAL) << "Failed to change UID to " << absl::GetFlag(FLAGS_user);
     }
   }
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::FlatbufferDetachedBuffer<aos::starter::IrqAffinityConfig>
       irq_affinity_config =
           aos::JsonFileToFlatbuffer<aos::starter::IrqAffinityConfig>(
-              FLAGS_irq_config);
+              absl::GetFlag(FLAGS_irq_config));
 
   aos::ShmEventLoop shm_event_loop(&config.message());
 

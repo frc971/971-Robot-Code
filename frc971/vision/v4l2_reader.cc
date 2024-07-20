@@ -6,8 +6,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-DEFINE_bool(ignore_timestamps, false,
-            "Don't require timestamps on images.  Used to allow webcams");
+#include "absl/flags/flag.h"
+
+ABSL_FLAG(bool, ignore_timestamps, false,
+          "Don't require timestamps on images.  Used to allow webcams");
 
 namespace frc971::vision {
 
@@ -233,7 +235,7 @@ V4L2ReaderBase::BufferInfo V4L2ReaderBase::DequeueBuffer() {
     CHECK_EQ(ImageSize(), buffer.length);
   }
   CHECK(buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC);
-  if (!FLAGS_ignore_timestamps) {
+  if (!absl::GetFlag(FLAGS_ignore_timestamps)) {
     // Require that we have good timestamp on images
     CHECK_EQ(buffer.flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK,
              static_cast<uint32_t>(V4L2_BUF_FLAG_TSTAMP_SRC_EOF));

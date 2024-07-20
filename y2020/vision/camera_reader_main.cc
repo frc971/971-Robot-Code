@@ -1,3 +1,6 @@
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "y2020/vision/camera_reader.h"
@@ -5,14 +8,15 @@
 // config used to allow running camera_reader independently.  E.g.,
 // bazel run //y2020/vision:camera_reader -- --config y2020/aos_config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
 
 namespace frc971::vision {
 namespace {
 
 void CameraReaderMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   const aos::FlatbufferSpan<sift::TrainingData> training_data(
       SiftTrainingData());

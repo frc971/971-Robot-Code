@@ -2,6 +2,7 @@
 
 #include <queue>
 
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/logging/log_writer.h"
@@ -14,8 +15,8 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
-DEFINE_string(output_file, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_file, "",
+          "If set, logs all channels to the provided logfile.");
 
 // This file tests that the full 2020 localizer behaves sanely.
 
@@ -145,10 +146,10 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 
-    if (!FLAGS_output_file.empty()) {
+    if (!absl::GetFlag(FLAGS_output_file).empty()) {
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(absl::GetFlag(FLAGS_output_file));
     }
 
     test_event_loop_->MakeWatcher(

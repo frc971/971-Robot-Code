@@ -3,7 +3,8 @@
 #include <chrono>
 #include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/testing/test_shm.h"
@@ -18,10 +19,10 @@
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
-DECLARE_bool(plot);
+ABSL_DECLARE_FLAG(bool, plot);
 
-DEFINE_string(output_file, "",
-              "If set, logs all channels to the provided logfile.");
+ABSL_FLAG(std::string, output_file, "",
+          "If set, logs all channels to the provided logfile.");
 
 namespace frc971::control_loops::drivetrain::testing {
 
@@ -119,7 +120,7 @@ class ParameterizedSplineTest
            length_plan_xva_.size() *
                ::aos::time::DurationInSeconds(dt_config_.dt));
 #if defined(SUPPORT_PLOT)
-    if (FLAGS_plot) {
+    if (absl::GetFlag(FLAGS_plot)) {
       ::std::vector<double> distances = trajectory_->Distances();
 
       for (size_t i = 0; i < length_plan_xva_.size(); ++i) {

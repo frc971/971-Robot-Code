@@ -46,7 +46,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:runge_kutta",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

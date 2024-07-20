@@ -1,6 +1,7 @@
 #include "frc971/control_loops/aiming/aiming.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "frc971/zeroing/wrap.h"
 

@@ -262,14 +262,9 @@ mod tests {
     #[test]
     fn set_cxx_flag() {
         let _guard = MUTEX.lock();
-        let app = App::parse_with_cpp_flags_from(&[
-            "mytest",
-            "--alsologtostderr",
-            "true",
-            "--myarg",
-            "23",
-        ]);
+        let app =
+            App::parse_with_cpp_flags_from(&["mytest", "--stderrthreshold", "1", "--myarg", "23"]);
         assert_eq!(app.myarg, 23);
-        assert_eq!(CxxFlag::get_option("alsologtostderr"), "true");
+        assert_eq!(CxxFlag::get_option("stderrthreshold"), "1");
     }
 }

@@ -8,10 +8,12 @@
 #include <string>
 #include <thread>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "flatbuffers/string.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
@@ -56,7 +58,7 @@ class StarterdTest : public ::testing::Test {
  public:
   StarterdTest() {
     // Nuke the shm dir:
-    aos::util::UnlinkRecursive(FLAGS_shm_base);
+    aos::util::UnlinkRecursive(absl::GetFlag(FLAGS_shm_base));
   }
 
  protected:
@@ -71,7 +73,7 @@ class StarterdTest : public ::testing::Test {
                    std::chrono::milliseconds(100));
   }
 
-  gflags::FlagSaver flag_saver_;
+  absl::FlagSaver flag_saver_;
   // Used to track when the test completes so that we can clean up the starter
   // in its thread.
   std::atomic<bool> test_done_{false};
@@ -87,8 +89,8 @@ class StarterdConfigParamTest
       public ::testing::WithParamInterface<TestParams> {};
 
 TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
-  gflags::FlagSaver flag_saver;
-  FLAGS_override_hostname = GetParam().hostname;
+  absl::FlagSaver flag_saver;
+  absl::SetFlag(&FLAGS_override_hostname, GetParam().hostname);
   const std::string config_file = ArtifactPath(GetParam().config);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
@@ -111,9 +113,9 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
                                     "args": ["--shm_base", "%s", "--config", "%s", "--override_hostname", "%s"]
                                   }
                                 ]})",
-          ArtifactPath("aos/events/ping"), FLAGS_shm_base, config_file,
-          GetParam().hostname, ArtifactPath("aos/events/pong"), FLAGS_shm_base,
-          config_file, GetParam().hostname));
+          ArtifactPath("aos/events/ping"), absl::GetFlag(FLAGS_shm_base),
+          config_file, GetParam().hostname, ArtifactPath("aos/events/pong"),
+          absl::GetFlag(FLAGS_shm_base), config_file, GetParam().hostname));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -220,8 +222,9 @@ TEST_F(StarterdTest, DeathTest) {
       aos::configuration::ReadConfig(config_file);
 
   auto new_config = aos::configuration::MergeWithConfig(
-      &config.message(), absl::StrFormat(
-                             R"({"applications": [
+      &config.message(),
+      absl::StrFormat(
+          R"({"applications": [
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
@@ -233,8 +236,8 @@ TEST_F(StarterdTest, DeathTest) {
                                     "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
-                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
+          ArtifactPath("aos/events/ping"), absl::GetFlag(FLAGS_shm_base),
+          ArtifactPath("aos/events/pong"), absl::GetFlag(FLAGS_shm_base)));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -307,8 +310,9 @@ TEST_F(StarterdTest, Autostart) {
       aos::configuration::ReadConfig(config_file);
 
   auto new_config = aos::configuration::MergeWithConfig(
-      &config.message(), absl::StrFormat(
-                             R"({"applications": [
+      &config.message(),
+      absl::StrFormat(
+          R"({"applications": [
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
@@ -321,8 +325,8 @@ TEST_F(StarterdTest, Autostart) {
                                     "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
-                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
+          ArtifactPath("aos/events/ping"), absl::GetFlag(FLAGS_shm_base),
+          ArtifactPath("aos/events/pong"), absl::GetFlag(FLAGS_shm_base)));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -397,8 +401,9 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
       aos::configuration::ReadConfig(config_file);
 
   auto new_config = aos::configuration::MergeWithConfig(
-      &config.message(), absl::StrFormat(
-                             R"({"applications": [
+      &config.message(),
+      absl::StrFormat(
+          R"({"applications": [
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
@@ -411,8 +416,8 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
                                     "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
-                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
+          ArtifactPath("aos/events/ping"), absl::GetFlag(FLAGS_shm_base),
+          ArtifactPath("aos/events/pong"), absl::GetFlag(FLAGS_shm_base)));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -488,8 +493,9 @@ TEST_F(StarterdTest, StarterChainTest) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
   auto new_config = aos::configuration::MergeWithConfig(
-      &config.message(), absl::StrFormat(
-                             R"({"applications": [
+      &config.message(),
+      absl::StrFormat(
+          R"({"applications": [
                                 {
                                   "name": "ping",
                                   "executable_name": "%s",
@@ -502,8 +508,8 @@ TEST_F(StarterdTest, StarterChainTest) {
                                   "args": ["--shm_base", "%s"]
                                 }
                               ]})",
-                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
-                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
+          ArtifactPath("aos/events/ping"), absl::GetFlag(FLAGS_shm_base),
+          ArtifactPath("aos/events/pong"), absl::GetFlag(FLAGS_shm_base)));
 
   const aos::Configuration *config_msg = &new_config.message();
   // Set up starter with config file

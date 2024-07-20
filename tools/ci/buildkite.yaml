@@ -1,7 +1,7 @@
 env:
   STARTUP: --max_idle_secs=0
   COMMON: -c opt --stamp=no --curses=yes --symlink_prefix=/ --remote_cache=grpc://data-fast:9092 --repo_env=FRC971_RUNNING_IN_CI=1 --repository_cache=~/.cache/bazel_repository --experimental_repository_cache_hardlinks=true
-  TARGETS: //... @com_github_google_glog//... @com_google_ceres_solver//... @com_github_rawrtc_rawrtc//... @com_google_googletest//... @symengine//...
+  TARGETS: //... @com_google_absl//... @com_google_ceres_solver//... @com_github_rawrtc_rawrtc//... @com_google_googletest//... @symengine//...
   M4F_TARGETS: //...
   RP2040_TARGETS: //...
   # Sanity check that we are able to build the y2020 roborio code, which confirms
@@ -19,7 +19,7 @@ steps:
   - label: "x86_64"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS} -- -@com_google_absl//absl/time:time_benchmark -@com_google_absl//absl/time:time_test -@com_google_absl//absl/time/internal/cctz:time_zone_format_test -@com_google_absl//absl/time/internal/cctz:time_zone_lookup_test
     agents:
       queue: "gpu"
 

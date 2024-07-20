@@ -1,5 +1,9 @@
 #include "aos/events/logging/multinode_logger_test_lib.h"
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logfile_utils.h"
@@ -9,7 +13,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/tmpdir.h"
 
-DECLARE_bool(force_timestamp_loading);
+ABSL_DECLARE_FLAG(bool, force_timestamp_loading);
 
 namespace aos::logger::testing {
 
@@ -111,9 +115,9 @@ MultinodeLoggerTest::MultinodeLoggerTest()
       pi1_reboot_logfiles_(MakePi1RebootLogfiles()),
       logfiles_(MakeLogFiles(logfile_base1_, logfile_base2_)),
       structured_logfiles_(StructureLogFiles()) {
-  FLAGS_force_timestamp_loading =
-      std::get<0>(GetParam()).timestamp_buffering ==
-      ForceTimestampBuffering::kForceBufferTimestamps;
+  absl::SetFlag(&FLAGS_force_timestamp_loading,
+                std::get<0>(GetParam()).timestamp_buffering ==
+                    ForceTimestampBuffering::kForceBufferTimestamps);
 
   util::UnlinkRecursive(tmp_dir_ + "/logs");
   std::filesystem::create_directory(tmp_dir_ + "/logs");

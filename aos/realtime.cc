@@ -15,19 +15,21 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
+#include "absl/base/internal/raw_logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/uuid.h"
 
-DEFINE_bool(
-    die_on_malloc, true,
+ABSL_FLAG(
+    bool, die_on_malloc, true,
     "If true, die when the application allocates memory in a RT section.");
-DEFINE_bool(skip_realtime_scheduler, false,
-            "If true, skip changing the scheduler.  Pretend that we changed "
-            "the scheduler instead.");
-DEFINE_bool(skip_locking_memory, false,
-            "If true, skip locking memory.  Pretend that we did it instead.");
+ABSL_FLAG(bool, skip_realtime_scheduler, false,
+          "If true, skip changing the scheduler.  Pretend that we changed "
+          "the scheduler instead.");
+ABSL_FLAG(bool, skip_locking_memory, false,
+          "If true, skip locking memory.  Pretend that we did it instead.");
 
 extern "C" {
 typedef void (*MallocHook_NewHook)(const void *ptr, size_t size);
@@ -44,6 +46,8 @@ void *tc_malloc(size_t size) __attribute__((weak));
 
 void *__libc_malloc(size_t size);
 void __libc_free(void *ptr);
+void *__libc_realloc(void *ptr, size_t size);
+void *__libc_calloc(size_t n, size_t elem_size);
 }  // extern "C"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
@@ -109,6 +113,7 @@ void LockAllMemory() {
   CHECK_EQ(1, mallopt(M_MMAP_MAX, 0));
 #endif
 
+  // TODO(austin): new tcmalloc does this differently...
   if (&FLAGS_tcmalloc_release_rate) {
     // Tell tcmalloc not to return memory.
     FLAGS_tcmalloc_release_rate = 0.0;
@@ -129,7 +134,7 @@ void LockAllMemory() {
 }
 
 void InitRT() {
-  if (FLAGS_skip_locking_memory) {
+  if (absl::GetFlag(FLAGS_skip_locking_memory)) {
     LOG(WARNING) << "Ignoring request to lock all memory due to "
                     "--skip_locking_memory.";
     return;
@@ -138,7 +143,7 @@ void InitRT() {
   CheckNotRealtime();
   LockAllMemory();
 
-  if (FLAGS_skip_realtime_scheduler) {
+  if (absl::GetFlag(FLAGS_skip_realtime_scheduler)) {
     return;
   }
   // Only let rt processes run for 3 seconds straight.
@@ -159,22 +164,6 @@ void UnsetCurrentThreadRealtimePriority() {
   param.sched_priority = 0;
   PCHECK(sched_setscheduler(0, SCHED_OTHER, &param) == 0);
   MarkRealtime(false);
-}
-
-std::ostream &operator<<(std::ostream &stream, const cpu_set_t &cpuset) {
-  stream << "{CPUs ";
-  bool first_found = false;
-  for (int i = 0; i < CPU_SETSIZE; ++i) {
-    if (CPU_ISSET(i, &cpuset)) {
-      if (first_found) {
-        stream << ", ";
-      }
-      stream << i;
-      first_found = true;
-    }
-  }
-  stream << "}";
-  return stream;
 }
 
 void SetCurrentThreadAffinity(const cpu_set_t &cpuset) {
@@ -203,7 +192,7 @@ void SetCurrentThreadRealtimePriority(int priority) {
   // scheduler is running.
   UUID::Random();
 
-  if (FLAGS_skip_realtime_scheduler) {
+  if (absl::GetFlag(FLAGS_skip_realtime_scheduler)) {
     LOG(WARNING) << "Ignoring request to switch to the RT scheduler due to "
                     "--skip_realtime_scheduler.";
     return;
@@ -271,7 +260,7 @@ ScopedRealtimeRestorer::ScopedRealtimeRestorer() : prior_(is_realtime) {}
 void NewHook(const void *ptr, size_t size) {
   if (is_realtime) {
     is_realtime = false;
-    RAW_LOG(FATAL, "Malloced %p -> %zu bytes", ptr, size);
+    ABSL_RAW_LOG(FATAL, "Malloced %p -> %zu bytes", ptr, size);
   }
 }
 
@@ -281,7 +270,7 @@ void DeleteHook(const void *ptr) {
   // calls.
   if (is_realtime && ptr != nullptr) {
     is_realtime = false;
-    RAW_LOG(FATAL, "Delete Hook %p", ptr);
+    ABSL_RAW_LOG(FATAL, "Delete Hook %p", ptr);
   }
 }
 
@@ -290,9 +279,9 @@ extern "C" {
 // malloc hooks for libc. Tcmalloc will replace everything it finds (malloc,
 // __libc_malloc, etc.), so we need its specific hook above as well.
 void *aos_malloc_hook(size_t size) {
-  if (FLAGS_die_on_malloc && aos::is_realtime) {
+  if (absl::GetFlag(FLAGS_die_on_malloc) && aos::is_realtime) {
     aos::is_realtime = false;
-    RAW_LOG(FATAL, "Malloced %zu bytes", size);
+    ABSL_RAW_LOG(FATAL, "Malloced %zu bytes", size);
     return nullptr;
   } else {
     return __libc_malloc(size);
@@ -300,16 +289,41 @@ void *aos_malloc_hook(size_t size) {
 }
 
 void aos_free_hook(void *ptr) {
-  if (FLAGS_die_on_malloc && aos::is_realtime && ptr != nullptr) {
+  if (absl::GetFlag(FLAGS_die_on_malloc) && aos::is_realtime &&
+      ptr != nullptr) {
     aos::is_realtime = false;
-    RAW_LOG(FATAL, "Deleted %p", ptr);
+    ABSL_RAW_LOG(FATAL, "Deleted %p", ptr);
   } else {
     __libc_free(ptr);
   }
 }
 
+void *aos_realloc_hook(void *ptr, size_t size) {
+  if (absl::GetFlag(FLAGS_die_on_malloc) && aos::is_realtime) {
+    aos::is_realtime = false;
+    ABSL_RAW_LOG(FATAL, "Malloced %p -> %zu bytes", ptr, size);
+    return nullptr;
+  } else {
+    return __libc_realloc(ptr, size);
+  }
+}
+
+void *aos_calloc_hook(size_t n, size_t elem_size) {
+  if (absl::GetFlag(FLAGS_die_on_malloc) && aos::is_realtime) {
+    aos::is_realtime = false;
+    ABSL_RAW_LOG(FATAL, "Malloced %zu * %zu bytes", n, elem_size);
+    return nullptr;
+  } else {
+    return __libc_calloc(n, elem_size);
+  }
+}
+
 void *malloc(size_t size) __attribute__((weak, alias("aos_malloc_hook")));
 void free(void *ptr) __attribute__((weak, alias("aos_free_hook")));
+void *realloc(void *ptr, size_t size)
+    __attribute__((weak, alias("aos_realloc_hook")));
+void *calloc(size_t n, size_t elem_size)
+    __attribute__((weak, alias("aos_calloc_hook")));
 }
 
 void FatalUnsetRealtimePriority() {
@@ -342,11 +356,11 @@ void FatalUnsetRealtimePriority() {
 }
 
 void RegisterMallocHook() {
-  if (FLAGS_die_on_malloc) {
+  if (absl::GetFlag(FLAGS_die_on_malloc)) {
     // tcmalloc redefines __libc_malloc, so use this as a feature test.
     if (&__libc_malloc == &tc_malloc) {
       if (VLOG_IS_ON(1)) {
-        RAW_LOG(INFO, "Hooking tcmalloc for die_on_malloc");
+        ABSL_RAW_LOG(INFO, "Hooking tcmalloc for die_on_malloc");
       }
       if (&MallocHook_AddNewHook != nullptr) {
         CHECK(MallocHook_AddNewHook(&NewHook));
@@ -360,7 +374,7 @@ void RegisterMallocHook() {
       }
     } else {
       if (VLOG_IS_ON(1)) {
-        RAW_LOG(INFO, "Replacing glibc malloc");
+        ABSL_RAW_LOG(INFO, "Replacing glibc malloc");
       }
       if (&malloc != &aos_malloc_hook) {
         has_malloc_hook = false;

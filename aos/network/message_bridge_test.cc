@@ -1,6 +1,9 @@
 #include <chrono>
 #include <thread>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 
@@ -54,7 +57,7 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   const std::string long_data = std::string(10000, 'a');
 
   // And build the app which sends the pings.
-  FLAGS_application_name = "ping";
+  absl::SetFlag(&FLAGS_application_name, "ping");
   aos::ShmEventLoop ping_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       ping_event_loop.MakeSender<examples::Ping>("/test");
@@ -78,11 +81,11 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   pi2_.MakeServer();
 
   // And build the app which sends the pongs.
-  FLAGS_application_name = "pong";
+  absl::SetFlag(&FLAGS_application_name, "pong");
   aos::ShmEventLoop pong_event_loop(&config_.message());
 
   // And build the app for testing.
-  FLAGS_application_name = "test";
+  absl::SetFlag(&FLAGS_application_name, "test");
   aos::ShmEventLoop test_event_loop(&config_.message());
 
   aos::Fetcher<ClientStatistics> client_statistics_fetcher =
@@ -112,7 +115,7 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
     VLOG(1) << "Got ping back " << FlatbufferToJson(&ping);
   });
 
-  FLAGS_override_hostname = "";
+  absl::SetFlag(&FLAGS_override_hostname, "");
 
   // Wait until we are connected, then send.
   int ping_count = 0;
@@ -805,7 +808,7 @@ void SendPing(aos::Sender<examples::Ping> *sender, int value) {
 TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
   pi1_.OnPi();
 
-  FLAGS_application_name = "sender";
+  absl::SetFlag(&FLAGS_application_name, "sender");
   aos::ShmEventLoop send_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
@@ -817,7 +820,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
   pi1_.MakeServer();
   pi1_.MakeClient();
 
-  FLAGS_application_name = "pi1_timestamp";
+  absl::SetFlag(&FLAGS_application_name, "pi1_timestamp");
   aos::ShmEventLoop pi1_remote_timestamp_event_loop(&config_.message());
 
   // Now do it for "raspberrypi2", the client.
@@ -953,7 +956,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
   // Force ourselves to be "raspberrypi" and allocate everything.
   pi1_.OnPi();
 
-  FLAGS_application_name = "sender";
+  absl::SetFlag(&FLAGS_application_name, "sender");
   aos::ShmEventLoop send_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
@@ -967,7 +970,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
 
   pi1_.MakeClient();
 
-  FLAGS_application_name = "pi1_timestamp";
+  absl::SetFlag(&FLAGS_application_name, "pi1_timestamp");
   aos::ShmEventLoop pi1_remote_timestamp_event_loop(&config_.message());
 
   const size_t ping_channel_index = configuration::ChannelIndex(
@@ -1077,7 +1080,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
 TEST_P(MessageBridgeParameterizedTest, ReliableSentDuringClientReboot) {
   pi1_.OnPi();
 
-  FLAGS_application_name = "sender";
+  absl::SetFlag(&FLAGS_application_name, "sender");
   aos::ShmEventLoop send_event_loop(&config_.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
@@ -1087,7 +1090,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentDuringClientReboot) {
   pi1_.MakeServer();
   pi1_.MakeClient();
 
-  FLAGS_application_name = "pi1_timestamp";
+  absl::SetFlag(&FLAGS_application_name, "pi1_timestamp");
   aos::ShmEventLoop pi1_remote_timestamp_event_loop(&config_.message());
 
   // Now do it for "raspberrypi2", the client.
@@ -1363,7 +1366,7 @@ TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
     // Now, spin up a SctpClient and send a massive hunk of data.  This should
     // trigger a disconnect, but no crash.
     pi2_.OnPi();
-    FLAGS_application_name = "pi2_message_bridge_client";
+    absl::SetFlag(&FLAGS_application_name, "pi2_message_bridge_client");
     pi2_.client_event_loop_ =
         std::make_unique<aos::ShmEventLoop>(&config_.message());
     pi2_.client_event_loop_->SetRuntimeRealtimePriority(1);

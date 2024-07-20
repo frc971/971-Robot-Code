@@ -13,7 +13,8 @@
 #include <memory>
 #include <thread>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"

@@ -6,10 +6,11 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ceres/ceres.h"
-#include "glog/logging.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 

@@ -1,6 +1,6 @@
 #include <fcntl.h>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/init.h"
 #include "aos/logging/implementations.h"
@@ -17,13 +17,13 @@
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
 
-DEFINE_string(logfile, "", "Path to the logfile to replay.");
+ABSL_FLAG(std::string, logfile, "", "Path to the logfile to replay.");
 // TODO(james): Figure out how to reliably source team number from logfile.
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
-DEFINE_int32(plot_duration, 30,
-             "Duration, in seconds, to plot after the start time.");
-DEFINE_int32(start_offset, 0,
-             "Time, in seconds, to start replay plot after the first enable.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(int32_t, plot_duration, 30,
+          "Duration, in seconds, to plot after the start time.");
+ABSL_FLAG(int32_t, start_offset, 0,
+          "Time, in seconds, to start replay plot after the first enable.");
 
 namespace y2019::control_loops::drivetrain {
 using ::y2019::constants::Field;

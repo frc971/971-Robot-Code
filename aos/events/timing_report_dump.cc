@@ -1,5 +1,6 @@
-#include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -7,11 +8,11 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_string(application, "",
-              "Application filter to use. Empty for no filter.");
-DEFINE_bool(stream, false, "Stream out all the timing reports in the log.");
-DEFINE_bool(accumulate, true,
-            "Display accumulation of all timing reports at end of log.");
+ABSL_FLAG(std::string, application, "",
+          "Application filter to use. Empty for no filter.");
+ABSL_FLAG(bool, stream, false, "Stream out all the timing reports in the log.");
+ABSL_FLAG(bool, accumulate, true,
+          "Display accumulation of all timing reports at end of log.");
 
 namespace aos {
 struct DumperState {
@@ -37,12 +38,14 @@ int Main(int argc, char *argv[]) {
       std::unique_ptr<TimingReportDump> dumper =
           std::make_unique<TimingReportDump>(
               event_loop.get(),
-              FLAGS_accumulate ? TimingReportDump::AccumulateStatistics::kYes
-                               : TimingReportDump::AccumulateStatistics::kNo,
-              FLAGS_stream ? TimingReportDump::StreamResults::kYes
-                           : TimingReportDump::StreamResults::kNo);
-      if (!FLAGS_application.empty()) {
-        dumper->ApplicationFilter(FLAGS_application);
+              absl::GetFlag(FLAGS_accumulate)
+                  ? TimingReportDump::AccumulateStatistics::kYes
+                  : TimingReportDump::AccumulateStatistics::kNo,
+              absl::GetFlag(FLAGS_stream)
+                  ? TimingReportDump::StreamResults::kYes
+                  : TimingReportDump::StreamResults::kNo);
+      if (!absl::GetFlag(FLAGS_application).empty()) {
+        dumper->ApplicationFilter(absl::GetFlag(FLAGS_application));
       }
       dumpers.push_back({std::move(event_loop), std::move(dumper)});
     }

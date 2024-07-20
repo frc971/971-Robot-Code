@@ -1,24 +1,25 @@
 #include "y2023/vision/aprilrobotics.h"
 
+#include "absl/flags/flag.h"
 #include <opencv2/highgui.hpp>
 
 #include "y2023/vision/vision_util.h"
 
-DEFINE_bool(
-    debug, false,
+ABSL_FLAG(
+    bool, debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
 
-DEFINE_double(min_decision_margin, 50.0,
-              "Minimum decision margin (confidence) for an apriltag detection");
-DEFINE_int32(pixel_border, 10,
-             "Size of image border within which to reject detected corners");
-DEFINE_double(
-    max_expected_distortion, 0.314,
+ABSL_FLAG(double, min_decision_margin, 50.0,
+          "Minimum decision margin (confidence) for an apriltag detection");
+ABSL_FLAG(int32_t, pixel_border, 10,
+          "Size of image border within which to reject detected corners");
+ABSL_FLAG(
+    double, max_expected_distortion, 0.314,
     "Maximum expected value for unscaled distortion factors. Will scale "
     "distortion factors so that this value (and a higher distortion) maps to "
     "1.0.");
-DEFINE_uint64(pose_estimation_iterations, 50,
-              "Number of iterations for apriltag pose estimation.");
+ABSL_FLAG(uint64_t, pose_estimation_iterations, 50,
+          "Number of iterations for apriltag pose estimation.");
 
 namespace y2023::vision {
 
@@ -56,7 +57,7 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
   tag_detector_->nthreads = 6;
   tag_detector_->wp = workerpool_create(tag_detector_->nthreads);
   tag_detector_->qtp.min_white_black_diff = 5;
-  tag_detector_->debug = FLAGS_debug;
+  tag_detector_->debug = absl::GetFlag(FLAGS_debug);
 
   std::string hostname = aos::network::GetHostname();
 
@@ -178,7 +179,8 @@ double AprilRoboticsDetector::ComputeDistortionFactor(
   double distortion_factor =
       avg_distance /
       cv::norm(cv::Point2d(image_size_.width, image_size_.height));
-  return std::min(distortion_factor / FLAGS_max_expected_distortion, 1.0);
+  return std::min(
+      distortion_factor / absl::GetFlag(FLAGS_max_expected_distortion), 1.0);
 }
 
 std::vector<cv::Point2f> AprilRoboticsDetector::MakeCornerVector(
@@ -210,10 +212,10 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
       .stride = image.cols,
       .buf = image.data,
   };
-  const uint32_t min_x = FLAGS_pixel_border;
-  const uint32_t max_x = image.cols - FLAGS_pixel_border;
-  const uint32_t min_y = FLAGS_pixel_border;
-  const uint32_t max_y = image.rows - FLAGS_pixel_border;
+  const uint32_t min_x = absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t max_x = image.cols - absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t min_y = absl::GetFlag(FLAGS_pixel_border);
+  const uint32_t max_y = image.rows - absl::GetFlag(FLAGS_pixel_border);
 
   ftrace_.FormatMessage("Starting detect\n");
   zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
@@ -228,7 +230,7 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
     apriltag_detection_t *det;
     zarray_get(detections, i, &det);
 
-    if (det->decision_margin > FLAGS_min_decision_margin) {
+    if (det->decision_margin > absl::GetFlag(FLAGS_min_decision_margin)) {
       if (det->p[0][0] < min_x || det->p[0][0] > max_x ||
           det->p[1][0] < min_x || det->p[1][0] > max_x ||
           det->p[2][0] < min_x || det->p[2][0] > max_x ||
@@ -274,9 +276,9 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
       apriltag_pose_t pose_2;
       double pose_error_1;
       double pose_error_2;
-      estimate_tag_pose_orthogonal_iteration(&info, &pose_error_1, &pose_1,
-                                             &pose_error_2, &pose_2,
-                                             FLAGS_pose_estimation_iterations);
+      estimate_tag_pose_orthogonal_iteration(
+          &info, &pose_error_1, &pose_1, &pose_error_2, &pose_2,
+          absl::GetFlag(FLAGS_pose_estimation_iterations));
 
       const aos::monotonic_clock::time_point after_pose_estimation =
           aos::monotonic_clock::now();
@@ -320,7 +322,7 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
                                      .distortion_factor = distortion_factor,
                                      .pose_error_ratio = pose_error_ratio});
 
-      if (FLAGS_visualize) {
+      if (absl::GetFlag(FLAGS_visualize)) {
         // Draw raw (distorted) corner points in green
         cv::line(color_image, orig_corner_points[0], orig_corner_points[1],
                  cv::Scalar(0, 255, 0), 2);
@@ -349,7 +351,7 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
       rejections_++;
     }
   }
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     // Display the result
     // Rotate by 180 degrees to make it upright
     if (flip_image_) {
@@ -368,7 +370,7 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
 
   const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
 
-  if (FLAGS_debug) {
+  if (absl::GetFlag(FLAGS_debug)) {
     timeprofile_display(tag_detector_->tp);
   }
 

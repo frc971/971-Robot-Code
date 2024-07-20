@@ -11,27 +11,29 @@
 #include <thread>
 #include <utility>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/events/context.h"
 #include "aos/json_to_flatbuffer.h"
 
 // FLAGS_shm_base is defined elsewhere, declare it here so it can be used
 // to override the shared memory folder for unit testing.
-DECLARE_string(shm_base);
+ABSL_DECLARE_FLAG(std::string, shm_base);
 // FLAGS_permissions is defined elsewhere, declare it here so it can be used
 // to set the file permissions on the shared memory block.
-DECLARE_uint32(permissions);
+ABSL_DECLARE_FLAG(uint32_t, permissions);
 
-DEFINE_uint32(queue_initialization_threads, 0,
-              "Number of threads to spin up to initialize the queue.  0 means "
-              "use the main thread.");
-DECLARE_bool(enable_ftrace);
+ABSL_FLAG(uint32_t, queue_initialization_threads, 0,
+          "Number of threads to spin up to initialize the queue.  0 means "
+          "use the main thread.");
+ABSL_DECLARE_FLAG(bool, enable_ftrace);
 
 namespace aos::starter {
 
@@ -64,7 +66,7 @@ Starter::Starter(const aos::Configuration *event_loop_config)
           1),
       timing_report_fetcher_(
           event_loop_.MakeFetcher<aos::timing::Report>("/aos")),
-      shm_base_(FLAGS_shm_base),
+      shm_base_(absl::GetFlag(FLAGS_shm_base)),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }),
       top_(&event_loop_, aos::util::Top::TrackThreadsMode::kDisabled,
@@ -132,7 +134,7 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     std::vector<const aos::Channel *> channels_to_construct;
     for (const aos::Channel *channel : *config_msg_->channels()) {
       if (aos::configuration::ChannelIsReadableOnNode(channel, this_node)) {
-        if (FLAGS_queue_initialization_threads == 0) {
+        if (absl::GetFlag(FLAGS_queue_initialization_threads) == 0) {
           AddChannel(channel);
         } else {
           channels_to_construct.push_back(channel);
@@ -140,11 +142,12 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       }
     }
 
-    if (FLAGS_queue_initialization_threads != 0) {
+    if (absl::GetFlag(FLAGS_queue_initialization_threads) != 0) {
       std::mutex pool_mutex;
       std::vector<std::thread> threads;
-      threads.reserve(FLAGS_queue_initialization_threads);
-      for (size_t i = 0; i < FLAGS_queue_initialization_threads; ++i) {
+      threads.reserve(absl::GetFlag(FLAGS_queue_initialization_threads));
+      for (size_t i = 0; i < absl::GetFlag(FLAGS_queue_initialization_threads);
+           ++i) {
         threads.emplace_back([this, &pool_mutex, &channels_to_construct]() {
           while (true) {
             const aos::Channel *channel;
@@ -160,7 +163,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
           }
         });
       }
-      for (size_t i = 0; i < FLAGS_queue_initialization_threads; ++i) {
+      for (size_t i = 0; i < absl::GetFlag(FLAGS_queue_initialization_threads);
+           ++i) {
         threads[i].join();
       }
     }
@@ -230,7 +234,7 @@ void Starter::OnSignal(signalfd_siginfo info) {
   if (info.ssi_signo == SIGCHLD) {
     // SIGCHLD messages can be collapsed if multiple are received, so all
     // applications must check their status.
-    if (FLAGS_enable_ftrace) {
+    if (absl::GetFlag(FLAGS_enable_ftrace)) {
       ftrace_.FormatMessage("SIGCHLD");
       ftrace_.TurnOffOrDie();
     }
@@ -324,7 +328,8 @@ void Starter::AddChannel(const aos::Channel *channel) {
   CHECK(channel != nullptr);
   std::unique_ptr<aos::ipc_lib::MemoryMappedQueue> queue =
       std::make_unique<aos::ipc_lib::MemoryMappedQueue>(
-          shm_base_, FLAGS_permissions, event_loop_.configuration(), channel);
+          shm_base_, absl::GetFlag(FLAGS_permissions),
+          event_loop_.configuration(), channel);
 
   {
     std::unique_lock<std::mutex> locker(queue_mutex_);

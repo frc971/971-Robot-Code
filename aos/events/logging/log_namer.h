@@ -8,8 +8,9 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"

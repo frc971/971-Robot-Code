@@ -314,7 +314,8 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/time",
         "//third_party:wpilib",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -432,7 +433,8 @@ cc_library(
         "//aos/time",
         "//aos/util:compiler_memory_barrier",
         "//third_party:wpilib",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -506,7 +508,8 @@ cc_library(
         "//aos/logging",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//third_party:phoenix6",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -571,6 +574,6 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/input:joystick_state_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
     ],
 )

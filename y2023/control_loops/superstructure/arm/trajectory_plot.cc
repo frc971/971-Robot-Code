@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/analysis/in_process_plotter.h"
 #include "aos/init.h"
@@ -12,16 +12,16 @@
 #include "y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 
-DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
-DEFINE_bool(plot, true, "If true, plot");
-DEFINE_bool(plot_thetas, true, "If true, plot the angles");
+ABSL_FLAG(bool, forwards, true, "If true, run the forwards simulation.");
+ABSL_FLAG(bool, plot, true, "If true, plot");
+ABSL_FLAG(bool, plot_thetas, true, "If true, plot the angles");
 
-DEFINE_double(alpha0_max, 15.0, "Max acceleration on joint 0.");
-DEFINE_double(alpha1_max, 10.0, "Max acceleration on joint 1.");
-DEFINE_double(alpha2_max, 90.0, "Max acceleration on joint 2.");
-DEFINE_double(vmax_plan, 9.5, "Max voltage to plan.");
-DEFINE_double(vmax_battery, 12.0, "Max battery voltage.");
-DEFINE_double(time, 2.0, "Simulation time.");
+ABSL_FLAG(double, alpha0_max, 15.0, "Max acceleration on joint 0.");
+ABSL_FLAG(double, alpha1_max, 10.0, "Max acceleration on joint 1.");
+ABSL_FLAG(double, alpha2_max, 90.0, "Max acceleration on joint 2.");
+ABSL_FLAG(double, vmax_plan, 9.5, "Max voltage to plan.");
+ABSL_FLAG(double, vmax_battery, 12.0, "Max battery voltage.");
+ABSL_FLAG(double, time, 2.0, "Simulation time.");
 
 namespace y2023::control_loops::superstructure::arm {
 using frc971::control_loops::MatrixGaussianQuadrature5;
@@ -55,16 +55,17 @@ void Main() {
 
   constexpr double sim_dt = 0.00505;
 
-  LOG(INFO) << "Planning with kAlpha0Max=" << FLAGS_alpha0_max
-            << ", kAlpha1Max=" << FLAGS_alpha1_max
-            << ", kAlpha2Max=" << FLAGS_alpha2_max;
+  LOG(INFO) << "Planning with kAlpha0Max=" << absl::GetFlag(FLAGS_alpha0_max)
+            << ", kAlpha1Max=" << absl::GetFlag(FLAGS_alpha1_max)
+            << ", kAlpha2Max=" << absl::GetFlag(FLAGS_alpha2_max);
 
   const ::Eigen::DiagonalMatrix<double, 3> alpha_unitizer(
       (::Eigen::DiagonalMatrix<double, 3>().diagonal()
-           << (1.0 / FLAGS_alpha0_max),
-       (1.0 / FLAGS_alpha1_max), (1.0 / FLAGS_alpha2_max))
+           << (1.0 / absl::GetFlag(FLAGS_alpha0_max)),
+       (1.0 / absl::GetFlag(FLAGS_alpha1_max)),
+       (1.0 / absl::GetFlag(FLAGS_alpha2_max)))
           .finished());
-  trajectory.OptimizeTrajectory(alpha_unitizer, FLAGS_vmax_plan);
+  trajectory.OptimizeTrajectory(alpha_unitizer, absl::GetFlag(FLAGS_vmax_plan));
 
   const ::std::vector<double> distance_array = trajectory.DistanceArray();
 
@@ -301,7 +302,7 @@ void Main() {
   ::std::cout << "Really stabilized P: " << arm_ekf.P_converged()
               << ::std::endl;
 
-  while (t < FLAGS_time) {
+  while (t < absl::GetFlag(FLAGS_time)) {
     t_array.push_back(t);
     arm_ekf.Correct(
         (::Eigen::Matrix<double, 2, 1>() << arm_X(0), arm_X(2)).finished(),
@@ -314,7 +315,8 @@ void Main() {
     follower.Update(
         (Eigen::Matrix<double, 9, 1>() << arm_ekf.X_hat(), roll.X_hat())
             .finished(),
-        disabled, sim_dt, FLAGS_vmax_plan, FLAGS_vmax_battery);
+        disabled, sim_dt, absl::GetFlag(FLAGS_vmax_plan),
+        absl::GetFlag(FLAGS_vmax_battery));
 
     const ::Eigen::Matrix<double, 3, 1> theta_t =
         trajectory.ThetaT(follower.goal()(0));
@@ -395,7 +397,7 @@ void Main() {
     t += sim_dt;
   }
 
-  if (FLAGS_plot) {
+  if (absl::GetFlag(FLAGS_plot)) {
     aos::analysis::Plotter plotter;
 
     plotter.AddFigure();
@@ -488,7 +490,7 @@ void Main() {
     plotter.AddLine(t_array, torque2_hat_t_array, "torque2_hat");
     plotter.Publish();
 
-    if (FLAGS_plot_thetas) {
+    if (absl::GetFlag(FLAGS_plot_thetas)) {
       plotter.AddFigure();
       plotter.Title("Angles");
       plotter.AddLine(t_array, theta0_goal_t_array, "theta0_t_goal");

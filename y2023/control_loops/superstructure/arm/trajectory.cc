@@ -1,7 +1,7 @@
 #include "y2023/control_loops/superstructure/arm/trajectory.h"
 
 #include "Eigen/Dense"
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
@@ -10,10 +10,10 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
-DEFINE_double(lqr_proximal_pos, 0.5, "Position LQR gain");
-DEFINE_double(lqr_proximal_vel, 5, "Velocity LQR gain");
-DEFINE_double(lqr_distal_pos, 0.5, "Position LQR gain");
-DEFINE_double(lqr_distal_vel, 5, "Velocity LQR gain");
+ABSL_FLAG(double, lqr_proximal_pos, 0.5, "Position LQR gain");
+ABSL_FLAG(double, lqr_proximal_vel, 5, "Velocity LQR gain");
+ABSL_FLAG(double, lqr_distal_pos, 0.5, "Position LQR gain");
+ABSL_FLAG(double, lqr_distal_vel, 5, "Velocity LQR gain");
 
 namespace y2023::control_loops::superstructure::arm {
 
@@ -714,10 +714,10 @@ void TrajectoryFollower::Reset() {
 ::Eigen::Matrix<double, 2, 6> TrajectoryFollower::ArmK_at_state(
     const Eigen::Ref<const ::Eigen::Matrix<double, 6, 1>> arm_X,
     const Eigen::Ref<const ::Eigen::Matrix<double, 2, 1>> arm_U) {
-  const double kProximalPos = FLAGS_lqr_proximal_pos;
-  const double kProximalVel = FLAGS_lqr_proximal_vel;
-  const double kDistalPos = FLAGS_lqr_distal_pos;
-  const double kDistalVel = FLAGS_lqr_distal_vel;
+  const double kProximalPos = absl::GetFlag(FLAGS_lqr_proximal_pos);
+  const double kProximalVel = absl::GetFlag(FLAGS_lqr_proximal_vel);
+  const double kDistalPos = absl::GetFlag(FLAGS_lqr_distal_pos);
+  const double kDistalVel = absl::GetFlag(FLAGS_lqr_distal_vel);
   const ::Eigen::DiagonalMatrix<double, 4> Q =
       (::Eigen::DiagonalMatrix<double, 4>().diagonal()
            << 1.0 / ::std::pow(kProximalPos, 2),

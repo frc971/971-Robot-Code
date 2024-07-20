@@ -6,13 +6,14 @@
 #include <utility>
 
 #include "absl/container/btree_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/types/span.h"
 #include "flatbuffers/reflection_generated.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "nlohmann/json.hpp"
 #include <foxglove/websocket/server.hpp>
 
@@ -24,9 +25,9 @@
 #include "aos/time/time.h"
 #include "aos/util/mcap_logger.h"
 
-DEFINE_uint32(sorting_buffer_ms, 100,
-              "Amount of time to buffer messages to sort them before sending "
-              "them to foxglove.");
+ABSL_FLAG(uint32_t, sorting_buffer_ms, 100,
+          "Amount of time to buffer messages to sort them before sending "
+          "them to foxglove.");
 
 namespace {
 // Period at which to poll the fetchers for all the channels.
@@ -117,7 +118,7 @@ FoxgloveWebsocketServer::FoxgloveWebsocketServer(
     // out.
     const aos::monotonic_clock::time_point sort_until =
         event_loop_->monotonic_now() -
-        std::chrono::milliseconds(FLAGS_sorting_buffer_ms);
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_sorting_buffer_ms));
 
     // Pair of <send_time, channel id>.
     absl::btree_set<std::pair<aos::monotonic_clock::time_point, ChannelId>>

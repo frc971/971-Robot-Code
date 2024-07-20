@@ -1,6 +1,6 @@
 #include "y2023/localizer/localizer.h"
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -8,28 +8,27 @@
 #include "frc971/vision/target_map_utils.h"
 #include "y2023/constants.h"
 
-DEFINE_double(max_pose_error, 1e-6,
-              "Throw out target poses with a higher pose error than this");
-DEFINE_double(
-    max_pose_error_ratio, 0.4,
-    "Throw out target poses with a higher pose error ratio than this");
-DEFINE_double(distortion_noise_scalar, 1.0,
-              "Scale the target pose distortion factor by this when computing "
-              "the noise.");
-DEFINE_double(
-    max_implied_yaw_error, 3.0,
+ABSL_FLAG(double, max_pose_error, 1e-6,
+          "Throw out target poses with a higher pose error than this");
+ABSL_FLAG(double, max_pose_error_ratio, 0.4,
+          "Throw out target poses with a higher pose error ratio than this");
+ABSL_FLAG(double, distortion_noise_scalar, 1.0,
+          "Scale the target pose distortion factor by this when computing "
+          "the noise.");
+ABSL_FLAG(
+    double, max_implied_yaw_error, 3.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(
-    max_implied_teleop_yaw_error, 30.0,
+ABSL_FLAG(
+    double, max_implied_teleop_yaw_error, 30.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(max_distance_to_target, 5.0,
-              "Reject target poses that have a 3d distance of more than this "
-              "many meters.");
-DEFINE_double(max_auto_image_robot_speed, 2.0,
-              "Reject target poses when the robot is travelling faster than "
-              "this speed in auto.");
+ABSL_FLAG(double, max_distance_to_target, 5.0,
+          "Reject target poses that have a 3d distance of more than this "
+          "many meters.");
+ABSL_FLAG(double, max_auto_image_robot_speed, 2.0,
+          "Reject target poses when the robot is travelling faster than "
+          "this speed in auto.");
 
 namespace y2023::localizer {
 namespace {
@@ -348,8 +347,9 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   Eigen::Matrix<double, 3, 1> noises(1.0, 1.0, 0.5);
   noises /= 4.0;
   // Scale noise by the distortion factor for this detection
-  noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor() *
-                       std::exp(distance_to_target));
+  noises *=
+      (1.0 + absl::GetFlag(FLAGS_distortion_noise_scalar) *
+                 target.distortion_factor() * std::exp(distance_to_target));
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
   R.diagonal() = noises.cwiseAbs2();
@@ -365,12 +365,13 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   if (!state_at_capture.has_value()) {
     VLOG(1) << "Rejecting image due to being too old.";
     return RejectImage(camera_index, RejectionReason::IMAGE_TOO_OLD, &builder);
-  } else if (target.pose_error() > FLAGS_max_pose_error) {
+  } else if (target.pose_error() > absl::GetFlag(FLAGS_max_pose_error)) {
     VLOG(1) << "Rejecting target due to high pose error "
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
                        &builder);
-  } else if (target.pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+  } else if (target.pose_error_ratio() >
+             absl::GetFlag(FLAGS_max_pose_error_ratio)) {
     VLOG(1) << "Rejecting target due to high pose error ratio "
             << target.pose_error_ratio();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR_RATIO,
@@ -386,17 +387,19 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
        state_at_capture.value()(StateIdx::kRightVelocity)) /
       2.0;
   const double yaw_threshold =
-      (utils_.MaybeInAutonomous() ? FLAGS_max_implied_yaw_error
-                                  : FLAGS_max_implied_teleop_yaw_error) *
+      (utils_.MaybeInAutonomous()
+           ? absl::GetFlag(FLAGS_max_implied_yaw_error)
+           : absl::GetFlag(FLAGS_max_implied_teleop_yaw_error)) *
       kDegToRad;
   if (utils_.MaybeInAutonomous() &&
-      (std::abs(robot_speed) > FLAGS_max_auto_image_robot_speed)) {
+      (std::abs(robot_speed) >
+       absl::GetFlag(FLAGS_max_auto_image_robot_speed))) {
     return RejectImage(camera_index, RejectionReason::ROBOT_TOO_FAST, &builder);
   } else if (std::abs(aos::math::NormalizeAngle(
                  camera_implied_theta - theta_at_capture)) > yaw_threshold) {
     return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
                        &builder);
-  } else if (distance_to_target > FLAGS_max_distance_to_target) {
+  } else if (distance_to_target > absl::GetFlag(FLAGS_max_distance_to_target)) {
     return RejectImage(camera_index, RejectionReason::HIGH_DISTANCE_TO_TARGET,
                        &builder);
   }

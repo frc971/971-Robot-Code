@@ -4,6 +4,8 @@
 
 #include <cinttypes>
 
+#include "absl/flags/flag.h"
+
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
@@ -14,8 +16,8 @@
 #include "frc971/wpilib/wpilib_interface.h"
 #include "hal/PWM.h"
 
-DEFINE_int32(pwm_offset, 5050 / 2,
-             "Offset of reading the sensors from the start of the PWM cycle");
+ABSL_FLAG(int32_t, pwm_offset, 5050 / 2,
+          "Offset of reading the sensors from the start of the PWM cycle");
 
 namespace frc971::wpilib {
 
@@ -164,11 +166,12 @@ void SensorReader::Loop() {
     }
 
     last_tick_timepoint +=
-        ((monotonic_now - chrono::microseconds(FLAGS_pwm_offset) -
+        ((monotonic_now -
+          chrono::microseconds(absl::GetFlag(FLAGS_pwm_offset)) -
           last_tick_timepoint) /
          period_) *
             period_ +
-        chrono::microseconds(FLAGS_pwm_offset);
+        chrono::microseconds(absl::GetFlag(FLAGS_pwm_offset));
     VLOG(1) << "Now " << monotonic_now << " tick " << last_tick_timepoint;
     // If it's over 1/2 of a period back in time, that's wrong.  Move it
     // forwards to now.

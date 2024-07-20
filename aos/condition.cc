@@ -4,7 +4,8 @@
 #include <cinttypes>
 #include <ctime>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/mutex/mutex.h"
 #include "aos/type_traits/type_traits.h"

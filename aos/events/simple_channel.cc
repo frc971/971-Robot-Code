@@ -1,7 +1,7 @@
 #include "aos/events/simple_channel.h"
 
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 
 namespace aos {
 

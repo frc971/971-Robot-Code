@@ -1,6 +1,8 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 
+#include "absl/flags/flag.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "frc971/constants/constants_sender_lib.h"
@@ -10,8 +12,8 @@
 
 using ::frc971::control_loops::drivetrain::TrajectoryGenerator;
 
-DEFINE_bool(skip_renicing, false,
-            "If true, skip renicing the trajectory generator.");
+ABSL_FLAG(bool, skip_renicing, false,
+          "If true, skip renicing the trajectory generator.");
 
 int main(int argc, char *argv[]) {
   ::aos::InitGoogle(&argc, &argv);
@@ -27,7 +29,7 @@ int main(int argc, char *argv[]) {
       ::y2024::control_loops::drivetrain::GetDrivetrainConfig(&event_loop));
 
   event_loop.OnRun([]() {
-    if (FLAGS_skip_renicing) {
+    if (absl::GetFlag(FLAGS_skip_renicing)) {
       LOG(WARNING) << "Ignoring request to renice to -20 due to "
                       "--skip_renicing.";
     } else {

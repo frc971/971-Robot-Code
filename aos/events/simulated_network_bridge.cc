@@ -1,7 +1,8 @@
 #include "aos/events/simulated_network_bridge.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"

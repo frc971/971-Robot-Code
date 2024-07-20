@@ -1,7 +1,7 @@
 #ifndef AOS_AOS_CLI_UTILS_H_
 #define AOS_AOS_CLI_UTILS_H_
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"

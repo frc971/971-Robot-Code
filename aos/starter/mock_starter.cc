@@ -5,11 +5,12 @@
 #include <string_view>
 #include <utility>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/starter/starter_rpc_generated.h"

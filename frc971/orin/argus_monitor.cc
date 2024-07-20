@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
@@ -10,13 +10,13 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/realtime.h"
 
-DEFINE_int32(priority, -1, "If set, the RT priority to run at.");
-DEFINE_double(max_jitter, 10.00,
-              "The max time in seconds between messages before considering the "
-              "camera processes dead.");
-DEFINE_double(grace_period, 10.00,
-              "The grace period at startup before enforcing that messages must "
-              "flow from the camera processes.");
+ABSL_FLAG(int32_t, priority, -1, "If set, the RT priority to run at.");
+ABSL_FLAG(double, max_jitter, 10.00,
+          "The max time in seconds between messages before considering the "
+          "camera processes dead.");
+ABSL_FLAG(double, grace_period, 10.00,
+          "The grace period at startup before enforcing that messages must "
+          "flow from the camera processes.");
 
 namespace aos {
 
@@ -38,7 +38,8 @@ class State {
       timer_handle_->Schedule(
           event_loop->monotonic_now() +
               std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  std::chrono::duration<double>(FLAGS_grace_period)),
+                  std::chrono::duration<double>(
+                      absl::GetFlag(FLAGS_grace_period))),
           std::chrono::milliseconds(1000));
     });
   }
@@ -52,12 +53,13 @@ class State {
 
   void RunHealthCheck(aos::EventLoop *event_loop) {
     if (last_time_ + std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::duration<double>(FLAGS_max_jitter)) <
+                         std::chrono::duration<double>(
+                             absl::GetFlag(FLAGS_max_jitter))) <
         event_loop->monotonic_now()) {
       // Restart camera services
       LOG(INFO) << "Restarting camera services";
       LOG(INFO) << "Channel " << channel_name_ << " has not received a message "
-                << FLAGS_max_jitter << " seconds";
+                << absl::GetFlag(FLAGS_max_jitter) << " seconds";
       CHECK_EQ(std::system("aos_starter stop argus_camera0"), 0);
       CHECK_EQ(std::system("aos_starter stop argus_camera1"), 0);
       CHECK_EQ(std::system("sudo systemctl restart nvargus-daemon.service"), 0);
@@ -102,8 +104,9 @@ int main(int argc, char **argv) {
         std::make_unique<aos::State>(&(cli_info.event_loop.value()), channel));
   }
 
-  if (FLAGS_priority > 0) {
-    cli_info.event_loop->SetRuntimeRealtimePriority(FLAGS_priority);
+  if (absl::GetFlag(FLAGS_priority) > 0) {
+    cli_info.event_loop->SetRuntimeRealtimePriority(
+        absl::GetFlag(FLAGS_priority));
   }
 
   cli_info.event_loop->Run();

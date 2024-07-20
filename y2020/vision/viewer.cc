@@ -1,6 +1,7 @@
 #include <map>
 #include <random>
 
+#include "absl/flags/flag.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -13,12 +14,13 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-DEFINE_bool(show_features, true, "Show the SIFT features that matched.");
-DEFINE_string(channel, "/camera", "Channel name for the image.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
+ABSL_FLAG(bool, show_features, true, "Show the SIFT features that matched.");
+ABSL_FLAG(std::string, channel, "/camera", "Channel name for the image.");
 
-DEFINE_string(capture, "",
-              "If set, capture a single image and save it to this filename.");
+ABSL_FLAG(std::string, capture, "",
+          "If set, capture a single image and save it to this filename.");
 
 namespace frc971::vision {
 namespace {
@@ -72,8 +74,8 @@ bool DisplayLoop() {
   cv::Mat rgb_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
   cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
 
-  if (!FLAGS_capture.empty()) {
-    cv::imwrite(FLAGS_capture, rgb_image);
+  if (!absl::GetFlag(FLAGS_capture).empty()) {
+    cv::imwrite(absl::GetFlag(FLAGS_capture), rgb_image);
     return false;
   }
 
@@ -88,7 +90,8 @@ bool DisplayLoop() {
                  5);
     }
 
-    if (FLAGS_show_features && match->image_matches() != nullptr &&
+    if (absl::GetFlag(FLAGS_show_features) &&
+        match->image_matches() != nullptr &&
         match->image_matches()->size() > 0) {
       // Iterate through matches and draw matched keypoints
       for (uint model_match_ind = 0;
@@ -138,15 +141,16 @@ void ViewerMain() {
   palette_ = cv::Mat(3, 5, CV_8U, &colors);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  image_fetcher = event_loop.MakeFetcher<CameraImage>(FLAGS_channel);
+  image_fetcher =
+      event_loop.MakeFetcher<CameraImage>(absl::GetFlag(FLAGS_channel));
 
   // If we want to show the features, we have to use the detailed channel
-  std::string result_channel = FLAGS_channel;
-  if (FLAGS_show_features) {
+  std::string result_channel = absl::GetFlag(FLAGS_channel);
+  if (absl::GetFlag(FLAGS_show_features)) {
     result_channel += "/detailed";
   }
   match_fetcher =

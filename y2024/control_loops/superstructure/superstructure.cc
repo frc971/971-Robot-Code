@@ -9,8 +9,8 @@
 #include "frc971/shooter_interpolation/interpolation.h"
 #include "frc971/zeroing/wrap.h"
 
-DEFINE_bool(ignore_distance, false,
-            "If true, ignore distance when shooting and obey joystick_reader");
+ABSL_FLAG(bool, ignore_distance, false,
+          "If true, ignore distance when shooting and obey joystick_reader");
 
 // The threshold used when decided if the extend is close enough to a goal to
 // continue.

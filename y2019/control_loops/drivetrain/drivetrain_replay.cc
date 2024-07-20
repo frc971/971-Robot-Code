@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -13,22 +13,24 @@
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/event_loop_localizer.h"
 
-DEFINE_string(logfile, "/tmp/logfile.bfbs",
-              "Name of the logfile to read from.");
-DEFINE_string(config, "y2019/aos_config.json",
-              "Name of the config file to replay using.");
-DEFINE_string(output_file, "/tmp/replayed",
-              "Name of the logfile to write replayed data to.");
-DEFINE_int32(team, 971, "Team number to use for logfile replay.");
+ABSL_FLAG(std::string, logfile, "/tmp/logfile.bfbs",
+          "Name of the logfile to read from.");
+ABSL_FLAG(std::string, config, "y2019/aos_config.json",
+          "Name of the config file to replay using.");
+ABSL_FLAG(std::string, output_file, "/tmp/replayed",
+          "Name of the logfile to write replayed data to.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
+
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  aos::network::OverrideTeamNumber(FLAGS_team);
+  aos::network::OverrideTeamNumber(absl::GetFlag(FLAGS_team));
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
-  aos::logger::LogReader reader(FLAGS_logfile, &config.message());
+  aos::logger::LogReader reader(absl::GetFlag(FLAGS_logfile),
+                                &config.message());
   // TODO(james): Actually enforce not sending on the same buses as the logfile
   // spews out.
   reader.RemapLoggedChannel("/drivetrain",
@@ -43,7 +45,7 @@ int main(int argc, char **argv) {
   log_writer_event_loop->SkipAosLog();
   CHECK(nullptr == log_writer_event_loop->node());
   aos::logger::Logger writer(log_writer_event_loop.get());
-  writer.StartLoggingOnRun(FLAGS_output_file);
+  writer.StartLoggingOnRun(absl::GetFlag(FLAGS_output_file));
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain");

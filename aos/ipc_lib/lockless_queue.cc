@@ -16,16 +16,17 @@
 #include <string>
 #include <string_view>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/util/compiler_memory_barrier.h"
 
-DEFINE_bool(dump_lockless_queue_data, false,
-            "If true, print the data out when dumping the queue.");
-DECLARE_bool(skip_realtime_scheduler);
+ABSL_FLAG(bool, dump_lockless_queue_data, false,
+          "If true, print the data out when dumping the queue.");
+ABSL_DECLARE_FLAG(bool, skip_realtime_scheduler);
 
 namespace aos::ipc_lib {
 namespace {
@@ -821,7 +822,7 @@ int LocklessQueueWakeUpper::Wakeup(const int current_priority) {
       // Inline the setscheduler call rather than using aos/realtime.h.  This is
       // quite performance sensitive, and halves the time needed to send a
       // message when pi boosting is in effect.
-      if (!FLAGS_skip_realtime_scheduler) {
+      if (!absl::GetFlag(FLAGS_skip_realtime_scheduler)) {
         // TODO(austin): Do we need to boost the soft limit here too like we
         // were before?
         struct sched_param param;
@@ -859,7 +860,7 @@ int LocklessQueueWakeUpper::Wakeup(const int current_priority) {
 
     // Drop back down if we were boosted.
     if (max_priority > current_priority && current_priority > 0) {
-      if (!FLAGS_skip_realtime_scheduler) {
+      if (!absl::GetFlag(FLAGS_skip_realtime_scheduler)) {
         struct sched_param param;
         param.sched_priority = current_priority;
         PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
@@ -1643,7 +1644,7 @@ void PrintLocklessQueueMemory(const LocklessQueueMemory *memory) {
     }
     ::std::cout << "      data: {";
 
-    if (FLAGS_dump_lockless_queue_data) {
+    if (absl::GetFlag(FLAGS_dump_lockless_queue_data)) {
       const char *const m_data = m->data(memory->message_data_size());
       std::cout << absl::BytesToHexString(std::string_view(
           m_data, corrupt ? memory->message_data_size() : m->header.length));

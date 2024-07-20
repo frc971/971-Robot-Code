@@ -4,7 +4,8 @@
 #include <mutex>
 #include <ostream>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/macros.h"

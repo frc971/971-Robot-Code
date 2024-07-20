@@ -1,5 +1,8 @@
 #include <fstream>
 
+#include "absl/flags/flag.h"
+
+#include "aos/init.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
@@ -14,28 +17,26 @@
 // CERES Clashes with logging symbols...
 #include "ceres/ceres.h"
 
-DEFINE_int32(camera_id, -1, "The camera ID to calibrate");
-DEFINE_string(prefix, "", "The image filename prefix");
+ABSL_FLAG(int32_t, camera_id, -1, "The camera ID to calibrate");
+ABSL_FLAG(std::string, prefix, "", "The image filename prefix");
 
-DEFINE_string(constants, "y2019/vision/constants.cc",
-              "Path to the constants file to update");
+ABSL_FLAG(std::string, constants, "y2019/vision/constants.cc",
+          "Path to the constants file to update");
 
-DEFINE_double(beginning_tape_measure_reading, 11,
-              "The tape measure measurement (in inches) of the first image.");
-DEFINE_int32(image_count, 75, "The number of images to capture");
-DEFINE_double(tape_start_x, -12.5,
-              "The starting location of the tape measure in x relative to the "
-              "CG in inches.");
-DEFINE_double(tape_start_y, -0.5,
-              "The starting location of the tape measure in y relative to the "
-              "CG in inches.");
+ABSL_FLAG(double, beginning_tape_measure_reading, 11,
+          "The tape measure measurement (in inches) of the first image.");
+ABSL_FLAG(int32_t, image_count, 75, "The number of images to capture");
+ABSL_FLAG(double, tape_start_x, -12.5,
+          "The starting location of the tape measure in x relative to the "
+          "CG in inches.");
+ABSL_FLAG(double, tape_start_y, -0.5,
+          "The starting location of the tape measure in y relative to the "
+          "CG in inches.");
 
-DEFINE_double(
-    tape_direction_x, -1.0,
-    "The x component of \"1\" inch along the tape measure in meters.");
-DEFINE_double(
-    tape_direction_y, 0.0,
-    "The y component of \"1\" inch along the tape measure in meters.");
+ABSL_FLAG(double, tape_direction_x, -1.0,
+          "The x component of \"1\" inch along the tape measure in meters.");
+ABSL_FLAG(double, tape_direction_y, 0.0,
+          "The y component of \"1\" inch along the tape measure in meters.");
 
 using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
@@ -88,17 +89,18 @@ constexpr double kInchesToMeters = 0.0254;
 
 void main(int argc, char **argv) {
   using namespace y2019::vision;
-  ::gflags::ParseCommandLineFlags(&argc, &argv, false);
+  aos::InitGoogle(&argc, &argv);
 
+  std::string prefix = absl::GetFlag(FLAGS_prefix);
   DatasetInfo info = {
-      FLAGS_camera_id,
-      {{FLAGS_tape_start_x * kInchesToMeters,
-        FLAGS_tape_start_y * kInchesToMeters}},
-      {{FLAGS_tape_direction_x * kInchesToMeters,
-        FLAGS_tape_direction_y * kInchesToMeters}},
-      FLAGS_beginning_tape_measure_reading,
-      FLAGS_prefix.c_str(),
-      FLAGS_image_count,
+      absl::GetFlag(FLAGS_camera_id),
+      {{absl::GetFlag(FLAGS_tape_start_x) * kInchesToMeters,
+        absl::GetFlag(FLAGS_tape_start_y) * kInchesToMeters}},
+      {{absl::GetFlag(FLAGS_tape_direction_x) * kInchesToMeters,
+        absl::GetFlag(FLAGS_tape_direction_y) * kInchesToMeters}},
+      absl::GetFlag(FLAGS_beginning_tape_measure_reading),
+      prefix.c_str(),
+      absl::GetFlag(FLAGS_image_count),
   };
 
   TargetFinder target_finder;
@@ -140,8 +142,8 @@ void main(int argc, char **argv) {
   ::std::cout << "error = " << summary.final_cost << ";\n";
 
   for (int i = 0; i < info.num_images; ++i) {
-    ::aos::vision::DatasetFrame frame =
-        aos::vision::LoadFile(FLAGS_prefix + std::to_string(i) + ".yuyv");
+    ::aos::vision::DatasetFrame frame = aos::vision::LoadFile(
+        absl::GetFlag(FLAGS_prefix) + std::to_string(i) + ".yuyv");
 
     const ::aos::vision::ImageFormat fmt{640, 480};
     ::aos::vision::BlobList imgs =
@@ -289,7 +291,8 @@ void main(int argc, char **argv) {
   results.dataset = info;
   results.intrinsics = IntrinsicParams::get(&intrinsics[0]);
   results.geometry = CameraGeometry::get(&geometry[0]);
-  DumpCameraConstants(FLAGS_constants.c_str(), info.camera_id, results);
+  DumpCameraConstants(absl::GetFlag(FLAGS_constants).c_str(), info.camera_id,
+                      results);
 }
 
 }  // namespace y2019::vision

@@ -6,7 +6,8 @@
 
 #include <ostream>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace aos::util {
 

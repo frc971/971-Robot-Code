@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -12,10 +14,11 @@
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
 #include "y2023/control_loops/superstructure/arm/generated_graph.h"
 
-DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
-DEFINE_bool(charged_up, true, "If true run charged up autonomous mode");
-DEFINE_bool(charged_up_cable, false, "If true run cable side autonomous mode");
-DEFINE_bool(do_balance, true, "If true run the balance.");
+ABSL_FLAG(bool, spline_auto, false, "Run simple test S-spline auto mode.");
+ABSL_FLAG(bool, charged_up, true, "If true run charged up autonomous mode");
+ABSL_FLAG(bool, charged_up_cable, false,
+          "If true run cable side autonomous mode");
+ABSL_FLAG(bool, do_balance, true, "If true run the balance.");
 
 namespace y2023::autonomous {
 
@@ -56,14 +59,14 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       points_(control_loops::superstructure::arm::PointList()) {}
 
 void AutonomousActor::Replan() {
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     test_spline_ =
         PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
                              std::placeholders::_1, alliance_),
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
-  } else if (FLAGS_charged_up) {
+  } else if (absl::GetFlag(FLAGS_charged_up)) {
     AOS_LOG(INFO, "Charged up replanning!");
     charged_up_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
@@ -81,7 +84,7 @@ void AutonomousActor::Replan() {
 
     starting_position_ = charged_up_splines_.value()[0].starting_position();
     CHECK(starting_position_);
-  } else if (FLAGS_charged_up_cable) {
+  } else if (absl::GetFlag(FLAGS_charged_up_cable)) {
     charged_up_cable_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::SplineCable1, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -121,11 +124,11 @@ bool AutonomousActor::Run(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     SplineAuto();
-  } else if (FLAGS_charged_up) {
+  } else if (absl::GetFlag(FLAGS_charged_up)) {
     ChargedUp();
-  } else if (FLAGS_charged_up_cable) {
+  } else if (absl::GetFlag(FLAGS_charged_up_cable)) {
     ChargedUpCableSide();
   } else {
     AOS_LOG(WARNING, "No auto mode selected.");
@@ -300,7 +303,7 @@ void AutonomousActor::ChargedUp() {
         INFO, "Done backing up %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-    if (!FLAGS_do_balance) {
+    if (!absl::GetFlag(FLAGS_do_balance)) {
       StopSpitting();
       return;
     }

@@ -40,7 +40,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/vision/image:image_types",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -94,7 +95,7 @@ gtk_dependent_cc_binary(
         "//aos/vision/blob:transpose",
         "//aos/vision/debug:debug_framework",
         "//aos/vision/math:vector",
-        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -105,6 +106,7 @@ cc_binary(
     deps = [
         ":image_writer",
         ":target_finder",
+        "//aos:init",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",
         "//aos/vision/events:epoll_events",
@@ -115,7 +117,8 @@ cc_binary(
         "//y2019/jevois:uart",
         "//y2019/jevois/camera:image_stream",
         "//y2019/jevois/camera:reader",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_ceres_solver//:ceres",
     ],
 )
@@ -150,6 +153,7 @@ cc_binary(
     target_compatible_with = VISION_TARGETS,
     deps = [
         ":target_finder",
+        "//aos:init",
         "//aos/logging",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",

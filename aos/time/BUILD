@@ -9,7 +9,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "@platforms//os:linux": [
-            "@com_github_google_glog//:glog",
+            "@com_google_absl//absl/log",
+            "@com_google_absl//absl/log:check",
             "@com_google_absl//absl/strings",
         ],
         "//conditions:default": ["//motors/core"],

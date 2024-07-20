@@ -1,4 +1,4 @@
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
@@ -6,27 +6,30 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_string(config, "aos_config.json", "The path to the config to use.");
-DEFINE_string(application, "",
-              "Application filter to use. Empty for no filter.");
-DEFINE_bool(stream, true, "Stream out all the timing reports that we receive.");
-DEFINE_bool(accumulate, true,
-            "Display accumulation of all timing reports that we've seen when "
-            "the process is terminated.");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "The path to the config to use.");
+ABSL_FLAG(std::string, application, "",
+          "Application filter to use. Empty for no filter.");
+ABSL_FLAG(bool, stream, true,
+          "Stream out all the timing reports that we receive.");
+ABSL_FLAG(bool, accumulate, true,
+          "Display accumulation of all timing reports that we've seen when "
+          "the process is terminated.");
 
 namespace aos {
 int Main() {
   aos::FlatbufferVector<aos::Configuration> config(
-      aos::configuration::ReadConfig(FLAGS_config));
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config)));
   ShmEventLoop event_loop(&config.message());
   TimingReportDump dumper(&event_loop,
-                          FLAGS_accumulate
+                          absl::GetFlag(FLAGS_accumulate)
                               ? TimingReportDump::AccumulateStatistics::kYes
                               : TimingReportDump::AccumulateStatistics::kNo,
-                          FLAGS_stream ? TimingReportDump::StreamResults::kYes
-                                       : TimingReportDump::StreamResults::kNo);
-  if (!FLAGS_application.empty()) {
-    dumper.ApplicationFilter(FLAGS_application);
+                          absl::GetFlag(FLAGS_stream)
+                              ? TimingReportDump::StreamResults::kYes
+                              : TimingReportDump::StreamResults::kNo);
+  if (!absl::GetFlag(FLAGS_application).empty()) {
+    dumper.ApplicationFilter(absl::GetFlag(FLAGS_application));
   }
   event_loop.Run();
   return EXIT_SUCCESS;

@@ -1,5 +1,7 @@
 #include <numeric>
 
+#include "absl/flags/flag.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -28,32 +30,31 @@
 #include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/vision/vision_util.h"
 
-DEFINE_bool(alt_view, false,
-            "If true, show visualization from field level, rather than above");
-DEFINE_string(config, "",
-              "If set, override the log's config file with this one.");
-DEFINE_string(constants_path, "y2024/constants/constants.json",
-              "Path to the constant file");
-DEFINE_double(max_pose_error, 5e-5,
-              "Throw out target poses with a higher pose error than this");
-DEFINE_double(
-    max_pose_error_ratio, 0.4,
-    "Throw out target poses with a higher pose error ratio than this");
-DEFINE_string(output_folder, "/tmp",
-              "Directory in which to store the updated calibration files");
-DEFINE_string(target_type, "charuco_diamond",
-              "Type of target being used [aruco, charuco, charuco_diamond]");
-DEFINE_int32(team_number, 0,
-             "Required: Use the calibration for a node with this team number");
-DEFINE_uint64(
-    wait_key, 1,
+ABSL_FLAG(bool, alt_view, false,
+          "If true, show visualization from field level, rather than above");
+ABSL_FLAG(std::string, config, "",
+          "If set, override the log's config file with this one.");
+ABSL_FLAG(std::string, constants_path, "y2024/constants/constants.json",
+          "Path to the constant file");
+ABSL_FLAG(double, max_pose_error, 5e-5,
+          "Throw out target poses with a higher pose error than this");
+ABSL_FLAG(double, max_pose_error_ratio, 0.4,
+          "Throw out target poses with a higher pose error ratio than this");
+ABSL_FLAG(std::string, output_folder, "/tmp",
+          "Directory in which to store the updated calibration files");
+ABSL_FLAG(std::string, target_type, "charuco_diamond",
+          "Type of target being used [aruco, charuco, charuco_diamond]");
+ABSL_FLAG(int32_t, team_number, 0,
+          "Required: Use the calibration for a node with this team number");
+ABSL_FLAG(
+    uint64_t, wait_key, 1,
     "Time in ms to wait between images (0 to wait indefinitely until click)");
-DEFINE_bool(robot, false,
-            "If true we're calibrating extrinsics for the robot, use the "
-            "correct node path for the robot.");
+ABSL_FLAG(bool, robot, false,
+          "If true we're calibrating extrinsics for the robot, use the "
+          "correct node path for the robot.");
 
-DECLARE_int32(min_target_id);
-DECLARE_int32(max_target_id);
+ABSL_DECLARE_FLAG(int32_t, min_target_id);
+ABSL_DECLARE_FLAG(int32_t, max_target_id);
 
 // Calibrate extrinsic relationship between cameras using two targets
 // seen jointly between cameras.  Uses two types of information: 1)
@@ -187,7 +188,7 @@ void HandlePoses(cv::Mat rgb_image,
   Eigen::Affine3d H_world_board;
   H_world_board = Eigen::Translation3d::Identity() *
                   Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitX());
-  if (FLAGS_alt_view) {
+  if (absl::GetFlag(FLAGS_alt_view)) {
     // Don't rotate -- this is like viewing from the side
     H_world_board = Eigen::Translation3d(0.0, 0.0, 3.0);
   }
@@ -228,7 +229,7 @@ void HandlePoses(cv::Mat rgb_image,
     // Store this observation of the transform between two boards
     two_board_extrinsics_list.push_back(boardA_boardB);
 
-    if (FLAGS_visualize) {
+    if (absl::GetFlag(FLAGS_visualize)) {
       vis_robot_.DrawFrameAxes(
           H_world_board,
           std::string("Board ") + std::to_string(target_poses[from_index].id),
@@ -272,7 +273,8 @@ void HandlePoses(cv::Mat rgb_image,
       // This bit is just for visualization and checking purposes-- use the
       // last two-board observation to figure out the current estimate
       // between the two cameras
-      if (FLAGS_visualize && two_board_extrinsics_list.size() > 0) {
+      if (absl::GetFlag(FLAGS_visualize) &&
+          two_board_extrinsics_list.size() > 0) {
         draw_vis = true;
         TimestampedCameraDetection &last_two_board_ext =
             two_board_extrinsics_list.back();
@@ -329,18 +331,18 @@ void HandlePoses(cv::Mat rgb_image,
     }
   }
 
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     if (!rgb_image.empty()) {
       std::string image_name = camera_name + " Image";
       cv::Mat rgb_small;
       cv::resize(rgb_image, rgb_small, cv::Size(), 0.5, 0.5);
       cv::imshow(image_name, rgb_small);
-      cv::waitKey(FLAGS_wait_key);
+      cv::waitKey(absl::GetFlag(FLAGS_wait_key));
     }
 
     if (draw_vis) {
       cv::imshow("Overhead View", vis_robot_.image_);
-      cv::waitKey(FLAGS_wait_key);
+      cv::waitKey(absl::GetFlag(FLAGS_wait_key));
       vis_robot_.ClearImage();
     }
   }
@@ -357,23 +359,24 @@ void HandleTargetMap(const TargetMap &map,
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with invalid ids
     if (static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) <
-            FLAGS_min_target_id ||
+            absl::GetFlag(FLAGS_min_target_id) ||
         static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) >
-            FLAGS_max_target_id) {
+            absl::GetFlag(FLAGS_max_target_id)) {
       VLOG(1) << "Skipping tag from " << camera_name << " with invalid id of "
               << target_pose_fbs->id();
       continue;
     }
 
     // Skip detections with high pose errors
-    if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
+    if (target_pose_fbs->pose_error() > absl::GetFlag(FLAGS_max_pose_error)) {
       LOG(INFO) << "Skipping tag from " << camera_name << " with id "
                 << target_pose_fbs->id() << " due to pose error of "
                 << target_pose_fbs->pose_error();
       continue;
     }
     // Skip detections with high pose error ratios
-    if (target_pose_fbs->pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+    if (target_pose_fbs->pose_error_ratio() >
+        absl::GetFlag(FLAGS_max_pose_error_ratio)) {
       LOG(INFO) << "Skipping tag from " << camera_name << " with id "
                 << target_pose_fbs->id() << " due to pose error ratio of "
                 << target_pose_fbs->pose_error_ratio();
@@ -437,9 +440,10 @@ void ExtrinsicsMain(int argc, char *argv[]) {
   vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config =
-      (FLAGS_config.empty()
+      (absl::GetFlag(FLAGS_config).empty()
            ? std::nullopt
-           : std::make_optional(aos::configuration::ReadConfig(FLAGS_config)));
+           : std::make_optional(
+                 aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config))));
 
   // open logfiles
   aos::logger::LogReader reader(
@@ -448,15 +452,16 @@ void ExtrinsicsMain(int argc, char *argv[]) {
 
   reader.RemapLoggedChannel("/imu/constants", "y2024.Constants");
   reader.RemapLoggedChannel("/orin1/constants", "y2024.Constants");
-  if (FLAGS_robot) {
+  if (absl::GetFlag(FLAGS_robot)) {
     reader.RemapLoggedChannel("/roborio/constants", "y2024.Constants");
   }
   reader.Register();
 
-  y2024::SendSimulationConstants(reader.event_loop_factory(), FLAGS_team_number,
-                                 FLAGS_constants_path);
+  y2024::SendSimulationConstants(reader.event_loop_factory(),
+                                 absl::GetFlag(FLAGS_team_number),
+                                 absl::GetFlag(FLAGS_constants_path));
 
-  VLOG(1) << "Using target type " << FLAGS_target_type;
+  VLOG(1) << "Using target type " << absl::GetFlag(FLAGS_target_type);
 
   std::vector<const calibration::CameraCalibration *> calibration_list;
 
@@ -591,7 +596,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         Eigen::Affine3d H_world_board;
         H_world_board = Eigen::Translation3d::Identity() *
                         Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitX());
-        if (FLAGS_alt_view) {
+        if (absl::GetFlag(FLAGS_alt_view)) {
           H_world_board = Eigen::Translation3d(0.0, 0.0, 3.0);
         }
 
@@ -675,9 +680,9 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       CameraNode &camera_node = node_list[i + 1];
       const std::string calibration_filename =
           frc971::vision::CalibrationFilename(
-              FLAGS_output_folder, camera_node.node_name, FLAGS_team_number,
-              camera_node.camera_number, cal_copy.message().camera_id()->data(),
-              time_ss.str());
+              absl::GetFlag(FLAGS_output_folder), camera_node.node_name,
+              absl::GetFlag(FLAGS_team_number), camera_node.camera_number,
+              cal_copy.message().camera_id()->data(), time_ss.str());
       LOG(INFO) << calibration_filename << " -> "
                 << aos::FlatbufferToJson(merged_calibration,
                                          {.multi_line = true});
@@ -686,7 +691,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
           calibration_filename,
           aos::FlatbufferToJson(merged_calibration, {.multi_line = true}));
 
-      if (FLAGS_visualize) {
+      if (absl::GetFlag(FLAGS_visualize)) {
         // Draw each of the updated extrinsic camera locations
         vis_robot_.SetDefaultViewpoint(1000.0, 1500.0);
         vis_robot_.DrawFrameAxes(
@@ -695,7 +700,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
       }
     }
   }
-  if (FLAGS_visualize) {
+  if (absl::GetFlag(FLAGS_visualize)) {
     // And don't forget to draw the base camera location
     vis_robot_.DrawFrameAxes(updated_extrinsics[0],
                              node_list.at(0).camera_name(),

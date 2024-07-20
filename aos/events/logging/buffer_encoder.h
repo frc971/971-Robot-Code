@@ -1,9 +1,10 @@
 #ifndef AOS_EVENTS_LOGGING_BUFFER_ENCODER_H_
 #define AOS_EVENTS_LOGGING_BUFFER_ENCODER_H_
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/logging/logger_generated.h"

@@ -1,6 +1,8 @@
 #include "aos/network/web_proxy.h"
 
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/connect_generated.h"
@@ -18,21 +20,21 @@ extern "C" {
 struct list *tmrl_get(void);
 }
 
-DEFINE_int32(proxy_port, 1180, "Port to use for the web proxy server.");
-DEFINE_int32(pre_send_messages, 10000,
-             "Number of messages / queue to send to a client before waiting on "
-             "confirmation that the initial message was received. If set to "
-             "-1, will not throttle messages at all. This prevents a situation "
-             "where, when run on localhost, the large number of WebRTC packets "
-             "can overwhelm the browser and crash the webpage.");
+ABSL_FLAG(int32_t, proxy_port, 1180, "Port to use for the web proxy server.");
+ABSL_FLAG(int32_t, pre_send_messages, 10000,
+          "Number of messages / queue to send to a client before waiting on "
+          "confirmation that the initial message was received. If set to "
+          "-1, will not throttle messages at all. This prevents a situation "
+          "where, when run on localhost, the large number of WebRTC packets "
+          "can overwhelm the browser and crash the webpage.");
 // Note: sometimes it appears that WebRTC buffer up and stop sending message
 // ack's back from the client page. It is not clear *why* WebRTC is doing this,
 // but since the only reason we use those ack's is to stop ourselves from
 // overloading the client webpage, this setting lets us fall back to just a
 // time-based rate-limit when we stop receiving acks.
-DEFINE_double(max_buffer_pause_sec, 0.1,
-              "If we have not received any ack's in this amount of time, we "
-              "start to continue sending messages.");
+ABSL_FLAG(double, max_buffer_pause_sec, 0.1,
+          "If we have not received any ack's in this amount of time, we "
+          "start to continue sending messages.");
 
 namespace aos::web_proxy {
 WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
@@ -176,7 +178,7 @@ WebProxy::WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
   });
 
   server_.addWebSocketHandler("/ws", websocket_handler_);
-  CHECK(server_.startListening(FLAGS_proxy_port));
+  CHECK(server_.startListening(absl::GetFlag(FLAGS_proxy_port)));
 
   epoll->OnReadable(server_.fd(), [this]() {
     CHECK(::seasocks::Server::PollResult::Continue == server_.poll(0));
@@ -351,17 +353,19 @@ std::shared_ptr<struct mbuf> Subscriber::NextBuffer(
     // We are still waiting on the next message to appear; return.
     return nullptr;
   }
-  if (FLAGS_pre_send_messages > 0) {
+  if (absl::GetFlag(FLAGS_pre_send_messages) > 0) {
     // Note: Uses actual clock to handle simulation time.
     const aos::monotonic_clock::time_point now = aos::monotonic_clock::now();
     if (channel->last_report.has_value() &&
         channel->last_report.value() +
                 std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    std::chrono::duration<double>(FLAGS_max_buffer_pause_sec)) <
+                    std::chrono::duration<double>(
+                        absl::GetFlag(FLAGS_max_buffer_pause_sec))) <
             now) {
       // Increment the number of messages that we will send over to the client
       // webpage.
-      channel->reported_queue_index += FLAGS_pre_send_messages / 10;
+      channel->reported_queue_index +=
+          absl::GetFlag(FLAGS_pre_send_messages) / 10;
       channel->reported_packet_index = 0;
       channel->last_report = now;
     }
@@ -371,7 +375,7 @@ std::shared_ptr<struct mbuf> Subscriber::NextBuffer(
     // browser, not to be ultra precise about anything. It's also not clear that
     // message *size* is necessarily even the determining factor in causing
     // issues.
-    if (channel->reported_queue_index + FLAGS_pre_send_messages <
+    if (channel->reported_queue_index + absl::GetFlag(FLAGS_pre_send_messages) <
         channel->current_queue_index) {
       return nullptr;
     }

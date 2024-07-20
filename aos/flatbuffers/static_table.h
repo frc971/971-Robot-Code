@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <span>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "flatbuffers/base.h"
-#include "glog/logging.h"
 
 #include "aos/flatbuffers/base.h"
 namespace aos::fbs {

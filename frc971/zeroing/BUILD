@@ -14,7 +14,8 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -46,7 +47,8 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/wpilib:imu_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -79,7 +81,8 @@ cc_library(
         "//aos/logging",
         "//frc971:constants",
         "//frc971/control_loops:control_loops_fbs",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -108,7 +111,8 @@ cc_library(
                 "//aos/logging",
                 "//frc971:constants",
                 "//frc971/control_loops:control_loops_fbs",
-                "@com_github_google_glog//:glog",
+                "@com_google_absl//absl/log",
+                "@com_google_absl//absl/log:check",
             ],
         ),
         cc_test(

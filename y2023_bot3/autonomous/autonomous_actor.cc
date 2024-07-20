@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "absl/flags/flag.h"
+
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -11,14 +13,14 @@
 #include "y2023_bot3/constants.h"
 #include "y2023_bot3/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
-DEFINE_bool(charged_up, true,
-            "If true run charged up autonomous mode. 2 Piece non-cable side");
-DEFINE_bool(charged_up_middle, false,
-            "If true run charged up middle autonomous mode. Starts middle, "
-            "places cube mid, mobility");
-DEFINE_bool(one_piece, false,
-            "End charged_up autonomous after first cube is placed.");
+ABSL_FLAG(bool, spline_auto, false, "Run simple test S-spline auto mode.");
+ABSL_FLAG(bool, charged_up, true,
+          "If true run charged up autonomous mode. 2 Piece non-cable side");
+ABSL_FLAG(bool, charged_up_middle, false,
+          "If true run charged up middle autonomous mode. Starts middle, "
+          "places cube mid, mobility");
+ABSL_FLAG(bool, one_piece, false,
+          "End charged_up autonomous after first cube is placed.");
 
 namespace y2023_bot3::autonomous {
 
@@ -109,14 +111,14 @@ void AutonomousActor::Replan() {
     return;
   }
   sent_starting_position_ = false;
-  if (FLAGS_spline_auto) {
+  if (absl::GetFlag(FLAGS_spline_auto)) {
     test_spline_ =
         PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
                              std::placeholders::_1, alliance_),
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
-  } else if (FLAGS_charged_up) {
+  } else if (absl::GetFlag(FLAGS_charged_up)) {
     charged_up_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -132,7 +134,7 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward)};
     starting_position_ = charged_up_splines_.value()[0].starting_position();
     CHECK(starting_position_);
-  } else if (FLAGS_charged_up_middle) {
+  } else if (absl::GetFlag(FLAGS_charged_up_middle)) {
     charged_up_middle_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::SplineMiddle1, &auto_splines_,
                              std::placeholders::_1, alliance_),
@@ -186,7 +188,7 @@ bool AutonomousActor::RunAction(
     return false;
   }
 
-  if (FLAGS_charged_up) {
+  if (absl::GetFlag(FLAGS_charged_up)) {
     ChargedUp();
   } else {
     AOS_LOG(INFO, "No autonomous mode selected.");

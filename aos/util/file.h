@@ -12,8 +12,9 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "glog/logging.h"
 
 #include "aos/scoped/scoped_fd.h"
 

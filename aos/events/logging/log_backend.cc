@@ -4,19 +4,21 @@
 
 #include <filesystem>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 
 #include "aos/events/logging/file_operations.h"
 #include "aos/util/file.h"
 
-DEFINE_bool(
-    sync, false,
+ABSL_FLAG(
+    bool, sync, false,
     "If true, sync data to disk as we go so we don't get too far ahead.  Also "
     "fadvise that we are done with the memory once it hits disk.");
 
-DEFINE_uint32(queue_reserve, 32, "Pre-reserved size of write queue.");
+ABSL_FLAG(uint32_t, queue_reserve, 32, "Pre-reserved size of write queue.");
 
 namespace aos::logger {
 namespace {
@@ -42,7 +44,7 @@ inline bool IsAlignedLength(const absl::Span<const uint8_t> span) {
 }  // namespace
 
 logger::QueueAligner::QueueAligner() {
-  aligned_queue_.reserve(FLAGS_queue_reserve);
+  aligned_queue_.reserve(absl::GetFlag(FLAGS_queue_reserve));
 }
 
 void logger::QueueAligner::FillAlignedQueue(
@@ -285,7 +287,7 @@ WriteCode FileHandler::WriteV(const std::vector<struct iovec> &iovec,
     return WriteCode::kOutOfSpace;
   }
 
-  if (FLAGS_sync) {
+  if (absl::GetFlag(FLAGS_sync)) {
     // Flush asynchronously and force the data out of the cache.
     sync_file_range(fd_, total_write_bytes_, written, SYNC_FILE_RANGE_WRITE);
     if (last_synced_bytes_ != 0) {

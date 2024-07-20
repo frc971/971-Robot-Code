@@ -6,7 +6,8 @@
 
 #include <csignal>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 const char *aos_strsignal(int signal) {
   thread_local char buffer[512];

@@ -16,12 +16,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "flatbuffers/string.h"
 #include "flatbuffers/vector.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #include "aos/configuration.h"
 #include "aos/flatbuffers.h"
@@ -31,21 +32,21 @@
 #include "aos/starter/starter_rpc_lib.h"
 #include "aos/time/time.h"
 
-DEFINE_string(config, "aos_config.json", "File path of aos configuration");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "File path of aos configuration");
 // TODO(james): Bash autocompletion for node names.
-DEFINE_string(
-    node, "",
-    "Node to interact with. If empty, just interact with local node.");
-DEFINE_bool(all_nodes, false, "Interact with all nodes.");
+ABSL_FLAG(std::string, node, "",
+          "Node to interact with. If empty, just interact with local node.");
+ABSL_FLAG(bool, all_nodes, false, "Interact with all nodes.");
 
-DEFINE_bool(_bash_autocomplete, false,
-            "Internal use: Outputs commands or applications for use with "
-            "autocomplete script.");
-DEFINE_string(_bash_autocomplete_word, "",
-              "Internal use: Current word being autocompleted");
-DEFINE_string(sort, "name",
-              "The name of the column to sort processes by.  "
-              "Can be \"name\", \"state\", \"pid\", or \"uptime\".");
+ABSL_FLAG(bool, _bash_autocomplete, false,
+          "Internal use: Outputs commands or applications for use with "
+          "autocomplete script.");
+ABSL_FLAG(std::string, _bash_autocomplete_word, "",
+          "Internal use: Current word being autocompleted");
+ABSL_FLAG(std::string, sort, "name",
+          "The name of the column to sort processes by.  "
+          "Can be \"name\", \"state\", \"pid\", or \"uptime\".");
 
 namespace {
 
@@ -62,12 +63,14 @@ std::vector<const aos::Node *> InteractNodes(
     return {nullptr};
   }
 
-  if (!FLAGS_node.empty()) {
-    CHECK(!FLAGS_all_nodes) << "Can't specify both --node and --all_nodes.";
-    return {aos::configuration::GetNode(configuration, FLAGS_node)};
+  if (!absl::GetFlag(FLAGS_node).empty()) {
+    CHECK(!absl::GetFlag(FLAGS_all_nodes))
+        << "Can't specify both --node and --all_nodes.";
+    return {
+        aos::configuration::GetNode(configuration, absl::GetFlag(FLAGS_node))};
   }
 
-  if (FLAGS_all_nodes) {
+  if (absl::GetFlag(FLAGS_all_nodes)) {
     return aos::configuration::GetNodes(configuration);
   }
 
@@ -114,25 +117,26 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
     sorted_statuses.push_back(app_status);
   }
   // If --sort flag not set, then return this unsorted vector as is.
-  if (FLAGS_sort.empty()) {
+  if (absl::GetFlag(FLAGS_sort).empty()) {
     return sorted_statuses;
   }
 
   // Convert --sort flag to lowercase for testing below.
-  std::transform(FLAGS_sort.begin(), FLAGS_sort.end(), FLAGS_sort.begin(),
-                 tolower);
+  std::transform(absl::GetFlag(FLAGS_sort).begin(),
+                 absl::GetFlag(FLAGS_sort).end(),
+                 absl::GetFlag(FLAGS_sort).begin(), tolower);
 
   // This function is called once for each node being reported upon, so there is
   // no need to sort on node, it happens implicitly.
 
-  if (FLAGS_sort == "name") {
+  if (absl::GetFlag(FLAGS_sort) == "name") {
     // Sort on name using std::string_view::operator< for lexicographic order.
     std::sort(sorted_statuses.begin(), sorted_statuses.end(),
               [](const aos::starter::ApplicationStatus *lhs,
                  const aos::starter::ApplicationStatus *rhs) {
                 return lhs->name()->string_view() < rhs->name()->string_view();
               });
-  } else if (FLAGS_sort == "state") {
+  } else if (absl::GetFlag(FLAGS_sort) == "state") {
     // Sort on state first, and then name for apps in same state.
     // ApplicationStatus::state is an enum, so need to call EnumNameState()
     // convenience wrapper to convert enum to char*, and then wrap in
@@ -148,7 +152,7 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
                            : (lhs->name()->string_view() <
                               rhs->name()->string_view());
               });
-  } else if (FLAGS_sort == "pid") {
+  } else if (absl::GetFlag(FLAGS_sort) == "pid") {
     // Sort on pid first, and then name for when both apps are not running.
     // If the app state is STOPPED, then it will not have a pid, so need to test
     // that first. If only one app is STOPPED, then return Boolean state to put
@@ -171,7 +175,7 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
                   }
                 }
               });
-  } else if (FLAGS_sort == "uptime") {
+  } else if (absl::GetFlag(FLAGS_sort) == "uptime") {
     // Sort on last_start_time first, and then name for when both apps are not
     // running, or have exact same start time. Only use last_start_time when app
     // is not STOPPED. If only one app is STOPPED, then return Boolean state to
@@ -198,7 +202,8 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
           }
         });
   } else {
-    std::cerr << "Unknown sort criteria \"" << FLAGS_sort << "\"" << std::endl;
+    std::cerr << "Unknown sort criteria \"" << absl::GetFlag(FLAGS_sort) << "\""
+              << std::endl;
     exit(1);
   }
 
@@ -486,7 +491,7 @@ void Autocomplete(int argc, char **argv, const aos::Configuration *config) {
   const std::string_view app_name = (argc >= 3 ? argv[2] : "");
 
   std::cout << "COMPREPLY=(";
-  if (FLAGS__bash_autocomplete_word == command) {
+  if (absl::GetFlag(FLAGS__bash_autocomplete_word) == command) {
     // Autocomplete the starter command
     for (const auto &entry : kCommands) {
       if (std::get<0>(entry).find(command) == 0) {
@@ -515,9 +520,9 @@ int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
-  if (FLAGS__bash_autocomplete) {
+  if (absl::GetFlag(FLAGS__bash_autocomplete)) {
     Autocomplete(argc, argv, &config.message());
     return 0;
   }

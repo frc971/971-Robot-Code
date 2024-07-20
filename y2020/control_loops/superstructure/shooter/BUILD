@@ -57,7 +57,8 @@ cc_binary(
         ":shooter_tuning_readings_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

@@ -1,6 +1,7 @@
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 
@@ -11,16 +12,17 @@
 #include "frc971/vision/v4l2_reader.h"
 #include "y2023/vision/rkisp1-config.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-DEFINE_bool(lowlight_camera, true, "Switch to use imx462 image sensor.");
-DEFINE_int32(gain, 150, "analogue_gain");
+ABSL_FLAG(std::string, config, "aos_config.json",
+          "Path to the config file to use.");
+ABSL_FLAG(bool, lowlight_camera, true, "Switch to use imx462 image sensor.");
+ABSL_FLAG(int32_t, gain, 150, "analogue_gain");
 
-DEFINE_double(red, 1.252, "Red gain");
-DEFINE_double(green, 1, "Green gain");
-DEFINE_double(blue, 1.96, "Blue gain");
-DEFINE_double(exposure, 150, "Camera exposure");
-DEFINE_bool(send_downsized_images, false,
-            "Whether to send downsized image for driver cam streaming.");
+ABSL_FLAG(double, red, 1.252, "Red gain");
+ABSL_FLAG(double, green, 1, "Green gain");
+ABSL_FLAG(double, blue, 1.96, "Blue gain");
+ABSL_FLAG(double, exposure, 150, "Camera exposure");
+ABSL_FLAG(bool, send_downsized_images, false,
+          "Whether to send downsized image for driver cam streaming.");
 
 namespace y2023::vision {
 namespace {
@@ -34,13 +36,15 @@ void CameraReaderMain() {
     media_device->Log();
   }
 
-  const int kWidth = (FLAGS_lowlight_camera ? 1920 : 1296);
-  const int kHeight = (FLAGS_lowlight_camera ? 1080 : 972);
-  const int kColorFormat = (FLAGS_lowlight_camera ? MEDIA_BUS_FMT_SRGGB10_1X10
-                                                  : MEDIA_BUS_FMT_SBGGR10_1X10);
+  const int kWidth = (absl::GetFlag(FLAGS_lowlight_camera) ? 1920 : 1296);
+  const int kHeight = (absl::GetFlag(FLAGS_lowlight_camera) ? 1080 : 972);
+  const int kColorFormat =
+      (absl::GetFlag(FLAGS_lowlight_camera) ? MEDIA_BUS_FMT_SRGGB10_1X10
+                                            : MEDIA_BUS_FMT_SBGGR10_1X10);
 
   const std::string_view kCameraDeviceString =
-      (FLAGS_lowlight_camera ? "arducam-pivariety 4-000c" : "ov5647 4-0036");
+      (absl::GetFlag(FLAGS_lowlight_camera) ? "arducam-pivariety 4-000c"
+                                            : "ov5647 4-0036");
 
   // Scale down the selfpath images so we can log at 30 Hz (but still detect
   // april tags at a far enough distance)
@@ -106,7 +110,7 @@ void CameraReaderMain() {
       media_device->FindLink("rkisp1_isp", 2, "rkisp1_resizer_mainpath", 0));
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+      aos::configuration::ReadConfig(absl::GetFlag(FLAGS_config));
 
   aos::ShmEventLoop event_loop(&config.message());
 
@@ -117,17 +121,17 @@ void CameraReaderMain() {
   RockchipV4L2Reader v4l2_reader_selfpath(&event_loop, event_loop.epoll(),
                                           rkisp1_selfpath->device(),
                                           camera->device());
-  if (FLAGS_lowlight_camera) {
-    v4l2_reader_selfpath.SetGainExt(FLAGS_gain);
+  if (absl::GetFlag(FLAGS_lowlight_camera)) {
+    v4l2_reader_selfpath.SetGainExt(absl::GetFlag(FLAGS_gain));
     v4l2_reader_selfpath.SetVerticalBlanking(1000);
-    v4l2_reader_selfpath.SetExposure(FLAGS_exposure);
+    v4l2_reader_selfpath.SetExposure(absl::GetFlag(FLAGS_exposure));
   } else {
     v4l2_reader_selfpath.SetGainExt(1000);
     v4l2_reader_selfpath.SetExposure(1000);
   }
 
   std::unique_ptr<RockchipV4L2Reader> v4l2_reader_mainpath;
-  if (FLAGS_send_downsized_images) {
+  if (absl::GetFlag(FLAGS_send_downsized_images)) {
     // Reader for driver cam streaming on logger pi, sending lower res images
     v4l2_reader_mainpath = std::make_unique<RockchipV4L2Reader>(
         &event_loop, event_loop.epoll(), rkisp1_mainpath->device(),
@@ -171,10 +175,14 @@ void CameraReaderMain() {
 
     configuration.module_cfg_update |= RKISP1_CIF_ISP_MODULE_AWB_GAIN;
 
-    configuration.others.awb_gain_config.gain_red = 256 * FLAGS_red;
-    configuration.others.awb_gain_config.gain_green_r = 256 * FLAGS_green;
-    configuration.others.awb_gain_config.gain_blue = 256 * FLAGS_blue;
-    configuration.others.awb_gain_config.gain_green_b = 256 * FLAGS_green;
+    configuration.others.awb_gain_config.gain_red =
+        256 * absl::GetFlag(FLAGS_red);
+    configuration.others.awb_gain_config.gain_green_r =
+        256 * absl::GetFlag(FLAGS_green);
+    configuration.others.awb_gain_config.gain_blue =
+        256 * absl::GetFlag(FLAGS_blue);
+    configuration.others.awb_gain_config.gain_green_b =
+        256 * absl::GetFlag(FLAGS_green);
 
     // Enable the AWB gains
     configuration.module_en_update |= RKISP1_CIF_ISP_MODULE_AWB_GAIN;
