@@ -10,7 +10,7 @@
 // https://www.pjrc.com/teensy/datasheets.html
 // comments (especially on BB2) inform which pins are used
 
-#include "motors/driver_station_2.h"
+#include "motors/driver_station.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -138,10 +138,10 @@ uint16_t filterIIR(uint32_t *filterValue, uint16_t currentValue,
   return localValue >> filterDepth;
 }
 
-int DriverStation2::DetermineEncoderValues(ENCODER_DATA_S *enc,
-                                           ABS_POSITION_S *absAngle,
-                                           int encoderNum,
-                                           uint16_t resetTime_ms) {
+int DriverStation::DetermineEncoderValues(ENCODER_DATA_S *enc,
+                                          ABS_POSITION_S *absAngle,
+                                          int encoderNum,
+                                          uint16_t resetTime_ms) {
   uint16_t currentAngle = 0;
 
   if (enc->angle > ENCODER_COUNTS_PER_REV) {
@@ -192,8 +192,8 @@ int DriverStation2::DetermineEncoderValues(ENCODER_DATA_S *enc,
   return 0;
 }
 
-int DriverStation2::MeasureAbsPosition(uint32_t encoder_id,
-                                       ABS_POSITION_S *abs_position) {
+int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
+                                      ABS_POSITION_S *abs_position) {
   BigFTM *ftm = NULL;
   volatile uint32_t *volatile stat_ctrl0 = NULL;  // status and control
   volatile uint32_t *volatile stat_ctrl1 = NULL;
@@ -440,10 +440,10 @@ std::array<ENCODER_DATA_S, 2> MakeEncoderData(uint32_t processor_index) {
   }
 }
 
-void DriverStation2::SendJoystickData(teensy::HidFunction *joystick0,
-                                      teensy::HidFunction *joystick1,
-                                      teensy::HidFunction *joystick2,
-                                      uint32_t processor_index) {
+void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
+                                     teensy::HidFunction *joystick1,
+                                     teensy::HidFunction *joystick2,
+                                     uint32_t processor_index) {
   std::array<ENCODER_DATA_S, NUM_ENCODERS> encoder_data =
       MakeEncoderData(processor_index);
 
@@ -568,8 +568,8 @@ void DriverStation2::SendJoystickData(teensy::HidFunction *joystick0,
   }
 }
 
-void DriverStation2::ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements,
-                                      uint32_t board) {
+void DriverStation::ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements,
+                                     uint32_t board) {
   bbMeasurements[board].buttons = 0;
   bbMeasurements[board].abs0 = 0;
   bbMeasurements[board].abs1 = 0;
@@ -592,8 +592,8 @@ void DriverStation2::ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements,
 // 6	  ABS2:7	  ABS2:6	  ABS2:5	  ABS2:4	  ABS2:3    ABS2:2	  ABS2:1   ABS2:0 
 // 7	  ABS3:7	  ABS3:6	  ABS3:5	  ABS3:4	  ABS3:3    ABS3:2  	ABS3:1   ABS3:0
 // clang-format on
-int DriverStation2::UpdateMeasurementsFromCAN(
-    MEASUREMENT_DATA_S *bbMeasurements, uint8_t *canRX_data) {
+int DriverStation::UpdateMeasurementsFromCAN(MEASUREMENT_DATA_S *bbMeasurements,
+                                             uint8_t *canRX_data) {
   int bb_id = 0;
   uint32_t buttons = 0;
   uint16_t enc0 = 0;
@@ -636,8 +636,8 @@ int DriverStation2::UpdateMeasurementsFromCAN(
   return bb_id;
 }
 
-void DriverStation2::PackMeasurementsToCAN(MEASUREMENT_DATA_S *bbMeasurements,
-                                           uint8_t *canTX_data) {
+void DriverStation::PackMeasurementsToCAN(MEASUREMENT_DATA_S *bbMeasurements,
+                                          uint8_t *canTX_data) {
   uint16_t encoder_measurements_0 = bbMeasurements->enc0 >> 4;
   uint16_t encoder_measurements_1 = bbMeasurements->enc1 >> 4;
 
@@ -704,10 +704,10 @@ void __stack_chk_fail(void) {
 // 6	B15	        0	              0	              0	              1	              1	              1
 
 // clang-format on
-void DriverStation2::ComposeReport(char report[][kReportSize],
-                                   MEASUREMENT_DATA_S *bbMeasurements,
-                                   uint8_t board_id, int can_1_board,
-                                   int can_2_board) {
+void DriverStation::ComposeReport(char report[][kReportSize],
+                                  MEASUREMENT_DATA_S *bbMeasurements,
+                                  uint8_t board_id, int can_1_board,
+                                  int can_2_board) {
   memset(report, 0, 3 * sizeof(*report));
 
   report[0][0] = (char)(bbMeasurements[2].enc0 >> 8 & 0xFF);
@@ -782,7 +782,7 @@ void DriverStation2::ComposeReport(char report[][kReportSize],
   printf("\n\r\n\r");*/
 }
 
-uint32_t DriverStation2::ReadButtons() {
+uint32_t DriverStation::ReadButtons() {
   uint32_t buttons = 0;
 
   buttons = ((PERIPHERAL_BITBAND(GPIOD_PDIR, 5) << 0) |     // BTN0	PTD5
@@ -810,7 +810,7 @@ uint32_t DriverStation2::ReadButtons() {
   return buttons;
 }
 
-JoystickAdcReadings DriverStation2::AdcReadJoystick(const DisableInterrupts &) {
+JoystickAdcReadings DriverStation::AdcReadJoystick(const DisableInterrupts &) {
   JoystickAdcReadings r;
 
   // ENC1_ABS_ADC	(PTE24) ADC0_SE17
@@ -837,7 +837,7 @@ JoystickAdcReadings DriverStation2::AdcReadJoystick(const DisableInterrupts &) {
   return r;
 }
 
-void DriverStation2::AdcInitJoystick() {
+void DriverStation::AdcInitJoystick() {
   AdcInitCommon();
   // ENC1_ABS_ADC	(PTE24) ADC0_SE17
   PORTE_PCR24 = PORT_PCR_MUX(0);
@@ -849,7 +849,7 @@ void DriverStation2::AdcInitJoystick() {
   PORTD_PCR1 = PORT_PCR_MUX(0);
 }
 
-void DriverStation2::EnableLeds() {
+void DriverStation::EnableLeds() {
   // Set all the LED pins to output, drive strength enable (high drive since its
   // an output), slew rate enable (slow since output) LED (on board)	PTC5
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 1;
@@ -881,7 +881,7 @@ void DriverStation2::EnableLeds() {
   PERIPHERAL_BITBAND(GPIOC_PDDR, 8) = 1;
 }
 
-void DriverStation2::EnableCan() {
+void DriverStation::EnableCan() {
   // Set up the CAN pins.
   // (PTA12) CAN0_TX
   PORTA_PCR12 = PORT_PCR_DSE | PORT_PCR_MUX(2);
@@ -889,7 +889,7 @@ void DriverStation2::EnableCan() {
   PORTA_PCR13 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 }
 
-void DriverStation2::EnableEncoders() {
+void DriverStation::EnableEncoders() {
   // Set up the encoder inputs
   // ENC0_A	(PTB18) FTM2_QD_PHA
   PORTB_PCR18 = PORT_PCR_MUX(6) /*| PORT_PCR_PE | PORT_PCR_PS*/;
@@ -911,7 +911,7 @@ void DriverStation2::EnableEncoders() {
 }
 
 // Enable quadrature encoding.
-void DriverStation2::EnableQD(LittleFTM *ftm, int encoder) {
+void DriverStation::EnableQD(LittleFTM *ftm, int encoder) {
   ftm->MODE = FTM_MODE_WPDIS;
   ftm->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
 
@@ -949,7 +949,7 @@ void DriverStation2::EnableQD(LittleFTM *ftm, int encoder) {
   ftm->MODE &= ~FTM_MODE_WPDIS;
 }
 
-int DriverStation2::ReadQuadrature(int encoderNum, uint16_t *encoderAngle) {
+int DriverStation::ReadQuadrature(int encoderNum, uint16_t *encoderAngle) {
   switch (encoderNum) {
     case 0:
       *encoderAngle = FTM2_CNT;
@@ -966,7 +966,7 @@ int DriverStation2::ReadQuadrature(int encoderNum, uint16_t *encoderAngle) {
   return 0;
 }
 
-void DriverStation2::EnableGlitchFilter() {
+void DriverStation::EnableGlitchFilter() {
   // Enable 1KHz filter clock
   PORTA_DFCR = 1;
   PORTB_DFCR = 1;
@@ -982,7 +982,7 @@ void DriverStation2::EnableGlitchFilter() {
   // TODO: validate the 10ms gitch filter, seems to work
 }
 
-void DriverStation2::EnableButtons() {
+void DriverStation::EnableButtons() {
   // Set up the buttons. The LEDs pull them up to 5V, so the Teensy needs to not
   // be set to pull up.
   // BTN0	PTD5
@@ -1068,7 +1068,7 @@ void DriverStation2::EnableButtons() {
   PORTB_DFER |= 1 << 16;
 }
 
-void DriverStation2::DisableLeds() {
+void DriverStation::DisableLeds() {
   // LED (on board)	PTC5
   PERIPHERAL_BITBAND(GPIOC_PDOR, 5) = 0;
   // LED0R	PTC6
@@ -1085,7 +1085,7 @@ void DriverStation2::DisableLeds() {
   PERIPHERAL_BITBAND(GPIOC_PDOR, 8) = 1;
 }
 
-int DriverStation2::Run() {
+int DriverStation::Run() {
   // for background about this startup delay, please see these conversations
   // https://forum.pjrc.com/threads/36606-startup-time-(400ms)?p=113980&viewfull=1#post113980
   // https://forum.pjrc.com/threads/31290-Teensey-3-2-Teensey-Loader-1-24-Issues?p=87273&viewfull=1#post87273
@@ -1192,7 +1192,7 @@ int DriverStation2::Run() {
 }
 
 extern "C" int main(void) {
-  frc971::motors::DriverStation2 driverStation;
+  frc971::motors::DriverStation driverStation;
   return driverStation.Run();
 }
 

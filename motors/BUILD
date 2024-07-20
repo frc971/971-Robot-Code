@@ -104,9 +104,9 @@ cc_test(
 )
 
 cc_library(
-    name = "driver_station_2_lib",
-    srcs = ["driver_station_2.cc"],
-    hdrs = ["driver_station_2.h"],
+    name = "driver_station_lib",
+    srcs = ["driver_station.cc"],
+    hdrs = ["driver_station.h"],
     target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":util",
@@ -122,15 +122,15 @@ cc_library(
 
 [
     cc_binary(
-        name = "driver_station_2.elf",
+        name = "driver_station.elf",
         target_compatible_with = ["@platforms//os:none"],
-        deps = [":driver_station_2_lib"],
+        deps = [":driver_station_lib"],
     ),
 ]
 
 [
     hex_from_elf(
-        name = "driver_station_2",
+        name = "driver_station",
         target_compatible_with = ["@platforms//os:none"],
     ),
 ]

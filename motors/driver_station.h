@@ -85,9 +85,9 @@ typedef struct {
   uint16_t abs3;
 } MEASUREMENT_DATA_S;
 
-class DriverStation2 {
+class DriverStation {
  public:
-  DriverStation2() = default;
+  DriverStation() = default;
   int Run();
   // Number of bytes per CAN packet
   static constexpr uint16_t kReportSize = 1 * 5 + 2;
