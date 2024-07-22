@@ -122,21 +122,20 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
   }
 
   // Convert --sort flag to lowercase for testing below.
-  std::transform(absl::GetFlag(FLAGS_sort).begin(),
-                 absl::GetFlag(FLAGS_sort).end(),
-                 absl::GetFlag(FLAGS_sort).begin(), tolower);
+  std::string sort_on = absl::GetFlag(FLAGS_sort);
+  std::transform(sort_on.begin(), sort_on.end(), sort_on.begin(), tolower);
 
   // This function is called once for each node being reported upon, so there is
   // no need to sort on node, it happens implicitly.
 
-  if (absl::GetFlag(FLAGS_sort) == "name") {
+  if (sort_on == "name") {
     // Sort on name using std::string_view::operator< for lexicographic order.
     std::sort(sorted_statuses.begin(), sorted_statuses.end(),
               [](const aos::starter::ApplicationStatus *lhs,
                  const aos::starter::ApplicationStatus *rhs) {
                 return lhs->name()->string_view() < rhs->name()->string_view();
               });
-  } else if (absl::GetFlag(FLAGS_sort) == "state") {
+  } else if (sort_on == "state") {
     // Sort on state first, and then name for apps in same state.
     // ApplicationStatus::state is an enum, so need to call EnumNameState()
     // convenience wrapper to convert enum to char*, and then wrap in
@@ -152,7 +151,7 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
                            : (lhs->name()->string_view() <
                               rhs->name()->string_view());
               });
-  } else if (absl::GetFlag(FLAGS_sort) == "pid") {
+  } else if (sort_on == "pid") {
     // Sort on pid first, and then name for when both apps are not running.
     // If the app state is STOPPED, then it will not have a pid, so need to test
     // that first. If only one app is STOPPED, then return Boolean state to put
@@ -175,7 +174,7 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
                   }
                 }
               });
-  } else if (absl::GetFlag(FLAGS_sort) == "uptime") {
+  } else if (sort_on == "uptime") {
     // Sort on last_start_time first, and then name for when both apps are not
     // running, or have exact same start time. Only use last_start_time when app
     // is not STOPPED. If only one app is STOPPED, then return Boolean state to
@@ -202,8 +201,7 @@ std::vector<const aos::starter::ApplicationStatus *> SortApplications(
           }
         });
   } else {
-    std::cerr << "Unknown sort criteria \"" << absl::GetFlag(FLAGS_sort) << "\""
-              << std::endl;
+    std::cerr << "Unknown sort criteria \"" << sort_on << "\"" << std::endl;
     exit(1);
   }
 
