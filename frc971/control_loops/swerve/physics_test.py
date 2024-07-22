@@ -186,19 +186,9 @@ class TestSwervePhysics(unittest.TestCase):
         velocity = numpy.array([[1.5], [0.0]])
 
         for i in range(4):
-            x = casadi.SX.sym("x")
-            y = casadi.SX.sym("y")
-            sin_atan2 = casadi.Function('sin_atan2', [y, x],
-                                        [dynamics.sin_atan2(y, x)])
-
             for wrap in range(-1, 2):
                 for theta in [0.0, 0.6, -0.4]:
                     module_angle = numpy.pi * wrap + theta
-
-                    self.assertAlmostEqual(
-                        numpy.sin(module_angle),
-                        sin_atan2(numpy.sin(module_angle),
-                                  numpy.cos(module_angle)))
 
                     # We have redefined the angle to be the sin of the angle.
                     # That way, when the module flips directions, the slip angle also flips

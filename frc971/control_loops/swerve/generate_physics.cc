@@ -446,20 +446,20 @@ class SwerveSimulation {
     }
 
     result_cc.emplace_back(
-        absl::Substitute("  result($0, 0) = omega;", kNumModules * 4));
+        absl::Substitute("  result($0, 0) = vx;", kNumModules * 4 + 0));
     result_cc.emplace_back(
-        absl::Substitute("  result($0, 0) = vx;", kNumModules * 4 + 1));
+        absl::Substitute("  result($0, 0) = vy;", kNumModules * 4 + 1));
     result_cc.emplace_back(
-        absl::Substitute("  result($0, 0) = vy;", kNumModules * 4 + 2));
+        absl::Substitute("  result($0, 0) = omega;", kNumModules * 4 + 2));
 
-    result_cc.emplace_back(absl::Substitute(
-        "  result($0, 0) = $1;", kNumModules * 4 + 3, ccode(*angular_accel_)));
     result_cc.emplace_back(absl::Substitute("  result($0, 0) = $1;",
-                                            kNumModules * 4 + 4,
+                                            kNumModules * 4 + 3,
                                             ccode(*accel_.get(0, 0))));
     result_cc.emplace_back(absl::Substitute("  result($0, 0) = $1;",
-                                            kNumModules * 4 + 5,
+                                            kNumModules * 4 + 4,
                                             ccode(*accel_.get(1, 0))));
+    result_cc.emplace_back(absl::Substitute(
+        "  result($0, 0) = $1;", kNumModules * 4 + 5, ccode(*angular_accel_)));
 
     result_cc.emplace_back(
         absl::Substitute("  result($0, 0) = 0.0;", kNumModules * 4 + 6));
@@ -482,7 +482,7 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    sign = casadi.sign");
     result_py->emplace_back("    cos = casadi.cos");
-    result_py->emplace_back("    atan2 = sin_atan2");
+    result_py->emplace_back("    atan2 = casadi.atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -535,9 +535,6 @@ class SwerveSimulation {
     result_py.emplace_back(
         absl::Substitute("ROBOT_WIDTH = $0", ccode(*robot_width_)));
     result_py.emplace_back(absl::Substitute("CASTER = $0", ccode(*caster_)));
-    result_py.emplace_back("");
-    result_py.emplace_back("def sin_atan2(y, x):");
-    result_py.emplace_back("    return casadi.sin(casadi.atan2(y, x))");
     result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
@@ -779,8 +776,8 @@ class SwerveSimulation {
     VLOG(1) << "wheel ground velocity: "
             << result.wheel_ground_velocity.__str__();
 
-    result.slip_angle = neg(atan2(result.wheel_ground_velocity.get(1, 0),
-                                  result.wheel_ground_velocity.get(0, 0)));
+    result.slip_angle = sin(neg(atan2(result.wheel_ground_velocity.get(1, 0),
+                                      result.wheel_ground_velocity.get(0, 0))));
 
     VLOG(1);
     VLOG(1) << "slip angle: " << result.slip_angle->__str__();
