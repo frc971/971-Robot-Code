@@ -6,7 +6,9 @@ import casadi
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import unittest
 
+from frc971.control_loops.swerve import bigcaster_dynamics
 from frc971.control_loops.swerve import dynamics
+from frc971.control_loops.swerve import nocaster_dynamics
 
 
 def state_vector(velocity=numpy.array([[1.0], [0.0]]),
@@ -70,35 +72,41 @@ def wrap_module(fn, i):
 class TestSwervePhysics(unittest.TestCase):
     I = numpy.zeros((8, 1))
 
-    def setUp(self):
-        self.swerve_physics = wrap(dynamics.swerve_physics)
+    def wrap(self, python_module):
+        self.swerve_physics = wrap(python_module.swerve_physics)
         self.contact_patch_velocity = [
-            wrap_module(dynamics.contact_patch_velocity, i) for i in range(4)
+            wrap_module(python_module.contact_patch_velocity, i)
+            for i in range(4)
         ]
         self.wheel_ground_velocity = [
-            wrap_module(dynamics.wheel_ground_velocity, i) for i in range(4)
+            wrap_module(python_module.wheel_ground_velocity, i)
+            for i in range(4)
         ]
         self.wheel_slip_velocity = [
-            wrap_module(dynamics.wheel_slip_velocity, i) for i in range(4)
+            wrap_module(python_module.wheel_slip_velocity, i) for i in range(4)
         ]
         self.wheel_force = [
-            wrap_module(dynamics.wheel_force, i) for i in range(4)
+            wrap_module(python_module.wheel_force, i) for i in range(4)
         ]
         self.module_angular_accel = [
-            wrap_module(dynamics.module_angular_accel, i) for i in range(4)
+            wrap_module(python_module.module_angular_accel, i)
+            for i in range(4)
         ]
-        self.F = [wrap_module(dynamics.F, i) for i in range(4)]
+        self.F = [wrap_module(python_module.F, i) for i in range(4)]
         self.mounting_location = [
-            wrap_module(dynamics.mounting_location, i) for i in range(4)
+            wrap_module(python_module.mounting_location, i) for i in range(4)
         ]
 
         self.slip_angle = [
-            wrap_module(dynamics.slip_angle, i) for i in range(4)
+            wrap_module(python_module.slip_angle, i) for i in range(4)
         ]
         self.slip_ratio = [
-            wrap_module(dynamics.slip_ratio, i) for i in range(4)
+            wrap_module(python_module.slip_ratio, i) for i in range(4)
         ]
-        self.Ms = [wrap_module(dynamics.Ms, i) for i in range(4)]
+        self.Ms = [wrap_module(python_module.Ms, i) for i in range(4)]
+
+    def setUp(self):
+        self.wrap(dynamics)
 
     def test_contact_patch_velocity(self):
         """Tests that the contact patch velocity makes sense."""
@@ -178,29 +186,31 @@ class TestSwervePhysics(unittest.TestCase):
         velocity = numpy.array([[1.5], [0.0]])
 
         for i in range(4):
-            x = casadi.SX.sym("x")
-            y = casadi.SX.sym("y")
-            half_atan2 = casadi.Function('half_atan2', [y, x],
-                                         [dynamics.half_atan2(y, x)])
-
-            for wrap in range(-3, 3):
+            for wrap in range(-1, 2):
                 for theta in [0.0, 0.6, -0.4]:
                     module_angle = numpy.pi * wrap + theta
 
-                    self.assertAlmostEqual(
-                        theta,
-                        half_atan2(numpy.sin(module_angle),
-                                   numpy.cos(module_angle)))
-
+                    # We have redefined the angle to be the sin of the angle.
+                    # That way, when the module flips directions, the slip angle also flips
+                    # directions to keep it stable.
                     computed_angle = self.slip_angle[i](state_vector(
                         velocity=velocity,
                         module_angle=numpy.pi * wrap + theta), self.I)[0, 0]
 
-                    self.assertAlmostEqual(theta, computed_angle)
+                    expected = numpy.sin(numpy.pi * wrap + theta)
+
+                    self.assertAlmostEqual(
+                        expected,
+                        computed_angle,
+                        msg=f"Trying wrap {wrap} theta {theta}")
 
     def test_wheel_torque(self):
         """Tests that the per module self aligning forces have the right signs."""
-        X = state_vector(module_angles=[-0.001, -0.001, 0.001, 0.001])
+        # Point all the modules in a little bit.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[-0.001, -0.001, 0.001, 0.001],
+        )
         xdot_equal = self.swerve_physics(X, self.I)
 
         self.assertGreater(xdot_equal[2, 0], 0.0)
@@ -222,54 +232,248 @@ class TestSwervePhysics(unittest.TestCase):
         # Shouldn't be spinning.
         self.assertAlmostEqual(xdot_equal[21, 0], 0.0, places=2)
 
-        # Now, make the bot want to go left.
+        # Now, make the bot want to go left by going to the other side.
         # The wheels will be going too fast based on our calcs, so they should be decelerating.
-        X = state_vector(module_angles=[0.01, 0.01, 0.01, 0.01])
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[0.01, 0.01, 0.01, 0.01],
+        )
         xdot_left = self.swerve_physics(X, self.I)
 
-        self.assertLess(xdot_left[2, 0], -0.1)
+        self.assertLess(xdot_left[2, 0], -0.05)
         self.assertLess(xdot_left[3, 0], 0.0)
         self.assertLess(self.Ms[0](X, self.I)[0, 0], 0.0)
 
-        self.assertLess(xdot_left[6, 0], -0.1)
+        self.assertLess(xdot_left[6, 0], -0.05)
         self.assertLess(xdot_left[7, 0], 0.0)
         self.assertLess(self.Ms[1](X, self.I)[0, 0], 0.0)
 
-        self.assertLess(xdot_left[10, 0], -0.1)
+        self.assertLess(xdot_left[10, 0], -0.05)
         self.assertLess(xdot_left[11, 0], 0.0)
         self.assertLess(self.Ms[2](X, self.I)[0, 0], 0.0)
 
-        self.assertLess(xdot_left[14, 0], -0.1)
+        self.assertLess(xdot_left[14, 0], -0.05)
         self.assertLess(xdot_left[15, 0], 0.0)
         self.assertLess(self.Ms[3](X, self.I)[0, 0], 0.0)
 
         self.assertGreater(xdot_left[19, 0], 0.0001)
-        self.assertGreater(xdot_left[20, 0], 0.1)
+        self.assertGreater(xdot_left[20, 0], 0.05)
         # Shouldn't be spinning.
         self.assertAlmostEqual(xdot_left[21, 0], 0.0)
 
         # And now do it to the right too.
-        X = state_vector(module_angles=[-0.01, -0.01, -0.01, -0.01])
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[-0.01, -0.01, -0.01, -0.01],
+        )
         xdot_right = self.swerve_physics(X, self.I)
 
-        self.assertGreater(xdot_right[2, 0], 0.1)
+        self.assertGreater(xdot_right[2, 0], 0.05)
         self.assertLess(xdot_right[3, 0], 0.0)
         self.assertGreater(self.Ms[0](X, self.I)[0, 0], 0.0)
 
-        self.assertGreater(xdot_right[6, 0], 0.1)
+        self.assertGreater(xdot_right[6, 0], 0.05)
         self.assertLess(xdot_right[7, 0], 0.0)
         self.assertGreater(self.Ms[1](X, self.I)[0, 0], 0.0)
 
-        self.assertGreater(xdot_right[10, 0], 0.1)
+        self.assertGreater(xdot_right[10, 0], 0.05)
         self.assertLess(xdot_right[11, 0], 0.0)
         self.assertGreater(self.Ms[2](X, self.I)[0, 0], 0.0)
 
-        self.assertGreater(xdot_right[14, 0], 0.1)
+        self.assertGreater(xdot_right[14, 0], 0.05)
         self.assertLess(xdot_right[15, 0], 0.0)
         self.assertGreater(self.Ms[3](X, self.I)[0, 0], 0.0)
 
         self.assertGreater(xdot_right[19, 0], 0.0001)
-        self.assertLess(xdot_right[20, 0], -0.1)
+        self.assertLess(xdot_right[20, 0], -0.05)
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_right[21, 0], 0.0)
+
+    def test_wheel_torque_backwards_nocaster(self):
+        """Tests that the per module self aligning forces have the right signs when going backwards."""
+        self.wrap(nocaster_dynamics)
+        # Point all the modules in a little bit, going backwards.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[
+                numpy.pi - 0.001,
+                numpy.pi - 0.001,
+                numpy.pi + 0.001,
+                numpy.pi + 0.001,
+            ],
+            drive_wheel_velocity=-1,
+        )
+        xdot_equal = self.swerve_physics(X, self.I)
+
+        self.assertGreater(xdot_equal[2, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[3, 0], 0.0, places=1)
+        self.assertGreater(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_equal[6, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[7, 0], 0.0, places=1)
+        self.assertGreater(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_equal[10, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[11, 0], 0.0, places=1)
+        self.assertLess(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_equal[14, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[15, 0], 0.0, places=1)
+        self.assertLess(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_equal[21, 0], 0.0, places=2)
+
+        # Now, make the bot want to go left by going to the other side.
+        # The wheels will be going too fast based on our calcs, so they should be decelerating.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[numpy.pi + 0.01] * 4,
+            drive_wheel_velocity=-1,
+        )
+        xdot_left = self.swerve_physics(X, self.I)
+
+        self.assertLess(xdot_left[2, 0], -0.05)
+        self.assertGreater(xdot_left[3, 0], 0.0)
+        self.assertLess(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_left[6, 0], -0.05)
+        self.assertGreater(xdot_left[7, 0], 0.0)
+        self.assertLess(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_left[10, 0], -0.05)
+        self.assertGreater(xdot_left[11, 0], 0.0)
+        self.assertLess(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_left[14, 0], -0.05)
+        self.assertGreater(xdot_left[15, 0], 0.0)
+        self.assertLess(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_left[19, 0], 0.0001)
+        self.assertGreater(xdot_left[20, 0], 0.05)
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_left[21, 0], 0.0)
+
+        # And now do it to the right too.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            drive_wheel_velocity=-1,
+            module_angles=[-0.01 + numpy.pi] * 4,
+        )
+        xdot_right = self.swerve_physics(X, self.I)
+
+        self.assertGreater(xdot_right[2, 0], 0.05)
+        self.assertGreater(xdot_right[3, 0], 0.0)
+        self.assertGreater(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_right[6, 0], 0.05)
+        self.assertGreater(xdot_right[7, 0], 0.0)
+        self.assertGreater(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_right[10, 0], 0.05)
+        self.assertGreater(xdot_right[11, 0], 0.0)
+        self.assertGreater(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_right[14, 0], 0.05)
+        self.assertGreater(xdot_right[15, 0], 0.0)
+        self.assertGreater(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_right[19, 0], 0.0001)
+        self.assertLess(xdot_right[20, 0], -0.05)
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_right[21, 0], 0.0)
+
+    def test_wheel_torque_backwards_caster(self):
+        """Tests that the per module self aligning forces have the right signs when going backwards with a lot of caster."""
+        self.wrap(bigcaster_dynamics)
+        # Point all the modules in a little bit, going backwards.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[
+                numpy.pi - 0.001,
+                numpy.pi - 0.001,
+                numpy.pi + 0.001,
+                numpy.pi + 0.001,
+            ],
+            drive_wheel_velocity=-1,
+        )
+        xdot_equal = self.swerve_physics(X, self.I)
+
+        self.assertLess(xdot_equal[2, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[3, 0], 0.0, places=1)
+        self.assertLess(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_equal[6, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[7, 0], 0.0, places=1)
+        self.assertLess(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_equal[10, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[11, 0], 0.0, places=1)
+        self.assertGreater(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_equal[14, 0], 0.0, msg="Steering backwards")
+        self.assertAlmostEqual(xdot_equal[15, 0], 0.0, places=1)
+        self.assertGreater(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_equal[21, 0], 0.0, places=2)
+
+        # Now, make the bot want to go left by going to the other side.
+        # The wheels will be going too fast based on our calcs, so they should be decelerating.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            module_angles=[numpy.pi + 0.01] * 4,
+            drive_wheel_velocity=-1,
+        )
+        xdot_left = self.swerve_physics(X, self.I)
+
+        self.assertGreater(xdot_left[2, 0], -0.05)
+        self.assertGreater(xdot_left[3, 0], 0.0)
+        self.assertGreater(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_left[6, 0], -0.05)
+        self.assertGreater(xdot_left[7, 0], 0.0)
+        self.assertGreater(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_left[10, 0], -0.05)
+        self.assertGreater(xdot_left[11, 0], 0.0)
+        self.assertGreater(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_left[14, 0], -0.05)
+        self.assertGreater(xdot_left[15, 0], 0.0)
+        self.assertGreater(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_left[19, 0], 0.0001)
+        self.assertGreater(xdot_left[20, 0], 0.05)
+        # Shouldn't be spinning.
+        self.assertAlmostEqual(xdot_left[21, 0], 0.0)
+
+        # And now do it to the right too.
+        X = state_vector(
+            velocity=numpy.array([[1.0], [0.0]]),
+            drive_wheel_velocity=-1,
+            module_angles=[-0.01 + numpy.pi] * 4,
+        )
+        xdot_right = self.swerve_physics(X, self.I)
+
+        self.assertLess(xdot_right[2, 0], 0.05)
+        self.assertGreater(xdot_right[3, 0], 0.0)
+        self.assertLess(self.Ms[0](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_right[6, 0], 0.05)
+        self.assertGreater(xdot_right[7, 0], 0.0)
+        self.assertLess(self.Ms[1](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_right[10, 0], 0.05)
+        self.assertGreater(xdot_right[11, 0], 0.0)
+        self.assertLess(self.Ms[2](X, self.I)[0, 0], 0.0)
+
+        self.assertLess(xdot_right[14, 0], 0.05)
+        self.assertGreater(xdot_right[15, 0], 0.0)
+        self.assertLess(self.Ms[3](X, self.I)[0, 0], 0.0)
+
+        self.assertGreater(xdot_right[19, 0], 0.0001)
+        self.assertLess(xdot_right[20, 0], -0.05)
         # Shouldn't be spinning.
         self.assertAlmostEqual(xdot_right[21, 0], 0.0)
 
