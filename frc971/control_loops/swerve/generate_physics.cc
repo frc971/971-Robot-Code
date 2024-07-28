@@ -811,7 +811,7 @@ class SwerveSimulation {
         mul(add(neg(wb_), mul(add(rs_, rp_), sub(integer(1), div(rb1_, rp_)))),
             mul(div(rw_, rb2_), neg(result.Fwx)));
     RCP<const Basic> lhs =
-        add(add(result.Ms, div(mul(Jsm_, result.Is), Gs_)), lhms);
+        add(add(result.Ms, div(mul(Kts_, result.Is), Gs_)), lhms);
     RCP<const Basic> rhs = add(Jsm_, div(div(Js_, Gs_), Gs_));
     RCP<const Basic> accel_steer_eqn = simplify(div(lhs, rhs));
 
@@ -826,9 +826,9 @@ class SwerveSimulation {
               mul(Gd1_, mul(Gd2_, alphamd)));
     RCP<const Basic> ddplanitary_eqn = sub(mul(Gd3_, lhs), result.alphad);
 
-    RCP<const Basic> drive_eqn = sub(
-        add(mul(neg(Jdm_), div(alphamd, Gd_)), mul(Ktd_, div(result.Id, Gd_))),
-        mul(neg(result.Fwx), rw_));
+    RCP<const Basic> drive_eqn = sub(add(mul(neg(Jdm_), div(alphamd, Gd_)),
+                                         mul(Ktd_, div(neg(result.Id), Gd_))),
+                                     mul(neg(result.Fwx), rw_));
 
     VLOG(1) << "drive_eqn: " << drive_eqn->__str__();
 
