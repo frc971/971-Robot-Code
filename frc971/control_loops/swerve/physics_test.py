@@ -507,6 +507,74 @@ class TestSwervePhysics(unittest.TestCase):
             self.assertEqual(robot_right[0, 0], 0.0)
             self.assertGreater(robot_right[1, 0], 0.1)
 
+    def test_steer_accel(self):
+        """Tests that applying a steer torque accelerates the steer reasonably."""
+
+        for velocity in [
+                numpy.array([[0.0], [0.0]]),
+                numpy.array([[1.0], [0.0]]),
+                numpy.array([[2.0], [0.0]])
+        ]:
+            module_angles = [0.0] * 4
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[1.0], [0.0]] * 4)
+            xdot = self.swerve_full_dynamics(X, steer_I)
+
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS0, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS1, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS2, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS3, 0],
+                                   1.4,
+                                   places=0)
+
+    def test_drive_accel(self):
+        """Tests that applying a drive torque accelerates the drive reasonably."""
+
+        for velocity in [
+                numpy.array([[0.01], [0.0]]),
+                numpy.array([[1.0], [0.0]]),
+                numpy.array([[2.0], [0.0]])
+        ]:
+            module_angles = [0.0] * 4
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[0.0], [100.0]] * 4)
+            # Since the wheels are spinning at the same speed as the ground, there is no force accelerating the robot.  Which means there is not steering moment.  The two physics diverge pretty heavily.
+            xdot = self.swerve_full_dynamics(X, steer_I, skip_compare=True)
+
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD0, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD1, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD2, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD3, 0], 100.0)
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[0.0], [-100.0]] * 4)
+            xdot = self.swerve_full_dynamics(X, steer_I, skip_compare=True)
+
+            self.assertLess(xdot[dynamics.STATE_OMEGAD0, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD1, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD2, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD3, 0], -100.0)
+
 
 if __name__ == "__main__":
     unittest.main()
