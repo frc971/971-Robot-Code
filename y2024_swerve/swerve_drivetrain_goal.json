@@ -1,0 +1,22 @@
+{
+    "front_left_goal": {
+        "rotation_angle": 1.5,
+        "translation_control_type_goal": "CURRENT",
+        "translation_current": 5.0
+    },
+    "front_right_goal": {
+        "rotation_angle": -1.5,
+        "translation_control_type_goal": "CURRENT",
+        "translation_current": 5.0
+    },
+    "back_left_goal": {
+        "rotation_angle": -1.5,
+        "translation_control_type_goal": "CURRENT",
+        "translation_current": -5.0
+    },
+    "back_right_goal": {
+        "rotation_angle": 1.5,
+        "translation_control_type_goal": "CURRENT",
+        "translation_current": -5.0
+    }
+}

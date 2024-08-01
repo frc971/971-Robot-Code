@@ -9,7 +9,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_goal_static.h"
 
 namespace y2024_swerve {
 
@@ -18,8 +18,11 @@ class SwervePublisher {
   SwervePublisher(aos::EventLoop *event_loop, aos::ExitHandle *exit_handle,
                   const std::string &filename, double duration);
 
+  ~SwervePublisher();
+
  private:
-  aos::Sender<frc971::control_loops::swerve::Output> drivetrain_output_sender_;
+  aos::Sender<frc971::control_loops::swerve::GoalStatic>
+      drivetrain_goal_sender_;
 };
 
 }  // namespace y2024_swerve

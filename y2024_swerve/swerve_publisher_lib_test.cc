@@ -15,19 +15,19 @@ class SwervePublisherTest : public ::testing::Test {
         event_loop_(
             event_loop_factory_.MakeEventLoop("swerve_publisher", roborio_)),
         exit_handle_(event_loop_factory_.MakeExitHandle()),
-        drivetrain_swerve_output_fetcher_(
-            event_loop_->MakeFetcher<frc971::control_loops::swerve::Output>(
+        drivetrain_swerve_goal_fetcher_(
+            event_loop_->MakeFetcher<frc971::control_loops::swerve::Goal>(
                 "/drivetrain")),
         swerve_publisher_(event_loop_.get(), exit_handle_.get(),
-                          "y2024_swerve/swerve_drivetrain_output.json", 100) {}
+                          "y2024_swerve/swerve_drivetrain_goal.json", 100) {}
 
   void SendOutput() { event_loop_factory_.Run(); }
 
   void CheckOutput() {
-    drivetrain_swerve_output_fetcher_.Fetch();
+    drivetrain_swerve_goal_fetcher_.Fetch();
 
-    ASSERT_TRUE(drivetrain_swerve_output_fetcher_.get() != nullptr)
-        << ": No drivetrain output";
+    ASSERT_TRUE(drivetrain_swerve_goal_fetcher_.get() != nullptr)
+        << ": No drivetrain goal.";
   }
 
  private:
@@ -38,8 +38,8 @@ class SwervePublisherTest : public ::testing::Test {
   std::unique_ptr<aos::EventLoop> event_loop_;
   std::unique_ptr<aos::ExitHandle> exit_handle_;
 
-  aos::Fetcher<frc971::control_loops::swerve::Output>
-      drivetrain_swerve_output_fetcher_;
+  aos::Fetcher<frc971::control_loops::swerve::Goal>
+      drivetrain_swerve_goal_fetcher_;
 
   y2024_swerve::SwervePublisher swerve_publisher_;
 };

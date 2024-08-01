@@ -4,52 +4,38 @@ y2024_swerve::SwervePublisher::SwervePublisher(aos::EventLoop *event_loop,
                                                aos::ExitHandle *exit_handle,
                                                const std::string &filename,
                                                double duration)
-    : drivetrain_output_sender_(
-          event_loop->MakeSender<frc971::control_loops::swerve::Output>(
+    : drivetrain_goal_sender_(
+          event_loop->MakeSender<frc971::control_loops::swerve::GoalStatic>(
               "/drivetrain")) {
   event_loop
       ->AddTimer([this, filename]() {
-        auto output_builder = drivetrain_output_sender_.MakeBuilder();
+        auto goal_builder = drivetrain_goal_sender_.MakeStaticBuilder();
 
-        auto drivetrain_output =
-            aos::JsonFileToFlatbuffer<frc971::control_loops::swerve::Output>(
+        auto drivetrain_goal =
+            aos::JsonFileToFlatbuffer<frc971::control_loops::swerve::Goal>(
                 filename);
+        CHECK(drivetrain_goal.Verify());
+        CHECK(goal_builder->FromFlatbuffer(&drivetrain_goal.message()));
 
-        auto copied_flatbuffer =
-            aos::CopyFlatBuffer<frc971::control_loops::swerve::Output>(
-                drivetrain_output, output_builder.fbb());
-        CHECK(drivetrain_output.Verify());
-
-        output_builder.CheckOk(output_builder.Send(copied_flatbuffer));
+        goal_builder.CheckOk(goal_builder.Send());
       })
       ->Schedule(event_loop->monotonic_now(),
                  std::chrono::duration_cast<aos::monotonic_clock::duration>(
                      std::chrono::milliseconds(5)));
-  event_loop
-      ->AddTimer([this, exit_handle]() {
-        auto builder = drivetrain_output_sender_.MakeBuilder();
-        frc971::control_loops::swerve::SwerveModuleOutput::Builder
-            swerve_module_builder = builder.MakeBuilder<
-                frc971::control_loops::swerve::SwerveModuleOutput>();
-
-        swerve_module_builder.add_rotation_current(0.0);
-        swerve_module_builder.add_translation_current(0.0);
-
-        auto swerve_module_offset = swerve_module_builder.Finish();
-
-        frc971::control_loops::swerve::Output::Builder
-            drivetrain_output_builder =
-                builder.MakeBuilder<frc971::control_loops::swerve::Output>();
-
-        drivetrain_output_builder.add_front_left_output(swerve_module_offset);
-        drivetrain_output_builder.add_front_right_output(swerve_module_offset);
-        drivetrain_output_builder.add_back_left_output(swerve_module_offset);
-        drivetrain_output_builder.add_back_right_output(swerve_module_offset);
-
-        builder.CheckOk(builder.Send(drivetrain_output_builder.Finish()));
-
-        exit_handle->Exit();
-      })
+  event_loop->AddTimer([exit_handle]() { exit_handle->Exit(); })
       ->Schedule(event_loop->monotonic_now() +
                  std::chrono::milliseconds((int)duration));
+}
+y2024_swerve::SwervePublisher::~SwervePublisher() {
+  auto builder = drivetrain_goal_sender_.MakeStaticBuilder();
+
+  for (auto module_goal :
+       {builder->add_front_left_goal(), builder->add_front_right_goal(),
+        builder->add_back_left_goal(), builder->add_back_right_goal()}) {
+    module_goal->set_rotation_angle(0.0);
+    module_goal->set_translation_control_type_goal(
+        frc971::control_loops::swerve::TranslationControlTypeGoal::CURRENT);
+    module_goal->set_translation_current(0.0);
+  }
+  builder.CheckOk(builder.Send());
 }

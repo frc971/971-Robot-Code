@@ -16,7 +16,7 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        ":swerve_publisher_output_json",
+        ":swerve_publisher_goal_json",
         "//y2024_swerve/constants:constants.json",
         "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix6_tools_athena//:shared_libraries",
@@ -85,9 +85,9 @@ robot_downloader(
 )
 
 filegroup(
-    name = "swerve_publisher_output_json",
+    name = "swerve_publisher_goal_json",
     srcs = [
-        "swerve_drivetrain_output.json",
+        "swerve_drivetrain_goal.json",
     ],
     visibility = ["//y2024_swerve:__subpackages__"],
 )
@@ -127,7 +127,7 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/events:event_loop",
-        "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_goal_fbs",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
     ],
@@ -140,7 +140,7 @@ cc_test(
     ],
     data = [
         ":aos_config",
-        ":swerve_publisher_output_json",
+        ":swerve_publisher_goal_json",
     ],
     deps = [
         ":swerve_publisher_lib",
