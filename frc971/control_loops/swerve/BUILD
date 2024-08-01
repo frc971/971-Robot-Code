@@ -170,7 +170,7 @@ run_binary(
 )
 
 cc_library(
-    name = "dynamics",
+    name = "eigen_dynamics",
     srcs = ["dynamics.cc"],
     hdrs = ["dynamics.h"],
     deps = [
@@ -196,14 +196,49 @@ py_binary(
 py_test(
     name = "physics_test",
     srcs = [
-        "bigcaster_dynamics.py",
-        "dynamics.py",
-        "nocaster_dynamics.py",
         "physics_test.py",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
+        ":physics_test_utils",
         "@pip//casadi",
         "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "dynamics",
+    srcs = [
+        "bigcaster_dynamics.py",
+        "dynamics.py",
+        "nocaster_dynamics.py",
+    ],
+    deps = [
+        "@pip//casadi",
+    ],
+)
+
+py_library(
+    name = "physics_test_utils",
+    srcs = [
+        "physics_test_utils.py",
+    ],
+    deps = [
+        ":dynamics",
+        "@pip//casadi",
+        "@pip//numpy",
+    ],
+)
+
+py_binary(
+    name = "physics_debug",
+    srcs = [
+        "physics_debug.py",
+    ],
+    deps = [
+        ":physics_test_utils",
+        "@pip//matplotlib",
+        "@pip//pygobject",
+        "@pip//scipy",
     ],
 )
