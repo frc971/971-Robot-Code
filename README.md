@@ -36,6 +36,21 @@ To do this, add the following to your commit message.  Gerrit will enforce that 
 
 Git has support for adding Signed-off-by lines by using `git commit -s`, or you can setup a git commit hook to automatically sign off your commits.  [Stack Overflow](https://stackoverflow.com/questions/15015894/git-add-signed-off-by-line-using-format-signoff-not-working) has instructions for how to do this if you are interested.
 
+## Table of contents
+* [Access to the Code](#access-to-the-code)
+* [Prerequisites](#prerequisites)
+* [Building the Code](#building-the-code)
+    * [Steps to set up a computer to build the code](#steps-to-set-up-a-computer-to-build-the-code)
+    * [Setting up access to a workspace on the build server](#setting-up-access-to-a-workspace-on-the-build-server)
+    * [Bazel commands for building, testing, and deploying the code](#bazel-commands-for-building-testing-and-deploying-the-code)
+* [Code Reviews](#code-reviews)
+    * [Creating SSH Aliases](#creating-ssh-aliases)
+* [Other Information](#other-information)
+    * [Roborio Kernel Traces](#roborio-kernel-traces)
+    * [Notes on troubleshooting network setup](#notes-on-troubleshooting-network-setup)
+    * [LSP Setup for Rust](#lsp-setup-for-rust)
+    * [Other resources](#other-resources)
+
 ## Access to the code
 The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://software.frc971.org/gerrit. If you are on a platform not compatible with our codebase follow the instructions [here](#setting-up-access-to-a-workspace-on-the-build-server) to set up access to the build server. To download a copy of the 971 code on your computer, follow these steps:
   1. Fill out the 971 system access request form to get a gerrit account.
@@ -70,7 +85,7 @@ We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive docs](ht
 
 There are a couple options for building code that are given here-- setting up either your own computer, or using the frc971 build server.
 
-### Steps to set up a computer to build the code:
+### Steps to set up a computer to build the code
   1. Install any Bazel version:
      1. Check to see if the version of Linux you're running has an apt package for Bazel: `apt-cache search bazel` or just try `sudo apt install bazel`
      2. More likely, you'll need to install manually-- see [here](https://docs.bazel.build/versions/master/install-ubuntu.html).  We recommend using `apt-key` instead of `gnupg` in setting up the key:
@@ -151,7 +166,7 @@ git config --global user.email "<YOUR EMAIL>"
 If there are any questions, post to the #coding Slack channel so that other people who may reach the same issue can refer back to that.
 
 
-### Bazel commands for building, testing, and deploying the code:
+### Bazel commands for building, testing, and deploying the code
   * Build and test everything (on the host system, for the roborio target-- note, this may take a while):
 ```
 bazel test //...
@@ -255,6 +270,7 @@ This allows you to use the alias to `ping`, `ssh`, or run commands like:
 # Download code to robot #7971's raspberry pi #2
 bazel run --config=armv7 -c opt //y2020:download_stripped -- pi-7971-2
 ```
+## Other Information
 
 ### Roborio Kernel Traces
 
