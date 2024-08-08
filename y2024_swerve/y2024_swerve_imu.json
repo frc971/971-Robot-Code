@@ -41,8 +41,8 @@
       "type": "aos.timing.Report",
       "source_node": "imu",
       "frequency": 50,
-      "num_senders": 20,
-      "max_size": 8552
+      "num_senders": 30,
+      "max_size": 16384
     },
     {
       "name": "/imu/aos",
@@ -57,7 +57,7 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4608
+      "max_size": 6912
     },
     {
       "name": "/imu/aos",
@@ -98,6 +98,7 @@
         "roborio"
       ],
       "max_size": 400,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "destination_nodes": [
         {
           "name": "orin1",
@@ -220,7 +221,7 @@
       "max_size": 200
     },
     {
-      "name": "/imu/can/cana",
+      "name": "/imu/can",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "imu",
       "frequency": 9000,
@@ -326,6 +327,7 @@
       "name": "imu_can_logger",
       "executable_name": "can_logger",
       "args": [
+        "--interface_name=cana",
         "--priority=59",
         "--affinity=5"
       ],
@@ -337,7 +339,7 @@
       "name": "can_translator",
       "executable_name": "can_translator",
       "args": [
-          "--channel=/can/cana"
+          "--channel=/can"
       ],
       "nodes": [
         "imu"
@@ -551,6 +553,7 @@
       "hostname": "orin2",
       "hostnames": [
         "orin-971-2",
+        "orin-6971-2",
         "orin-7971-2",
         "orin-8971-2",
         "orin-9971-2"

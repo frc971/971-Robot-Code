@@ -17,6 +17,7 @@ robot_downloader(
     data = [
         ":aos_config",
         ":swerve_publisher_output_json",
+        "//y2024_swerve/constants:constants.json",
         "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix6_tools_athena//:shared_libraries",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
@@ -156,6 +157,7 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
@@ -164,6 +166,7 @@ cc_binary(
         "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",
         "//frc971/wpilib/swerve:swerve_drivetrain_writer",
+        "//y2024_swerve/constants:constants_fbs",
     ],
 )
 
@@ -192,12 +195,16 @@ aos_config(
     src = "y2024_swerve_roborio.json",
     flatbuffers = [
         "//frc971:can_configuration_fbs",
+        "//frc971/queues:gyro_fbs",
         "//aos/network:remote_message_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_goal_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_status_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
+        "//y2024_swerve/constants:constants_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/can_logger:can_logging_fbs",

@@ -5,6 +5,7 @@
 #include "frc971/control_loops/swerve/swerve_drivetrain_output_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/swerve/swerve_constants_static.h"
 #include "frc971/wpilib/talonfx.h"
 
 namespace frc971::wpilib::swerve {
@@ -51,11 +52,14 @@ struct SwerveModule {
 
   // Populates the Position message with the mag encoder values.
   void PopulatePosition(
-      frc971::control_loops::swerve::SwerveModulePositionStatic *fbs) {
+      frc971::control_loops::swerve::SwerveModulePositionStatic *fbs,
+      const SwervePositionConstants *constants) {
     auto rotation_position = fbs->add_rotation_position();
-    rotation_position->set_encoder(rotation_encoder.ReadRelativeEncoder());
+    rotation_position->set_encoder(rotation_encoder.ReadRelativeEncoder() *
+                                   constants->relative_encoder_scale());
     rotation_position->set_absolute_encoder(
-        rotation_encoder.ReadAbsoluteEncoder());
+        rotation_encoder.ReadAbsoluteEncoder() *
+        constants->absolute_encoder_scale());
   }
 
   // Populates a CAN-position message with the CAN-based devices (currently,

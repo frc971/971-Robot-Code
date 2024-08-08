@@ -26,10 +26,17 @@
             "max_size": 8192
         },
         {
+            "name": "/roborio/drivetrain",
+            "type": "frc971.sensors.GyroReading",
+            "source_node": "roborio",
+            "frequency": 250,
+            "num_senders": 2
+        },
+        {
             "name": "/roborio/aos",
             "type": "aos.RobotState",
             "source_node": "roborio",
-            "frequency": 50,
+            "frequency": 250,
             "num_senders": 20,
             "max_size": 192
         },
@@ -47,7 +54,7 @@
             "source_node": "roborio",
             "frequency": 50,
             "num_senders": 20,
-            "max_size": 3000
+            "max_size": 8192
         },
         {
             "name": "/roborio/aos",
@@ -132,6 +139,19 @@
             "frequency": 20,
             "source_node": "roborio",
             "max_size": 208
+        },
+        {
+            "name": "/roborio/drivetrain",
+            "type": "frc971.control_loops.swerve.Goal",
+            "source_node": "roborio",
+            "frequency": 250
+        },
+        {
+            "name": "/roborio/drivetrain",
+            "type": "frc971.control_loops.swerve.Status",
+            "source_node": "roborio",
+            "max_size": 2056,
+            "frequency": 250
         },
         {
             "name": "/roborio/drivetrain",
@@ -270,6 +290,14 @@
             "type": "frc971.CANConfiguration",
             "source_node": "roborio",
             "frequency": 2
+        },
+        {
+          "name": "/roborio/constants",
+          "type": "y2024_swerve.Constants",
+          "source_node": "roborio",
+          "frequency": 1,
+          "num_senders": 2,
+          "max_size": 65536
         }
     ],
     "applications": [
@@ -291,6 +319,14 @@
             "nodes": [
                 "roborio"
             ]
+        },
+        {
+          "name": "constants_sender_roborio",
+          "executable_name": "constants_sender",
+          "autorestart": false,
+          "nodes": [
+            "roborio"
+          ]
         },
         {
             "name": "roborio_web_proxy",
@@ -338,8 +374,15 @@
             ]
         },
         {
+            "name": "swerve_control_loops",
+            "nodes": [
+                "roborio"
+            ]
+        },
+        {
             "name": "can_logger",
             "executable_name": "can_logger",
+            "autostart": false,
             "nodes": [
                 "roborio"
             ]
@@ -380,6 +423,15 @@
             },
             "rename": {
                 "name": "/roborio/drivetrain"
+            }
+        },
+        {
+            "match": {
+                "name": "/constants*",
+                "source_node": "roborio"
+            },
+            "rename": {
+                "name": "/roborio/constants"
             }
         }
     ],

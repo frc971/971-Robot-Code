@@ -1,5 +1,6 @@
 include "frc971/zeroing/constants.fbs";
 include "frc971/vision/calibration.fbs";
+include "frc971/wpilib/swerve/swerve_constants.fbs";
 
 namespace y2024_swerve;
 
@@ -8,7 +9,7 @@ table CameraConfiguration {
 }
 
 table Common {
-
+  swerve_positions_constants:frc971.wpilib.swerve.SwervePositionConstants (id: 0);
 }
 
 table RobotConstants {

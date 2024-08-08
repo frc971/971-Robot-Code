@@ -1,0 +1,14 @@
+namespace frc971.wpilib.swerve;
+
+// Captures the robot-design-specific constants for a swerve module.
+// I.e., gear ratios and the such but not zeroing constants that vary by
+// instance of the design.
+table SwervePositionConstants {
+  // Scales between the relative and absolute encoders on the rotation
+  // module and the actual rotation of the module, in radians.
+  // module_rotation_in_radians = *_encoder_scale * encoder_reading
+  // The relative encoder reading will generally be the actual count of the
+  // encoder and the absolute encoder will generally vary between 0 and 1.
+  relative_encoder_scale:double (id: 0);
+  absolute_encoder_scale:double (id: 1);
+}
