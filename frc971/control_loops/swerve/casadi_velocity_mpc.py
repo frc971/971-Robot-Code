@@ -28,6 +28,7 @@ class MPC(object):
         # Do it only in the observer/post?
 
         self.next_X = self.make_physics()
+        self.cost = self.make_cost()
         self.force = [
             dynamics.F(i, casadi.SX.sym("X", 25, 1), casadi.SX.sym("U", 8, 1))
             for i in range(4)
@@ -72,53 +73,13 @@ class MPC(object):
             self.w0 += [0] * 8
 
             # Integrate till the end of the interval
-            Fk = self.next_X(x0=Xk, u=Uk)
-            Xk_end = Fk['xf']
+            Xk_end = self.next_X(x0=Xk, u=Uk)['xf']
 
-            # TODO(austin): tune cost fn?
-            # Do we want to penalize slipping tires?
-            # Do we want to penalize powers unevenly applied across the motors?
-            # Need to do some simulations to see what works well.
-
-            J += 1000 * (self.R[0] - Xk_end[dynamics.VELOCITY_STATE_VX])**2.0
-            J += 1000 * (self.R[1] - Xk_end[dynamics.VELOCITY_STATE_VY])**2.0
-            J += 1000 * (self.R[2] -
-                         Xk_end[dynamics.VELOCITY_STATE_OMEGA])**2.0
-
-            kSteerPositionGain = 0
-            kSteerVelocityGain = 0.05
-            J += kSteerPositionGain * (
-                Xk_end[dynamics.VELOCITY_STATE_THETAS0])**2.0
-            J += kSteerVelocityGain * (
-                Xk_end[dynamics.VELOCITY_STATE_OMEGAS0])**2.0
-
-            J += kSteerPositionGain * (
-                Xk_end[dynamics.VELOCITY_STATE_THETAS1])**2.0
-            J += kSteerVelocityGain * (
-                Xk_end[dynamics.VELOCITY_STATE_OMEGAS1])**2.0
-
-            J += kSteerPositionGain * (
-                Xk_end[dynamics.VELOCITY_STATE_THETAS2])**2.0
-            J += kSteerVelocityGain * (
-                Xk_end[dynamics.VELOCITY_STATE_OMEGAS2])**2.0
-
-            J += kSteerPositionGain * (
-                Xk_end[dynamics.VELOCITY_STATE_THETAS3])**2.0
-            J += kSteerVelocityGain * (
-                Xk_end[dynamics.VELOCITY_STATE_OMEGAS3])**2.0
-
-            #for i in range(4):
-            #    sa = self.slip_angle[i](Xk_end, Uk)
-            #    J += 10 * sa * sa
-
-            for i in range(4):
-                # Steer
-                J += Uk[2 * i + 0] * Uk[2 * i + 0] / 100000.0
-                # Drive
-                J += Uk[2 * i + 1] * Uk[2 * i + 1] / 1000.0
+            J += self.cost(x=Xk_end, u=Uk, r=self.R)['jn']
 
             # New NLP variable for state at end of interval
             Xk = casadi.MX.sym('X_' + str(k + 1), dynamics.NUM_VELOCITY_STATES)
+
             self.w += [Xk]
             self.ubw += [casadi.inf] * dynamics.NUM_VELOCITY_STATES
             self.lbw += [-casadi.inf] * dynamics.NUM_VELOCITY_STATES
@@ -156,6 +117,44 @@ class MPC(object):
             X = X + DT / 6 / M * (k1 + 2 * k2 + 2 * k3 + k4)
 
         return casadi.Function("next_X", [X0, U], [X], ['x0', 'u'], ['xf'])
+
+    def make_cost(self):
+        # TODO(austin): tune cost fn?
+        # Do we want to penalize slipping tires?
+        # Do we want to penalize powers unevenly applied across the motors?
+        # Need to do some simulations to see what works well.
+
+        X = casadi.MX.sym('X', dynamics.NUM_VELOCITY_STATES)
+        R = casadi.MX.sym('R', 3)
+        U = casadi.MX.sym('U', 8)
+
+        J = 0
+        J += 1000 * (R[0] - X[dynamics.VELOCITY_STATE_VX])**2.0
+        J += 1000 * (R[1] - X[dynamics.VELOCITY_STATE_VY])**2.0
+        J += 1000 * (R[2] - X[dynamics.VELOCITY_STATE_OMEGA])**2.0
+
+        kSteerPositionGain = 0
+        kSteerVelocityGain = 0.05
+        J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS0])**2.0
+        J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS0])**2.0
+
+        J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS1])**2.0
+        J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS1])**2.0
+
+        J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS2])**2.0
+        J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS2])**2.0
+
+        J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS3])**2.0
+        J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS3])**2.0
+
+        # TODO(austin): Don't penalize torque steering current.
+        for i in range(4):
+            # Steer
+            J += U[2 * i + 0] * U[2 * i + 0] / 100000.0
+            # Drive
+            J += U[2 * i + 1] * U[2 * i + 1] / 1000.0
+
+        return casadi.Function("Jn", [X, U, R], [J], ['x', 'u', 'r'], ['jn'])
 
     def solve(self, p, seed=None):
         w0 = []
