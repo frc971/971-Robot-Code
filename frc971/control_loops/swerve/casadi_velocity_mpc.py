@@ -38,13 +38,12 @@ class MPC(object):
                                 casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
 
-        self.N = 2
+        self.N = 10
 
         # TODO(austin): Can we approximate sin/cos/atan for the initial operating point to solve faster if we need it?
 
         # Start with an empty nonlinear program.
         self.w = []
-        self.w0 = []
         self.lbw = []
         self.ubw = []
         J = 0
@@ -57,37 +56,38 @@ class MPC(object):
         # We care about the linear and angular velocities only.
         self.R = casadi.MX.sym('R', 3)
 
-        Xk = self.X0
         # Instead of an equality constraint on the goal, what about:
         # self.w += [Xk]
         # lbw += [0, 1]
         # ubw += [0, 1]
         # w0 += [0, 1]
 
-        for k in range(self.N):
-            Uk = casadi.MX.sym('U_' + str(k), 8)
-            # TODO(austin): Add a line to g here for a 12 volt battery and the breakers?
-            self.w += [Uk]
-            self.lbw += [-100] * 8
-            self.ubw += [100] * 8
-            self.w0 += [0] * 8
+        Xn = casadi.MX.sym('Xn', dynamics.NUM_VELOCITY_STATES, self.N - 1)
+        U = casadi.MX.sym('U', 8, self.N)
 
-            # Integrate till the end of the interval
-            Xk_end = self.next_X(x0=Xk, u=Uk)['xf']
+        Xk_begin = casadi.horzcat(self.X0, Xn)
+        Xk_end = self.next_X.map(self.N, "thread")(Xk_begin, U)
+        J = casadi.sum2(self.cost.map(self.N, "thread")(Xk_end, U, self.R))
 
-            J += self.cost(x=Xk_end, u=Uk, r=self.R)['jn']
+        self.w += [casadi.reshape(U, 8 * self.N, 1)]
+        self.lbw += [-100] * (8 * self.N)
+        self.ubw += [100] * (8 * self.N)
 
-            # New NLP variable for state at end of interval
-            Xk = casadi.MX.sym('X_' + str(k + 1), dynamics.NUM_VELOCITY_STATES)
+        self.w += [
+            casadi.reshape(Xn, dynamics.NUM_VELOCITY_STATES * (self.N - 1), 1)
+        ]
+        self.ubw += [casadi.inf] * (dynamics.NUM_VELOCITY_STATES *
+                                    (self.N - 1))
+        self.lbw += [-casadi.inf] * (dynamics.NUM_VELOCITY_STATES *
+                                     (self.N - 1))
 
-            self.w += [Xk]
-            self.ubw += [casadi.inf] * dynamics.NUM_VELOCITY_STATES
-            self.lbw += [-casadi.inf] * dynamics.NUM_VELOCITY_STATES
+        self.g += [
+            casadi.reshape(Xk_end[:, 0:(self.N - 1)] - Xn,
+                           dynamics.NUM_VELOCITY_STATES * (self.N - 1), 1)
+        ]
 
-            # Add equality constraint by using lbg <= g <= ubg
-            self.g += [Xk_end - Xk]
-            self.lbg += [0] * dynamics.NUM_VELOCITY_STATES
-            self.ubg += [0] * dynamics.NUM_VELOCITY_STATES
+        self.lbg += [0] * dynamics.NUM_VELOCITY_STATES * (self.N - 1)
+        self.ubg += [0] * dynamics.NUM_VELOCITY_STATES * (self.N - 1)
 
         prob = {
             'f': J,
@@ -98,8 +98,17 @@ class MPC(object):
             # Input parameters (initial position + goal)
             'p': casadi.vertcat(self.X0, self.R),
         }
-        print('J', J)
-        self.solver = casadi.nlpsol('solver', 'ipopt', prob)
+
+        compiler = "clang"
+        flags = ["-O1"]
+        jit_options = {"flags": flags, "verbose": True, "compiler": compiler}
+        options = {
+            "jit": True,
+            "compiler": "shell",
+            "jit_options": jit_options,
+            "ipopt.linear_solver": "spral",
+        }
+        self.solver = casadi.nlpsol('solver', 'ipopt', prob, options)
 
     def make_physics(self):
         X0 = casadi.MX.sym('X0', dynamics.NUM_VELOCITY_STATES)
@@ -116,7 +125,7 @@ class MPC(object):
             k4 = self.velocity_fdot(X + DT * k3, U)
             X = X + DT / 6 / M * (k1 + 2 * k2 + 2 * k3 + k4)
 
-        return casadi.Function("next_X", [X0, U], [X], ['x0', 'u'], ['xf'])
+        return casadi.Function("next_X", [X0, U], [X])
 
     def make_cost(self):
         # TODO(austin): tune cost fn?
@@ -125,8 +134,8 @@ class MPC(object):
         # Need to do some simulations to see what works well.
 
         X = casadi.MX.sym('X', dynamics.NUM_VELOCITY_STATES)
-        R = casadi.MX.sym('R', 3)
         U = casadi.MX.sym('U', 8)
+        R = casadi.MX.sym('R', 3)
 
         J = 0
         J += 1000 * (R[0] - X[dynamics.VELOCITY_STATE_VX])**2.0
@@ -154,15 +163,13 @@ class MPC(object):
             # Drive
             J += U[2 * i + 1] * U[2 * i + 1] / 1000.0
 
-        return casadi.Function("Jn", [X, U, R], [J], ['x', 'u', 'r'], ['jn'])
+        return casadi.Function("Jn", [X, U, R], [J])
 
     def solve(self, p, seed=None):
         w0 = []
-        for k in range(self.N):
-            w0 += [0, 0] * 4
 
-            w_step = p[:dynamics.NUM_VELOCITY_STATES, 0]
-            w0 += list(w_step)
+        w0 += [0, 0] * 4 * self.N
+        w0 += list(p[:dynamics.NUM_VELOCITY_STATES, 0]) * (self.N - 1)
 
         return self.solver(x0=w0,
                            lbx=self.lbw,
