@@ -15,8 +15,34 @@ from frc971.control_loops.swerve import physics_test_utils as utils
 class TestSwervePhysics(unittest.TestCase):
     I = numpy.zeros((8, 1))
 
+    def to_velocity_state(self, X):
+        return dynamics.to_velocity_state(X)
+
+    def swerve_full_dynamics(self, X, U, skip_compare=False):
+        X_velocity = self.to_velocity_state(X)
+        Xdot = self.position_swerve_full_dynamics(X, U)
+        if not skip_compare:
+            velocity_states = self.to_velocity_state(Xdot)
+            velocity_physics = self.velocity_swerve_physics(X_velocity, U)
+            self.assertLess(
+                numpy.linalg.norm(velocity_states - velocity_physics),
+                2e-2,
+                msg=
+                f'Norm failed, full physics -> {velocity_states.T}, velocity physics -> {velocity_physics}, difference -> {velocity_physics - velocity_states}',
+            )
+
+        return Xdot
+
     def wrap(self, python_module):
-        self.swerve_physics = utils.wrap(python_module.swerve_physics)
+        self.position_swerve_full_dynamics = utils.wrap(
+            python_module.swerve_full_dynamics)
+
+        evaluated_fn = python_module.velocity_swerve_physics(
+            casadi.SX.sym("X", dynamics.NUM_VELOCITY_STATES, 1),
+            casadi.SX.sym("U", 8, 1))
+        self.velocity_swerve_physics = lambda X, U: numpy.array(
+            evaluated_fn(X, U))
+
         self.contact_patch_velocity = [
             utils.wrap_module(python_module.contact_patch_velocity, i)
             for i in range(4)
@@ -172,7 +198,7 @@ class TestSwervePhysics(unittest.TestCase):
             velocity=numpy.array([[1.0], [0.0]]),
             module_angles=[-0.001, -0.001, 0.001, 0.001],
         )
-        xdot_equal = self.swerve_physics(X, self.I)
+        xdot_equal = self.swerve_full_dynamics(X, self.I)
 
         self.assertGreater(xdot_equal[2, 0], 0.0)
         self.assertAlmostEqual(xdot_equal[3, 0], 0.0, places=1)
@@ -199,7 +225,7 @@ class TestSwervePhysics(unittest.TestCase):
             velocity=numpy.array([[1.0], [0.0]]),
             module_angles=[0.01, 0.01, 0.01, 0.01],
         )
-        xdot_left = self.swerve_physics(X, self.I)
+        xdot_left = self.swerve_full_dynamics(X, self.I)
 
         self.assertLess(xdot_left[2, 0], -0.05)
         self.assertLess(xdot_left[3, 0], 0.0)
@@ -227,7 +253,7 @@ class TestSwervePhysics(unittest.TestCase):
             velocity=numpy.array([[1.0], [0.0]]),
             module_angles=[-0.01, -0.01, -0.01, -0.01],
         )
-        xdot_right = self.swerve_physics(X, self.I)
+        xdot_right = self.swerve_full_dynamics(X, self.I)
 
         self.assertGreater(xdot_right[2, 0], 0.05)
         self.assertLess(xdot_right[3, 0], 0.0)
@@ -264,7 +290,7 @@ class TestSwervePhysics(unittest.TestCase):
             ],
             drive_wheel_velocity=-1,
         )
-        xdot_equal = self.swerve_physics(X, self.I)
+        xdot_equal = self.swerve_full_dynamics(X, self.I)
 
         self.assertGreater(xdot_equal[2, 0], 0.0, msg="Steering backwards")
         self.assertAlmostEqual(xdot_equal[3, 0], 0.0, places=1)
@@ -292,7 +318,7 @@ class TestSwervePhysics(unittest.TestCase):
             module_angles=[numpy.pi + 0.01] * 4,
             drive_wheel_velocity=-1,
         )
-        xdot_left = self.swerve_physics(X, self.I)
+        xdot_left = self.swerve_full_dynamics(X, self.I)
 
         self.assertLess(xdot_left[2, 0], -0.05)
         self.assertGreater(xdot_left[3, 0], 0.0)
@@ -321,7 +347,7 @@ class TestSwervePhysics(unittest.TestCase):
             drive_wheel_velocity=-1,
             module_angles=[-0.01 + numpy.pi] * 4,
         )
-        xdot_right = self.swerve_physics(X, self.I)
+        xdot_right = self.swerve_full_dynamics(X, self.I)
 
         self.assertGreater(xdot_right[2, 0], 0.05)
         self.assertGreater(xdot_right[3, 0], 0.0)
@@ -358,7 +384,7 @@ class TestSwervePhysics(unittest.TestCase):
             ],
             drive_wheel_velocity=-1,
         )
-        xdot_equal = self.swerve_physics(X, self.I)
+        xdot_equal = self.swerve_full_dynamics(X, self.I)
 
         self.assertLess(xdot_equal[2, 0], 0.0, msg="Steering backwards")
         self.assertAlmostEqual(xdot_equal[3, 0], 0.0, places=1)
@@ -386,7 +412,7 @@ class TestSwervePhysics(unittest.TestCase):
             module_angles=[numpy.pi + 0.01] * 4,
             drive_wheel_velocity=-1,
         )
-        xdot_left = self.swerve_physics(X, self.I)
+        xdot_left = self.swerve_full_dynamics(X, self.I)
 
         self.assertGreater(xdot_left[2, 0], -0.05)
         self.assertGreater(xdot_left[3, 0], 0.0)
@@ -415,7 +441,7 @@ class TestSwervePhysics(unittest.TestCase):
             drive_wheel_velocity=-1,
             module_angles=[-0.01 + numpy.pi] * 4,
         )
-        xdot_right = self.swerve_physics(X, self.I)
+        xdot_right = self.swerve_full_dynamics(X, self.I)
 
         self.assertLess(xdot_right[2, 0], 0.05)
         self.assertGreater(xdot_right[3, 0], 0.0)
@@ -445,7 +471,7 @@ class TestSwervePhysics(unittest.TestCase):
 
             X = utils.state_vector()
             robot_equal = wheel_force(X, self.I)
-            xdot_equal = self.swerve_physics(X, self.I)
+            xdot_equal = self.swerve_full_dynamics(X, self.I)
             self.assertEqual(robot_equal[0, 0], 0.0)
             self.assertEqual(robot_equal[1, 0], 0.0)
             self.assertEqual(xdot_equal[2 + 4 * i], 0.0)
@@ -454,7 +480,9 @@ class TestSwervePhysics(unittest.TestCase):
             # Robot is moving faster than the wheels, it should decelerate.
             X = utils.state_vector(dx=0.01)
             robot_faster = wheel_force(X, self.I)
-            xdot_faster = self.swerve_physics(X, self.I)
+            xdot_faster = self.swerve_full_dynamics(X,
+                                                    self.I,
+                                                    skip_compare=True)
             self.assertLess(robot_faster[0, 0], -0.1)
             self.assertEqual(robot_faster[1, 0], 0.0)
             self.assertGreater(xdot_faster[3 + 4 * i], 0.0)
@@ -462,7 +490,9 @@ class TestSwervePhysics(unittest.TestCase):
             # Robot is now going slower than the wheels.  It should accelerate.
             X = utils.state_vector(dx=-0.01)
             robot_slower = wheel_force(X, self.I)
-            xdot_slower = self.swerve_physics(X, self.I)
+            xdot_slower = self.swerve_full_dynamics(X,
+                                                    self.I,
+                                                    skip_compare=True)
             self.assertGreater(robot_slower[0, 0], 0.1)
             self.assertEqual(robot_slower[1, 0], 0.0)
             self.assertLess(xdot_slower[3 + 4 * i], 0.0)
@@ -476,6 +506,74 @@ class TestSwervePhysics(unittest.TestCase):
             robot_right = wheel_force(utils.state_vector(dy=-0.01), self.I)
             self.assertEqual(robot_right[0, 0], 0.0)
             self.assertGreater(robot_right[1, 0], 0.1)
+
+    def test_steer_accel(self):
+        """Tests that applying a steer torque accelerates the steer reasonably."""
+
+        for velocity in [
+                numpy.array([[0.0], [0.0]]),
+                numpy.array([[1.0], [0.0]]),
+                numpy.array([[2.0], [0.0]])
+        ]:
+            module_angles = [0.0] * 4
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[1.0], [0.0]] * 4)
+            xdot = self.swerve_full_dynamics(X, steer_I)
+
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS0, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS1, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS2, 0],
+                                   1.4,
+                                   places=0)
+            self.assertAlmostEqual(xdot[dynamics.STATE_OMEGAS3, 0],
+                                   1.4,
+                                   places=0)
+
+    def test_drive_accel(self):
+        """Tests that applying a drive torque accelerates the drive reasonably."""
+
+        for velocity in [
+                numpy.array([[0.01], [0.0]]),
+                numpy.array([[1.0], [0.0]]),
+                numpy.array([[2.0], [0.0]])
+        ]:
+            module_angles = [0.0] * 4
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[0.0], [100.0]] * 4)
+            # Since the wheels are spinning at the same speed as the ground, there is no force accelerating the robot.  Which means there is not steering moment.  The two physics diverge pretty heavily.
+            xdot = self.swerve_full_dynamics(X, steer_I, skip_compare=True)
+
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD0, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD1, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD2, 0], 100.0)
+            self.assertGreater(xdot[dynamics.STATE_OMEGAD3, 0], 100.0)
+
+            X = utils.state_vector(
+                velocity=velocity,
+                omega=0.0,
+                module_angles=module_angles,
+            )
+            steer_I = numpy.array([[0.0], [-100.0]] * 4)
+            xdot = self.swerve_full_dynamics(X, steer_I, skip_compare=True)
+
+            self.assertLess(xdot[dynamics.STATE_OMEGAD0, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD1, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD2, 0], -100.0)
+            self.assertLess(xdot[dynamics.STATE_OMEGAD3, 0], -100.0)
 
 
 if __name__ == "__main__":

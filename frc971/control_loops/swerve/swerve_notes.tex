@@ -354,11 +354,11 @@ We add up all the torques/forces in each dimension to give the following equatio
     \tau_md + \tau_d = -F_{wx}r_w\\
     \dot\theta_d = G_{d3}\left(\left(G_{carrier} - 1\right)\dot\theta_s - \dot\theta_{md}G_{motor-to-planet}\right) \label{the_one}
 \end{gather}
-The $-1$ in equation \eqref{the_one} comes from the additional contirbution of the wrapping around the gear with the change of coordinates.\\
-which we can expand into
+The $-1$ in equation \eqref{the_one} comes from the additional contirbution of the wrapping around the gear with the change of coordinates.
+We can expand this into
 \begin{gather}
     M_s + \frac{K_tI_s}{G_s} + \left(-w_b+\left(r_s+r_p\right)\left(1-\frac{r_{b1}}{r_p}\right)\right)\frac{r_w}{r_{b2}}\left(-F_{wx}\right) = \left(J_s + \frac{J_{ms}}{G^2_s}\right)\ddot\theta_s\\
-    \left(\frac{-J_{md}\ddot\theta_{md}}{G_d}\right)+\frac{K_{t}I_d}{G_d} = -F_{wx}r_w\\
+    \frac{J_{md}\ddot\theta_{md}}{G_d}+\frac{K_{t}I_d}{G_d} = F_{wx}r_w \label{md_ddot}\\
     \dot\theta_d = G_{d3}\left(\left(\frac{r_p+r_s}{r_p}-1\right)\dot\theta_s - \dot\theta_{md}G_{d1}G_{d2}\right)
 \end{gather}
 where each G represents a separate gear ratio.
@@ -378,6 +378,20 @@ However, the angular velocity differential equation is more complicated as the t
 \begin{gather}
     \ddot{\theta} = \frac{\Sigma\left(\harpoon{r} \times \harpoon{F}_{mod}\right) + \tau_{d}}{J_{robot}}
 \end{gather}
+\subsection{Simplified longitudinal dynamics}
+
+The time constants involved with the longitudinal dynamics are significantly faster than the time constants for accelerating a robot.
+This makes the equations pretty stiff and hard to work with.
+Ignoring the mass of the wheel, the time constant for a Kraken is around $4ms$.
+This also makes it hard on the MPC solver.  Therefore, it is useful to have a simplified version of the physics which solves for the acceleration force directly as a function of drive current.
+
+\eqref{md_ddot} then simplifies to 
+\begin{gather}
+\frac{K_{t}I_d}{G_d} = -F_{wx}r_w\\
+\end{gather}
+
+TODO(austin): Need to document how the position dynamics work for an EKF.
+
 \newpage
 \printbibliography
 \end{document}
