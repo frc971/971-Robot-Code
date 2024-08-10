@@ -136,7 +136,8 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 4, 1>::Constant(-1),
       Eigen::Matrix<double, 4, 2>::Zero(),
       Eigen::Matrix<double, 4, 1>::Constant(0),
-      frc971::controls::kLoopFrequency, false);
+      frc971::controls::kLoopFrequency, false,
+      Eigen::Matrix<double, 7, 1>::Zero());
 
   // Build a plant.
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>>

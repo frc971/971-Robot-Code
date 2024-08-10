@@ -257,10 +257,18 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
             falcon->RefreshNontimesyncedSignals();
           }
 
-          modules.front_left->PopulateCanPosition(builder->add_front_left());
-          modules.front_right->PopulateCanPosition(builder->add_front_right());
-          modules.back_left->PopulateCanPosition(builder->add_back_left());
-          modules.back_right->PopulateCanPosition(builder->add_back_right());
+          const frc971::wpilib::swerve::SwerveModule::ModuleGearRatios
+              gear_ratios{
+                  .rotation = constants::Values::kRotationModuleRatio(),
+                  .translation = constants::Values::kTranslationModuleRatio()};
+          modules.front_left->PopulateCanPosition(builder->add_front_left(),
+                                                  gear_ratios);
+          modules.front_right->PopulateCanPosition(builder->add_front_right(),
+                                                   gear_ratios);
+          modules.back_left->PopulateCanPosition(builder->add_back_left(),
+                                                 gear_ratios);
+          modules.back_right->PopulateCanPosition(builder->add_back_right(),
+                                                  gear_ratios);
 
           builder.CheckOk(builder.Send());
         });

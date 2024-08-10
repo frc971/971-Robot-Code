@@ -262,6 +262,22 @@ py_binary(
 )
 
 py_binary(
+    name = "wrapped_subsystem_test",
+    srcs = [
+        "wrapped_subsystem_test.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":angular_system",
+        ":controls",
+        ":python_init",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
+
+py_binary(
     name = "static_zeroing_single_dof_profiled_subsystem_test",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test.py",

@@ -170,6 +170,7 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
 
         self.U_max = self._drivetrain.U_max
         self.U_min = self._drivetrain.U_min
+        self.wrap_point = numpy.matrix(numpy.zeros((2, 1)))
 
     @property
     def robot_radius_l(self):

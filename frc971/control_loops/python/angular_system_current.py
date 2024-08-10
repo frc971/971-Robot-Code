@@ -22,7 +22,8 @@ class AngularSystemCurrentParams(object):
                  kalman_q_voltage,
                  kalman_r_position,
                  radius=None,
-                 dt=0.00505):
+                 dt=0.00505,
+                 wrap_point=0.0):
         """Constructs an AngularSystemCurrentParams object.
 
         Args:
@@ -38,6 +39,8 @@ class AngularSystemCurrentParams(object):
           kalman_r_position: float, std deviation of the position measurement
           radius: float, radius of the mechanism in meters
           dt: float, length of the control loop period in seconds
+          wrap_point: float, point at which the position will wrap (if non-zero)
+             Will typically be 2 * pi if set.
         """
         self.name = name
         self.motor = motor
@@ -51,6 +54,7 @@ class AngularSystemCurrentParams(object):
         self.kalman_r_position = kalman_r_position
         self.radius = radius
         self.dt = dt
+        self.wrap_point = wrap_point
 
 
 # An angular system that uses current control instead of voltage
@@ -160,6 +164,8 @@ class AngularSystemCurrent(control_loop.ControlLoop):
 
         self.delayed_u = 1
 
+        self.wrap_point = numpy.matrix([[self.params.wrap_point]])
+
         self.InitializeState()
 
 
@@ -215,6 +221,8 @@ class IntegralAngularSystemCurrent(AngularSystemCurrent):
         self.U_limit_coefficient[0, 0:2] = self.U_limit_coefficient_unaugmented
 
         self.InitializeState()
+
+        self.wrap_point = numpy.matrix([[self.params.wrap_point]])
 
 
 def RunTest(plant,

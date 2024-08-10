@@ -62,14 +62,20 @@ struct SwerveModule {
         constants->absolute_encoder_scale());
   }
 
+  struct ModuleGearRatios {
+    double rotation;
+    double translation;
+  };
   // Populates a CAN-position message with the CAN-based devices (currently,
   // just the motors themselves).
+  // Scales the motors' position values by the provided gear ratios.
   void PopulateCanPosition(
       frc971::control_loops::swerve::SwerveModuleCanPositionStatic
-          *can_position) {
-    // TODO(james): Source these numbers from the constants.json.
-    rotation->SerializePosition(can_position->add_rotation(), 1.0);
-    translation->SerializePosition(can_position->add_translation(), 1.0);
+          *can_position,
+      const ModuleGearRatios &ratios) {
+    rotation->SerializePosition(can_position->add_rotation(), ratios.rotation);
+    translation->SerializePosition(can_position->add_translation(),
+                                   ratios.translation);
   }
 
   std::shared_ptr<TalonFX> rotation;

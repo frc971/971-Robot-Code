@@ -17,6 +17,7 @@ table StateFeedbackPlantCoefficients {
   u_limit_constant:frc971.fbs.Matrix (id: 7);
   dt:uint64 (id: 8);
   delayed_u:uint64 (id: 9);
+  wrap_point:frc971.fbs.Matrix (id: 10);
 }
 
 table StateFeedbackHybridPlantCoefficients {
@@ -29,6 +30,7 @@ table StateFeedbackHybridPlantCoefficients {
   u_limit_coefficient:frc971.fbs.Matrix (id: 6);
   u_limit_constant:frc971.fbs.Matrix (id: 7);
   delayed_u:uint64 (id: 8);
+  wrap_point:frc971.fbs.Matrix (id: 9);
 }
 
 table StateFeedbackControllerCoefficients {

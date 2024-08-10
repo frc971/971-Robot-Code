@@ -24,7 +24,8 @@ class AngularSystemParams(object):
                  radius=None,
                  dt=0.00505,
                  enable_voltage_error=True,
-                 delayed_u=0):
+                 delayed_u=0,
+                 wrap_point=0.0):
         """Constructs an AngularSystemParams object.
 
         Args:
@@ -46,6 +47,7 @@ class AngularSystemParams(object):
         self.dt = dt
         self.enable_voltage_error = enable_voltage_error
         self.delayed_u = delayed_u
+        self.wrap_point = wrap_point
 
 
 class AngularSystem(control_loop.ControlLoop):
@@ -144,6 +146,8 @@ class AngularSystem(control_loop.ControlLoop):
 
         self.InitializeState()
 
+        self.wrap_point = numpy.matrix([[self.params.wrap_point]])
+
 
 class IntegralAngularSystem(AngularSystem):
 
@@ -194,6 +198,8 @@ class IntegralAngularSystem(AngularSystem):
             (self.Kff, numpy.matrix(numpy.zeros((1, 1)))), axis=1)
 
         self.InitializeState()
+
+        self.wrap_point = numpy.matrix([[self.params.wrap_point]])
 
 
 def RunTest(plant,

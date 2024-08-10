@@ -37,7 +37,8 @@ MakeStateFeedbackPlantCoefficients(
       ToEigenOrDie<number_of_inputs, number_of_states>(
           *coefficients.u_limit_coefficient()),
       ToEigenOrDie<number_of_inputs, 1>(*coefficients.u_limit_constant()),
-      std::chrono::nanoseconds(coefficients.dt()), coefficients.delayed_u());
+      std::chrono::nanoseconds(coefficients.dt()), coefficients.delayed_u(),
+      ToEigenOrDie<number_of_outputs, 1>(*coefficients.wrap_point()));
 }
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs>

@@ -346,6 +346,7 @@ cc_library(
     ],
     deps = [
         "//aos:macros",
+        "//frc971/zeroing:wrap",
         "@org_tuxfamily_eigen//:eigen",
     ] + select({
         "@platforms//os:linux": ["//aos/logging"],
@@ -611,6 +612,39 @@ genrule(
     ],
 )
 
+genrule(
+    name = "genrule_wrapped_subsystem_test",
+    outs = [
+        "wrapped_subsystem_test_plant.h",
+        "wrapped_subsystem_test_plant.cc",
+        "wrapped_subsystem_test_plant.json",
+        "wrapped_subsystem_test_integral_plant.h",
+        "wrapped_subsystem_test_integral_plant.cc",
+        "wrapped_subsystem_test_integral_plant.json",
+    ],
+    cmd = "$(location //frc971/control_loops/python:wrapped_subsystem_test) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
+    tools = [
+        "//frc971/control_loops/python:wrapped_subsystem_test",
+    ],
+)
+
+cc_library(
+    name = "wrapped_subsystem_test_plants",
+    srcs = [
+        "wrapped_subsystem_test_integral_plant.cc",
+        "wrapped_subsystem_test_plant.cc",
+    ],
+    hdrs = [
+        "wrapped_subsystem_test_integral_plant.h",
+        "wrapped_subsystem_test_plant.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":state_feedback_loop",
+    ],
+)
+
 cc_library(
     name = "static_zeroing_single_dof_profiled_subsystem_test_plants",
     srcs = [
@@ -713,10 +747,12 @@ cc_test(
         ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
+        ":wrapped_subsystem_test_plants",
         "//aos/testing:googletest",
         "//frc971/control_loops:control_loop_test",
         "//frc971/zeroing:absolute_and_absolute_encoder",
         "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:continuous_absolute_encoder",
         "//frc971/zeroing:pot_and_absolute_encoder",
     ],
 )
