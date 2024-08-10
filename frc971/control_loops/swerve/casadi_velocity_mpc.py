@@ -123,7 +123,7 @@ class MPC(object):
             k2 = self.velocity_fdot(X + DT / 2 * k1, U)
             k3 = self.velocity_fdot(X + DT / 2 * k2, U)
             k4 = self.velocity_fdot(X + DT * k3, U)
-            X = X + DT / 6 / M * (k1 + 2 * k2 + 2 * k3 + k4)
+            X = X + DT / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         return casadi.Function("next_X", [X0, U], [X])
 
