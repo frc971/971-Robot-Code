@@ -37,215 +37,69 @@ To do this, add the following to your commit message.  Gerrit will enforce that 
 Git has support for adding Signed-off-by lines by using `git commit -s`, or you can setup a git commit hook to automatically sign off your commits.  [Stack Overflow](https://stackoverflow.com/questions/15015894/git-add-signed-off-by-line-using-format-signoff-not-working) has instructions for how to do this if you are interested.
 
 ## Table of contents
-* [Access to the Code](#access-to-the-code)
-* [Prerequisites](#prerequisites)
-* [Building the Code](#building-the-code)
-    * [Steps to set up a computer to build the code](#steps-to-set-up-a-computer-to-build-the-code)
-    * [Setting up access to a workspace on the build server](#setting-up-access-to-a-workspace-on-the-build-server)
-    * [Bazel commands for building, testing, and deploying the code](#bazel-commands-for-building-testing-and-deploying-the-code)
+* [Pathway for new members](#pathway-for-new-members)
+    * [Learning C++](#1-learning-c)
+        * [XRP](#11-xrp)
+    * [Gaining code access](#2-gaining-code-access)
+    * [The codelab](#3-the-codelab)
 * [Code Reviews](#code-reviews)
     * [Creating SSH Aliases](#creating-ssh-aliases)
+* [Codelab](#codelab)
 * [Other Information](#other-information)
     * [Roborio Kernel Traces](#roborio-kernel-traces)
     * [Notes on troubleshooting network setup](#notes-on-troubleshooting-network-setup)
     * [LSP Setup for Rust](#lsp-setup-for-rust)
     * [Other resources](#other-resources)
 
-## Access to the code
-The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://software.frc971.org/gerrit. If you are on a platform not compatible with our codebase follow the instructions [here](#setting-up-access-to-a-workspace-on-the-build-server) to set up access to the build server. To download a copy of the 971 code on your computer, follow these steps:
-  1. Fill out the 971 system access request form to get a gerrit account.
-  - The form is pinned in the `#coding` channel in slack.  
-  - You need to be fully signed up for the team and have turned in all the forms and pass the safety test
-    - More information on signing up with the team can be found here: https://frc971.org/join
-  2. Wait for Stephan Massalt to setup the account and message you the credentials. 
-  3. When you log into Gerrit the first time, please [add your Email Address](http://software.frc971.org/gerrit/settings/#EmailAddresses)  
-  4. Add your SSH key to Gerrit in order to be able to check out code
-  - If you don't already have an ssh key, you can create one using `ssh-keygen -t ed25519`.  This will create a public/private key pair-- the default location for your public key will be `~/.ssh/id_ed25519.pub`
-  - Log into Gerrit and go to `Settings->SSH Keys` and paste your public key into the `New SSH Key` text box and clicking on `ADD NEW SSH KEY`
-  5. Install `git`: `sudo apt install git`
-  6. Go to [the 971-Robot-Code project in Gerrit](https://software.frc971.org/gerrit/#/admin/projects/971-Robot-Code) and run the command to Download the 971-Robot-Code repository.
-  - We recommend downloading the code via SSH using the `clone with commit-msg hook` command
-  - NOTE: Running with the option to `clone with commit-msg hook` will save you trouble later.
+## Pathway for new members
 
-To learn more about git, open a terminal and run `man git`, or see [git(1)](https://manpages.debian.org/buster/git-man/git.1.en.html) (especially the NOTES section).
+### 1. Learning C++
 
+C++ is what we use to program a majority of the code which runs on the robot.
+We generally recommend [this course by codeacademy](https://www.codecademy.com/learn/learn-c-plus-plus) which goes over the basics of C++ as well as OOP.
 
-## Prerequisites
-The instructions below assume you have the following:
-  1. A host computer with an appropriate OS or VM to compile the 971 code using Bazel
-    1. The currently supported operating system for building the code is amd64 Debian Buster.
-    2. It is likely to work on any `x86\_64 GNU/Linux` system (e.g., Ubuntu 20.04), but that's not at all well-tested.
-  2. Your favorite text editor installed, e.g., `vim`, `emacs`
-  3. Access to the 971-Robot-Code repository and have downloaded the source code
-  4. The ability to `ssh` into target CPU's like the roborio and Raspberry Pi
+#### 1.1 XRP
 
+If you are unsure what to work on yet you can start on the [XRP Platform](https://docs.wpilib.org/en/stable/docs/xrp-robot/index.html).
+Which basically lets you use smaller robots to learn about robotics through WPILib.
 
-## Building the code
-We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive docs](https://docs.bazel.build/versions/master/build-ref.html), including a nice [build encyclopedia reference](https://docs.bazel.build/versions/master/be/overview.html), and does a great job with fast, correct incremental rebuilds.
+### 2. Gaining code access
 
-There are a couple options for building code that are given here-- setting up either your own computer, or using the frc971 build server.
+You can follow [these steps](./documentation/tutorials/getting-started.md) to access the code.
 
-### Steps to set up a computer to build the code
-  1. Install any Bazel version:
-     1. Check to see if the version of Linux you're running has an apt package for Bazel: `apt-cache search bazel` or just try `sudo apt install bazel`
-     2. More likely, you'll need to install manually-- see [here](https://docs.bazel.build/versions/master/install-ubuntu.html).  We recommend using `apt-key` instead of `gnupg` in setting up the key:
-        1. Step 1: Add Bazel distribution URI as a package source
-           ```
-           sudo apt install curl
-           curl -fsSL https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-           echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-           ```
-        2. Step 2: Install Bazel
-           ```
-           sudo apt update && sudo apt install bazel
-           ```
+There is also a document which goes over the basics of using both gerrit and git [here](./documentation/tutorials/git-and-gerrit-basics.md)
 
-  2. Install the required packages:
-     ```sh
-     sudo apt-get update
-     sudo apt-get install python
-     ```
-  3. Change settings to allow Bazel's sandboxing to work-- follow the directions in `doc/frc971.conf`.  For example, the commands to do this would be:
-     1. `sudo cp doc/frc971.conf /etc/sysctl.d/`
-     2. `sudo sysctl --system`
+### 3. The codelab
 
-  4. In order to run certain tests, you need to give yourself
-     permissions--follow the "Set up real-time niceties" section of
-     [aos/events/README.md](aos/events/README.md).
-
-### Setting up access to a workspace on the build server
-In order to use the build server, you'll first need to get ssh access set up.  (NOTE: you don't need to do any of the other setup steps done for your own computer, since things like `bazel`, `python`, etc. are already installed on the build server)
-  1. Use ssh-keygen to create a public and private key.
-```console
-# In windows:
-# Important use Powershell!
-cd ~/.ssh
-ssh-keygen -t ed25519 -f id_971_ed25519
-chmod 600 id_971_ed25519
-```
-```console
-# In Linux and MacOS:
-cd ~
-ssh-keygen -t ed25519 -f ~/.ssh/id_971_ed25519
-chmod 600 ./.ssh/id_971_ed25519
-```
-  2. Complete the 971 system access request form for a buildserver account. WAIT for feedback, as he needs to setup the account.
-  - The form is pinned in the `#coding` channel in slack.  
-  - When asked for your public SSH key, provide the contents of `id_971_ed25519.pub`
-```console
-cat ~/.ssh/id_971_ed25519.pub
-# This output is your public SSH key for the request form.
-```
-  3. Once you hear back from Stephan, test SSH.
-```console
-ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519
-```
-  4. If that doesnt work, then send the error msg to #coding However, if it does then use the `exit` command and then SSH tunnel.
-```console
-ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519 -L 9971:127.0.0.1:3389
-```
-  5. Now that you have buildserver access setup, you can follow the [vscode instructions](documentation/tutorials/setup-ssh-vscode.md) to use the buildserver with vscode.
-  6. For a graphical interface you can use the Remote Desktop app in Windows.  Once
-you get there, all you need to do is put `127.0.0.1:9971` for the
-computer name, and use your gerrit username.  Once you get connected,
-accept the server certificate and then enter your password that you
-gave Stephan. (It's either something unique or your gerrit pwd) Then
-select the Default panel config.  You can exit the Remote Desktop if
-you are good w/ the raw cmd line interface.  And for future logins all
-you have to do is tunnel and then login using the app.  Now if you
-have a graphical application that you are developing (e.g., spline
-UI), then you have to run the build command in the Remote Desktop
-application.
-  7. Very important: In order for you to be able to commit, you need
-  to configure your email address in `git`.  To do this, run the
-  following command, replacing `<YOUR EMAIL>` with the email that you are
-  using for Gerrit:
-```console
-git config --global user.email "<YOUR EMAIL>"
-```
-If there are any questions, post to the #coding Slack channel so that other people who may reach the same issue can refer back to that.
-
-
-### Bazel commands for building, testing, and deploying the code
-  * Build and test everything (on the host system, for the roborio target-- note, this may take a while):
-```
-bazel test //...
-bazel build --config=roborio -c opt //...
-```
-  * Build the code for a specific robot:
-```console
-# For the roborio:
-bazel build --config=roborio -c opt //y2020/...
-```
-```
-# For the raspberry pi:
-bazel build --config=armv7 -c opt //y2020/...
-```
-
-  * Configuring a roborio: Freshly imaged roboRIOs need to be configured to run the 971 code
-at startup.  This is done by using the setup_roborio.sh script.
-```console
-bazel run -c opt //frc971/config:setup_roborio -- roboRIO-XXX-frc.local
-```
-
-  * Download code to a robot:
-```console
-# For the roborio
-bazel run --config=roborio -c opt //y2020:download_stripped -- roboRIO-971-frc.local
-```
-This assumes the roborio is reachable at `roboRIO-971-frc.local`.  If that does not work, you can try with a static IP address like `10.9.71.2` (see troubleshooting below)
-```console
-# For the raspberry pi's
-bazel run --config=armv7 -c opt //y2020:pi_download_stripped -- 10.9.71.101
-```
-NOTE:
-  1. The raspberry pi's require that you have your ssh key installed on them in order to copy code over
-  2. They are configured to use the IP addresses 10.X.71.Y, where X is 9, 79, 89, or 99 depending on the robot number (971, 7971, 8971, or 9971, respectively), and Y is 101, 102, etc for pi #1, #2, etc.
-
-  * Downloading specific targets to the robot
-    1. Generally if you want to update what's running on the robot, you can use the `download_stripped` (or `pi_download_stripped`) targets.  These will rsync only the changed files, and so are pretty efficient.
-    2. If you have a need to compile a specific module, you can build stripped versions of the individual modules by adding "_stripped" to the module name.  For example, to build the calibration code (`//y2020/vision:calibration`) for the pi (`armv7`), run:
-    ```console
-    bazel run --config=armv7 -c opt //y2020/vision:calibration_stripped
-    ```
-    You will then need to manually copy the resulting file over to the robot.
+Once you have an understanding of C++ and have gone through using all the steps needed to access the code you can start on the [codelab](#codelab)
 
 ## Code reviews
-We want all code to at least have a second person look it over before it gets merged into the `main` branch. Gerrit has [extensive documentation on starting reviews](https://software.frc971.org/gerrit/Documentation/user-upload.html).  There is also a good [intro User Guide](https://software.frc971.org/gerrit/Documentation/intro-user.html) and an [intro to working with Gerrit](https://gerrit-review.googlesource.com/Documentation/intro-gerrit-walkthrough.html) and [Gerrit workflows](https://docs.google.com/presentation/d/1C73UgQdzZDw0gzpaEqIC6SPujZJhqamyqO1XOHjH-uk)
+We want all code to at least have a second person look it over before it gets merged into the `main` branch. Gerrit has [extensive documentation on starting reviews](https://gerrit-review.googlesource.com/Documentation/user-upload.html).  There is also a good [intro User Guide](https://gerrit-review.googlesource.com/Documentation/intro-user.html) and an [intro to working with Gerrit](https://gerrit-review.googlesource.com/Documentation/intro-gerrit-walkthrough.html) and [Gerrit workflows](https://docs.google.com/presentation/d/1C73UgQdzZDw0gzpaEqIC6SPujZJhqamyqO1XOHjH-uk)
 
 TL;DR: Make and commit your changes, do `git push origin HEAD:refs/for/main`, and then click on the provided link to add reviewers.  If you just upload a change without adding any reviewers, it might sit around for a long time before anybody else notices it.
 
 [git-review](http://manpages.debian.org/cgi-bin/man.cgi?query=git-review) can make the upload process simpler.
 
+To download a commit you can press d or click download on gerrit, then select fetch and paste the command in your terminal. Once you've done that you should switch to a new branch in order to make working on multiple commits easier.
+You can do this by doing `git switch -c branch_name`, the branch name can be anything, and will only be public for you, so organize in whatever way you find easy to model.
 
+When programming in C++ we follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
 
-### Some other useful packages <TODO: Need to review these>
+Furthermore, you can run `bazel run //tools/lint:run-ci` to fix linter errors which appear on buildkite.
+
+### Some other useful packages
 These aren't strictly necessary to build the code, but Michael found the
 additional tools provided by these packages useful to install when working with
 the code on May 13, 2018.
 
+> **Note**: These are for local install, most of these tools will be available on the build server
 
-```console
-# Get some useful packages including git and subversion.
-   apt-get update
-   apt-get install git git-gui vim-gtk3
-   apt-get install vim-doc git-doc exim4-doc-html yapf
-   apt-get install bazel clang-format
-   apt-get install python avahi-daemon
-# Install apt-file so that packages can be searched
-   apt-get install apt-file
-   apt-file update
-# Install sysstat so that you can tell how many resources are being used during
-#   the compile.
-   apt-get install sysstat
-# iostat is used to observe how hard the disk is being worked and other
-#   performance metrics.
-   iostat -dx 1
-# gitg is a graphical user interface for git.  I find it useful for
-# understanding the revision history of the repository and viewing
-# log messages and changes.
-   apt-get install gitg
-# Also may want to install `buildifier` for formatting BUILD files
+```bash
+apt install git
+apt install yapf3
+apt install python3
+apt install bazel
+apt install clang-format
 ```
 
 ### Creating ssh aliases
@@ -270,6 +124,12 @@ This allows you to use the alias to `ping`, `ssh`, or run commands like:
 # Download code to robot #7971's raspberry pi #2
 bazel run --config=armv7 -c opt //y2020:download_stripped -- pi-7971-2
 ```
+
+## Codelab
+
+The codelab is a directory living in `frc971/codelab/`. Which goes over a lot of the important introductory information that you need to know to get started when programming the robot.
+You can read the [README](./frc971/codelab/README.md), which gives you introduces you to the codelab as well as the concepts you need to understand first.
+
 ## Other Information
 
 ### Roborio Kernel Traces
@@ -356,6 +216,5 @@ other niceties, it won't show compilation errors or warnings at this point.
   3. Example of [logging](./aos/events/README.md)
 
 TODOs:
-  1. Add more on networking setup and troubleshooting
-  2. Move Roborio Kernel Traces out of here, maybe into documentation/
-  3. Currently requires `apt install libsigsegv2`, but this should be temporary
+1. Add more info about git
+2. Add more robot debugging and networking troubleshooting
