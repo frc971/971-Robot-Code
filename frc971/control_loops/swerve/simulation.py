@@ -6,12 +6,15 @@ import scipy.integrate
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 
+import matplotlib
 from matplotlib import pylab
 import sys
 import gflags
 import glog
 
 FLAGS = gflags.FLAGS
+
+matplotlib.use("GTK3Agg")
 
 
 class SwerveSimulation(object):
