@@ -137,6 +137,9 @@ def generate_deb_tarball(name, files, target_compatible_with = None):
     pkg_tar(
         name = name,
         extension = "tar.gz",
+        # TODO(james): It probably isn't ideal that we have duplicates floating
+        # around, but the warnings from it are quite noisy.
+        allow_duplicates_from_deps = True,
         deps = ["extracted_%s.tar" % dep for dep in deps],
         target_compatible_with = target_compatible_with,
     )
