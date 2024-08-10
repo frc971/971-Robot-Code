@@ -166,12 +166,13 @@ class MPC(object):
         return casadi.Function("Jn", [X, U, R], [J])
 
     def solve(self, p, seed=None):
-        w0 = []
+        if seed is None:
+            seed = []
 
-        w0 += [0, 0] * 4 * self.N
-        w0 += list(p[:dynamics.NUM_VELOCITY_STATES, 0]) * (self.N - 1)
+            seed += [0, 0] * 4 * self.N
+            seed += list(p[:dynamics.NUM_VELOCITY_STATES, 0]) * (self.N - 1)
 
-        return self.solver(x0=w0,
+        return self.solver(x0=seed,
                            lbx=self.lbw,
                            ubx=self.ubw,
                            lbg=self.lbg,
@@ -179,15 +180,13 @@ class MPC(object):
                            p=casadi.DM(p))
 
     def unpack_u(self, sol, i):
-        return sol['x'].full().flatten()[
-            (8 + 1 * dynamics.NUM_VELOCITY_STATES) *
-            i:(8 + 1 * dynamics.NUM_VELOCITY_STATES) * i + 8]
+        return sol['x'].full().flatten()[8 * i:8 * (i + 1)]
 
     def unpack_x(self, sol, i):
-        return sol['x'].full().flatten()[
-            (8 + 1 * dynamics.NUM_VELOCITY_STATES) * (i - 1) +
-            8:(8 + 1 * dynamics.NUM_VELOCITY_STATES) * (i - 1) + 8 +
-            dynamics.NUM_VELOCITY_STATES]
+        return sol['x'].full().flatten()[8 * self.N +
+                                         dynamics.NUM_VELOCITY_STATES *
+                                         (i - 1):8 * self.N +
+                                         dynamics.NUM_VELOCITY_STATES * (i)]
 
 
 mpc = MPC()
@@ -223,16 +222,23 @@ fig0, axs0 = pylab.subplots(2)
 fig1, axs1 = pylab.subplots(2)
 last_time = time.time()
 
+seed = [0, 0] * 4 * mpc.N + list(dynamics.to_velocity_state(X)) * (mpc.N - 1)
+
 for i in range(iterations):
     t.append(i * mpc.dt)
     print("Current X at", i * mpc.dt, X.transpose())
     print("Goal R at", i * mpc.dt, R_goal)
     sol = mpc.solve(
         # TODO(austin): Is this better or worse than constraints on the initial state for convergence?
-        p=numpy.vstack((dynamics.to_velocity_state(X), R_goal)))
+        p=numpy.vstack((dynamics.to_velocity_state(X), R_goal)),
+        seed=seed)
     X_plot[:, i] = X[:, 0]
 
     U = mpc.unpack_u(sol, 0)
+    seed = (list(sol['x'].full().flatten()[8:8 * mpc.N]) +
+            list(sol['x'].full().flatten()[8 * (mpc.N - 1) +
+                                           dynamics.NUM_VELOCITY_STATES:]) +
+            list(sol['x'].full().flatten()[-dynamics.NUM_VELOCITY_STATES:]))
     U_plot[:, i] = U
 
     print('x(0):', X.transpose())
