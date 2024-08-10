@@ -38,7 +38,7 @@ class MPC(object):
                                 casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
 
-        self.N = 10
+        self.N = 25
 
         # TODO(austin): Can we approximate sin/cos/atan for the initial operating point to solve faster if we need it?
 
@@ -103,7 +103,7 @@ class MPC(object):
         flags = ["-O1"]
         jit_options = {"flags": flags, "verbose": True, "compiler": compiler}
         options = {
-            "jit": True,
+            "jit": False,
             "compiler": "shell",
             "jit_options": jit_options,
             "ipopt.linear_solver": "spral",
@@ -138,12 +138,23 @@ class MPC(object):
         R = casadi.MX.sym('R', 3)
 
         J = 0
-        J += 1000 * (R[0] - X[dynamics.VELOCITY_STATE_VX])**2.0
-        J += 1000 * (R[1] - X[dynamics.VELOCITY_STATE_VY])**2.0
+        vnorm = casadi.sqrt(R[0]**2.0 + R[1]**2.0)
+        vnormx = R[0] / vnorm
+        vnormy = R[1] / vnorm
+
+        vperpx = -vnormy
+        vperpy = vnormx
+
+        J += 100 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vnormx +
+                    (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vnormy)**2.0
+
+        J += 1500 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vperpx +
+                     (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vperpy)**2.0
+
         J += 1000 * (R[2] - X[dynamics.VELOCITY_STATE_OMEGA])**2.0
 
         kSteerPositionGain = 0
-        kSteerVelocityGain = 0.05
+        kSteerVelocityGain = 0.10
         J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS0])**2.0
         J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS0])**2.0
 
@@ -208,7 +219,7 @@ X_initial[20, 0] = 0.0
 # No angular velocity
 X_initial[21, 0] = 0.0
 
-iterations = 200
+iterations = 100
 
 X_plot = numpy.zeros((25, iterations))
 U_plot = numpy.zeros((8, iterations))
