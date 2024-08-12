@@ -443,56 +443,6 @@ struct QuadBoundaryPointExtents {
   }
 };
 
-// Computes the dot product of the point vector and gradient for detecting
-// inside-out blobs.
-struct ComputeDotProductTransform {
-  ComputeDotProductTransform(MinMaxExtents *extents_device, size_t num_extents,
-                             size_t tag_width, size_t min_cluster_pixels,
-                             size_t max_cluster_pixels)
-      : index_finder_(extents_device, num_extents),
-        tag_width_(tag_width),
-        min_cluster_pixels_(std::max<size_t>(24u, min_cluster_pixels)),
-        max_cluster_pixels_(max_cluster_pixels) {}
-
-  __host__ __device__ __forceinline__ float operator()(
-      cub::KeyValuePair<long, QuadBoundaryPoint> a) const {
-    const size_t y = a.value.y();
-    const size_t x = a.value.x();
-
-    // Binary search for the index.
-    const size_t index = index_finder_.FindBlobIndex(a.key);
-
-    // Don't bother to compute the dot product for anything we will ignore in
-    // SelectBlobs below.
-    //
-    // TODO(austin): Figure out how to dedup with SelectBlobs below.
-    const MinMaxExtents extents = index_finder_.Get(index);
-    if (extents.count < min_cluster_pixels_) {
-      return 0;
-    }
-    if (extents.count > max_cluster_pixels_) {
-      return 0;
-    }
-
-    // Area must also be reasonable.
-    if ((extents.max_x - extents.min_x) * (extents.max_y - extents.min_y) <
-        tag_width_) {
-      return 0;
-    }
-
-    const float dx = static_cast<float>(x) - extents.cx();
-    const float dy = static_cast<float>(y) - extents.cy();
-
-    return dx * a.value.gx() + dy * a.value.gy();
-  }
-
-  BlobExtentsIndexFinder index_finder_;
-
-  size_t tag_width_;
-  size_t min_cluster_pixels_;
-  size_t max_cluster_pixels_;
-};
-
 class NonzeroBlobs {
  public:
   __host__ __device__
