@@ -9,8 +9,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
@@ -29,7 +27,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
@@ -286,88 +283,6 @@ func TestRequest2024DataScouting(t *testing.T) {
 				Speaker: 0, Amp: 2, SpeakerAmplified: 3, Shuttled: 1, OutOfField: 0,
 				NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
 				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "george",
-			},
-		},
-	}
-	if len(expected.StatsList) != len(response.StatsList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.StatsList {
-		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
-			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
-		}
-	}
-}
-
-// Validates that we can request the 2023 stats.
-func TestRequest2023DataScouting(t *testing.T) {
-	db := MockDatabase{
-		stats2023: []db.Stats2023{
-			{
-				TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
-				CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
-				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
-				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
-				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 34, Mobility: false, DockedAuto: true, EngagedAuto: false,
-				BalanceAttemptAuto: false, Docked: false, Engaged: false,
-				BalanceAttempt: true, CollectedBy: "isaac",
-			},
-			{
-				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
-				CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
-				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
-				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
-				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 53, Mobility: false, DockedAuto: false, EngagedAuto: false,
-				BalanceAttemptAuto: true, Docked: false, Engaged: false,
-				BalanceAttempt: true, CollectedBy: "unknown",
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_2023_data_scouting.Request2023DataScoutingT{}).Pack(builder))
-
-	response, err := debug.Request2023DataScouting("http://localhost:8080", builder.FinishedBytes())
-	if err != nil {
-		t.Fatal("Failed to request all matches: ", err)
-	}
-
-	expected := request_2023_data_scouting_response.Request2023DataScoutingResponseT{
-		StatsList: []*request_2023_data_scouting_response.Stats2023T{
-			{
-				TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
-				CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
-				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
-				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
-				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 34, Mobility: false, DockedAuto: true, EngagedAuto: false,
-				BalanceAttemptAuto: false, Docked: false, Engaged: false,
-				BalanceAttempt: true, CollectedBy: "isaac",
-			},
-			{
-				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
-				CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
-				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
-				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
-				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 53, Mobility: false, DockedAuto: false, EngagedAuto: false,
-				BalanceAttemptAuto: true, Docked: false, Engaged: false,
-				BalanceAttempt: true, CollectedBy: "unknown",
 			},
 		},
 	}
@@ -1150,12 +1065,6 @@ func TestRequestAllNotes(t *testing.T) {
 	}
 }
 
-func packAction(action *submit_actions.ActionT) []byte {
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((action).Pack(builder))
-	return (builder.FinishedBytes())
-}
-
 func TestAddingActions2024(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
@@ -1344,7 +1253,6 @@ type MockDatabase struct {
 	notes          []db.NotesData
 	shiftSchedule  []db.Shift
 	driver_ranking []db.DriverRankingData
-	stats2023      []db.Stats2023
 	stats2024      []db.Stats2024
 	actions        []db.Action
 	images         []db.PitImage
@@ -1352,11 +1260,6 @@ type MockDatabase struct {
 
 func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
 	database.matches = append(database.matches, match)
-	return nil
-}
-
-func (database *MockDatabase) AddToStats2023(stats2023 db.Stats2023) error {
-	database.stats2023 = append(database.stats2023, stats2023)
 	return nil
 }
 
@@ -1368,22 +1271,8 @@ func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
 }
 
-func (database *MockDatabase) ReturnStats2023() ([]db.Stats2023, error) {
-	return database.stats2023, nil
-}
-
 func (database *MockDatabase) ReturnStats2024() ([]db.Stats2024, error) {
 	return database.stats2024, nil
-}
-
-func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error) {
-	var results []db.Stats2023
-	for _, stats := range database.stats2023 {
-		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel && stats.PreScouting == preScouting {
-			results = append(results, stats)
-		}
-	}
-	return results, nil
 }
 
 func (database *MockDatabase) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2024, error) {
@@ -1467,19 +1356,6 @@ func (database *MockDatabase) ReturnActions() ([]db.Action, error) {
 
 func (database *MockDatabase) ReturnPitImages() ([]db.PitImage, error) {
 	return database.images, nil
-}
-
-func (database *MockDatabase) DeleteFromStats(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
-	for i, stat := range database.stats2023 {
-		if stat.CompLevel == compLevel_ &&
-			stat.MatchNumber == matchNumber_ &&
-			stat.SetNumber == setNumber_ &&
-			stat.TeamNumber == teamNumber_ {
-			// Match found, remove the element from the array.
-			database.stats2023 = append(database.stats2023[:i], database.stats2023[i+1:]...)
-		}
-	}
-	return nil
 }
 
 func (database *MockDatabase) DeleteFromStats2024(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
