@@ -1,8 +1,8 @@
 load("@aspect_rules_js//js:defs.bzl", "js_test")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@npm//:defs.bzl", "npm_link_all_packages")
-load("//scouting/www:defs.bzl", "assemble_static_files")
 load("//tools/build_rules:js.bzl", "ng_application")
+load("//tools/build_rules/js:static.bzl", "assemble_static_files")
 
 npm_link_all_packages(name = "node_modules")
 

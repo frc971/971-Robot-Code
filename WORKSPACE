@@ -944,6 +944,7 @@ npm_translate_lock(
     name = "npm",
     data = [
         "//aos/analysis/foxglove_extension:package.json",
+        "//control_loops/swerve/spline_ui/www:package.json",
         "@//:package.json",
         "@//:pnpm-workspace.yaml",
         "@//scouting/webserver/requests/messages:package.json",

@@ -3,7 +3,8 @@ load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
 load("@npm//:@angular/service-worker/package_json.bzl", angular_service_worker = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("//tools/build_rules:js.bzl", "ng_application")
-load(":defs.bzl", "assemble_service_worker_files", "assemble_static_files")
+load("//tools/build_rules/js:static.bzl", "assemble_static_files")
+load(":defs.bzl", "assemble_service_worker_files")
 
 npm_link_all_packages(name = "node_modules")
 

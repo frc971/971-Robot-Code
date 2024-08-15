@@ -1,5 +1,6 @@
 external
 node_modules
+frc971/control_loops/swerve/spline_ui/www/node_modules
 scouting/webserver/requests/messages/node_modules
 scouting/www/node_modules
 scouting/www/driver_ranking/node_modules

@@ -84,8 +84,8 @@ def ng_application(
       assets: assets to include in the file bundle
       visibility: visibility of the primary targets ({name}, 'test', 'serve')
     """
-    assets = assets if assets else native.glob(["assets/**/*"])
-    html_assets = html_assets if html_assets else []
+    assets = assets if assets != None else native.glob(["assets/**/*"])
+    html_assets = html_assets or []
 
     test_spec_srcs = native.glob(["app/**/*.spec.ts"])
 

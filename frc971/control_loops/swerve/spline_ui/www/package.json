@@ -1,0 +1,6 @@
+{
+    "private": true,
+    "dependencies": {
+        "@angular/animations": "v16-lts"
+    }
+}

@@ -1,4 +1,5 @@
 packages:
+- frc971/control_loops/swerve/spline_ui/www
 - scouting/webserver/requests/messages
 - scouting/www
 - scouting/www/*
