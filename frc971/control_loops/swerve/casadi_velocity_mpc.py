@@ -2,12 +2,15 @@
 
 from frc971.control_loops.swerve import dynamics
 import matplotlib.pyplot as pyplot
+import matplotlib
 from matplotlib import pylab
 import numpy
 import time
 import scipy
 import casadi
 import os, sys
+
+matplotlib.use("GTK3Agg")
 
 
 class MPC(object):
