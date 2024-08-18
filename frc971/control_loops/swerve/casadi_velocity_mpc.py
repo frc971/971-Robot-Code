@@ -208,19 +208,29 @@ mpc = MPC()
 R_goal = numpy.zeros((3, 1))
 R_goal[0, 0] = 1.0
 R_goal[1, 0] = 1.0
+R_goal[2, 0] = 0.0
+
+module_velocity = 0.0
 
 X_initial = numpy.zeros((25, 1))
 # All the wheels are spinning at the speed needed to hit 1 m/s
-X_initial[3, 0] = 0.0
-X_initial[7, 0] = 0.0
-X_initial[11, 0] = 0.0
-X_initial[15, 0] = 0.0
+X_initial[dynamics.STATE_THETAS0, 0] = 0.0
+X_initial[dynamics.STATE_OMEGAS0, 0] = module_velocity
+
+X_initial[dynamics.STATE_THETAS1, 0] = 0.0
+X_initial[dynamics.STATE_OMEGAS1, 0] = module_velocity
+
+X_initial[dynamics.STATE_THETAS2, 0] = 0.0
+X_initial[dynamics.STATE_OMEGAS2, 0] = module_velocity
+
+X_initial[dynamics.STATE_THETAS3, 0] = 0.0
+X_initial[dynamics.STATE_OMEGAS3, 0] = module_velocity
 
 # Robot is moving at 0 m/s
-X_initial[19, 0] = 0.01
-X_initial[20, 0] = 0.0
+X_initial[dynamics.STATE_VX, 0] = 0.0
+X_initial[dynamics.STATE_VY, 0] = 0.0
 # No angular velocity
-X_initial[21, 0] = 0.0
+X_initial[dynamics.STATE_OMEGA, 0] = 0.0
 
 iterations = 100
 
