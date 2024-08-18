@@ -24,4 +24,4 @@ glog
 bokeh
 tabulate
 
-casadi
+casadi>=3.6.6
