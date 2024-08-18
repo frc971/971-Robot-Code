@@ -208,6 +208,7 @@ py_test(
         ":physics_test_utils",
         "@pip//casadi",
         "@pip//numpy",
+        "@pip//scipy",
     ],
 )
 

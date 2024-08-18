@@ -3,6 +3,7 @@
 import numpy
 import sys, os
 import casadi
+import scipy
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import unittest
 
@@ -173,17 +174,23 @@ class TestSwervePhysics(unittest.TestCase):
                 for theta in [0.0, 0.6, -0.4]:
                     module_angle = numpy.pi * wrap + theta
 
-                    # We have redefined the angle to be the sin of the angle.
+                    # We have redefined the angle to be the softened sin of the angle.
                     # That way, when the module flips directions, the slip angle also flips
                     # directions to keep it stable.
                     computed_angle = self.slip_angle[i](
                         utils.state_vector(velocity=velocity,
-                                           module_angle=numpy.pi * wrap +
-                                           theta),
+                                           module_angle=module_angle),
                         self.I,
                     )[0, 0]
 
-                    expected = numpy.sin(numpy.pi * wrap + theta)
+                    # Compute out the expected value directly to confirm we got it right.
+                    loggain = 20.0
+                    vy = 1.5 * numpy.sin(-module_angle)
+                    vx = 1.5 * numpy.cos(-module_angle)
+                    expected = numpy.sin(-numpy.arctan2(
+                        vy,
+                        scipy.special.logsumexp([1.0, abs(vx) * loggain]) /
+                        loggain))
 
                     self.assertAlmostEqual(
                         expected,

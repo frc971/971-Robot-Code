@@ -412,7 +412,7 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    sign = casadi.sign");
     result_py->emplace_back("    cos = casadi.cos");
-    result_py->emplace_back("    atan2 = casadi.atan2");
+    result_py->emplace_back("    atan2 = soft_atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -456,7 +456,7 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    sign = casadi.sign");
     result_py->emplace_back("    cos = casadi.cos");
-    result_py->emplace_back("    atan2 = casadi.atan2");
+    result_py->emplace_back("    atan2 = soft_atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -573,6 +573,14 @@ class SwerveSimulation {
     // result_py.emplace_back("        [X[STATE_FY, 0]],");
     // result_py.emplace_back("        [X[STATE_MOMENT, 0]],");
     result_py.emplace_back("    ])");
+    result_py.emplace_back("");
+    constexpr double kLogGain = 1.0 / 0.05;
+    result_py.emplace_back("def soft_atan2(y, x):");
+    result_py.emplace_back("    return casadi.arctan2(");
+    result_py.emplace_back("        y,");
+    result_py.emplace_back("        casadi.logsumexp(casadi.SX(numpy.array(");
+    result_py.emplace_back(absl::Substitute(
+        "            [1.0, casadi.fabs(x) * $0.0]))) / $0.0)", kLogGain));
     result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
@@ -839,15 +847,17 @@ class SwerveSimulation {
     // Velocity of the contact patch in field coordinates
     DenseMatrix temp_matrix = DenseMatrix(2, 1);
     DenseMatrix temp_matrix2 = DenseMatrix(2, 1);
+    DenseMatrix temp_matrix3 = DenseMatrix(2, 1);
     result.contact_patch_velocity = DenseMatrix(2, 1);
 
     mul_dense_dense(R(theta_), result.mounting_location, temp_matrix);
     add_dense_dense(angle_cross(temp_matrix, omega_), robot_velocity,
                     temp_matrix2);
     mul_dense_dense(R(add(theta_, result.thetas)),
-                    DenseMatrix(2, 1, {neg(caster_), integer(0)}), temp_matrix);
+                    DenseMatrix(2, 1, {neg(caster_), integer(0)}),
+                    temp_matrix3);
     add_dense_dense(temp_matrix2,
-                    angle_cross(temp_matrix, add(omega_, result.omegas)),
+                    angle_cross(temp_matrix3, add(omega_, result.omegas)),
                     result.contact_patch_velocity);
 
     VLOG(1);
