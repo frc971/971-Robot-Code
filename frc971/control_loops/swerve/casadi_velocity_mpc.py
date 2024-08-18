@@ -248,14 +248,20 @@ last_time = time.time()
 
 seed = [0, 0] * 4 * mpc.N + list(dynamics.to_velocity_state(X)) * (mpc.N - 1)
 
+overall_time = 0
 for i in range(iterations):
     t.append(i * mpc.dt)
     print("Current X at", i * mpc.dt, X.transpose())
     print("Goal R at", i * mpc.dt, R_goal)
+    start_time = time.time()
     sol = mpc.solve(
         # TODO(austin): Is this better or worse than constraints on the initial state for convergence?
         p=numpy.vstack((dynamics.to_velocity_state(X), R_goal)),
         seed=seed)
+    end_time = time.time()
+    print(f"Took {end_time - start_time} seconds to solve.")
+    overall_time += end_time - start_time
+
     X_plot[:, i] = X[:, 0]
 
     U = mpc.unpack_u(sol, 0)
@@ -302,5 +308,7 @@ for i in range(iterations):
         axs1[1].legend()
         pyplot.pause(0.0001)
         last_time = time.time()
+
+print(f"Tool {overall_time} seconds overall to solve.")
 
 pyplot.pause(-1)
