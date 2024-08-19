@@ -230,13 +230,14 @@ class MPC(object):
                            p=casadi.DM(p))
 
     def unpack_u(self, sol, i):
-        return sol['x'].full().flatten()[8 * i:8 * (i + 1)]
+        return sol['x'].full().flatten()[
+            (8 + dynamics.NUM_VELOCITY_STATES) *
+            i:((8 + dynamics.NUM_VELOCITY_STATES) * i + 8)]
 
     def unpack_x(self, sol, i):
-        return sol['x'].full().flatten()[8 * self.N +
-                                         dynamics.NUM_VELOCITY_STATES *
-                                         (i - 1):8 * self.N +
-                                         dynamics.NUM_VELOCITY_STATES * (i)]
+        return sol['x'].full().flatten(
+        )[8 + (8 + dynamics.NUM_VELOCITY_STATES) *
+          (i - 1):(8 + dynamics.NUM_VELOCITY_STATES) * i]
 
 
 mpc = MPC(solver='fatrop')
