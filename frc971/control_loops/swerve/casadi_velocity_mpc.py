@@ -215,10 +215,13 @@ class MPC(object):
 
         # TODO(austin): Don't penalize torque steering current.
         for i in range(4):
+            Is = U[2 * i + 0]
+            Id = U[2 * i + 1]
             # Steer
-            J += U[2 * i + 0] * U[2 * i + 0] / 100000.0
+            J += ((Is + dynamics.STEER_CURRENT_COUPLING_FACTOR * Id)**
+                  2.0) / 100000.0
             # Drive
-            J += U[2 * i + 1] * U[2 * i + 1] / 1000.0
+            J += Id * Id / 1000.0
 
         return casadi.Function("Jn", [X, U, R], [J])
 

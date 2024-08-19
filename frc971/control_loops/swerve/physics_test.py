@@ -582,6 +582,23 @@ class TestSwervePhysics(unittest.TestCase):
             self.assertLess(xdot[dynamics.STATE_OMEGAD2, 0], -100.0)
             self.assertLess(xdot[dynamics.STATE_OMEGAD3, 0], -100.0)
 
+    def test_steer_coupling(self):
+        """Tests that the steer coupling factor cancels out steer coupling torque."""
+        steer_I = numpy.array(
+            [[dynamics.STEER_CURRENT_COUPLING_FACTOR * 10.0], [10.0]] * 4)
+
+        X = utils.state_vector(
+            velocity=numpy.array([[0.0], [0.0]]),
+            omega=0.0,
+        )
+        X_velocity = self.to_velocity_state(X)
+        Xdot = self.velocity_swerve_physics(X_velocity, steer_I)
+
+        self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS0, 0], 0.0)
+        self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS1, 0], 0.0)
+        self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS2, 0], 0.0)
+        self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS3, 0], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
