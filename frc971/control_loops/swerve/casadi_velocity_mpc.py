@@ -15,7 +15,7 @@ matplotlib.use("GTK3Agg")
 
 class MPC(object):
 
-    def __init__(self):
+    def __init__(self, solver='fatrop'):
         self.fdot = dynamics.swerve_full_dynamics(
             casadi.SX.sym("X", dynamics.NUM_STATES, 1),
             casadi.SX.sym("U", 8, 1))
@@ -41,9 +41,7 @@ class MPC(object):
                                 casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
 
-        self.N = 25
-
-        # TODO(austin): Can we approximate sin/cos/atan for the initial operating point to solve faster if we need it?
+        self.N = 50
 
         # Start with an empty nonlinear program.
         self.w = []
@@ -59,33 +57,42 @@ class MPC(object):
         # We care about the linear and angular velocities only.
         self.R = casadi.MX.sym('R', 3)
 
-        # Instead of an equality constraint on the goal, what about:
-        # self.w += [Xk]
-        # lbw += [0, 1]
-        # ubw += [0, 1]
-        # w0 += [0, 1]
+        # Make Xn and U for each step.  fatrop wants us to interleave the control variables and
+        # states so that it can produce a banded/structured problem which it can solve a lot
+        # faster.
+        Xn_variables = []
+        U_variables = []
+        for i in range(self.N):
+            U_variables.append(casadi.MX.sym(f'U{i}', 8))
 
-        Xn = casadi.MX.sym('Xn', dynamics.NUM_VELOCITY_STATES, self.N - 1)
-        U = casadi.MX.sym('U', 8, self.N)
+            if i == 0:
+                continue
+
+            Xn_variables.append(
+                casadi.MX.sym(f'X{i}', dynamics.NUM_VELOCITY_STATES))
+
+        Xn = casadi.horzcat(*Xn_variables)
+        U = casadi.horzcat(*U_variables)
 
         Xk_begin = casadi.horzcat(self.X0, Xn)
         Xk_end = self.next_X.map(self.N, "thread")(Xk_begin, U)
         J = casadi.sum2(self.cost.map(self.N, "thread")(Xk_end, U, self.R))
 
-        self.w += [casadi.reshape(U, 8 * self.N, 1)]
-        self.lbw += [-100] * (8 * self.N)
-        self.ubw += [100] * (8 * self.N)
+        # Put U and Xn interleaved into w to go fast.
+        for i in range(self.N):
+            self.w += [U_variables[i]]
+            self.ubw += [100] * 8
+            self.lbw += [-100] * 8
 
-        self.w += [
-            casadi.reshape(Xn, dynamics.NUM_VELOCITY_STATES * (self.N - 1), 1)
-        ]
-        self.ubw += [casadi.inf] * (dynamics.NUM_VELOCITY_STATES *
-                                    (self.N - 1))
-        self.lbw += [-casadi.inf] * (dynamics.NUM_VELOCITY_STATES *
-                                     (self.N - 1))
+            if i == self.N - 1:
+                continue
+
+            self.w += [Xn_variables[i]]
+            self.ubw += [casadi.inf] * dynamics.NUM_VELOCITY_STATES
+            self.lbw += [-casadi.inf] * dynamics.NUM_VELOCITY_STATES
 
         self.g += [
-            casadi.reshape(Xk_end[:, 0:(self.N - 1)] - Xn,
+            casadi.reshape(Xn - Xk_end[:, 0:(self.N - 1)],
                            dynamics.NUM_VELOCITY_STATES * (self.N - 1), 1)
         ]
 
@@ -102,16 +109,43 @@ class MPC(object):
             'p': casadi.vertcat(self.X0, self.R),
         }
 
-        compiler = "clang"
-        flags = ["-O1"]
-        jit_options = {"flags": flags, "verbose": True, "compiler": compiler}
-        options = {
-            "jit": False,
-            "compiler": "shell",
-            "jit_options": jit_options,
-            "ipopt.linear_solver": "spral",
+        compiler = "ccache clang"
+        flags = ["-O3"]
+        jit_options = {
+            "flags": flags,
+            "verbose": False,
+            "compiler": compiler,
+            "temp_suffix": False,
         }
-        self.solver = casadi.nlpsol('solver', 'ipopt', prob, options)
+
+        if solver == 'fatrop':
+            equality = [
+                True
+                for _ in range(dynamics.NUM_VELOCITY_STATES * (self.N - 1))
+            ]
+            options = {
+                "jit": True,
+                "jit_cleanup": False,
+                "jit_temp_suffix": False,
+                "compiler": "shell",
+                "jit_options": jit_options,
+                "structure_detection": "auto",
+                "fatrop": {
+                    "tol": 1e-7
+                },
+                "debug": True,
+                "equality": equality,
+            }
+            self.solver = casadi.nlpsol('solver', 'fatrop', prob, options)
+        else:
+            options = {
+                "jit": True,
+                "jit_cleanup": False,
+                "jit_temp_suffix": False,
+                "compiler": "shell",
+                "jit_options": jit_options,
+            }
+            self.solver = casadi.nlpsol('solver', 'ipopt', prob, options)
 
     def make_physics(self):
         X0 = casadi.MX.sym('X0', dynamics.NUM_VELOCITY_STATES)
@@ -148,8 +182,8 @@ class MPC(object):
         vperpx = -vnormy
         vperpy = vnormx
 
-        J += 100 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vnormx +
-                    (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vnormy)**2.0
+        J += 75 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vnormx +
+                   (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vnormy)**2.0
 
         J += 1500 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vperpx +
                      (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vperpy)**2.0
@@ -183,8 +217,10 @@ class MPC(object):
         if seed is None:
             seed = []
 
-            seed += [0, 0] * 4 * self.N
-            seed += list(p[:dynamics.NUM_VELOCITY_STATES, 0]) * (self.N - 1)
+            for i in range(self.N):
+                seed += [0, 0] * 4
+                if i < self.N - 1:
+                    seed += list(p[:dynamics.NUM_VELOCITY_STATES, 0])
 
         return self.solver(x0=seed,
                            lbx=self.lbw,
@@ -203,7 +239,7 @@ class MPC(object):
                                          dynamics.NUM_VELOCITY_STATES * (i)]
 
 
-mpc = MPC()
+mpc = MPC(solver='fatrop')
 
 R_goal = numpy.zeros((3, 1))
 R_goal[0, 0] = 1.0
@@ -246,7 +282,8 @@ fig0, axs0 = pylab.subplots(2)
 fig1, axs1 = pylab.subplots(2)
 last_time = time.time()
 
-seed = [0, 0] * 4 * mpc.N + list(dynamics.to_velocity_state(X)) * (mpc.N - 1)
+seed = ([0, 0] * 4 + list(dynamics.to_velocity_state(X))) * (mpc.N -
+                                                             1) + [0, 0] * 4
 
 overall_time = 0
 for i in range(iterations):
@@ -265,10 +302,9 @@ for i in range(iterations):
     X_plot[:, i] = X[:, 0]
 
     U = mpc.unpack_u(sol, 0)
-    seed = (list(sol['x'].full().flatten()[8:8 * mpc.N]) +
-            list(sol['x'].full().flatten()[8 * (mpc.N - 1) +
-                                           dynamics.NUM_VELOCITY_STATES:]) +
-            list(sol['x'].full().flatten()[-dynamics.NUM_VELOCITY_STATES:]))
+    seed = (
+        list(sol['x'].full().flatten()[8 + dynamics.NUM_VELOCITY_STATES:]) +
+        list(sol['x'].full().flatten()[-(8 + dynamics.NUM_VELOCITY_STATES):]))
     U_plot[:, i] = U
 
     print('x(0):', X.transpose())
