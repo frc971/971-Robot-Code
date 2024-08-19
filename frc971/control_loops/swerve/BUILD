@@ -251,3 +251,17 @@ py_binary(
         "@pip//scipy",
     ],
 )
+
+py_binary(
+    name = "debug_fatrop",
+    srcs = [
+        "debug_fatrop.py",
+    ],
+    deps = [
+        "@pip//casadi",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
+    ],
+)
