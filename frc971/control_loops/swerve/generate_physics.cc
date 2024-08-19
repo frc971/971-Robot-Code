@@ -44,6 +44,7 @@ using SymEngine::ccode;
 using SymEngine::cos;
 using SymEngine::DenseMatrix;
 using SymEngine::div;
+using SymEngine::exp;
 using SymEngine::Inf;
 using SymEngine::integer;
 using SymEngine::map_basic_basic;
@@ -55,7 +56,6 @@ using SymEngine::RCP;
 using SymEngine::real_double;
 using SymEngine::RealDouble;
 using SymEngine::Set;
-using SymEngine::sign;
 using SymEngine::simplify;
 using SymEngine::sin;
 using SymEngine::solve;
@@ -306,14 +306,6 @@ class SwerveSimulation {
     result_cc.emplace_back("#include <cmath>");
     result_cc.emplace_back("");
     result_cc.emplace_back("namespace frc971::control_loops::swerve {");
-    result_cc.emplace_back("namespace {");
-    result_cc.emplace_back("");
-    result_cc.emplace_back("double sign(double x) {");
-    result_cc.emplace_back("  return (x > 0) - (x < 0);");
-    result_cc.emplace_back("}");
-
-    result_cc.emplace_back("");
-    result_cc.emplace_back("}  // namespace");
     result_cc.emplace_back("");
     result_cc.emplace_back("Eigen::Matrix<double, 25, 1> SwervePhysics(");
     result_cc.emplace_back(
@@ -410,8 +402,8 @@ class SwerveSimulation {
 
   void WriteCasadiVariables(std::vector<std::string> *result_py) {
     result_py->emplace_back("    sin = casadi.sin");
-    result_py->emplace_back("    sign = casadi.sign");
     result_py->emplace_back("    cos = casadi.cos");
+    result_py->emplace_back("    exp = casadi.exp");
     result_py->emplace_back("    atan2 = soft_atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
@@ -454,7 +446,7 @@ class SwerveSimulation {
 
   void WriteCasadiVelocityVariables(std::vector<std::string> *result_py) {
     result_py->emplace_back("    sin = casadi.sin");
-    result_py->emplace_back("    sign = casadi.sign");
+    result_py->emplace_back("    exp = casadi.exp");
     result_py->emplace_back("    cos = casadi.cos");
     result_py->emplace_back("    atan2 = soft_atan2");
     result_py->emplace_back("    fmax = casadi.fmax");
@@ -904,11 +896,15 @@ class SwerveSimulation {
     result.Fwy = simplify(mul(Cy_, result.slip_angle));
 
     // The self-aligning moment needs to flip when the module flips direction.
-    result.Ms = mul(neg(result.Fwy),
-                    add(div(mul(sign(result.wheel_ground_velocity.get(0, 0)),
-                                contact_patch_length_),
-                            integer(3)),
-                        caster_));
+    RCP<const Basic> softsign_velocity = add(
+        div(integer(-2),
+            add(integer(1), exp(mul(integer(100),
+                                    result.wheel_ground_velocity.get(0, 0))))),
+        integer(1));
+    result.Ms =
+        mul(neg(result.Fwy),
+            add(div(mul(softsign_velocity, contact_patch_length_), integer(3)),
+                caster_));
     VLOG(1);
     VLOG(1) << "Ms " << result.Ms->__str__();
     VLOG(1);
