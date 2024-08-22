@@ -45,7 +45,7 @@ scp -p -P 29418 <username>@software.frc971.org:hooks/commit-msg .git/hooks/
       review for open sourcing.
 
 4. Send your changes to Gerrit by running
-   `git push origin HEAD:refs/for/master`.
+   `git push origin HEAD:refs/for/main`.
    - A link to the Gerrit web interface will be printed for you to copy paste
      into your browser.
 
@@ -71,7 +71,7 @@ Gerrit allows you to edit your change and resubmit it.
    one.
 
 5. Send the updated change to Gerrit with
-   `git push origin HEAD:refs/for/master`.
+   `git push origin HEAD:refs/for/main`.
 
 ## Troubleshooting
 * If your commit is missing a Change-Id, you'll get a reasonably understandable

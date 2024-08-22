@@ -211,9 +211,9 @@ NOTE:
     You will then need to manually copy the resulting file over to the robot.
 
 ## Code reviews
-We want all code to at least have a second person look it over before it gets merged into the `master` branch. Gerrit has [extensive documentation on starting reviews](https://software.frc971.org/gerrit/Documentation/user-upload.html).  There is also a good [intro User Guide](https://software.frc971.org/gerrit/Documentation/intro-user.html) and an [intro to working with Gerrit](https://gerrit-review.googlesource.com/Documentation/intro-gerrit-walkthrough.html) and [Gerrit workflows](https://docs.google.com/presentation/d/1C73UgQdzZDw0gzpaEqIC6SPujZJhqamyqO1XOHjH-uk)
+We want all code to at least have a second person look it over before it gets merged into the `main` branch. Gerrit has [extensive documentation on starting reviews](https://software.frc971.org/gerrit/Documentation/user-upload.html).  There is also a good [intro User Guide](https://software.frc971.org/gerrit/Documentation/intro-user.html) and an [intro to working with Gerrit](https://gerrit-review.googlesource.com/Documentation/intro-gerrit-walkthrough.html) and [Gerrit workflows](https://docs.google.com/presentation/d/1C73UgQdzZDw0gzpaEqIC6SPujZJhqamyqO1XOHjH-uk)
 
-TL;DR: Make and commit your changes, do `git push origin HEAD:refs/for/master`, and then click on the provided link to add reviewers.  If you just upload a change without adding any reviewers, it might sit around for a long time before anybody else notices it.
+TL;DR: Make and commit your changes, do `git push origin HEAD:refs/for/main`, and then click on the provided link to add reviewers.  If you just upload a change without adding any reviewers, it might sit around for a long time before anybody else notices it.
 
 [git-review](http://manpages.debian.org/cgi-bin/man.cgi?query=git-review) can make the upload process simpler.
 
