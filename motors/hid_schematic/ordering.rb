@@ -1,1 +1,0 @@
-../big_schematic/ordering.rb

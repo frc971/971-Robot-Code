@@ -1,3 +1,0 @@
-schematics board-main.sch board-motors.sch board-switcher.sch
-output-name board
-use-files
