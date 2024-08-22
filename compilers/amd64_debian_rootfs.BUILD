@@ -34,9 +34,13 @@ cc_library(
 
 cc_library(
     name = "cudart",
-    srcs = [
+    additional_linker_inputs = [
         "usr/lib/x86_64-linux-gnu/libcuda.so.1",
         "usr/lib/x86_64-linux-gnu/libcudart.so.11.0",
+    ],
+    linkopts = [
+        "external/amd64_debian_sysroot/usr/lib/x86_64-linux-gnu/libcuda.so.1",
+        "external/amd64_debian_sysroot/usr/lib/x86_64-linux-gnu/libcudart.so.11.0",
     ],
     visibility = ["//visibility:public"],
 )
