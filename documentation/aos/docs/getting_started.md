@@ -211,7 +211,7 @@ This should generate a C++ header at `bazel-bin/foo/ping_generated.h`.
 
 Every system running AOS will need a configuration. The configuration is a
 FlatBuffer message defined in
-[configuration.fbs](https://github.com/frc971/971-Robot-Code/blob/master/aos/configuration.fbs).
+[configuration.fbs](https://github.com/frc971/971-Robot-Code/blob/main/aos/configuration.fbs).
 Developers typically interact with the AOS config as a JSON file, which is then
 parsed into a FlatBuffer by various pieces of tooling.
 

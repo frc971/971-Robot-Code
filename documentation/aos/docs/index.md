@@ -12,7 +12,7 @@ AOS](design) for more detail.
 Because AOS was originally developed under the auspices of a [High School
 Robotics Team](https://frc971.org/), it is still hosted on the corresponding
 servers, and that the code we refer to as "AOS" is present in the
-[aos](https://github.com/frc971/971-Robot-Code/tree/master/aos) folder.
+[aos](https://github.com/frc971/971-Robot-Code/tree/main/aos) folder.
 
 ## Contributing
 

@@ -7,7 +7,7 @@ of a single codelab; the instructions can be found below.
 
 ## Setup
 
-Before starting this codelab, you should already have set up your computer with all of the programs needed to build and run the robot code, or have an account on the build server. If you have not done this, follow the instructions in the [introduction](https://software.frc971.org/gerrit/plugins/gitiles/971-Robot-Code/+/refs/heads/master/README.md).
+Before starting this codelab, you should already have set up your computer with all of the programs needed to build and run the robot code, or have an account on the build server. If you have not done this, follow the instructions in the [introduction](https://software.frc971.org/gerrit/plugins/gitiles/971-Robot-Code/+/refs/heads/main/README.md).
 
 ## Flatbuffers tutorial
 
@@ -57,7 +57,7 @@ what behavior is expected.
 
 ### Submitting a code review
 
-Once you can get the tests to pass, follow the directions in [this file](https://software.frc971.org/gerrit/plugins/gitiles/971-Robot-Code/+/refs/heads/master/documentation/tutorials/submitting-code-for-a-review.md) for creating a
+Once you can get the tests to pass, follow the directions in [this file](https://software.frc971.org/gerrit/plugins/gitiles/971-Robot-Code/+/refs/heads/main/documentation/tutorials/submitting-code-for-a-review.md) for creating a
 code review of the change. We will not actually *submit* the change (since
 that would remove the challenge for future students), but we will go through
 the code review process.
