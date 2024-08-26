@@ -265,3 +265,16 @@ py_binary(
         "@pip//scipy",
     ],
 )
+
+py_binary(
+    name = "smooth_function_graph",
+    srcs = [
+        "smooth_function_graph.py",
+    ],
+    deps = [
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
+    ],
+)

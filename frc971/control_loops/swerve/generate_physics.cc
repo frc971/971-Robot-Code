@@ -567,12 +567,15 @@ class SwerveSimulation {
     result_py.emplace_back("    ])");
     result_py.emplace_back("");
     constexpr double kLogGain = 1.0 / 0.05;
+    constexpr double kAbsGain = 1.0 / 0.05;
     result_py.emplace_back("def soft_atan2(y, x):");
     result_py.emplace_back("    return casadi.arctan2(");
     result_py.emplace_back("        y,");
     result_py.emplace_back("        casadi.logsumexp(casadi.SX(numpy.array(");
-    result_py.emplace_back(absl::Substitute(
-        "            [1.0, casadi.fabs(x) * $0.0]))) / $0.0)", kLogGain));
+    result_py.emplace_back(
+        absl::Substitute("            [1.0, x * (1.0 - 2.0 / (1 + "
+                         "casadi.exp($1.0 * x))) * $0.0]))) / $0.0)",
+                         kLogGain, kAbsGain));
     result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
