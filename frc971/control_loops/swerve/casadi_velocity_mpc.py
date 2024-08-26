@@ -12,6 +12,10 @@ import os, sys
 
 matplotlib.use("GTK3Agg")
 
+# Full print level on ipopt. Piping to a file and using a filter or search method is suggested
+# grad_x prints out the gradient at each iteration in the following sequence: U0, X1, U1, etc.
+full_debug = False
+
 
 class MPC(object):
 
@@ -145,6 +149,11 @@ class MPC(object):
                 "compiler": "shell",
                 "jit_options": jit_options,
             }
+            if full_debug:
+                options["jit"] = False
+                options["ipopt"] = {
+                    "print_level": 12,
+                }
             self.solver = casadi.nlpsol('solver', 'ipopt', prob, options)
 
     def make_physics(self):
@@ -240,7 +249,7 @@ class MPC(object):
           (i - 1):(8 + dynamics.NUM_VELOCITY_STATES) * i]
 
 
-mpc = MPC(solver='fatrop')
+mpc = MPC(solver='fatrop') if not full_debug else MPC(solver='ipopt')
 
 R_goal = numpy.zeros((3, 1))
 R_goal[0, 0] = 1.0
