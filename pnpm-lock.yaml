@@ -175,6 +175,9 @@ importers:
       '@angular/animations':
         specifier: v16-lts
         version: 16.2.12(@angular/core@16.2.12)
+      '@angular/forms':
+        specifier: v16-lts
+        version: 16.2.12(@angular/common@16.2.12)(@angular/core@16.2.12)(@angular/platform-browser@16.2.12)(rxjs@7.5.7)
 
   scouting/webserver/requests/messages: {}
 
