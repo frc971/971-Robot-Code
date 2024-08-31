@@ -28,11 +28,7 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-// The username to submit the various requests as.
 const DefaultUsername = "debug_cli"
-
-// TODO: Make the username an argument of the Request* functions.
-var Username = DefaultUsername
 
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
@@ -76,14 +72,14 @@ func parseErrorResponse(url string, statusCode int, responseBytes []byte) error 
 
 // Performs a POST request with the specified payload. The bytes that the
 // server responds with are returned.
-func performPost(url string, requestBytes []byte) ([]byte, error) {
+func performPost(url string, requestBytes []byte, userName string) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBytes))
 	if err != nil {
 		log.Printf("Failed to create a new POST request to %s: %v", url, err)
 		return nil, err
 	}
 	req.Header.Add("Authorization", "Basic "+
-		base64.StdEncoding.EncodeToString([]byte(Username+":")))
+		base64.StdEncoding.EncodeToString([]byte(userName+":")))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -104,8 +100,8 @@ func performPost(url string, requestBytes []byte) ([]byte, error) {
 
 // Sends a message to the server and returns the deserialized response.
 // The first generic argument must be specified.
-func sendMessage[FbT interface{}, Fb interface{ UnPack() *FbT }](url string, requestBytes []byte, parser func([]byte, flatbuffers.UOffsetT) Fb) (*FbT, error) {
-	responseBytes, err := performPost(url, requestBytes)
+func sendMessage[FbT interface{}, Fb interface{ UnPack() *FbT }](url string, requestBytes []byte, parser func([]byte, flatbuffers.UOffsetT) Fb, userName string) (*FbT, error) {
+	responseBytes, err := performPost(url, requestBytes, userName)
 	if err != nil {
 		return nil, err
 	}
@@ -113,92 +109,92 @@ func sendMessage[FbT interface{}, Fb interface{ UnPack() *FbT }](url string, req
 	return response.UnPack(), nil
 }
 
-func RequestAllMatches(server string, requestBytes []byte) (*request_all_matches_response.RequestAllMatchesResponseT, error) {
+func RequestAllMatches(server string, requestBytes []byte, userName string) (*request_all_matches_response.RequestAllMatchesResponseT, error) {
 	return sendMessage[request_all_matches_response.RequestAllMatchesResponseT](
 		server+"/requests/request/all_matches", requestBytes,
-		request_all_matches_response.GetRootAsRequestAllMatchesResponse)
+		request_all_matches_response.GetRootAsRequestAllMatchesResponse, DefaultUsername)
 }
 
-func RequestAllDriverRankings(server string, requestBytes []byte) (*request_all_driver_rankings_response.RequestAllDriverRankingsResponseT, error) {
+func RequestAllDriverRankings(server string, requestBytes []byte, userName string) (*request_all_driver_rankings_response.RequestAllDriverRankingsResponseT, error) {
 	return sendMessage[request_all_driver_rankings_response.RequestAllDriverRankingsResponseT](
 		server+"/requests/request/all_driver_rankings", requestBytes,
-		request_all_driver_rankings_response.GetRootAsRequestAllDriverRankingsResponse)
+		request_all_driver_rankings_response.GetRootAsRequestAllDriverRankingsResponse, DefaultUsername)
 }
 
-func Request2024DataScouting(server string, requestBytes []byte) (*request_2024_data_scouting_response.Request2024DataScoutingResponseT, error) {
+func Request2024DataScouting(server string, requestBytes []byte, userName string) (*request_2024_data_scouting_response.Request2024DataScoutingResponseT, error) {
 	return sendMessage[request_2024_data_scouting_response.Request2024DataScoutingResponseT](
 		server+"/requests/request/2024_data_scouting", requestBytes,
-		request_2024_data_scouting_response.GetRootAsRequest2024DataScoutingResponse)
+		request_2024_data_scouting_response.GetRootAsRequest2024DataScoutingResponse, DefaultUsername)
 }
 
-func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {
+func SubmitNotes(server string, requestBytes []byte, userName string) (*submit_notes_response.SubmitNotesResponseT, error) {
 	return sendMessage[submit_notes_response.SubmitNotesResponseT](
 		server+"/requests/submit/submit_notes", requestBytes,
-		submit_notes_response.GetRootAsSubmitNotesResponse)
+		submit_notes_response.GetRootAsSubmitNotesResponse, DefaultUsername)
 }
 
-func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_response.RequestNotesForTeamResponseT, error) {
+func RequestNotes(server string, requestBytes []byte, userName string) (*request_notes_for_team_response.RequestNotesForTeamResponseT, error) {
 	return sendMessage[request_notes_for_team_response.RequestNotesForTeamResponseT](
 		server+"/requests/request/notes_for_team", requestBytes,
-		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse)
+		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse, DefaultUsername)
 }
 
-func RequestPitImages(server string, requestBytes []byte) (*request_pit_images_response.RequestPitImagesResponseT, error) {
+func RequestPitImages(server string, requestBytes []byte, userName string) (*request_pit_images_response.RequestPitImagesResponseT, error) {
 	return sendMessage[request_pit_images_response.RequestPitImagesResponseT](
 		server+"/requests/request/pit_images", requestBytes,
-		request_pit_images_response.GetRootAsRequestPitImagesResponse)
+		request_pit_images_response.GetRootAsRequestPitImagesResponse, DefaultUsername)
 }
 
-func RequestAllPitImages(server string, requestBytes []byte) (*request_all_pit_images_response.RequestAllPitImagesResponseT, error) {
+func RequestAllPitImages(server string, requestBytes []byte, userName string) (*request_all_pit_images_response.RequestAllPitImagesResponseT, error) {
 	return sendMessage[request_all_pit_images_response.RequestAllPitImagesResponseT](
 		server+"/requests/request/all_pit_images", requestBytes,
-		request_all_pit_images_response.GetRootAsRequestAllPitImagesResponse)
+		request_all_pit_images_response.GetRootAsRequestAllPitImagesResponse, DefaultUsername)
 }
 
-func RequestAllNotes(server string, requestBytes []byte) (*request_all_notes_response.RequestAllNotesResponseT, error) {
+func RequestAllNotes(server string, requestBytes []byte, userName string) (*request_all_notes_response.RequestAllNotesResponseT, error) {
 	return sendMessage[request_all_notes_response.RequestAllNotesResponseT](
 		server+"/requests/request/all_notes", requestBytes,
-		request_all_notes_response.GetRootAsRequestAllNotesResponse)
+		request_all_notes_response.GetRootAsRequestAllNotesResponse, DefaultUsername)
 }
 
-func RequestShiftSchedule(server string, requestBytes []byte) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {
+func RequestShiftSchedule(server string, requestBytes []byte, userName string) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {
 	return sendMessage[request_shift_schedule_response.RequestShiftScheduleResponseT](
 		server+"/requests/request/shift_schedule", requestBytes,
-		request_shift_schedule_response.GetRootAsRequestShiftScheduleResponse)
+		request_shift_schedule_response.GetRootAsRequestShiftScheduleResponse, DefaultUsername)
 }
 
-func RequestCurrentScouting(server string, requestBytes []byte) (*request_current_scouting_response.RequestCurrentScoutingResponseT, error) {
+func RequestCurrentScouting(server string, requestBytes []byte, userName string) (*request_current_scouting_response.RequestCurrentScoutingResponseT, error) {
 	return sendMessage[request_current_scouting_response.RequestCurrentScoutingResponseT](
 		server+"/requests/request/current_scouting", requestBytes,
-		request_current_scouting_response.GetRootAsRequestCurrentScoutingResponse)
+		request_current_scouting_response.GetRootAsRequestCurrentScoutingResponse, userName)
 }
 
-func SubmitShiftSchedule(server string, requestBytes []byte) (*submit_shift_schedule_response.SubmitShiftScheduleResponseT, error) {
+func SubmitShiftSchedule(server string, requestBytes []byte, userName string) (*submit_shift_schedule_response.SubmitShiftScheduleResponseT, error) {
 	return sendMessage[submit_shift_schedule_response.SubmitShiftScheduleResponseT](
 		server+"/requests/submit/shift_schedule", requestBytes,
-		submit_shift_schedule_response.GetRootAsSubmitShiftScheduleResponse)
+		submit_shift_schedule_response.GetRootAsSubmitShiftScheduleResponse, DefaultUsername)
 }
 
-func SubmitDriverRanking(server string, requestBytes []byte) (*submit_driver_ranking_response.SubmitDriverRankingResponseT, error) {
+func SubmitDriverRanking(server string, requestBytes []byte, userName string) (*submit_driver_ranking_response.SubmitDriverRankingResponseT, error) {
 	return sendMessage[submit_driver_ranking_response.SubmitDriverRankingResponseT](
 		server+"/requests/submit/submit_driver_ranking", requestBytes,
-		submit_driver_ranking_response.GetRootAsSubmitDriverRankingResponse)
+		submit_driver_ranking_response.GetRootAsSubmitDriverRankingResponse, DefaultUsername)
 }
 
-func Submit2024Actions(server string, requestBytes []byte) (*submit_2024_actions_response.Submit2024ActionsResponseT, error) {
+func Submit2024Actions(server string, requestBytes []byte, userName string) (*submit_2024_actions_response.Submit2024ActionsResponseT, error) {
 	return sendMessage[submit_2024_actions_response.Submit2024ActionsResponseT](
 		server+"/requests/submit/submit_2024_actions", requestBytes,
-		submit_2024_actions_response.GetRootAsSubmit2024ActionsResponse)
+		submit_2024_actions_response.GetRootAsSubmit2024ActionsResponse, DefaultUsername)
 }
 
-func SubmitPitImage(server string, requestBytes []byte) (*submit_pit_image_response.SubmitPitImageResponseT, error) {
+func SubmitPitImage(server string, requestBytes []byte, userName string) (*submit_pit_image_response.SubmitPitImageResponseT, error) {
 	return sendMessage[submit_pit_image_response.SubmitPitImageResponseT](
 		server+"/requests/submit/submit_pit_image", requestBytes,
-		submit_pit_image_response.GetRootAsSubmitPitImageResponse)
+		submit_pit_image_response.GetRootAsSubmitPitImageResponse, DefaultUsername)
 }
 
-func Delete2024DataScouting(server string, requestBytes []byte) (*delete_2024_data_scouting_response.Delete2024DataScoutingResponseT, error) {
+func Delete2024DataScouting(server string, requestBytes []byte, userName string) (*delete_2024_data_scouting_response.Delete2024DataScoutingResponseT, error) {
 	return sendMessage[delete_2024_data_scouting_response.Delete2024DataScoutingResponseT](
 		server+"/requests/delete/delete_2024_data_scouting", requestBytes,
-		delete_2024_data_scouting_response.GetRootAsDelete2024DataScoutingResponse)
+		delete_2024_data_scouting_response.GetRootAsDelete2024DataScoutingResponse, DefaultUsername)
 }
