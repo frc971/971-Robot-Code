@@ -176,7 +176,7 @@ class MPC(object):
         U = casadi.MX.sym('U', 8)
 
         X = X0
-        M = 4  # RK4 steps per interval
+        M = 2  # RK4 steps per interval
         DT = self.dt / M
 
         for j in range(M):
