@@ -35,6 +35,7 @@ ABSL_FLAG(std::string, casadi_py_output_path, "",
 ABSL_FLAG(double, caster, 0.01, "Caster in meters for the module.");
 
 ABSL_FLAG(bool, symbolic, false, "If true, write everything out symbolically.");
+ABSL_FLAG(bool, function, true, "If true, make soft_atan2 a function.");
 
 using SymEngine::abs;
 using SymEngine::add;
@@ -404,7 +405,11 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    cos = casadi.cos");
     result_py->emplace_back("    exp = casadi.exp");
-    result_py->emplace_back("    atan2 = soft_atan2");
+    if (absl::GetFlag(FLAGS_function)) {
+      result_py->emplace_back("    atan2 = soft_atan2()");
+    } else {
+      result_py->emplace_back("    atan2 = soft_atan2");
+    }
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -448,7 +453,11 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    exp = casadi.exp");
     result_py->emplace_back("    cos = casadi.cos");
-    result_py->emplace_back("    atan2 = soft_atan2");
+    if (absl::GetFlag(FLAGS_function)) {
+      result_py->emplace_back("    atan2 = soft_atan2()");
+    } else {
+      result_py->emplace_back("    atan2 = soft_atan2");
+    }
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
 
@@ -495,7 +504,7 @@ class SwerveSimulation {
     std::vector<std::string> result_py;
 
     // Write out the header.
-    result_py.emplace_back("#!/usr/bin/python3");
+    result_py.emplace_back("#!/usr/bin/env python3");
     result_py.emplace_back("");
     result_py.emplace_back("import casadi, numpy");
     result_py.emplace_back("");
@@ -567,15 +576,46 @@ class SwerveSimulation {
     result_py.emplace_back("    ])");
     result_py.emplace_back("");
     constexpr double kLogGain = 1.0 / 0.05;
-    constexpr double kAbsGain = 1.0 / 0.05;
-    result_py.emplace_back("def soft_atan2(y, x):");
-    result_py.emplace_back("    return casadi.arctan2(");
-    result_py.emplace_back("        y,");
-    result_py.emplace_back("        casadi.logsumexp(casadi.SX(numpy.array(");
-    result_py.emplace_back(
-        absl::Substitute("            [1.0, x * (1.0 - 2.0 / (1 + "
-                         "casadi.exp($1.0 * x))) * $0.0]))) / $0.0)",
-                         kLogGain, kAbsGain));
+    constexpr double kAbsGain = 1.0 / 0.01;
+    if (absl::GetFlag(FLAGS_function)) {
+      result_py.emplace_back("def soft_atan2():");
+      result_py.emplace_back("    y = casadi.SX.sym('y')");
+      result_py.emplace_back("    x = casadi.SX.sym('x')");
+      result_py.emplace_back(
+          "    return casadi.Function('soft_atan2', [y, x], [");
+      result_py.emplace_back("        casadi.arctan2(");
+      result_py.emplace_back("            y,");
+      result_py.emplace_back("            casadi.logsumexp(");
+      result_py.emplace_back("                casadi.SX(");
+      result_py.emplace_back("                    numpy.array([");
+      result_py.emplace_back("                        1.0, x * (1.0 - 2.0 /");
+      result_py.emplace_back(
+          absl::Substitute("                                  (1 + "
+                           "casadi.exp($1.0 * x))) * $0.0",
+                           kLogGain, kAbsGain));
+      result_py.emplace_back(
+          absl::Substitute("                    ]))) / $0.0)", kLogGain));
+      result_py.emplace_back("    ])");
+    } else {
+      result_py.emplace_back("def soft_atan2(y, x):");
+      result_py.emplace_back("    return casadi.arctan2(");
+      result_py.emplace_back("        y,");
+      result_py.emplace_back("        casadi.logsumexp(casadi.SX(numpy.array(");
+      result_py.emplace_back(
+          absl::Substitute("            [1.0, x * (1.0 - 2.0 / (1 + "
+                           "casadi.exp($1.0 * x))) * $0.0]))) / $0.0)",
+                           kLogGain, kAbsGain));
+    }
+    result_py.emplace_back("");
+    result_py.emplace_back("# Is = STEER_CURRENT_COUPLING_FACTOR * Id");
+    result_py.emplace_back(absl::Substitute(
+        "STEER_CURRENT_COUPLING_FACTOR = $0",
+        ccode(*(neg(
+            mul(div(Gs_, Kts_),
+                mul(div(Ktd_, mul(Gd_, rw_)),
+                    neg(mul(add(neg(wb_), mul(add(rs_, rp_),
+                                              sub(integer(1), div(rb1_, rp_)))),
+                            div(rw_, rb2_))))))))));
     result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
