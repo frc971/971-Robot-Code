@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import copy
 import numpy
@@ -617,7 +617,7 @@ class Trajectory:
         self.distance_array = copy.copy(distance_array)
         self.max_dvelocity_unfiltered = self.curvature_trajectory_pass(
             dynamics, alpha_unitizer, distance_array, vmax)
-        print 'Finished curvature pass'
+        print('Finished curvature pass')
 
         self.max_dvelocity_unfiltered[0] = 0.0
         self.max_dvelocity_unfiltered[-1] = 0.0
@@ -626,12 +626,12 @@ class Trajectory:
             self.max_dvelocity_unfiltered, dynamics, alpha_unitizer,
             distance_array, vmax)
         self.max_dvelocity = self.max_dvelocity_back_pass
-        print 'Finished backwards pass'
+        print('Finished backwards pass')
 
         self.max_dvelocity_forward_pass = self.forward_trajectory_pass(
             self.max_dvelocity_back_pass, dynamics, alpha_unitizer,
             distance_array, vmax)
-        print 'Finished forwards pass'
+        print('Finished forwards pass')
 
     def interpolate_velocity(self, d, d0, d1, v0, v1):
         if v0 + v1 > 0:
@@ -718,7 +718,7 @@ def main():
     dynamics = Dynamics(dt)
 
     trajectory = Trajectory(path_step_size)
-    print 'Initialized path'
+    print('Initialized path')
 
     distance_array = numpy.linspace(
         0.0, trajectory.length(),
@@ -769,7 +769,7 @@ def main():
         io0 += alpha[0, 0] * dd
         io1 += alpha[1, 0] * dd
 
-    print 'Iterated through path'
+    print('Iterated through path')
 
     # Bounds on the accelerations of the two DOFs.
     # We'll draw an oval to represent the actual bounds here.
@@ -786,7 +786,7 @@ def main():
                                   distance_array,
                                   vmax=vmax)
 
-    print 'Computed trajectory'
+    print('Computed trajectory')
 
     # Now, we can get acceleration, velocity, and position as a function of distance.
     # Acceleration is best effort (derived from the velocities), but velocity
@@ -839,7 +839,7 @@ def main():
 
     sim_dt = dt
 
-    print 'Starting simulation'
+    print('Starting simulation')
     # Now, we can start following the trajectory!
     for t in numpy.arange(0.0, 1.0, sim_dt):
         if goal_distance == trajectory.length():
@@ -914,9 +914,9 @@ def main():
         # starting point.
         if (numpy.abs(U) > vmax).any():
             # Saturated.  Let's do a binary search.
-            print "Saturated."
+            print("Saturated.")
             if (goal_distance - last_goal_distance) < 1e-8:
-                print "Not bothering to move"
+                print("Not bothering to move")
                 # Avoid the divide by 0 when interpolating.  Just don't move
                 # since we are saturated.
                 fraction_along_path = 0.0
@@ -936,7 +936,8 @@ def main():
                     fraction_along_path -= step_size
                 else:
                     fraction_along_path += step_size
-            print "Fraction", fraction_along_path, "at", goal_distance, "rad,", t, "sec", goal_velocity
+            print("Fraction", fraction_along_path, "at", goal_distance, "rad,",
+                  t, "sec", goal_velocity)
 
             goal_distance = (
                 (goal_distance - last_goal_distance) * fraction_along_path +
@@ -986,7 +987,7 @@ def main():
                 goal_distance = trajectory.length()
                 goal_velocity = 0.0
 
-    print 'Finished simulation'
+    print('Finished simulation')
     pylab.figure()
     pylab.title("Trajecotry")
     pylab.plot(theta0_array, theta1_array, label="desired path")

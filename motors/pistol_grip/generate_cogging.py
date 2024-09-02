@@ -8,7 +8,7 @@ from matplotlib import pylab
 
 def main(argv):
     if len(argv) < 4:
-        print 'Args: input output.cc struct_name'
+        print('Args: input output.cc struct_name')
         return 1
     data_sum = [0.0] * 4096
     data_count = [0] * 4096

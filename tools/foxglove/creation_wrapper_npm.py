@@ -33,9 +33,10 @@ def main(argv: list[str]):
         package.rsplit("@", maxsplit=1) for package in packages)
     package_json_file = Path.cwd() / "package.json"
     package_json = json.loads(package_json_file.read_text())
-    package_json.setdefault("dependencies", {}).update(
-        {package: version
-         for package, version in package_version_pairs})
+    package_json.setdefault("dependencies", {}).update({
+        package: version
+        for package, version in package_version_pairs
+    })
 
     package_json_file.write_text(
         json.dumps(package_json, sort_keys=True, indent=4))

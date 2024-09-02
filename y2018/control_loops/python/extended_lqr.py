@@ -66,14 +66,14 @@ class ArmCostFunction:
         final_B = numerical_jacobian_u(self.dynamics.discrete_dynamics,
                                        numpy.matrix(numpy.zeros((4, 1))),
                                        numpy.matrix(numpy.zeros((2, 1))))
-        print 'Final A', final_A
-        print 'Final B', final_B
+        print('Final A', final_A)
+        print('Final B', final_B)
         K, self.S = controls.dlqr(final_A,
                                   final_B,
                                   self.Q,
                                   self.R,
                                   optimal_cost_function=True)
-        print 'Final eig:', numpy.linalg.eig(final_A - final_B * K)
+        print('Final eig:', numpy.linalg.eig(final_A - final_B * K))
 
     def final_cost(self, X, U):
         """Computes the final cost of being at X
@@ -111,8 +111,9 @@ class ArmCostFunction:
       numpy.matrix(self.num_states, self.num_states)
     """
         zero_U = numpy.matrix(numpy.zeros((self.num_inputs, 1)))
-        print 'S', self.S
-        print 'Q_final', numerical_jacobian_x_x(self.final_cost, X_hat, zero_U)
+        print('S', self.S)
+        print('Q_final', numerical_jacobian_x_x(self.final_cost, X_hat,
+                                                zero_U))
         return numerical_jacobian_x_x(self.final_cost, X_hat, zero_U)
 
     def estimate_partial_cost_partial_x_final(self, X_hat):
@@ -448,8 +449,8 @@ class ELQR(object):
                 numpy.diag(S_bar_1_eigh_eigenvalues_stiff)
             ) * S_bar_1_eigh_eigenvectors.T
 
-            print 'Min u', -numpy.linalg.solve(TotalS_1, Totals_1)
-            print 'Min x_hat', optimal_x_1
+            print('Min u', -numpy.linalg.solve(TotalS_1, Totals_1))
+            print('Min x_hat', optimal_x_1)
             self.s_bar_t[1] = -self.s_t[1] - (S_bar_stiff +
                                               self.S_t[1]) * optimal_x_1
             self.s_scalar_bar_t[1] = 0.5 * (optimal_u_1.T * TotalS_1 * optimal_u_1 \
@@ -458,20 +459,20 @@ class ELQR(object):
                 - optimal_x_1.T * (self.s_bar_t[1] + self.s_t[1]) \
                 - self.s_scalar_t[1] + Totals_scalar_1
 
-            print 'optimal_u_1', optimal_u_1
-            print 'TotalS_1', TotalS_1
-            print 'Totals_1', Totals_1
-            print 'Totals_scalar_1', Totals_scalar_1
-            print 'overall cost 1', 0.5 * (optimal_u_1.T * TotalS_1 * optimal_u_1) \
-                                     + optimal_u_1.T * Totals_1 + Totals_scalar_1
-            print 'overall cost 0', 0.5 * (x_hat_initial.T * self.S_t[0] * x_hat_initial) \
-                                    + x_hat_initial.T * self.s_t[0] + self.s_scalar_t[0]
+            print('optimal_u_1', optimal_u_1)
+            print('TotalS_1', TotalS_1)
+            print('Totals_1', Totals_1)
+            print('Totals_scalar_1', Totals_scalar_1)
+            print('overall cost 1', 0.5 * (optimal_u_1.T * TotalS_1 * optimal_u_1) \
+                                     + optimal_u_1.T * Totals_1 + Totals_scalar_1)
+            print('overall cost 0', 0.5 * (x_hat_initial.T * self.S_t[0] * x_hat_initial) \
+                                    + x_hat_initial.T * self.s_t[0] + self.s_scalar_t[0])
 
-            print 't forward 0'
-            print 'x_hat_initial[ 0]: %s' % (x_hat_initial)
-            print 'x_hat[%2d]: %s' % (0, x_hat.T)
-            print 'x_hat_next[%2d]: %s' % (0, x_hat_next.T)
-            print 'u[%2d]: %s' % (0, u_t.T)
+            print('t forward 0')
+            print('x_hat_initial[ 0]: %s' % (x_hat_initial))
+            print('x_hat[%2d]: %s' % (0, x_hat.T))
+            print('x_hat_next[%2d]: %s' % (0, x_hat_next.T))
+            print('u[%2d]: %s' % (0, u_t.T))
             print('L[ 0]: %s' % (self.L_t[0], )).replace('\n', '\n        ')
             print('l[ 0]: %s' % (self.l_t[0], )).replace('\n', '\n        ')
 
@@ -482,14 +483,14 @@ class ELQR(object):
             # TODO(austin): optimal_x_1 is x_hat
             x_hat = -numpy.linalg.solve((self.S_t[1] + S_bar_stiff),
                                         (self.s_t[1] + self.s_bar_t[1]))
-            print 'new xhat', x_hat
+            print('new xhat', x_hat)
 
             self.S_bar_t[1] = S_bar_stiff
 
             self.last_x_hat_t[1] = x_hat
 
             for t in range(1, l):
-                print 't forward', t
+                print('t forward', t)
                 u_t = self.L_t[t] * x_hat + self.l_t[t]
 
                 x_hat_next = self.dynamics.discrete_dynamics(x_hat, u_t)
@@ -499,8 +500,8 @@ class ELQR(object):
                     self.dynamics.inverse_discrete_dynamics, x_hat_next, u_t)
                 c_bar_t = x_hat - A_bar_t * x_hat_next - B_bar_t * u_t
 
-                print 'x_hat[%2d]: %s' % (t, x_hat.T)
-                print 'x_hat_next[%2d]: %s' % (t, x_hat_next.T)
+                print('x_hat[%2d]: %s' % (t, x_hat.T))
+                print('x_hat_next[%2d]: %s' % (t, x_hat_next.T))
                 print('L[%2d]: %s' % (
                     t,
                     self.L_t[t],
@@ -509,7 +510,7 @@ class ELQR(object):
                     t,
                     self.l_t[t],
                 )).replace('\n', '\n        ')
-                print 'u[%2d]: %s' % (t, u_t.T)
+                print('u[%2d]: %s' % (t, u_t.T))
 
                 print('A_bar_t[%2d]: %s' % (t, A_bar_t)).replace(
                     '\n', '\n             ')
@@ -561,20 +562,20 @@ class ELQR(object):
                 * (self.s_t[l] + self.s_bar_t[l])
 
             for t in reversed(range(l)):
-                print 't backward', t
+                print('t backward', t)
                 # TODO(austin): I don't think we can use L_t like this here.
                 # I think we are off by 1 somewhere...
                 u_t = self.L_bar_t[t + 1] * x_hat + self.l_bar_t[t + 1]
 
                 x_hat_prev = self.dynamics.inverse_discrete_dynamics(
                     x_hat, u_t)
-                print 'x_hat[%2d]: %s' % (t, x_hat.T)
-                print 'x_hat_prev[%2d]: %s' % (t, x_hat_prev.T)
+                print('x_hat[%2d]: %s' % (t, x_hat.T))
+                print('x_hat_prev[%2d]: %s' % (t, x_hat_prev.T))
                 print('L_bar[%2d]: %s' % (t + 1, self.L_bar_t[t + 1])).replace(
                     '\n', '\n            ')
                 print('l_bar[%2d]: %s' % (t + 1, self.l_bar_t[t + 1])).replace(
                     '\n', '\n            ')
-                print 'u[%2d]: %s' % (t, u_t.T)
+                print('u[%2d]: %s' % (t, u_t.T))
                 # Now compute the linearized A, B, and C
                 # Start by doing it numerically, and then optimize.
                 A_t = numerical_jacobian_x(self.dynamics.discrete_dynamics,

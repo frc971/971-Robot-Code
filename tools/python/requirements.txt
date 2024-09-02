@@ -8,7 +8,7 @@ numpy
 opencv-python
 osqp
 pkginfo
-pygobject
+pygobject==3.42.2
 requests
 scipy
 shapely
@@ -28,3 +28,12 @@ tabulate
 casadi>=3.6.6
 
 jax[cuda12]
+optax
+flax
+clu
+
+# Pin this so we can actually depend on it.  Used by tensorflow/jax.
+setuptools==74.0.0
+
+tensorflow
+tensorflow_datasets

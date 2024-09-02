@@ -133,6 +133,9 @@ build --sandbox_tmpfs_path=/tmp
 # Prevent cypress from using its own binary. We want to use the hermetic one.
 build --action_env=CYPRESS_INSTALL_BINARY=0
 
+# Allow spaces in runfiles filenames.
+build --experimental_inprocess_symlink_creation
+
 # From our one and only phil.schrader: https://groups.google.com/g/bazel-discuss/c/5cbRuLuTwNg :)
 # Enable -Werror and warnings for our code
 # TODO: It would be nice to enable Wcast-align and Wcast-qual.

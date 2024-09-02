@@ -642,13 +642,13 @@ class ArmUi(Gtk.DrawingArea):
         self.now_segment_pt = np.array(shift_angles(pt_theta))
         if self.editing:
             if self.edit_control1:
-                if (self.now_segment_pt !=
-                        self.segments[self.index].control1).any():
+                if (self.now_segment_pt
+                        != self.segments[self.index].control1).any():
                     self.previous_segment = self.segments[self.index].control1
                 self.segments[self.index].control1 = self.now_segment_pt
             else:
-                if (self.now_segment_pt !=
-                        self.segments[self.index].control2).any():
+                if (self.now_segment_pt
+                        != self.segments[self.index].control2).any():
                     self.previous_segment = self.segments[self.index].control2
                 self.segments[self.index].control2 = self.now_segment_pt
 

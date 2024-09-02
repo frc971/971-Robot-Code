@@ -8,3 +8,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y clang
 RUN DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y python3
 RUN DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y pkgconf
 RUN DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y libcairo2-dev
+RUN DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y libgirepository1.0-dev

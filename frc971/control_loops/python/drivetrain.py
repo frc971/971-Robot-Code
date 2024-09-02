@@ -664,8 +664,8 @@ def PlotDrivetrainSprint(drivetrain_params):
         max_battery_wattage = kMaxBreakerCurrent * (vbat -
                                                     kMaxBreakerCurrent * Rw)
         if (max_current_request_left * max_voltage_left +
-                max_current_request_right * max_voltage_right >
-                max_battery_wattage):
+                max_current_request_right * max_voltage_right
+                > max_battery_wattage):
             # Now solve the quadratic equation to figure out what the overall
             # motor current can be which puts us at the max battery wattage.
             max_motor_current = (

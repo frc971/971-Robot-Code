@@ -4,6 +4,10 @@ load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 # Invoke this via "bazel run //tools/python:requirements.update".
 compile_pip_requirements(
     name = "requirements",
+    extra_args = [
+        # Make it so we can depend on setuptools.
+        "--allow-unsafe",
+    ],
     requirements_in = "requirements.txt",
     requirements_txt = "requirements.lock.txt",
     tags = [
