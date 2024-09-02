@@ -51,6 +51,22 @@
         "sha256": "d84d17e21670ec07990e1044a99efe8d615d860fd176fc29ef5c306068fda313",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/importlib_metadata-5.1.0-py3-none-any.whl"
     },
+    "jax==0.4.30": {
+        "sha256": "289b30ae03b52f7f4baf6ef082a9f4e3e29c1080e22d13512c5ecf02d5f1a55b",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jax-0.4.30-py3-none-any.whl"
+    },
+    "jax_cuda12_pjrt==0.4.30": {
+        "sha256": "895d0198ad99638fcaf976c47592e2a543eef79ea15fabd24a402d055390c328",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jax_cuda12_pjrt-0.4.30-py3-none-manylinux2014_x86_64.whl"
+    },
+    "jax_cuda12_plugin==0.4.30": {
+        "sha256": "d8d196241b9253ecb1144a4409b5deacbb9771624f097b2bbf025da3c7d8f4f8",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jax_cuda12_plugin-0.4.30-cp39-cp39-manylinux2014_x86_64.whl"
+    },
+    "jaxlib==0.4.30": {
+        "sha256": "f74a6b0e09df4b5e2ee399ebb9f0e01190e26e84ccb0a758fadb516415c07f18",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jaxlib-0.4.30-cp39-cp39-manylinux2014_x86_64.whl"
+    },
     "jinja2==3.1.2": {
         "sha256": "6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Jinja2-3.1.2-py3-none-any.whl"
@@ -79,6 +95,10 @@
         "sha256": "c8856a832c1e56702577023cd64cc5f84948280c1c0fcc6af4cd39006ea6aa8c",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/mkdocs-1.4.2-py3-none-any.whl"
     },
+    "ml_dtypes==0.4.0": {
+        "sha256": "f1724ddcdf5edbaf615a62110af47407f1719b8d02e68ccee60683acb5f74da1",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/ml_dtypes-0.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
     "mpmath==1.3.0": {
         "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/mpmath-1.3.0-py3-none-any.whl"
@@ -87,9 +107,53 @@
         "sha256": "d7806500e4f5bdd04095e849265e55de20d8cc4b661b038957354327f6d9b295",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/numpy-1.25.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
+    "nvidia_cublas_cu12==12.6.1.4": {
+        "sha256": "5dd125ece5469dbdceebe2e9536ad8fc4abd38aa394a7ace42fc8a930a1e81e3",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cublas_cu12-12.6.1.4-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cuda_cupti_cu12==12.6.68": {
+        "sha256": "13408a021727de6473d138a0c5e8080b23437f761508e2b11d2530fed24f4ea0",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cuda_cupti_cu12-12.6.68-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cuda_nvcc_cu12==12.6.68": {
+        "sha256": "3999aa4a42ac8723c09a8aafd06bc4a6ec1a0b05c53bc96c8d6cf195e84f6935",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cuda_nvcc_cu12-12.6.68-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cuda_runtime_cu12==12.6.68": {
+        "sha256": "846987485889786d257f6d7bdcf7544a36452936514e20dd710527b896c0fe12",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cuda_runtime_cu12-12.6.68-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cudnn_cu12==9.3.0.75": {
+        "sha256": "9ad9c6929ebb5295eb4a1728024666d1c88283373e265a0c5c883e6f9d5cd76d",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cudnn_cu12-9.3.0.75-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cufft_cu12==11.2.6.59": {
+        "sha256": "251df5b20b11bb2af6d3964ac01b85a94094222d081c90f27e8df3bf533d3257",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cufft_cu12-11.2.6.59-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cusolver_cu12==11.6.4.69": {
+        "sha256": "ec0419e653587d25f399736eaf1d26a6562d8bcaeb44b1e3daef87e13b669963",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cusolver_cu12-11.6.4.69-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_cusparse_cu12==12.5.3.3": {
+        "sha256": "76030755020d3a969b40273f43b8c496c4e122ee2a01fd724cf1398421bcadd8",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_cusparse_cu12-12.5.3.3-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_nccl_cu12==2.22.3": {
+        "sha256": "f9f5e03c00269dee2cd1aa57019f9a024478a74ae6e9b32d5341c849fe6f6302",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_nccl_cu12-2.22.3-py3-none-manylinux2014_x86_64.whl"
+    },
+    "nvidia_nvjitlink_cu12==12.6.68": {
+        "sha256": "125a6c2a44e96386dda634e13d944e60b07a0402d391a070e8fb4104b34ea1ab",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/nvidia_nvjitlink_cu12-12.6.68-py3-none-manylinux2014_x86_64.whl"
+    },
     "opencv_python==4.6.0.66": {
         "sha256": "dbdc84a9b4ea2cbae33861652d25093944b9959279200b7ae0badd32439f74de",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/opencv_python-4.6.0.66-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "opt_einsum==3.3.0": {
+        "sha256": "2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/opt_einsum-3.3.0-py3-none-any.whl"
     },
     "osqp==0.6.2.post8": {
         "sha256": "22724b3ac4eaf17582e3ff35cb6660c026e71138f27fc21dbae4f1dc60904c64",
