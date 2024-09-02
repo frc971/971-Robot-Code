@@ -58,7 +58,7 @@ class MPC(object):
                                 casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
 
-        self.N = 50
+        self.N = 200
 
         # Start with an empty nonlinear program.
         self.w = []
