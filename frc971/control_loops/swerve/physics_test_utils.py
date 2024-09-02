@@ -21,35 +21,39 @@ def state_vector(
     # All the wheels are spinning at the speed needed to hit the velocity in m/s
     drive_wheel_velocity = drive_wheel_velocity or numpy.linalg.norm(velocity)
 
-    X_initial[2, 0] = module_omega
-    X_initial[3, 0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
+    X_initial[dynamics.STATE_OMEGAS0, 0] = module_omega
+    X_initial[dynamics.STATE_OMEGAD0,
+              0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
 
-    X_initial[6, 0] = module_omega
-    X_initial[7, 0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
+    X_initial[dynamics.STATE_OMEGAS1, 0] = module_omega
+    X_initial[dynamics.STATE_OMEGAD1,
+              0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
 
-    X_initial[10, 0] = module_omega
-    X_initial[11, 0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
+    X_initial[dynamics.STATE_OMEGAS2, 0] = module_omega
+    X_initial[dynamics.STATE_OMEGAD2,
+              0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
 
-    X_initial[14, 0] = module_omega
-    X_initial[15, 0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
+    X_initial[dynamics.STATE_OMEGAS3, 0] = module_omega
+    X_initial[dynamics.STATE_OMEGAD3,
+              0] = drive_wheel_velocity / (dynamics.WHEEL_RADIUS)
 
-    X_initial[0, 0] = module_angle
-    X_initial[4, 0] = module_angle
-    X_initial[8, 0] = module_angle
-    X_initial[12, 0] = module_angle
+    X_initial[dynamics.STATE_THETAS0, 0] = module_angle
+    X_initial[dynamics.STATE_THETAS1, 0] = module_angle
+    X_initial[dynamics.STATE_THETAS2, 0] = module_angle
+    X_initial[dynamics.STATE_THETAS3, 0] = module_angle
 
     if module_angles is not None:
         assert len(module_angles) == 4
-        X_initial[0, 0] = module_angles[0]
-        X_initial[4, 0] = module_angles[1]
-        X_initial[8, 0] = module_angles[2]
-        X_initial[12, 0] = module_angles[3]
+        X_initial[dynamics.STATE_THETAS0, 0] = module_angles[0]
+        X_initial[dynamics.STATE_THETAS1, 0] = module_angles[1]
+        X_initial[dynamics.STATE_THETAS2, 0] = module_angles[2]
+        X_initial[dynamics.STATE_THETAS3, 0] = module_angles[3]
 
-    X_initial[18, 0] = theta
+    X_initial[dynamics.STATE_THETA, 0] = theta
 
-    X_initial[19, 0] = velocity[0, 0] + dx
-    X_initial[20, 0] = velocity[1, 0] + dy
-    X_initial[21, 0] = omega
+    X_initial[dynamics.STATE_VX, 0] = velocity[0, 0] + dx
+    X_initial[dynamics.STATE_VY, 0] = velocity[1, 0] + dy
+    X_initial[dynamics.STATE_OMEGA, 0] = omega
 
     return X_initial
 

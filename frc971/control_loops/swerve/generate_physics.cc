@@ -142,7 +142,7 @@ class SwerveSimulation {
       rb1_ = symbol("rb1");
       rb2_ = symbol("rb2");
 
-      Gd2_ = symbol("Gd3");
+      Gd3_ = symbol("Gd3");
       Gd_ = symbol("Gd");
 
       Js_ = symbol("Js");

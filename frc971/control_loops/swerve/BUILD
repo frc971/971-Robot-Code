@@ -197,14 +197,51 @@ py_library(
     ],
 )
 
+py_library(
+    name = "jax_dynamics",
+    srcs = [
+        "jax_dynamics.py",
+    ],
+    deps = [
+        ":dynamics",
+        "//frc971/control_loops/python:controls",
+        "@pip//jax",
+    ],
+)
+
 py_test(
-    name = "physics_test",
+    name = "physics_test_cpu",
     srcs = [
         "physics_test.py",
     ],
+    env = {
+        "JAX_PLATFORMS": "cpu",
+    },
+    main = "physics_test.py",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":dynamics",
+        ":jax_dynamics",
+        ":physics_test_utils",
+        "@pip//casadi",
+        "@pip//numpy",
+        "@pip//scipy",
+    ],
+)
+
+py_test(
+    name = "physics_test_gpu",
+    srcs = [
+        "physics_test.py",
+    ],
+    env = {
+        "JAX_PLATFORMS": "cuda",
+    },
+    main = "physics_test.py",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":dynamics",
+        ":jax_dynamics",
         ":physics_test_utils",
         "@pip//casadi",
         "@pip//numpy",
