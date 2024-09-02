@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from frc971.control_loops.swerve import dynamics
+import pickle
 import matplotlib.pyplot as pyplot
 import matplotlib
 from matplotlib import pylab
@@ -19,6 +20,8 @@ flags.DEFINE_float('vx', 1.0, 'Goal velocity in m/s in x')
 flags.DEFINE_float('vy', 0.0, 'Goal velocity in m/s in y')
 flags.DEFINE_float('omega', 0.0, 'Goal velocity in m/s in omega')
 flags.DEFINE_float('duration', 0.5, 'Time to simulate in seconds.')
+flags.DEFINE_bool('pickle', False, 'Write optimization results.')
+flags.DEFINE_string('outputdir', None, 'Directory to write problem results to')
 
 matplotlib.use("GTK3Agg")
 
@@ -370,6 +373,9 @@ class Solver(object):
 
 
 def main(argv):
+    if FLAGS.outputdir:
+        os.chdir(FLAGS.outputdir)
+
     module_velocity = 0.0
 
     X_initial = numpy.zeros((25, 1))
@@ -403,9 +409,64 @@ def main(argv):
         results = solver.solve(mpc=mpc,
                                X_initial=X_initial,
                                R_goal=R_goal,
-                               debug=True)
+                               debug=(FLAGS.pickle == False))
     else:
         return 0
+
+    if FLAGS.pickle:
+        with open('t.pkl', 'wb') as f:
+            pickle.dump(solver.t, f)
+        with open('X_plot.pkl', 'wb') as f:
+            pickle.dump(solver.X_plot, f)
+        with open('U_plot.pkl', 'wb') as f:
+            pickle.dump(solver.U_plot, f)
+
+        fig0, axs0 = pylab.subplots(2)
+        fig1, axs1 = pylab.subplots(2)
+
+        axs0[0].clear()
+        axs0[1].clear()
+
+        axs0[0].plot(solver.t, solver.X_plot[dynamics.STATE_VX, :], label="vx")
+        axs0[0].plot(solver.t, solver.X_plot[dynamics.STATE_VY, :], label="vy")
+        axs0[0].legend()
+
+        axs0[1].plot(solver.t, solver.U_plot[0, :], label="Is0")
+        axs0[1].plot(solver.t, solver.U_plot[1, :], label="Id0")
+        axs0[1].legend()
+
+        axs1[0].clear()
+        axs1[1].clear()
+
+        axs1[0].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_THETAS0, :],
+                     label='steer0')
+        axs1[0].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_THETAS1, :],
+                     label='steer1')
+        axs1[0].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_THETAS2, :],
+                     label='steer2')
+        axs1[0].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_THETAS3, :],
+                     label='steer3')
+        axs1[0].legend()
+        axs1[1].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_OMEGAS0, :],
+                     label='steer_velocity0')
+        axs1[1].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_OMEGAS1, :],
+                     label='steer_velocity1')
+        axs1[1].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_OMEGAS2, :],
+                     label='steer_velocity2')
+        axs1[1].plot(solver.t,
+                     solver.X_plot[dynamics.STATE_OMEGAS3, :],
+                     label='steer_velocity3')
+        axs1[1].legend()
+
+        fig0.savefig('state.svg')
+        fig1.savefig('steer.svg')
 
 
 if __name__ == '__main__':

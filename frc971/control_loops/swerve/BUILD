@@ -279,3 +279,16 @@ py_binary(
         "@pip//scipy",
     ],
 )
+
+py_binary(
+    name = "multi_casadi_velocity_mpc",
+    srcs = ["multi_casadi_velocity_mpc.py"],
+    data = [":casadi_velocity_mpc"],
+    deps = [
+        ":dynamics",
+        "@pip//absl_py",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+    ],
+)
