@@ -140,8 +140,8 @@ class Claw(control_loop.ControlLoop):
                                    numpy.matrix([[self.A[1, 2]],
                                                  [self.A[3, 2]]]),
                                    rcond=None)[0]
-        self.K[1, 2] = -lstsq_A[0, 0] * (self.K[0, 2] -
-                                         out_x[0]) / lstsq_A[0, 1] + out_x[1]
+        self.K[1, 2] = -lstsq_A[0, 0] * (
+            self.K[0, 2] - out_x[0, 0]) / lstsq_A[0, 1] + out_x[1, 0]
 
         glog.debug('K unaugmented')
         glog.debug(str(self.K))
