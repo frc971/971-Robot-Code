@@ -36,7 +36,7 @@ index ba9cd6c..083ef5b 100644
 +    gtk_runtime_base = os.path.join(runfiles_dir, "gtk_runtime")
 +
 +    # Tell fontconfig where to find matplotlib's sandboxed font files.
-+    os.environ["FONTCONFIG_PATH"] = os.path.join(gtk_runtime_base, "etc/fonts")
++    os.environ["FONTCONFIG_PATH"] = "etc/fonts"
 +    os.environ["FONTCONFIG_FILE"] = "fonts.conf"
 +    os.environ["FONTCONFIG_SYSROOT"] = gtk_runtime_base
 +
