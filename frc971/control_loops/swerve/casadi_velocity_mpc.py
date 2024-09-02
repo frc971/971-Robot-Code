@@ -200,11 +200,14 @@ class MPC(object):
 
         J = 0
         vnorm = casadi.sqrt(R[0]**2.0 + R[1]**2.0)
-        vnormx = R[0] / vnorm
-        vnormy = R[1] / vnorm
 
-        vperpx = -vnormy
-        vperpy = vnormx
+        vnormx = casadi.if_else(vnorm > 0.0001, R[0] / vnorm, 1.0)
+        vnormy = casadi.if_else(vnorm > 0.0001, R[1] / vnorm, 0.0)
+
+        vperpx = casadi.if_else(vnorm > 0.0001, -vnormy, 0.0)
+        vperpy = casadi.if_else(vnorm > 0.0001, vnormx, 1.0)
+
+        # TODO(austin): Do we want to do something more special for 0?
 
         J += 75 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vnormx +
                    (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vnormy)**2.0
