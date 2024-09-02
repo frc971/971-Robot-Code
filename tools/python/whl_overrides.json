@@ -103,9 +103,9 @@
         "sha256": "97aabc5c50312afa5e0a2b07c17d4ac5e865b250986f8afe2b02d772567a380c",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Pillow-9.3.0-cp39-cp39-manylinux_2_28_x86_64.whl"
     },
-    "pkginfo==1.8.3": {
-        "sha256": "848865108ec99d4901b2f7e84058b6e7660aae8ae10164e015a6dcf5b242a594",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pkginfo-1.8.3-py2.py3-none-any.whl"
+    "pkginfo==1.11.1": {
+        "sha256": "bfa76a714fdfc18a045fcd684dbfc3816b603d9d075febef17cb6582bea29573",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pkginfo-1.11.1-py3-none-any.whl"
     },
     "pycairo==1.22.0": {
         "sha256": "451b9f68e45b9f9cae5069cd6eab44ad339ae55cf177be904c0fab6a55228b85",
