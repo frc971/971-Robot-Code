@@ -219,6 +219,7 @@ py_binary(
     ],
     deps = [
         ":dynamics",
+        "@pip//absl_py",
         "@pip//casadi",
         "@pip//matplotlib",
         "@pip//numpy",
