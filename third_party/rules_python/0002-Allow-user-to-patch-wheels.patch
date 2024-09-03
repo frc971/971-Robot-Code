@@ -1,4 +1,4 @@
-From f828c9aad94b56655b352c4bed9b475d7430865e Mon Sep 17 00:00:00 2001
+From e9002bef44df84370649b995b8c9e6a89d4d37e9 Mon Sep 17 00:00:00 2001
 From: Philipp Schrader <philipp.schrader@gmail.com>
 Date: Sat, 24 Sep 2022 15:56:33 -0700
 Subject: [PATCH] Allow user to patch wheels
@@ -25,7 +25,7 @@ eventually upstreamed.
  5 files changed, 100 insertions(+), 3 deletions(-)
 
 diff --git a/python/pip_install/extract_wheels/annotation.py b/python/pip_install/extract_wheels/annotation.py
-index 48aaa80..fe8b4dc 100644
+index 48aaa802..fe8b4dc5 100644
 --- a/python/pip_install/extract_wheels/annotation.py
 +++ b/python/pip_install/extract_wheels/annotation.py
 @@ -19,6 +19,7 @@ class Annotation(OrderedDict):
@@ -48,7 +48,7 @@ index 48aaa80..fe8b4dc 100644
  class AnnotationsMap:
      """A mapping of python package names to [Annotation]"""
 diff --git a/python/pip_install/extract_wheels/bazel.py b/python/pip_install/extract_wheels/bazel.py
-index 8f442c9..f4b7f26 100644
+index 8f442c93..f4b7f26a 100644
 --- a/python/pip_install/extract_wheels/bazel.py
 +++ b/python/pip_install/extract_wheels/bazel.py
 @@ -2,6 +2,7 @@
@@ -107,7 +107,7 @@ index 8f442c9..f4b7f26 100644
          os.remove(whl.path)
          return f"//{directory}"
 diff --git a/python/pip_install/extract_wheels/extract_single_wheel.py b/python/pip_install/extract_wheels/extract_single_wheel.py
-index 8742d25..50a1243 100644
+index 8742d250..50a1243e 100644
 --- a/python/pip_install/extract_wheels/extract_single_wheel.py
 +++ b/python/pip_install/extract_wheels/extract_single_wheel.py
 @@ -1,4 +1,5 @@
@@ -166,7 +166,7 @@ index 8742d25..50a1243 100644
  
  
 diff --git a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
-index 60936a9..3dd179b 100644
+index 002e6857..fc7fe780 100644
 --- a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 +++ b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 @@ -88,6 +88,7 @@ def parse_whl_library_args(args: argparse.Namespace) -> Dict[str, Any]:
@@ -214,7 +214,7 @@ index 60936a9..3dd179b 100644
  
          _NOP_OVERRIDE = {{
              "url": None,
-@@ -229,6 +238,7 @@ def generate_parsed_requirements_contents(
+@@ -236,6 +245,7 @@ def generate_parsed_requirements_contents(
              bzlmod=bzlmod,
              overrides=overrides or {},
              require_overrides=require_overrides,
@@ -222,7 +222,7 @@ index 60936a9..3dd179b 100644
          )
      )
  
-@@ -301,6 +311,13 @@ If set, it will take precedence over python_interpreter.",
+@@ -308,6 +318,13 @@ If set, it will take precedence over python_interpreter.",
          action="store_true",
          help="If set, requires that every requirement has a URL override in the --overrides JSON file.",
      )
@@ -236,7 +236,7 @@ index 60936a9..3dd179b 100644
      arguments.parse_common_args(parser)
      args = parser.parse_args()
  
-@@ -331,6 +348,11 @@ If set, it will take precedence over python_interpreter.",
+@@ -338,6 +355,11 @@ If set, it will take precedence over python_interpreter.",
      else:
          overrides = None
  
@@ -248,7 +248,7 @@ index 60936a9..3dd179b 100644
      output.write(
          textwrap.dedent(
              """\
-@@ -355,6 +377,7 @@ If set, it will take precedence over python_interpreter.",
+@@ -362,6 +384,7 @@ If set, it will take precedence over python_interpreter.",
              bzlmod=args.bzlmod,
              overrides=overrides,
              require_overrides=args.require_overrides,
@@ -257,7 +257,7 @@ index 60936a9..3dd179b 100644
      )
  
 diff --git a/python/pip_install/pip_repository.bzl b/python/pip_install/pip_repository.bzl
-index 5af0731..bf7f99a 100644
+index 5af07315..bf7f99a8 100644
 --- a/python/pip_install/pip_repository.bzl
 +++ b/python/pip_install/pip_repository.bzl
 @@ -327,6 +327,9 @@ def _pip_repository_impl(rctx):

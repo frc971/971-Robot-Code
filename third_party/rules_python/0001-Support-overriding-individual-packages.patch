@@ -1,16 +1,16 @@
-From 662f59afaecd7ecff5bd5234c8bbd9c219b7f24f Mon Sep 17 00:00:00 2001
+From b9b8deb69a6c53a0d688988161cd057e6f94881b Mon Sep 17 00:00:00 2001
 From: Philipp Schrader <philipp.schrader@gmail.com>
 Date: Sun, 11 Sep 2022 22:04:47 -0700
 Subject: [PATCH] Support overriding individual packages
 
 ---
  .../extract_wheels/extract_single_wheel.py    | 60 ++++++++++---------
- .../parse_requirements_to_bzl.py              | 44 +++++++++++++-
+ .../parse_requirements_to_bzl.py              | 51 +++++++++++++++-
  python/pip_install/pip_repository.bzl         | 38 ++++++++++++
- 3 files changed, 114 insertions(+), 28 deletions(-)
+ 3 files changed, 121 insertions(+), 28 deletions(-)
 
 diff --git a/python/pip_install/extract_wheels/extract_single_wheel.py b/python/pip_install/extract_wheels/extract_single_wheel.py
-index ff64291..8742d25 100644
+index ff642910..8742d250 100644
 --- a/python/pip_install/extract_wheels/extract_single_wheel.py
 +++ b/python/pip_install/extract_wheels/extract_single_wheel.py
 @@ -50,41 +50,47 @@ def main() -> None:
@@ -89,7 +89,7 @@ index ff64291..8742d25 100644
      name, extras_for_pkg = requirements._parse_requirement_for_extra(args.requirement)
      extras = {name: extras_for_pkg} if extras_for_pkg and name else dict()
 diff --git a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
-index 686a57d..60936a9 100644
+index 686a57d8..002e6857 100644
 --- a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 +++ b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 @@ -4,7 +4,7 @@ import shlex
@@ -125,7 +125,7 @@ index 686a57d..60936a9 100644
              for name, requirement in _packages:
 +                override_entry = requirement.split(" ")[0]
 +                override_name, _, version = override_entry.partition("==")
-+                override_key = "%s==%s" % (_clean_name(override_name), version)
++                override_key = "%s==%s" % (_clean_extras(_clean_name(override_name)), version)
 +                override = _overrides.get(override_key)
 +                if not override:
 +                    if _require_overrides:
@@ -142,7 +142,7 @@ index 686a57d..60936a9 100644
                      **whl_config
                  )
  """
-@@ -154,6 +170,13 @@ def generate_parsed_requirements_contents(
+@@ -154,10 +170,24 @@ def generate_parsed_requirements_contents(
          _config = {args}
          _annotations = {annotations}
          _bzlmod = {bzlmod}
@@ -156,7 +156,18 @@ index 686a57d..60936a9 100644
  
          def _clean_name(name):
              return name.replace("-", "_").replace(".", "_").lower()
-@@ -204,6 +227,8 @@ def generate_parsed_requirements_contents(
+ 
++        def _clean_extras(name):
++            bracket_start = name.find("[")
++            bracket_end = name.find("]")
++            if bracket_start == -1 or bracket_end == -1:
++                return name
++            return name[:bracket_start] + name[bracket_end + 1:]
++
+         def requirement(name):
+             if _bzlmod:
+                 return "@@{repo}//:" + _clean_name(name) + "_{py_library_label}"
+@@ -204,6 +234,8 @@ def generate_parsed_requirements_contents(
              repo_prefix=repo_prefix,
              wheel_file_label=bazel.WHEEL_FILE_LABEL,
              bzlmod=bzlmod,
@@ -165,7 +176,7 @@ index 686a57d..60936a9 100644
          )
      )
  
-@@ -266,6 +291,16 @@ If set, it will take precedence over python_interpreter.",
+@@ -266,6 +298,16 @@ If set, it will take precedence over python_interpreter.",
          default=False,
          help="Whether this script is run under bzlmod. Under bzlmod we don't generate the install_deps() macro as it isn't needed.",
      )
@@ -182,7 +193,7 @@ index 686a57d..60936a9 100644
      arguments.parse_common_args(parser)
      args = parser.parse_args()
  
-@@ -291,6 +326,11 @@ If set, it will take precedence over python_interpreter.",
+@@ -291,6 +333,11 @@ If set, it will take precedence over python_interpreter.",
              }
          )
  
@@ -194,7 +205,7 @@ index 686a57d..60936a9 100644
      output.write(
          textwrap.dedent(
              """\
-@@ -313,6 +353,8 @@ If set, it will take precedence over python_interpreter.",
+@@ -313,6 +360,8 @@ If set, it will take precedence over python_interpreter.",
              whl_library_args=whl_library_args,
              annotations=annotated_requirements,
              bzlmod=args.bzlmod,
@@ -204,7 +215,7 @@ index 686a57d..60936a9 100644
      )
  
 diff --git a/python/pip_install/pip_repository.bzl b/python/pip_install/pip_repository.bzl
-index 7fbf503..5af0731 100644
+index 7fbf5039..5af07315 100644
 --- a/python/pip_install/pip_repository.bzl
 +++ b/python/pip_install/pip_repository.bzl
 @@ -322,6 +322,11 @@ def _pip_repository_impl(rctx):
