@@ -252,8 +252,8 @@ class MPC(object):
 mpc = MPC(solver='fatrop') if not full_debug else MPC(solver='ipopt')
 
 R_goal = numpy.zeros((3, 1))
-R_goal[0, 0] = 1.0
-R_goal[1, 0] = 1.0
+R_goal[0, 0] = 0.0
+R_goal[1, 0] = -1.0
 R_goal[2, 0] = 0.0
 
 module_velocity = 0.0
