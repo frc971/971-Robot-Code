@@ -503,9 +503,9 @@ pillow==9.3.0 \
     # via
     #   bokeh
     #   matplotlib
-pkginfo==1.8.3 \
-    --hash=sha256:848865108ec99d4901b2f7e84058b6e7660aae8ae10164e015a6dcf5b242a594 \
-    --hash=sha256:a84da4318dd86f870a9447a8c98340aa06216bfc6f2b7bdc4b8766984ae1867c
+pkginfo==1.11.1 \
+    --hash=sha256:2e0dca1cf4c8e39644eed32408ea9966ee15e0d324c62ba899a393b3c6b467aa \
+    --hash=sha256:bfa76a714fdfc18a045fcd684dbfc3816b603d9d075febef17cb6582bea29573
     # via -r tools/python/requirements.txt
 pycairo==1.22.0 \
     --hash=sha256:007ae728c56b9a0962d8c5513ae967a4fceff03e022940383c20f4f3d4c48dbe \
