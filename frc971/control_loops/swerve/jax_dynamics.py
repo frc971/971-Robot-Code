@@ -115,14 +115,14 @@ def force_cross(r, f):
 
 
 def softsign(x, gain):
-    return -2 / (1 + jax.numpy.exp(gain * x)) + 1
+    return 1 - 2.0 * jax.nn.sigmoid(-gain * x)
 
 
 def soft_atan2(y, x):
     kMaxLogGain = 1.0 / 0.05
     kAbsLogGain = 1.0 / 0.01
 
-    softabs_x = x * (1.0 - 2.0 / (1 + jax.numpy.exp(kAbsLogGain * x)))
+    softabs_x = x * softsign(x, kAbsLogGain)
 
     return jax.numpy.arctan2(
         y,
@@ -272,7 +272,7 @@ def velocity_module_physics(coefficients: dict, Rtheta, module_index: int,
     Fwx = (coefficients.Ktd / (coefficients.Gd * coefficients.rw)) * Id
     Fwy = coefficients.Cy * slip_angle
 
-    softsign_velocity = softsign(wheel_ground_velocity[0], 100)
+    softsign_velocity = softsign(wheel_ground_velocity[0], 100.0)
 
     Ms = -Fwy * (
         (softsign_velocity * coefficients.contact_patch_length / 3.0) +
