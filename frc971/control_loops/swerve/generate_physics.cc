@@ -617,6 +617,16 @@ class SwerveSimulation {
                                               sub(integer(1), div(rb1_, rp_)))),
                             div(rw_, rb2_))))))))));
     result_py.emplace_back("");
+    result_py.emplace_back("# Is = STEER_CURRENT_COUPLING_FACTOR * Id");
+    result_py.emplace_back(absl::Substitute(
+        "STEER_CURRENT_COUPLING_FACTOR = $0",
+        ccode(*(neg(
+            mul(div(Gs_, Kts_),
+                mul(div(Ktd_, mul(Gd_, rw_)),
+                    neg(mul(add(neg(wb_), mul(add(rs_, rp_),
+                                              sub(integer(1), div(rb1_, rp_)))),
+                            div(rw_, rb2_))))))))));
+    result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
     result_py.emplace_back("# [thetas0, thetad0, omegas0, omegad0,");
