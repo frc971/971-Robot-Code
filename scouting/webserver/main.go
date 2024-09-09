@@ -133,8 +133,9 @@ func main() {
 	defer database.Delete()
 
 	scoutingServer := server.NewScoutingServer()
+	var realClock requests.RealClock
 	static.ServePages(scoutingServer, *dirPtr, database)
-	requests.HandleRequests(database, scoutingServer)
+	requests.HandleRequests(database, scoutingServer, realClock)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 

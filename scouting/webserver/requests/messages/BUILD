@@ -10,6 +10,8 @@ FILE_NAMES = (
     "request_all_matches_response",
     "request_all_notes",
     "request_all_notes_response",
+    "request_current_scouting",
+    "request_current_scouting_response",
     "request_2023_data_scouting",
     "request_2023_data_scouting_response",
     "request_2024_data_scouting",

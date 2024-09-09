@@ -1,0 +1,10 @@
+namespace scouting.webserver.requests;
+
+table CollectedBy {
+	name: string (id: 0);
+}
+table RequestCurrentScoutingResponse {
+	collected_by:[CollectedBy] (id: 0);
+}
+
+root_type RequestCurrentScoutingResponse;

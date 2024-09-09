@@ -18,6 +18,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
@@ -32,6 +33,9 @@ import (
 
 // The username to submit the various requests as.
 const DefaultUsername = "debug_cli"
+
+// TODO: Make the username an argument of the Request* functions.
+var Username = DefaultUsername
 
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
@@ -82,7 +86,7 @@ func performPost(url string, requestBytes []byte) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Add("Authorization", "Basic "+
-		base64.StdEncoding.EncodeToString([]byte(DefaultUsername+":")))
+		base64.StdEncoding.EncodeToString([]byte(Username+":")))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -170,6 +174,12 @@ func RequestShiftSchedule(server string, requestBytes []byte) (*request_shift_sc
 	return sendMessage[request_shift_schedule_response.RequestShiftScheduleResponseT](
 		server+"/requests/request/shift_schedule", requestBytes,
 		request_shift_schedule_response.GetRootAsRequestShiftScheduleResponse)
+}
+
+func RequestCurrentScouting(server string, requestBytes []byte) (*request_current_scouting_response.RequestCurrentScoutingResponseT, error) {
+	return sendMessage[request_current_scouting_response.RequestCurrentScoutingResponseT](
+		server+"/requests/request/current_scouting", requestBytes,
+		request_current_scouting_response.GetRootAsRequestCurrentScoutingResponse)
 }
 
 func SubmitShiftSchedule(server string, requestBytes []byte) (*submit_shift_schedule_response.SubmitShiftScheduleResponseT, error) {

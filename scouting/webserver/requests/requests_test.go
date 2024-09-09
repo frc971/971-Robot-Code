@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
@@ -20,6 +21,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
@@ -35,11 +38,20 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+type MockClock struct {
+	now time.Time
+}
+
+func (mockClock MockClock) Now() time.Time {
+	return mockClock.now
+}
+
 // Validates that an unhandled address results in a 404.
 func Test404(t *testing.T) {
 	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, &mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -150,7 +162,8 @@ func TestRequestAllMatches(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -235,7 +248,8 @@ func TestRequest2024DataScouting(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -316,7 +330,8 @@ func TestRequest2023DataScouting(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -542,7 +557,8 @@ func TestConvertActionsToStat2024(t *testing.T) {
 func TestSubmitNotes(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -591,6 +607,81 @@ func TestSubmitNotes(t *testing.T) {
 	}
 }
 
+// Validates that we can request names of peoples who are currently scouting the same team.
+func TestRequestCurrentScouting(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
+		TeamNumber: "971",
+	}).Pack(builder))
+	response, err := debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request current scouting: ", err)
+	}
+
+	expected := request_current_scouting_response.RequestCurrentScoutingResponseT{
+		CollectedBy: []*request_current_scouting_response.CollectedByT{},
+	}
+
+	if len(expected.CollectedBy) != len(response.CollectedBy) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, collectRecord := range expected.CollectedBy {
+		if !reflect.DeepEqual(*collectRecord, *response.CollectedBy[i]) {
+			t.Fatal("Expected for collected by ", i, ":", *collectRecord, ", but got:", *response.CollectedBy[i])
+		}
+	}
+
+	debug.Username = "george"
+	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
+		TeamNumber: "971",
+	}).Pack(builder))
+	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request current scouting: ", err)
+	}
+
+	expected = request_current_scouting_response.RequestCurrentScoutingResponseT{
+		CollectedBy: []*request_current_scouting_response.CollectedByT{
+			{"debug_cli"},
+		},
+	}
+
+	if len(expected.CollectedBy) != len(response.CollectedBy) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+
+	for i, collectRecord := range expected.CollectedBy {
+		if !reflect.DeepEqual(*collectRecord, *response.CollectedBy[i]) {
+			t.Fatal("Expected for collected by ", i, ":", *collectRecord, ", but got:", *response.CollectedBy[i])
+		}
+	}
+
+	// After skipping 10 seconds ahead, the previous request from "debug_cli" should no longer appear.
+	mockClock.now = mockClock.now.Add(time.Second * 10)
+
+	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
+		TeamNumber: "971",
+	}).Pack(builder))
+	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request current scouting: ", err)
+	}
+
+	expected = request_current_scouting_response.RequestCurrentScoutingResponseT{
+		CollectedBy: []*request_current_scouting_response.CollectedByT{},
+	}
+
+	// Reset username for other tests.
+	debug.Username = "debug_cli"
+}
+
 func TestRequestNotes(t *testing.T) {
 	database := MockDatabase{
 		notes: []db.NotesData{{
@@ -610,7 +701,8 @@ func TestRequestNotes(t *testing.T) {
 		}},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -631,7 +723,8 @@ func TestRequestNotes(t *testing.T) {
 func TestSubmitPitImage(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -677,7 +770,8 @@ func TestRequestPitImages(t *testing.T) {
 	}
 
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -727,7 +821,8 @@ func TestRequestAllPitImages(t *testing.T) {
 	}
 
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -788,7 +883,8 @@ func TestRequestShiftSchedule(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -835,7 +931,8 @@ func TestRequestShiftSchedule(t *testing.T) {
 func TestSubmitShiftSchedule(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -874,7 +971,8 @@ func TestSubmitShiftSchedule(t *testing.T) {
 func TestSubmitDriverRanking(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -919,7 +1017,8 @@ func TestRequestDriverRankings(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -994,7 +1093,8 @@ func TestRequestAllNotes(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -1059,7 +1159,8 @@ func packAction(action *submit_actions.ActionT) []byte {
 func TestAddingActions2024(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -1142,6 +1243,7 @@ func TestAddingActions2024(t *testing.T) {
 
 // Validates that we can delete 2024 stats.
 func TestDeleteFromStats2024(t *testing.T) {
+	mockClock := MockClock{now: time.Now()}
 	database := MockDatabase{
 		stats2024: []db.Stats2024{
 			{
@@ -1185,7 +1287,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer)
+	HandleRequests(&database, scoutingServer, mockClock)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
