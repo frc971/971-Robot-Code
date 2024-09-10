@@ -1,3 +1,6 @@
+#include <cmath>
+#include <vector>
+
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
@@ -18,6 +21,7 @@
 
 #include "aos/time/time.h"
 #include "frc971/orin/apriltag.h"
+#include "frc971/orin/apriltag_input_format.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 
@@ -637,11 +641,18 @@ void GpuDetector<INPUT_FORMAT>::DecodeTags() {
 
   zarray_truncate(detections_, 0);
 
+  after_memcpy_gray_.Synchronize();
   image_u8_t im_orig{
       .width = static_cast<int32_t>(width_),
       .height = static_cast<int32_t>(height_),
       .stride = static_cast<int32_t>(width_),
-      .buf = gray_image_host_.get(),
+      .buf = const_cast<uint8_t *>(gray_image_host_ptr_), 
+      // TODO - find a better way to do this --^. Problem is that 
+      //        for the Mono8 case, we just want an alias to the input
+      //        data, since that's already greyscale to begin with.
+      //        For other input types, it should point to a class member
+      //        buffer which is the output of the greyscale conversion / 
+      //        d2h memcpy.
   };
 
   int ntasks = 0;

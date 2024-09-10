@@ -20,22 +20,22 @@ namespace frc971::apriltag {
 class BlobExtentsIndexFinder {
  public:
   BlobExtentsIndexFinder(const MinMaxExtents *extents_device,
-                         size_t num_extents)
+                         uint32_t num_extents)
       : extents_device_(extents_device), num_extents_(num_extents) {}
 
-  __host__ __device__ size_t FindBlobIndex(size_t point_index) const {
+  __host__ __device__ uint32_t FindBlobIndex(uint32_t point_index) const {
     // Do a binary search for the blob which has the point in it's
     // starting_offset range.
-    size_t min = 0;
-    size_t max = num_extents_;
+    uint32_t min = 0;
+    uint32_t max = num_extents_;
     while (true) {
       if (min + 1 == max) {
         return min;
       }
 
-      size_t average = min + (max - min) / 2;
+      uint32_t average = min + (max - min) / 2;
       if (average < num_extents_ && extents_device_[average].starting_offset <=
-                                        static_cast<size_t>(point_index)) {
+                                        point_index) {
         min = average;
       } else {
         max = average;
@@ -44,13 +44,13 @@ class BlobExtentsIndexFinder {
   }
 
   // Returns the extents for a blob index.
-  __host__ __device__ MinMaxExtents Get(size_t index) const {
+  __host__ __device__ MinMaxExtents Get(uint32_t index) const {
     return extents_device_[index];
   }
 
  private:
   const MinMaxExtents *extents_device_;
-  size_t num_extents_;
+  uint32_t num_extents_;
 
   // TODO(austin): Cache the last one?
 };
@@ -243,6 +243,11 @@ class GpuDetector {
   // Stream to operate on.
   CudaStream stream_;
 
+  // Separate stream for the d2h copy of grayscale output
+  // This way it can run in parallel with GPU compute
+  CudaStream greyscale_stream_;
+  CudaStream memset_stream_;
+
   // Events for each of the steps for timing.
   CudaEvent start_;
   CudaEvent after_image_memcpy_to_device_;
@@ -254,6 +259,7 @@ class GpuDetector {
   CudaEvent after_compact_;
   CudaEvent after_sort_;
   CudaEvent after_bounds_;
+  CudaEvent after_num_quads_memcpy_;
   CudaEvent after_transform_extents_;
   CudaEvent after_filter_;
   CudaEvent after_filtered_sort_;
@@ -267,8 +273,14 @@ class GpuDetector {
   CudaEvent after_quad_fit_;
   CudaEvent after_quad_fit_memcpy_;
 
-  // TODO(austin): Remove this...
   HostMemory<uint8_t> gray_image_host_;
+  const uint8_t      *gray_image_host_ptr_;
+  HostMemory<int>     num_compressed_union_marker_pair_host_;
+  HostMemory<size_t>  num_quads_host_;
+  HostMemory<int>     num_selected_blobs_host_;
+  HostMemory<int>     num_compressed_peaks_host_;
+  HostMemory<int>     num_quad_peaked_quads_host_;
+
 
   // Starting color image.
   GpuMemory<uint8_t> color_image_device_;

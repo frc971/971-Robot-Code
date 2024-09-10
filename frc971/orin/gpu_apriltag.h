@@ -85,7 +85,7 @@ class ApriltagDetector {
   CameraMatrix distortion_camera_matrix_;
   DistCoeffs distortion_coefficients_;
 
-  frc971::apriltag::GpuDetector gpu_detector_;
+  frc971::apriltag::GpuDetector<frc971::apriltag::InputFormat::YCbCr422> gpu_detector_;
   cv::Size image_size_;
 
   frc971::vision::ImageCallback image_callback_;
