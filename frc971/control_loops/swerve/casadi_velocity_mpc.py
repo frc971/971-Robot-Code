@@ -47,16 +47,30 @@ class MPC(object):
         # TODO(austin): Do we need a disturbance torque per module to account for friction?
         # Do it only in the observer/post?
 
-        self.next_X = self.make_physics()
-        self.cost = self.make_cost()
         self.force = [
             dynamics.F(i, casadi.SX.sym("X", 25, 1), casadi.SX.sym("U", 8, 1))
             for i in range(4)
+        ]
+        self.force_vel = [
+            dynamics.F_vel(i,
+                           casadi.SX.sym("X", dynamics.NUM_VELOCITY_STATES, 1),
+                           casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
         self.slip_angle = [
             dynamics.slip_angle(i, casadi.SX.sym("X", 25, 1),
                                 casadi.SX.sym("U", 8, 1)) for i in range(4)
         ]
+        self.mounting_location = [
+            dynamics.mounting_location(
+                i, casadi.SX.sym("X", dynamics.NUM_VELOCITY_STATES, 1),
+                casadi.SX.sym("U", 8, 1)) for i in range(4)
+        ]
+        self.torque_cross = self.torque_cross_func(casadi.SX.sym("r", 2, 1),
+                                                   casadi.SX.sym("F", 2, 1))
+        self.force_cross = self.force_cross_func(casadi.SX.sym("Tau", 1, 1),
+                                                 casadi.SX.sym("r", 2, 1))
+        self.next_X = self.make_physics()
+        self.cost = self.make_cost()
 
         self.N = 200
 
@@ -209,6 +223,8 @@ class MPC(object):
 
         # TODO(austin): Do we want to do something more special for 0?
 
+        # cost velocity a lot more in the perpendicular direction to allow tire to spin up
+        # we also only want to get moving in the correct direction as fast as possible
         J += 75 * ((R[0] - X[dynamics.VELOCITY_STATE_VX]) * vnormx +
                    (R[1] - X[dynamics.VELOCITY_STATE_VY]) * vnormy)**2.0
 
@@ -231,17 +247,46 @@ class MPC(object):
         J += kSteerPositionGain * (X[dynamics.VELOCITY_STATE_THETAS3])**2.0
         J += kSteerVelocityGain * (X[dynamics.VELOCITY_STATE_OMEGAS3])**2.0
 
+        # cost variance of the force by a tire and the expected average force and torque on it
+        total_force = self.force_vel[0](X, U)
+        total_torque = self.torque_cross(self.mounting_location[0](X, U),
+                                         self.force_vel[0](X, U))
+        for i in range(3):
+            total_force += self.force_vel[i + 1](X, U)
+            total_torque += self.torque_cross(
+                self.mounting_location[i + 1](X, U), self.force_vel[i + 1](X,
+                                                                           U))
+
+        total_force /= 4
+        total_torque /= 4
+        for i in range(4):
+            f_diff = (total_force +
+                      self.force_cross(total_torque, self.mounting_location[i]
+                                       (X, U))) - self.force_vel[i](X, U)
+            J += 0.01 * (f_diff[0, 0]**2.0 + f_diff[1, 0]**2.0)
+
         # TODO(austin): Don't penalize torque steering current.
         for i in range(4):
             Is = U[2 * i + 0]
             Id = U[2 * i + 1]
-            # Steer
+            # Steer, cost it a lot less than drive to be more agressive in steering
             J += ((Is + dynamics.STEER_CURRENT_COUPLING_FACTOR * Id)**
                   2.0) / 100000.0
             # Drive
             J += Id * Id / 1000.0
 
         return casadi.Function("Jn", [X, U, R], [J])
+
+    def torque_cross_func(self, r, F):
+        result = casadi.SX.sym('Tau', 1, 1)
+        result[0, 0] = r[0, 0] * F[1, 0] - r[1, 0] * F[0, 0]
+        return casadi.Function('Tau', [r, F], [result])
+
+    def force_cross_func(self, Tau, r):
+        result = casadi.SX.sym('F', 2, 1)
+        result[0, 0] = -r[1, 0] * Tau[0, 0] / casadi.norm_2(r)**2.0
+        result[1, 0] = r[0, 0] * Tau[0, 0] / casadi.norm_2(r)**2.0
+        return casadi.Function('F', [Tau, r], [result])
 
     def solve(self, p, seed=None):
         if seed is None:
@@ -333,6 +378,9 @@ class Solver(object):
                     axs0[0].plot(self.t,
                                  self.X_plot[dynamics.STATE_VX, 0:i + 1],
                                  label="vx")
+                    axs0[0].plot(self.t,
+                                 self.X_plot[dynamics.STATE_OMEGA, 0:i + 1],
+                                 label="omega")
                     axs0[0].plot(self.t,
                                  self.X_plot[dynamics.STATE_VY, 0:i + 1],
                                  label="vy")
