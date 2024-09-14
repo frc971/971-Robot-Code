@@ -40,20 +40,20 @@
     "altitude_constants": {
       {% set _ = altitude_zero.update(
           {
-              "measured_absolute_position" : 0.183060873152545
+              "measured_absolute_position" : 0.41553229640555134
           }
       ) %}
       "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.18953940426369  }}
+      "potentiometer_offset": {{ -0.18953940426369  - 1.4610389049095576 }}
     },
     "turret_constants": {
       {% set _ = turret_zero.update(
           {
-              "measured_absolute_position" : 1.01975376211353
+              "measured_absolute_position" : 0.2693990653670759
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 - 0.05 + 0.72907099601435 - 0.0499928122527711 + 0.037944928379006 }}
+      "potentiometer_offset": {{ -6.47164779835404 - 0.0711209027239817 + 1.0576004531907 - 0.343 - 0.05 + 0.72907099601435 - 0.0499928122527711 + 0.037944928379006 + 0.21956382487163306 }}
     },
     "extend_constants": {
       {% set _ = extend_zero.update(

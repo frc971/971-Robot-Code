@@ -52,7 +52,7 @@
       "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2000
+      "max_size": 4504
     },
     {
       "name": "/roborio/aos",
