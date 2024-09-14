@@ -38,5 +38,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
+export XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/lib/cuda
+
 # Prevent Python from importing the host's installed packages.
 exec "$PYTHON_BIN" -sS "$@"

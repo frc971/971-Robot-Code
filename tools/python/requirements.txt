@@ -26,3 +26,5 @@ bokeh
 tabulate
 
 casadi>=3.6.6
+
+jax[cuda12]
