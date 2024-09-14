@@ -19,6 +19,7 @@ from frc971.control_loops.swerve import dynamics
 from frc971.control_loops.swerve import nocaster_dynamics
 from frc971.control_loops.swerve import physics_test_utils as utils
 from frc971.control_loops.swerve import jax_dynamics
+from frc971.control_loops.swerve.cpp_dynamics import swerve_dynamics as cpp_dynamics
 
 
 class TestSwervePhysics(unittest.TestCase):
@@ -704,6 +705,29 @@ class TestSwervePhysics(unittest.TestCase):
         self.assertGreater(Xdot[dynamics.STATE_OMEGA, 0], 0.0)
         self.assertAlmostEquals(Xdot[dynamics.STATE_OMEGA, 0],
                                 Xdot_rot[dynamics.STATE_OMEGA, 0])
+
+    def test_cpp_consistency(self):
+        """Tests that the C++ physics are consistent with the Python physics."""
+        # TODO(james): Currently the physics only match at X = 0 and U = 0.
+        # Fix this.
+        # Maybe due to different atan2 implementations?
+        # TODO(james): Fold this into the general comparisons for JAX versus
+        # casadi once the physics actually match.
+        for current in [0]:
+            print(f"Current: {current}")
+            steer_I = numpy.zeros((8, 1)) + current
+            for state_values in [0.0]:
+                print(f"States all set to: {state_values}")
+                X = numpy.zeros((dynamics.NUM_STATES, 1)) + state_values
+                Xdot_py = self.swerve_full_dynamics(X,
+                                                    steer_I,
+                                                    skip_compare=True)
+                Xdot_cpp = numpy.array(
+                    cpp_dynamics(X.flatten().tolist(),
+                                 steer_I.flatten().tolist())).reshape((25, 1))
+                for index in range(dynamics.NUM_STATES):
+                    self.assertAlmostEqual(Xdot_py[index, 0], Xdot_cpp[index,
+                                                                       0])
 
 
 if __name__ == "__main__":

@@ -214,6 +214,7 @@ py_test(
     srcs = [
         "physics_test.py",
     ],
+    data = [":cpp_dynamics.so"],
     env = {
         "JAX_PLATFORMS": "cpu",
     },
@@ -234,6 +235,7 @@ py_test(
     srcs = [
         "physics_test.py",
     ],
+    data = [":cpp_dynamics.so"],
     env = {
         "JAX_PLATFORMS": "cuda",
     },
@@ -327,5 +329,20 @@ py_binary(
         "@pip//matplotlib",
         "@pip//numpy",
         "@pip//pygobject",
+    ],
+)
+
+cc_binary(
+    name = "cpp_dynamics.so",
+    # Just use the python dynamics directly if you want them; this is just for testing.
+    testonly = True,
+    srcs = ["dynamics_python_bindings.cc"],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":eigen_dynamics",
+        "//third_party/python",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )

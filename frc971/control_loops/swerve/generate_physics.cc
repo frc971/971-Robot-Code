@@ -283,18 +283,107 @@ class SwerveSimulation {
     result_h.emplace_back("");
     result_h.emplace_back("namespace frc971::control_loops::swerve {");
     result_h.emplace_back("");
+    result_h.emplace_back("struct FullDynamicsStates {");
+    result_h.emplace_back("enum States {");
+    result_h.emplace_back("  kThetas0 = 0,");
+    result_h.emplace_back("  kThetad0 = 1,");
+    result_h.emplace_back("  kOmegas0 = 2,");
+    result_h.emplace_back("  kOmegad0 = 3,");
+    result_h.emplace_back("  kThetas1 = 4,");
+    result_h.emplace_back("  kThetad1 = 5,");
+    result_h.emplace_back("  kOmegas1 = 6,");
+    result_h.emplace_back("  kOmegad1 = 7,");
+    result_h.emplace_back("  kThetas2 = 8,");
+    result_h.emplace_back("  kThetad2 = 9,");
+    result_h.emplace_back("  kOmegas2 = 10,");
+    result_h.emplace_back("  kOmegad2 = 11,");
+    result_h.emplace_back("  kThetas3 = 12,");
+    result_h.emplace_back("  kThetad3 = 13,");
+    result_h.emplace_back("  kOmegas3 = 14,");
+    result_h.emplace_back("  kOmegad3 = 15,");
+    result_h.emplace_back("  kX = 16,");
+    result_h.emplace_back("  kY = 17,");
+    result_h.emplace_back("  kTheta = 18,");
+    result_h.emplace_back("  kVx = 19,");
+    result_h.emplace_back("  kVy = 20,");
+    result_h.emplace_back("  kOmega = 21,");
+    result_h.emplace_back("  kFx = 22,");
+    result_h.emplace_back("  kFy = 23,");
+    result_h.emplace_back("  kMoment = 24,");
+    result_h.emplace_back("  kNumStates");
+    result_h.emplace_back("};");
+    result_h.emplace_back("};");
+    result_h.emplace_back(
+        "inline constexpr size_t kNumFullDynamicsStates = "
+        "static_cast<size_t>(FullDynamicsStates::kNumStates);");
+    result_h.emplace_back("struct VelocityStates {");
+    result_h.emplace_back("enum States {");
+    result_h.emplace_back("  kThetas0 = 0,");
+    result_h.emplace_back("  kOmegas0 = 1,");
+    result_h.emplace_back("  kThetas1 = 2,");
+    result_h.emplace_back("  kOmegas1 = 3,");
+    result_h.emplace_back("  kThetas2 = 4,");
+    result_h.emplace_back("  kOmegas2 = 5,");
+    result_h.emplace_back("  kThetas3 = 6,");
+    result_h.emplace_back("  kOmegas3 = 7,");
+    result_h.emplace_back("  kTheta = 8,");
+    result_h.emplace_back("  kVx = 9,");
+    result_h.emplace_back("  kVy = 10,");
+    result_h.emplace_back("  kOmega = 11,");
+    result_h.emplace_back("  kNumStates");
+    result_h.emplace_back("};");
+    result_h.emplace_back("};");
+    result_h.emplace_back(
+        "inline constexpr size_t kNumVelocityStates = "
+        "static_cast<size_t>(VelocityStates::kNumStates);");
+    result_h.emplace_back("struct Inputs {");
+    result_h.emplace_back("enum States {");
+    result_h.emplace_back("  kIs0 = 0,");
+    result_h.emplace_back("  kId0 = 1,");
+    result_h.emplace_back("  kIs1 = 2,");
+    result_h.emplace_back("  kId1 = 3,");
+    result_h.emplace_back("  kIs2 = 4,");
+    result_h.emplace_back("  kId2 = 5,");
+    result_h.emplace_back("  kIs3 = 6,");
+    result_h.emplace_back("  kId3 = 7,");
+    result_h.emplace_back("  kNumInputs = 8");
+    result_h.emplace_back("};");
+    result_h.emplace_back("};");
+    result_h.emplace_back(
+        "inline constexpr size_t kNumInputs = "
+        "static_cast<size_t>(Inputs::kNumInputs);");
+    result_h.emplace_back("");
     result_h.emplace_back("// Returns the derivative of our state vector");
-    result_h.emplace_back("// [thetas0, thetad0, omegas0, omegad0,");
-    result_h.emplace_back("//  thetas1, thetad1, omegas1, omegad1,");
-    result_h.emplace_back("//  thetas2, thetad2, omegas2, omegad2,");
-    result_h.emplace_back("//  thetas3, thetad3, omegas3, omegad3,");
-    result_h.emplace_back("//  x, y, theta, vx, vy, omega,");
-    result_h.emplace_back("//  Fx, Fy, Moment]");
-    result_h.emplace_back("Eigen::Matrix<double, 25, 1> SwervePhysics(");
     result_h.emplace_back(
-        "    Eigen::Map<const Eigen::Matrix<double, 25, 1>> X,");
+        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> SwervePhysics(");
     result_h.emplace_back(
-        "    Eigen::Map<const Eigen::Matrix<double, 8, 1>> U);");
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
+        "1>> X,");
+    result_h.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumInputs, 1>> U);");
+    result_h.emplace_back("");
+    result_h.emplace_back(
+        "Eigen::Matrix<double, kNumVelocityStates, 1> ToVelocityState(");
+    result_h.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
+        "1>> X);");
+    result_h.emplace_back("");
+    result_h.emplace_back(
+        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> FromVelocityState(");
+    result_h.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> "
+        "X);");
+    result_h.emplace_back("");
+    result_h.emplace_back(
+        "inline Eigen::Matrix<double, kNumVelocityStates, 1> VelocityPhysics(");
+    result_h.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> "
+        "X,");
+    result_h.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumInputs, 1>> U) {");
+    result_h.emplace_back(
+        "  return ToVelocityState(SwervePhysics(FromVelocityState(X), U));");
+    result_h.emplace_back("}");
     result_h.emplace_back("");
     result_h.emplace_back("}  // namespace frc971::control_loops::swerve");
     result_h.emplace_back("");
@@ -308,12 +397,49 @@ class SwerveSimulation {
     result_cc.emplace_back("");
     result_cc.emplace_back("namespace frc971::control_loops::swerve {");
     result_cc.emplace_back("");
-    result_cc.emplace_back("Eigen::Matrix<double, 25, 1> SwervePhysics(");
     result_cc.emplace_back(
-        "    Eigen::Map<const Eigen::Matrix<double, 25, 1>> X,");
+        "Eigen::Matrix<double, kNumVelocityStates, 1> ToVelocityState(");
     result_cc.emplace_back(
-        "    Eigen::Map<const Eigen::Matrix<double, 8, 1>> U) {");
-    result_cc.emplace_back("  Eigen::Matrix<double, 25, 1> result;");
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
+        "1>> X) {");
+    result_cc.emplace_back(
+        "    Eigen::Matrix<double, kNumVelocityStates, 1> velocity;");
+    const std::vector<std::string_view> velocity_states = {
+        "kThetas0", "kOmegas0", "kThetas1", "kOmegas1", "kThetas2", "kOmegas2",
+        "kThetas3", "kOmegas3", "kTheta",   "kVx",      "kVy",      "kOmega"};
+    for (const std::string_view velocity_state : velocity_states) {
+      result_cc.emplace_back(absl::StrFormat(
+          "  velocity(VelocityStates::%s) = X(FullDynamicsStates::%s);",
+          velocity_state, velocity_state));
+    }
+    result_cc.emplace_back("  return velocity;");
+    result_cc.emplace_back("}");
+    result_cc.emplace_back("");
+    result_cc.emplace_back(
+        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> FromVelocityState(");
+    result_cc.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> X) "
+        "{");
+    result_cc.emplace_back(
+        "    Eigen::Matrix<double, kNumFullDynamicsStates, 1> full;");
+    result_cc.emplace_back("    full.setZero();");
+    for (const std::string_view velocity_state : velocity_states) {
+      result_cc.emplace_back(absl::StrFormat(
+          "  full(FullDynamicsStates::%s) = X(VelocityStates::%s);",
+          velocity_state, velocity_state));
+    }
+    result_cc.emplace_back("  return full;");
+    result_cc.emplace_back("}");
+    result_cc.emplace_back("");
+    result_cc.emplace_back(
+        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> SwervePhysics(");
+    result_cc.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
+        "1>> X,");
+    result_cc.emplace_back(
+        "    Eigen::Ref<const Eigen::Matrix<double, kNumInputs, 1>> U) {");
+    result_cc.emplace_back(
+        "  Eigen::Matrix<double, kNumFullDynamicsStates, 1> result;");
 
     // Start by writing out variables matching each of the symbol names we use
     // so we don't have to modify the computed equations too much.
