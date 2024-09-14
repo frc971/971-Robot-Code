@@ -37,3 +37,5 @@ setuptools==74.0.0
 
 tensorflow
 tensorflow_datasets
+
+flask

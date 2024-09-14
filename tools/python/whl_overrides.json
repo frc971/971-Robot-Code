@@ -11,6 +11,10 @@
         "sha256": "c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/astunparse-1.6.3-py2.py3-none-any.whl"
     },
+    "blinker==1.8.2": {
+        "sha256": "1779309f71bf239144b9399d06ae925637cf6634cf6bd131104184531bf67c01",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/blinker-1.8.2-py3-none-any.whl"
+    },
     "bokeh==3.4.3": {
         "sha256": "c6f33817f866fc67fbeb5df79cd13a8bb592c05c591f3fd7f4f22b824f7afa01",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/bokeh-3.4.3-py3-none-any.whl"
@@ -58,6 +62,10 @@
     "etils==1.5.2": {
         "sha256": "6dc882d355e1e98a5d1a148d6323679dc47c9a5792939b9de72615aa4737eb0b",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/etils-1.5.2-py3-none-any.whl"
+    },
+    "flask==3.0.3": {
+        "sha256": "34e815dfaa43340d1d15a5c3a02b8476004037eb4840b34910c6e21679d288f3",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/flask-3.0.3-py3-none-any.whl"
     },
     "flatbuffers==24.3.25": {
         "sha256": "8dbdec58f935f3765e4f7f3cf635ac3a77f83568138d6a2311f524ec96364812",
@@ -114,6 +122,10 @@
     "importlib_resources==6.4.4": {
         "sha256": "dda242603d1c9cd836c3368b1174ed74cb4049ecd209e7a1a0104620c18c5c11",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/importlib_resources-6.4.4-py3-none-any.whl"
+    },
+    "itsdangerous==2.2.0": {
+        "sha256": "c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/itsdangerous-2.2.0-py3-none-any.whl"
     },
     "jax==0.4.30": {
         "sha256": "289b30ae03b52f7f4baf6ef082a9f4e3e29c1080e22d13512c5ecf02d5f1a55b",
