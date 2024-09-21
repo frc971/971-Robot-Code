@@ -467,6 +467,9 @@
             <span *ngSwitchCase="ActionType.EndAutoPhaseAction">
               Ended auto phase
             </span>
+            <span *ngSwitchCase="ActionType.EndTeleopPhaseAction">
+              Ended teleop phase
+            </span>
             <span *ngSwitchCase="ActionType.EndMatchAction">
               Ended Match; stageType: {{stringifyStageType((action.actionTaken |
               cast: EndMatchActionT).stageType)}}, trapNote:

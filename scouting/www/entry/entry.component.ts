@@ -334,6 +334,9 @@ export class EntryComponent implements OnInit {
           break;
         case ActionType.EndMatchAction:
           this.section = 'Endgame';
+          // Also delete the penalty action.
+          this.undoLastAction();
+          break;
         case ActionType.MobilityAction:
           this.mobilityCompleted = false;
           break;

@@ -102,7 +102,12 @@ function submitDataScouting(
   cy.contains(/Harmony/).click();
 
   clickButton('End Match');
+
+  clickButton('UNDO');
+  clickButton('End Match');
+
   headerShouldBe(teamNumber + ' Review and Submit ');
+
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
@@ -113,6 +118,8 @@ function submitDataScouting(
       'have.text',
       ' Ended Match; stageType: kHARMONY, trapNote: false, spotlight: false '
     );
+  // Ensure that the penalties action is only submitted once.
+  cy.get('#review_data li').contains('Penalties').should('have.length', 1);
 
   clickButton('Submit');
   headerShouldBe(teamNumber + ' Success ');
