@@ -85,6 +85,7 @@ class ArmCostFunction:
     Returns:
       numpy.matrix(1, 1), The quadratic cost of being at X
     """
+        print('TODO(austin): S -> X.T * S * X, need to fix if we care')
         return 0.5 * X.T * self.S * X
 
     def cost(self, X, U):

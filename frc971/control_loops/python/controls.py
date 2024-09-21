@@ -85,11 +85,11 @@ def dlqr(A, B, Q, R, optimal_cost_function=False):
     J = sum(0, inf, x.T * Q * x + u.T * R * u)
   """
 
-    # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P *B) * (A.T * P.T * B).T + Q
-    # 0.5 * X.T * P * X -> optimal cost to infinity
+    # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P * B) * (A.T * P.T * B).T + Q
+    # X.T * P * X -> optimal cost to infinity
 
     P = scipy.linalg.solve_discrete_are(a=A, b=B, q=Q, r=R)
-    F = numpy.linalg.inv(R + B.T * P * B) * B.T * P * A
+    F = numpy.linalg.inv(R + B.T @ P @ B) @ B.T @ P @ A
     if optimal_cost_function:
         return F, P
     else:
