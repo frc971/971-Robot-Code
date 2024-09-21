@@ -130,6 +130,8 @@ std::optional<std::string_view> ParsePiOrOrin(const std::string_view hostname) {
     return std::string_view("pi");
   } else if (hostname.substr(0, 5) == "orin-") {
     return std::string_view("orin");
+  } else if (hostname.substr(0, 4) == "imu-") {
+    return std::string_view("orin");
   } else
     return std::nullopt;
 }
