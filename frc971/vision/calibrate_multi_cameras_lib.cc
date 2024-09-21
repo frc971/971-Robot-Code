@@ -74,7 +74,8 @@ std::map<std::string, int> CreateOrderingMap(
 
 // Change reference frame from camera to robot
 Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
-                                       Eigen::Affine3d H_robot_camera) {
+                                       Eigen::Affine3d extrinsics) {
+  const Eigen::Affine3d H_robot_camera = extrinsics;
   const Eigen::Affine3d H_robot_target = H_robot_camera * H_camera_target;
   return H_robot_target;
 }
@@ -118,11 +119,11 @@ void RemoveOutliers(std::vector<TimestampedCameraDetection> &pose_list,
       Eigen::Matrix3d rotation_sigma = rotation_variance.asDiagonal();
       Eigen::Vector3d delta_rotation =
           PoseUtils::RotationMatrixToEulerAngles(H_delta.rotation().matrix());
-      double max_translation_z_score = sqrt(
+      double max_translation_z_score = std::sqrt(
           H_delta.translation()
               .cwiseProduct(translation_sigma.inverse() * H_delta.translation())
               .maxCoeff());
-      double max_rotation_z_score = sqrt(static_cast<double>(
+      double max_rotation_z_score = std::sqrt(static_cast<double>(
           (delta_rotation.array() *
            (rotation_sigma.inverse() * delta_rotation).array())
               .maxCoeff()));
@@ -157,6 +158,35 @@ void RemoveOutliers(std::vector<TimestampedCameraDetection> &pose_list,
       break;
     }
   }
+}
+
+bool PoseIsValid(const TargetMapper::TargetPose &target_pose, double pose_error,
+                 double pose_error_ratio, std::string_view camera_name) {
+  // Skip detections with invalid ids
+  if (static_cast<TargetMapper::TargetId>(target_pose.id) <
+          absl::GetFlag(FLAGS_min_target_id) ||
+      static_cast<TargetMapper::TargetId>(target_pose.id) >
+          absl::GetFlag(FLAGS_max_target_id)) {
+    VLOG(1) << "Skipping tag from " << camera_name << " with invalid id of "
+            << target_pose.id;
+    return false;
+  }
+
+  // Skip detections with high pose errors
+  if (pose_error > absl::GetFlag(FLAGS_max_pose_error)) {
+    LOG(INFO) << "Skipping tag from " << camera_name << " with id "
+              << target_pose.id << " due to pose error of " << pose_error;
+    return false;
+  }
+  // Skip detections with high pose error ratios
+  if (pose_error_ratio > absl::GetFlag(FLAGS_max_pose_error_ratio)) {
+    LOG(INFO) << "Skipping tag from " << camera_name << " with id "
+              << target_pose.id << " due to pose error ratio of "
+              << pose_error_ratio;
+    return false;
+  }
+
+  return true;
 }
 
 // Take in list of poses from a camera observation and add to running list
@@ -390,34 +420,13 @@ void HandleTargetMap(
   }
 
   for (const auto *target_pose_fbs : *map.target_poses()) {
-    // Skip detections with invalid ids
-    if (static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) <
-            absl::GetFlag(FLAGS_min_target_id) ||
-        static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) >
-            absl::GetFlag(FLAGS_max_target_id)) {
-      VLOG(1) << "Skipping tag from " << camera_name << " with invalid id of "
-              << target_pose_fbs->id();
-      continue;
-    }
-
-    // Skip detections with high pose errors
-    if (target_pose_fbs->pose_error() > absl::GetFlag(FLAGS_max_pose_error)) {
-      LOG(INFO) << "Skipping tag from " << camera_name << " with id "
-                << target_pose_fbs->id() << " due to pose error of "
-                << target_pose_fbs->pose_error();
-      continue;
-    }
-    // Skip detections with high pose error ratios
-    if (target_pose_fbs->pose_error_ratio() >
-        absl::GetFlag(FLAGS_max_pose_error_ratio)) {
-      LOG(INFO) << "Skipping tag from " << camera_name << " with id "
-                << target_pose_fbs->id() << " due to pose error ratio of "
-                << target_pose_fbs->pose_error_ratio();
-      continue;
-    }
-
     const TargetMapper::TargetPose target_pose =
         TargetMapper::TargetPoseFromFbs(*target_pose_fbs);
+
+    if (!PoseIsValid(target_pose, target_pose_fbs->pose_error(),
+                     target_pose_fbs->pose_error_ratio(), camera_name)) {
+      continue;
+    }
 
     target_poses.emplace_back(target_pose);
 
@@ -440,6 +449,10 @@ void HandleTargetMap(
               display_count);
 }
 
+// TODO<jim>: This currently uses the Charuco lib to extract the target poses,
+// but our code running on device uses the GPU-based april tag detection and
+// extraction.  We should probably be only using the GPU-based extraction for
+// HandleImage(...)
 void HandleImage(
     aos::EventLoop *event_loop, cv::Mat rgb_image,
     const aos::monotonic_clock::time_point eof,
@@ -473,6 +486,13 @@ void HandleImage(
         frc971::controls::ToQuaternionFromRotationVector(rvecs_eigen[i]));
     ceres::examples::Pose3d pose(Eigen::Vector3d(tvecs_eigen[i]), rotation);
     TargetMapper::TargetPose target_pose{charuco_ids[i][0], pose};
+
+    // Since we're using charuco_lib for poses, it doesn't have a pose_error or
+    // pose_error_ratio, so just use 0.0 for each here to fake it
+    if (!PoseIsValid(target_pose, 0.0, 0.0, camera_name)) {
+      continue;
+    }
+
     target_poses.emplace_back(target_pose);
 
     Eigen::Affine3d H_camera_target = PoseUtils::Pose3dToAffine3d(pose);
@@ -546,13 +566,13 @@ void ExtrinsicsMain(std::vector<CameraNode> &node_list,
   std::vector<std::pair<TimestampedCameraDetection, TimestampedCameraDetection>>
       detection_list;
   std::vector<TimestampedCameraDetection> two_board_extrinsics_list;
-  VisualizeRobot vis_robot_;
+  VisualizeRobot vis_robot;
 
-  vis_robot_ = VisualizeRobot(cv::Size(1000, 1000));
-  vis_robot_.ClearImage();
+  vis_robot = VisualizeRobot(cv::Size(1000, 1000));
+  vis_robot.ClearImage();
   const double kFocalLength = 1000.0;
   const int kImageWidth = 1000;
-  vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
+  vis_robot.SetDefaultViewpoint(kImageWidth, kFocalLength);
   LOG(INFO) << "COPYTHIS, count, camera_name, target_id, timestamp, mag_T, "
                "mag_R_deg, "
                "confidence, pose_error, pose_error_ratio, distortion_factor";
@@ -594,7 +614,7 @@ void ExtrinsicsMain(std::vector<CameraNode> &node_list,
     event_loop->MakeWatcher(
         camera_node.camera_name(),
         [&reader, event_loop, camera_node, &last_observation, &detection_list,
-         &two_board_extrinsics_list, &vis_robot_, &camera_colors, &ordering_map,
+         &two_board_extrinsics_list, &vis_robot, &camera_colors, &ordering_map,
          &image_period_ms, display_count](const TargetMap &map) {
           aos::distributed_clock::time_point camera_distributed_time =
               reader->event_loop_factory()
@@ -606,7 +626,7 @@ void ExtrinsicsMain(std::vector<CameraNode> &node_list,
           HandleTargetMap(map, camera_distributed_time,
                           camera_node.camera_name(), last_eofs_debug,
                           last_observation, detection_list,
-                          two_board_extrinsics_list, vis_robot_, camera_colors,
+                          two_board_extrinsics_list, vis_robot, camera_colors,
                           ordering_map, image_period_ms, display_count);
         });
     VLOG(1) << "Created watcher for using the detection event loop for "
@@ -839,8 +859,8 @@ void ExtrinsicsMain(std::vector<CameraNode> &node_list,
 
       if (absl::GetFlag(FLAGS_visualize)) {
         // Draw each of the updated extrinsic camera locations
-        vis_robot_.SetDefaultViewpoint(1000.0, 1500.0);
-        vis_robot_.DrawFrameAxes(
+        vis_robot.SetDefaultViewpoint(1000.0, 1500.0);
+        vis_robot.DrawFrameAxes(
             updated_extrinsics.back(), node_list.at(i + 1).camera_name(),
             camera_colors.at(node_list.at(i + 1).camera_name()));
       }
@@ -848,10 +868,10 @@ void ExtrinsicsMain(std::vector<CameraNode> &node_list,
   }
   if (absl::GetFlag(FLAGS_visualize)) {
     // And don't forget to draw the base camera location
-    vis_robot_.DrawFrameAxes(updated_extrinsics[0],
-                             node_list.at(0).camera_name(),
-                             camera_colors.at(node_list.at(0).camera_name()));
-    cv::imshow("Extrinsic visualization", vis_robot_.image_);
+    vis_robot.DrawFrameAxes(updated_extrinsics[0],
+                            node_list.at(0).camera_name(),
+                            camera_colors.at(node_list.at(0).camera_name()));
+    cv::imshow("Extrinsic visualization", vis_robot.image_);
     // Add a bit extra time, so that we don't go right through the extrinsics
     cv::waitKey(3000);
     cv::waitKey(0);

@@ -1750,3 +1750,15 @@ http_archive(
     strip_prefix = "tcmalloc-6c3e8bf43de02934525b3760571ca8781dca1869",
     url = "https://github.com/google/tcmalloc/archive/6c3e8bf43de02934525b3760571ca8781dca1869.zip",
 )
+
+http_archive(
+    name = "intrinsic_calibration_test_images",
+    build_file_content = """
+filegroup(
+    name = "intrinsic_calibration_test_images",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "0359e5c19117835c6ec336233a3bbfe2b273797afe9460bf224496802b8f4055",
+    url = "https://software.frc971.org/Build-Dependencies/intrinsic_calibration_test_images.tar.gz",
+)

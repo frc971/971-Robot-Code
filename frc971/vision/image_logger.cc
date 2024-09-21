@@ -15,7 +15,6 @@
 #include "frc971/input/joystick_state_generated.h"
 
 ABSL_FLAG(std::string, config, "aos_config.json", "Config file to use.");
-
 ABSL_FLAG(double, rotate_every, 0.0,
           "If set, rotate the logger after this many seconds");
 ABSL_DECLARE_FLAG(int32_t, flush_size);

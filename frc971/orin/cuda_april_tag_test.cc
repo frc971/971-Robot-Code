@@ -258,10 +258,12 @@ CameraMatrix create_camera_matrix() {
   };
 }
 
-DistCoeffs create_distortion_coefficients() {
-  return DistCoeffs{
-      0, 0, 0, 0, 0,
-  };
+DistCoeffs create_distortion_coefficients_five() {
+  return DistCoeffs{0, 0, 0, 0, 0, 0, 0, 0, 5};
+}
+
+DistCoeffs create_distortion_coefficients_eight() {
+  return DistCoeffs{0, 0, 0, 0, 0, 0, 0, 0, 8};
 }
 
 class CudaAprilTagDetector {
@@ -276,7 +278,7 @@ class CudaAprilTagDetector {
         union_markers_(decimated_cuda_.size(), CV_32SC1),
         union_markers_size_(decimated_cuda_.size(), CV_32SC1),
         gpu_detector_(width, height, tag_detector_, create_camera_matrix(),
-                      create_distortion_coefficients()),
+                      create_distortion_coefficients_five()),
         width_(width),
         height_(height) {
     // Report out info about our GPU.
@@ -2086,8 +2088,8 @@ class CudaAprilTagDetector {
   void SetCameraFourConstants() {
     gpu_detector_.SetCameraMatrix(
         CameraMatrix{642.80365, 718.017517, 642.83667, 555.022461});
-    gpu_detector_.SetDistortionCoefficients(
-        DistCoeffs{-0.239969, 0.055889, 0.000086, 0.000099, -0.005468});
+    gpu_detector_.SetDistortionCoefficients(DistCoeffs{
+        -0.239969, 0.055889, 0.000086, 0.000099, -0.005468, 0.0, 0.0, 0.0, 5});
   }
 
  private:

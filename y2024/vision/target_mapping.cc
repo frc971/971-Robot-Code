@@ -396,6 +396,8 @@ void TargetMapperReplay::HandleNodeCaptures(
       std::string(mapping_event_loop->node()->name()->string_view());
   const auto *calibration = FindCameraCalibration(
       constants_fetcher->constants(), node_name, camera_number);
+  CHECK(frc971::vision::CameraExtrinsics(calibration))
+      << "Couldn't find camera extrinsics";
   cv::Mat extrinsics_cv = frc971::vision::CameraExtrinsics(calibration).value();
   Eigen::Matrix4d extrinsics_matrix;
   cv::cv2eigen(extrinsics_cv, extrinsics_matrix);

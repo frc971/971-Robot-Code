@@ -1,3 +1,5 @@
+#ifndef FRC971_ORIN_GPU_APRILTAG_H_
+#define FRC971_ORIN_GPU_APRILTAG_H_
 
 #include <string>
 
@@ -22,6 +24,32 @@
 
 namespace frc971 {
 namespace apriltag {
+
+static inline CameraMatrix GetCameraMatrix(
+    const frc971::vision::calibration::CameraCalibration *calibration) {
+  auto intrinsics = calibration->intrinsics();
+  return CameraMatrix{
+      .fx = intrinsics->Get(0),
+      .cx = intrinsics->Get(2),
+      .fy = intrinsics->Get(4),
+      .cy = intrinsics->Get(5),
+  };
+}
+
+static inline DistCoeffs GetDistCoeffs(
+    const frc971::vision::calibration::CameraCalibration *calibration) {
+  auto dist_coeffs = calibration->dist_coeffs();
+  int num_params = dist_coeffs->size();
+  return DistCoeffs{.k1 = dist_coeffs->Get(0),
+                    .k2 = dist_coeffs->Get(1),
+                    .p1 = dist_coeffs->Get(2),
+                    .p2 = dist_coeffs->Get(3),
+                    .k3 = dist_coeffs->Get(4),
+                    .k4 = (num_params >= 8 ? dist_coeffs->Get(5) : 0.0),
+                    .k5 = (num_params >= 8 ? dist_coeffs->Get(6) : 0.0),
+                    .k6 = (num_params >= 8 ? dist_coeffs->Get(7) : 0.0),
+                    .num_params = num_params};
+}
 
 class ApriltagDetector {
  public:
@@ -96,3 +124,4 @@ class ApriltagDetector {
 
 }  // namespace apriltag
 }  // namespace frc971
+#endif  // FRC971_ORIN_GPU_APRILTAG_H_

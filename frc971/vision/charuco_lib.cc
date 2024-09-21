@@ -26,21 +26,24 @@ ABSL_FLAG(bool, coarse_pattern, true,
 ABSL_FLAG(uint32_t, gray_threshold, 0,
           "If > 0, threshold image based on this grayscale value");
 ABSL_FLAG(bool, large_board, true, "If true, use the large calibration board.");
+// Rule of thumb for # of points from paper: https://arxiv.org/pdf/1907.04096
+// is to add 5x constraints for each new unknown.
+// Each image adds 6 unknowns (3D rotation + translation), so we need to add
+// 30 constraints.  Each charuco corner provides 2 constraints (DOF), so we
+// need 15 charucos per image.
 ABSL_FLAG(
-    uint32_t, min_charucos, 10,
+    uint32_t, min_charucos, 15,
     "The mininum number of aruco targets in charuco board required to match.");
 ABSL_FLAG(uint32_t, min_id, 0, "Minimum valid charuco id");
 ABSL_FLAG(uint32_t, max_diamonds, 0,
           "Maximum number of diamonds to see.  Set to 0 for no limit");
 ABSL_FLAG(uint32_t, max_id, 15, "Maximum valid charuco id");
-ABSL_FLAG(bool, visualize, false, "Whether to visualize the resulting data.");
+ABSL_FLAG(uint32_t, disable_delay, 100,
+          "Time after an issue to disable tracing at.");
 ABSL_FLAG(
     bool, draw_axes, false,
     "Whether to draw axes on the resulting data-- warning, may cause crashes.");
-
-ABSL_FLAG(uint32_t, disable_delay, 100,
-          "Time after an issue to disable tracing at.");
-
+ABSL_FLAG(bool, visualize, false, "Whether to visualize the resulting data.");
 ABSL_DECLARE_FLAG(bool, enable_ftrace);
 
 namespace frc971::vision {
@@ -63,8 +66,9 @@ CameraCalibration::CameraCalibration(
         cv::cv2eigen(camera_intrinsics, result);
         return result;
       }()),
+      // TODO: Need to clean-up any other dist_coeffs hardcoded to 5 parameters
       dist_coeffs_([calibration]() {
-        const cv::Mat result(5, 1, CV_32F,
+        const cv::Mat result(calibration->dist_coeffs()->size(), 1, CV_32F,
                              const_cast<void *>(static_cast<const void *>(
                                  calibration->dist_coeffs()->data())));
         CHECK_EQ(result.total(), calibration->dist_coeffs()->size());
@@ -183,7 +187,6 @@ void CharucoExtractor::SetupTargetData() {
     dictionary_ = cv::aruco::getPredefinedDictionary(
         absl::GetFlag(FLAGS_large_board) ? cv::aruco::DICT_5X5_250
                                          : cv::aruco::DICT_6X6_250);
-
     if (target_type_ == TargetType::kCharuco) {
       LOG(INFO) << "Using "
                 << (absl::GetFlag(FLAGS_large_board) ? "large" : "small")
@@ -228,6 +231,11 @@ void CharucoExtractor::SetupTargetData() {
 void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
                                        std::vector<cv::Vec3d> rvecs,
                                        std::vector<cv::Vec3d> tvecs) {
+  if (!absl::GetFlag(FLAGS_draw_axes)) {
+    // Don't draw anything unless draw_axes is set to true
+    return;
+  }
+
   const Eigen::Matrix<double, 3, 4> camera_projection =
       Eigen::Matrix<double, 3, 4>::Identity();
 
@@ -378,8 +386,15 @@ void CharucoExtractor::ProcessImage(
   std::vector<std::vector<cv::Point2f>> marker_corners;
 
   // Do initial marker detection; this is the same for all target types
-  cv::aruco::detectMarkers(rgb_image, dictionary_, marker_corners, marker_ids);
-  cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
+  cv::Ptr<cv::aruco::DetectorParameters> detector_params =
+      cv::aruco::DetectorParameters::create();
+  detector_params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
+
+  cv::aruco::detectMarkers(rgb_image, dictionary_, marker_corners, marker_ids,
+                           detector_params);
+  if (absl::GetFlag(FLAGS_draw_axes)) {
+    cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
+  }
 
   VLOG(2) << "Handle Image, with target type = "
           << static_cast<uint8_t>(target_type_) << " and " << marker_ids.size()
@@ -415,8 +430,10 @@ void CharucoExtractor::ProcessImage(
             calibration_.CameraIntrinsics(), calibration_.CameraDistCoeffs());
 
         if (charuco_ids.size() >= absl::GetFlag(FLAGS_min_charucos)) {
-          cv::aruco::drawDetectedCornersCharuco(
-              rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
+          if (absl::GetFlag(FLAGS_draw_axes)) {
+            cv::aruco::drawDetectedCornersCharuco(
+                rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
+          }
 
           cv::Vec3d rvec, tvec;
           valid = cv::aruco::estimatePoseCharucoBoard(
@@ -461,8 +478,8 @@ void CharucoExtractor::ProcessImage(
           marker_corners, square_length_, calibration_.CameraIntrinsics(),
           calibration_.CameraDistCoeffs(), rvecs, tvecs);
       DrawTargetPoses(rgb_image, rvecs, tvecs);
-
       PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
+
       for (uint i = 0; i < marker_ids.size(); i++) {
         result_ids.emplace_back(cv::Vec4i{marker_ids[i], 0, 0, 0});
       }
@@ -493,9 +510,10 @@ void CharucoExtractor::ProcessImage(
           }
         }
         if (all_valid_ids) {
-          cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
-                                          diamond_ids);
-
+          if (absl::GetFlag(FLAGS_draw_axes)) {
+            cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
+                                            diamond_ids);
+          }
           // estimate pose for diamonds doesn't return valid, so marking
           // true
           valid = true;

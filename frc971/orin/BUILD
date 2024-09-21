@@ -217,3 +217,25 @@ cc_binary(
         "@com_google_absl//absl/log:check",
     ],
 )
+
+cc_test(
+    name = "undistort_test",
+    srcs = [
+        "undistort_test.cc",
+    ],
+    data = [
+        "//y2024:aos_config",
+        "//y2024/constants/calib_files",
+    ],
+    features = ["cuda"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":apriltag",
+        ":gpu_apriltag_lib",
+        "//aos:init",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:charuco_lib",
+    ],
+)

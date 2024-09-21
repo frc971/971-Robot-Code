@@ -72,6 +72,11 @@ struct DistCoeffs {
   double p1;
   double p2;
   double k3;
+  double k4;
+  double k5;
+  double k6;
+  // Are we using 5 or 8 parameter model?
+  int num_params;
 };
 
 // GPU based april tag detector.
@@ -192,6 +197,10 @@ class GpuDetector {
   void SetDistortionCoefficients(DistCoeffs distortion_coefficients) {
     distortion_coefficients_ = distortion_coefficients;
   }
+
+  // (Re-)distort pixels based on our camera model, using pinhole camera model
+  static void ReDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+                        const DistCoeffs *distortion_coefficients);
 
   // Undistort pixels based on our camera model, using iterative algorithm
   // Returns false if we fail to converge

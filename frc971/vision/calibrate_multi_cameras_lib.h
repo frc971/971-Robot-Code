@@ -48,7 +48,7 @@ struct TimestampedCameraDetection {
   aos::distributed_clock::time_point time;
   // Pose of target relative to robot
   Eigen::Affine3d H_camera_target;
-  // name of pi
+  // name of compute + camera
   std::string camera_name;
   int board_id;
 };

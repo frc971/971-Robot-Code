@@ -41,29 +41,6 @@ constexpr aos::monotonic_clock::duration kMaxImageAge =
 
 namespace chrono = std::chrono;
 
-CameraMatrix GetCameraMatrix(
-    const frc971::vision::calibration::CameraCalibration *calibration) {
-  auto intrinsics = calibration->intrinsics();
-  return CameraMatrix{
-      .fx = intrinsics->Get(0),
-      .cx = intrinsics->Get(2),
-      .fy = intrinsics->Get(4),
-      .cy = intrinsics->Get(5),
-  };
-}
-
-DistCoeffs GetDistCoeffs(
-    const frc971::vision::calibration::CameraCalibration *calibration) {
-  auto dist_coeffs = calibration->dist_coeffs();
-  return DistCoeffs{
-      .k1 = dist_coeffs->Get(0),
-      .k2 = dist_coeffs->Get(1),
-      .p1 = dist_coeffs->Get(2),
-      .p2 = dist_coeffs->Get(3),
-      .k3 = dist_coeffs->Get(4),
-  };
-}
-
 ApriltagDetector::ApriltagDetector(
     aos::EventLoop *event_loop, std::string_view channel_name,
     const frc971::vision::calibration::CameraCalibration *calibration,

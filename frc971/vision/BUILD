@@ -53,9 +53,7 @@ cc_binary(
         "//aos/logging:log_namer",
         "//aos/util:filesystem_fbs",
         "//frc971/input:joystick_state_fbs",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "//frc971/vision:vision_fbs",
     ],
 )
 
@@ -427,6 +425,31 @@ cc_binary(
         "//third_party:opencv",
         "@com_google_absl//absl/strings:str_format",
         "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "intrinsics_calibration_test",
+    srcs = [
+        "intrinsics_calibration_test.cc",
+    ],
+    data = [
+        "//y2024:aos_config",
+        "//y2024/constants/calib_files",
+        "@intrinsic_calibration_test_images",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":intrinsics_calibration",
+        ":intrinsics_calibration_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:random_seed",
+        "//aos/util:math",
+        "//third_party:opencv",
     ],
 )
 

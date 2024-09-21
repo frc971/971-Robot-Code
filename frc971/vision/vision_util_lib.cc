@@ -35,7 +35,6 @@ cv::Mat CameraIntrinsics(
   cv::Mat result(3, 3, CV_32F,
                  const_cast<void *>(static_cast<const void *>(
                      camera_calibration->intrinsics()->data())));
-  result.convertTo(result, CV_64F);
   CHECK_EQ(result.total(), camera_calibration->intrinsics()->size());
 
   return result;
@@ -43,7 +42,7 @@ cv::Mat CameraIntrinsics(
 
 cv::Mat CameraDistCoeffs(
     const frc971::vision::calibration::CameraCalibration *camera_calibration) {
-  const cv::Mat result(5, 1, CV_32F,
+  const cv::Mat result(camera_calibration->dist_coeffs()->size(), 1, CV_32F,
                        const_cast<void *>(static_cast<const void *>(
                            camera_calibration->dist_coeffs()->data())));
   CHECK_EQ(result.total(), camera_calibration->dist_coeffs()->size());

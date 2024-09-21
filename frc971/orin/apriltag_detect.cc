@@ -308,13 +308,17 @@ struct QuadDecodeTaskStruct {
 // Dewarps points from the image based on various constants
 // Algorithm mainly taken from
 // https://docs.opencv.org/4.0.0/d9/d0c/group__calib3d.html#ga7dfb72c9cf9780a347fbe3d1c47e5d5a
-void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
-               DistCoeffs *distortion_coefficients) {
+void GpuDetector::ReDistort(double *x, double *y,
+                            const CameraMatrix *camera_matrix,
+                            const DistCoeffs *distortion_coefficients) {
   double k1 = distortion_coefficients->k1;
   double k2 = distortion_coefficients->k2;
   double p1 = distortion_coefficients->p1;
   double p2 = distortion_coefficients->p2;
   double k3 = distortion_coefficients->k3;
+  double k4 = distortion_coefficients->k4;
+  double k5 = distortion_coefficients->k5;
+  double k6 = distortion_coefficients->k6;
 
   double fx = camera_matrix->fx;
   double cx = camera_matrix->cx;
@@ -326,7 +330,8 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 
   double rSq = xP * xP + yP * yP;
 
-  double linCoef = 1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq;
+  double linCoef = (1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq) /
+                   (1 + k4 * rSq + k5 * rSq * rSq + k6 * rSq * rSq * rSq);
   double xPP = xP * linCoef + 2 * p1 * xP * yP + p2 * (rSq + 2 * xP * xP);
   double yPP = yP * linCoef + p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
 
@@ -336,6 +341,8 @@ void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
 
 // We're undistorting using math found from this github page
 // https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
+// Also, see for reference the source code:
+// https://github.com/opencv/opencv/blob/master/modules/calib3d/src/undistort.dispatch.cpp
 bool GpuDetector::UnDistort(double *u, double *v,
                             const CameraMatrix *camera_matrix,
                             const DistCoeffs *distortion_coefficients) {
@@ -345,6 +352,9 @@ bool GpuDetector::UnDistort(double *u, double *v,
   const double p1 = distortion_coefficients->p1;
   const double p2 = distortion_coefficients->p2;
   const double k3 = distortion_coefficients->k3;
+  const double k4 = distortion_coefficients->k4;
+  const double k5 = distortion_coefficients->k5;
+  const double k6 = distortion_coefficients->k6;
 
   const double fx = camera_matrix->fx;
   const double cx = camera_matrix->cx;
@@ -369,11 +379,12 @@ bool GpuDetector::UnDistort(double *u, double *v,
     double rSq = xP * xP + yP * yP;
 
     double radial_distortion =
-        1 + (k1 * rSq) + (k2 * rSq * rSq) + (k3 * rSq * rSq * rSq);
+        (1 + (k1 * rSq) + (k2 * rSq * rSq) + (k3 * rSq * rSq * rSq)) /
+        (1 + (k4 * rSq) + (k5 * rSq * rSq) + (k6 * rSq * rSq * rSq));
 
     double radial_distortion_inv = 1 / radial_distortion;
 
-    double tangential_dx = 2 * p1 * xP * yP + p2 * (rSq + k3 * rSq * rSq * rSq);
+    double tangential_dx = 2 * p1 * xP * yP + p2 * (rSq + 2 * xP * xP);
     double tangential_dy = p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
 
     xP = (x0 - tangential_dx) * radial_distortion_inv;
@@ -555,7 +566,7 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       double px = lines[i][0] + L0 * A00;
       double py = lines[i][1] + L0 * A10;
 
-      ReDistort(&px, &py, camera_matrix, distortion_coefficients);
+      GpuDetector::ReDistort(&px, &py, camera_matrix, distortion_coefficients);
       quad->p[(i + 1) & 3][0] = px;
       quad->p[(i + 1) & 3][1] = py;
     } else {
