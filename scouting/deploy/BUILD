@@ -17,15 +17,6 @@ pkg_tar(
     include_runfiles = True,
     package_dir = "opt/frc971/scouting_server",
     strip_prefix = ".",
-    # The "include_runfiles" attribute creates a runfiles tree as seen from
-    # within the workspace directory. But what we really want is the runfiles
-    # tree as seen from the root of the runfiles tree (i.e. one directory up).
-    # So we work around it by manually adding some symlinks that let us pretend
-    # that we're at the root of the runfiles tree.
-    symlinks = {
-        "org_frc971": ".",
-        "bazel_tools": "external/bazel_tools",
-    },
 )
 
 pkg_tar(

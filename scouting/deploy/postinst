@@ -21,7 +21,7 @@ chown -R www-data:www-data /var/frc971/scouting/
 
 # Update the timestamps on the files so that web browsers pull the new version.
 # Otherwise users have to explicitly bypass the cache when visiting the site.
-find /opt/frc971/scouting_server/scouting/www/ -type f -exec touch {} +
+find /opt/frc971/scouting_server/scouting/scouting.runfiles/org_frc971/scouting/www/ -type f -exec touch {} +
 
 systemctl daemon-reload
 systemctl enable scouting.service
