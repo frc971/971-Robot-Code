@@ -10,7 +10,7 @@ from frc971.control_loops.swerve import dynamics
 class PhysicsDebug(object):
 
     def wrap(self, python_module):
-        self.swerve_physics = utils.wrap(python_module.swerve_physics)
+        self.swerve_physics = utils.wrap(python_module.swerve_full_dynamics)
         self.contact_patch_velocity = [
             utils.wrap_module(python_module.contact_patch_velocity, i)
             for i in range(4)
@@ -102,7 +102,7 @@ class PhysicsDebug(object):
                               [40.0], [0.0]])
 
         def calc_I(t, x):
-            x_goal = numpy.zeros((16, 1))
+            x_goal = numpy.zeros(16)
 
             Kp_steer = 15.0
             Kp_drive = 0.0
@@ -245,8 +245,7 @@ class PhysicsDebug(object):
             U_control = numpy.hstack((
                 U_control,
                 numpy.reshape(
-                    calc_I(result.t[i], numpy.reshape(result.y[:, i],
-                                                      (25, 1))),
+                    calc_I(result.t[i], result.y[:, i]),
                     (8, 1),
                 ),
             ))
