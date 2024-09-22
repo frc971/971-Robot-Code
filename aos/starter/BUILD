@@ -125,7 +125,6 @@ cc_test(
     ],
     # TODO(james): Fix tihs.
     flaky = True,
-    linkopts = ["-lstdc++fs"],
     shard_count = 4,
     # The roborio compiler doesn't support <filesystem>.
     target_compatible_with =

@@ -65,7 +65,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@opencv_k8//:opencv"],
-        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:opencv4"],
+        "//tools:cpu_arm64": ["@arm64_yocto_sysroot//:opencv4"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -76,9 +76,9 @@ cc_library(
     deps = select({
         "//tools:cpu_k8": ["@gstreamer_k8//:gstreamer"],
         "//tools:cpu_arm64": [
-            "@arm64_debian_sysroot//:gstreamer-1.0",
-            "@arm64_debian_sysroot//:gstreamer-app-1.0",
-            "@arm64_debian_sysroot//:gstreamer-webrtc-1.0",
+            "@arm64_yocto_sysroot//:gstreamer-1.0",
+            "@arm64_yocto_sysroot//:gstreamer-app-1.0",
+            "@arm64_yocto_sysroot//:gstreamer-webrtc-1.0",
         ],
         "//conditions:default": [":unavailable"],
     }),
@@ -131,7 +131,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@amd64_debian_sysroot//:cudart"],
-        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:cudart"],
+        "//tools:cpu_arm64": ["@arm64_yocto_sysroot//:cudart"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -141,7 +141,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@amd64_debian_sysroot//:nppi"],
-        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:nppi"],
+        "//tools:cpu_arm64": ["@arm64_yocto_sysroot//:nppi"],
         "//conditions:default": [":unavailable"],
     }),
 )

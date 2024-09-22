@@ -8,9 +8,12 @@
 #include <vector>
 
 #include "Eigen/Dense"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
+#include "aos/time/time.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -185,7 +188,7 @@ class StateFeedbackHybridPlant {
   // Computes the new X and Y given the control input.
   void Update(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
               ::std::chrono::nanoseconds dt, Scalar voltage_battery) {
-    CHECK_NE(dt, std::chrono::nanoseconds(0));
+    CHECK_NE(0, dt.count());
 
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.

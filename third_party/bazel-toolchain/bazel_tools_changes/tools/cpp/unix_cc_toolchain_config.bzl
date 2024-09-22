@@ -1148,8 +1148,8 @@ def _impl(ctx):
     if ctx.attr.cpu == "aarch64":
         cuda_flags += [
             "--cuda-gpu-arch=sm_87",
-            "--cuda-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/",
-            "--ptxas-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/bin/ptxas",
+            "--cuda-path=external/arm64_yocto_sysroot/usr/local/cuda-11.8/",
+            "--ptxas-path=external/arm64_yocto_sysroot/usr/local/cuda-11.8/bin/ptxas",
             "-D__CUDACC_VER_MAJOR__=11",
             "-D__CUDACC_VER_MINOR__=8",
         ]

@@ -16,7 +16,7 @@ elif [[ "$(hostname)" == "pi-"* ]]; then
   exec starterd --user=pi --purge_shm_base
 elif [[ "$(hostname)" == "orin-"* ]]; then
   # We have systemd configured to handle restarting, so just exec.
-  export PATH="${PATH}:/home/pi/bin"
+  export PATH="/home/pi/bin:${PATH}"
 
   # Turn the fans up.
   echo 255 > /sys/devices/platform/pwm-fan/hwmon/hwmon?/pwm1

@@ -485,6 +485,7 @@ cc_library(
 cc_test(
     name = "simplified_dynamics_test",
     srcs = ["simplified_dynamics_test.cc"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":simplified_dynamics",
         "//aos/testing:googletest",

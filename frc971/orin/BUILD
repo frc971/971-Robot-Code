@@ -134,10 +134,10 @@ cc_binary(
         "//frc971/orin:ycbcr",
         "//frc971/orin:ycbcr422",
         "//frc971/vision:vision_fbs",
-        "@arm64_debian_sysroot//:argus",
-        "@arm64_debian_sysroot//:egl",
-        "@arm64_debian_sysroot//:eglstream",
-        "@arm64_debian_sysroot//:nvbufsurface",
+        "@arm64_yocto_sysroot//:argus",
+        "@arm64_yocto_sysroot//:egl",
+        "@arm64_yocto_sysroot//:eglstream",
+        "@arm64_yocto_sysroot//:nvbufsurface",
     ],
 )
 

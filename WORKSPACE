@@ -331,12 +331,12 @@ llvm_toolchain(
     },
     standard_libraries = {
         "linux-x86_64": "libstdc++-12",
-        "linux-aarch64": "libstdc++-12",
+        "linux-aarch64": "libstdc++-11.4.0",
     },
     static_libstdcxx = False,
     sysroot = {
         "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
-        "linux-aarch64": "@arm64_debian_sysroot//:sysroot_files",
+        "linux-aarch64": "@arm64_yocto_sysroot//:sysroot_files",
     },
     target_toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
@@ -452,6 +452,13 @@ http_archive(
     build_file = "@//:compilers/amd64_debian_rootfs.BUILD",
     sha256 = "ceaf7e3fd4af04aca2ff0d55c94ce30c2b45d1136b0e81e9be5ebc1003f96052",
     url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.zst",
+)
+
+http_archive(
+    name = "arm64_yocto_sysroot",
+    build_file = "@//:compilers/orin_debian_rootfs.BUILD",
+    sha256 = "cca7404f1750e443547c35e8e8665e003927398c66101bc33073809f5c66dc2c",
+    url = "https://software.frc971.org/Build-Dependencies/2024-09-22-arm64-yocto-orin-sysroot.tar.zst",
 )
 
 # Generated with:

@@ -1,3 +1,5 @@
+# This is a generated file based on the sysroot
+
 filegroup(
     name = "sysroot_files",
     srcs = {{ SYSROOT_SRCS }},

@@ -95,13 +95,13 @@ def cc_toolchain_config(
         ),
         "linux-aarch64": (
             "clang-aarch64-linux",
-            "aarch64-unknown-linux-gnu",
+            "aarch64-poky-linux",
             "aarch64",
             "glibc_unknown",
             "clang",
-            "clang",
             "glibc_unknown",
             "aarch64-linux-gnu",
+            "aarch64-poky-linux",
         ),
         "linux-armv7": (
             "clang-armv7-linux",
@@ -171,6 +171,8 @@ def cc_toolchain_config(
         "--target=" + target_system_name,
         "-lm",
         "-no-canonical-prefixes",
+        "-L{}".format(sysroot_path + "usr/lib/aarch64-poky-linux/11.4.0/"),
+        "-L{}".format(sysroot_path + "usr/lib/aarch64-poky-linux/"),
     ] + resource_dir
     link_libs = []
 
@@ -308,6 +310,10 @@ def cc_toolchain_config(
                 sysroot_path + "/usr/include/" + multiarch + "/c++/" + libstdcxx_version,
                 "-isystem",
                 sysroot_path + "/usr/include/c++/" + libstdcxx_version + "/backward",
+                "-isystem",
+                sysroot_path + "/usr/include/c++/" + libstdcxx_version + "/" + multiarch,
+                "-isystem",
+                sysroot_path + "/usr/lib/glib-2.0/include/"
             ] + common_include_flags)
         else:
             fail("Invalid standard_libary: " + standard_library)
