@@ -677,6 +677,34 @@ class TestSwervePhysics(unittest.TestCase):
         self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS2, 0], 0.0)
         self.assertAlmostEqual(Xdot[dynamics.VELOCITY_STATE_OMEGAS3, 0], 0.0)
 
+    def test_constant_torque(self):
+        """Tests that the robot exerts the same amount of torque no matter the orientation"""
+        steer_I = numpy.reshape(numpy.array([(i % 2) * 20 for i in range(8)]),
+                                (8, 1))
+
+        X = utils.state_vector(velocity=numpy.array([[0.0], [0.0]]),
+                               omega=0.0,
+                               module_angles=[
+                                   3 * numpy.pi / 4.0, -3 * numpy.pi / 4.0,
+                                   -numpy.pi / 4.0, numpy.pi / 4.0
+                               ],
+                               drive_wheel_velocity=1.0)
+        Xdot = self.swerve_full_dynamics(X, steer_I, skip_compare=True)
+
+        X_rot = utils.state_vector(velocity=numpy.array([[0.0], [0.0]]),
+                                   omega=0.0,
+                                   theta=numpy.pi,
+                                   module_angles=[
+                                       3 * numpy.pi / 4.0, -3 * numpy.pi / 4.0,
+                                       -numpy.pi / 4.0, numpy.pi / 4.0
+                                   ],
+                                   drive_wheel_velocity=1.0)
+        Xdot_rot = self.swerve_full_dynamics(X_rot, steer_I, skip_compare=True)
+
+        self.assertGreater(Xdot[dynamics.STATE_OMEGA, 0], 0.0)
+        self.assertAlmostEquals(Xdot[dynamics.STATE_OMEGA, 0],
+                                Xdot_rot[dynamics.STATE_OMEGA, 0])
+
 
 if __name__ == "__main__":
     unittest.main()

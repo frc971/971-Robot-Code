@@ -182,12 +182,28 @@ class PhysicsDebug(object):
         print(result.t.shape)
         xdot = numpy.zeros(result.y.shape)
         print("shape", xdot.shape)
+
+        U_control = numpy.zeros((8, 1))
+
+        for i in range(numpy.shape(result.t)[0]):
+            U_control = numpy.hstack((
+                U_control,
+                numpy.reshape(
+                    calc_I(result.t[i], result.y[:, i]),
+                    (8, 1),
+                ),
+            ))
+
+        U_control = numpy.delete(U_control, 0, 1)
+
         for i in range(xdot.shape[1]):
-            xdot[:, i] = self.swerve_physics(result.y[:, i], self.I)[:, 0]
+            xdot[:, i] = self.swerve_physics(result.y[:, i],
+                                             U_control[:, i])[:, 0]
 
         for i in range(2):
             print(f"For t {i * 0.005}")
-            self.print_state(self.swerve_physics, self.I, result.y[:, i])
+            self.print_state(self.swerve_physics, U_control[:, i], result.y[:,
+                                                                            i])
 
         def ev(fn, Y):
             return [fn(Y[:, i], self.I)[0, 0] for i in range(Y.shape[1])]
@@ -217,7 +233,7 @@ class PhysicsDebug(object):
                         label=f'steering_accel{i}')
             axs[i].legend()
 
-        fig, axs = pylab.subplots(3)
+        fig, axs = pylab.subplots(4)
         axs[0].plot(result.t, result.y[3, :], label="drive_velocity0")
         axs[0].plot(result.t, result.y[7, :], label="drive_velocity1")
         axs[0].plot(result.t, result.y[11, :], label="drive_velocity2")
@@ -226,6 +242,7 @@ class PhysicsDebug(object):
 
         axs[1].plot(result.t, result.y[20, :], label="vy")
         axs[1].plot(result.t, result.y[21, :], label="omega")
+        axs[1].plot(result.t, result.y[18, :], label="theta")
         axs[1].plot(result.t, xdot[20, :], label="ay")
         axs[1].plot(result.t, xdot[21, :], label="alpha")
         axs[1].legend()
@@ -239,22 +256,18 @@ class PhysicsDebug(object):
         axs[2].legend()
 
         pylab.figure()
-        U_control = numpy.zeros((8, 1))
-
-        for i in range(numpy.shape(result.t)[0]):
-            U_control = numpy.hstack((
-                U_control,
-                numpy.reshape(
-                    calc_I(result.t[i], result.y[:, i]),
-                    (8, 1),
-                ),
-            ))
-
-        U_control = numpy.delete(U_control, 0, 1)
 
         pylab.plot(result.t, U_control[0, :], label="Is0")
         pylab.plot(result.t, U_control[1, :], label="Id0")
         pylab.legend()
+
+        F_plot = numpy.array([
+            self.F[0](result.y[:, i], U_control[:, i])
+            for i in range(result.y[0, :].size)
+        ])
+        axs[3].plot(result.t, F_plot[:, 0], label="force_x0")
+        axs[3].plot(result.t, F_plot[:, 1], label="force_y0")
+        axs[3].legend()
 
         pylab.show()
 

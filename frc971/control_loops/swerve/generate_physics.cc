@@ -1015,14 +1015,18 @@ class SwerveSimulation {
     mul_dense_dense(R(add(theta_, result.thetas)),
                     DenseMatrix(2, 1, {result.full.Fwx, result.Fwy}),
                     result.full.F);
-    result.full.torque = force_cross(result.mounting_location, result.full.F);
+
+    DenseMatrix rotated_mounting_location = DenseMatrix(2, 1);
+    mul_dense_dense(R(theta_), result.mounting_location,
+                    rotated_mounting_location);
+    result.full.torque = force_cross(rotated_mounting_location, result.full.F);
 
     result.direct.F = DenseMatrix(2, 1);
     mul_dense_dense(R(add(theta_, result.thetas)),
                     DenseMatrix(2, 1, {result.direct.Fwx, result.Fwy}),
                     result.direct.F);
     result.direct.torque =
-        force_cross(result.mounting_location, result.direct.F);
+        force_cross(rotated_mounting_location, result.direct.F);
 
     VLOG(1);
     VLOG(1) << "full torque = " << result.full.torque->__str__();

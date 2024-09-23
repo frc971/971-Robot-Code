@@ -189,7 +189,7 @@ def full_module_physics(coefficients: dict, Rtheta, module_index: int,
 
     F = Rthetaplusthetas @ jax.numpy.array([Fwx, Fwy])
 
-    torque = force_cross(mounting_location, F)
+    torque = force_cross(Rtheta @ mounting_location, F)
 
     X_dot_contribution = jax.numpy.hstack((jax.numpy.zeros(
         (4, )), ) * (module_index) + (jax.numpy.array([
@@ -288,7 +288,7 @@ def velocity_module_physics(coefficients: dict, Rtheta, module_index: int,
 
     F = Rthetaplusthetas @ jax.numpy.array([Fwx, Fwy])
 
-    torque = force_cross(mounting_location, F)
+    torque = force_cross(Rtheta @ mounting_location, F)
 
     X_dot_contribution = jax.numpy.hstack((jax.numpy.zeros(
         (2, )), ) * (module_index) + (jax.numpy.array([
