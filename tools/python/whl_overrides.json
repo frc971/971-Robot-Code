@@ -63,6 +63,10 @@
         "sha256": "6dc882d355e1e98a5d1a148d6323679dc47c9a5792939b9de72615aa4737eb0b",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/etils-1.5.2-py3-none-any.whl"
     },
+    "flashbax==0.1.2": {
+        "sha256": "ac50b2580808ce63787da0ae240db14986e3404ade98a33335e6d7a5efe84859",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/flashbax-0.1.2-py3-none-any.whl"
+    },
     "flask==3.0.3": {
         "sha256": "34e815dfaa43340d1d15a5c3a02b8476004037eb4840b34910c6e21679d288f3",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/flask-3.0.3-py3-none-any.whl"
@@ -142,6 +146,10 @@
     "jaxlib==0.4.30": {
         "sha256": "f74a6b0e09df4b5e2ee399ebb9f0e01190e26e84ccb0a758fadb516415c07f18",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jaxlib-0.4.30-cp39-cp39-manylinux2014_x86_64.whl"
+    },
+    "jaxtyping==0.2.34": {
+        "sha256": "2f81fb6d1586e497a6ea2d28c06dcab37b108a096cbb36ea3fe4fa2e1c1f32e5",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jaxtyping-0.2.34-py3-none-any.whl"
     },
     "jinja2==3.1.4": {
         "sha256": "bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d",
@@ -442,6 +450,10 @@
     "tqdm==4.66.5": {
         "sha256": "90279a3770753eafc9194a0364852159802111925aa30eb3f9d85b0e805ac7cd",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tqdm-4.66.5-py3-none-any.whl"
+    },
+    "typeguard==2.13.3": {
+        "sha256": "5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/typeguard-2.13.3-py3-none-any.whl"
     },
     "typing_extensions==4.12.2": {
         "sha256": "04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d",

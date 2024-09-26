@@ -25,9 +25,13 @@ glog
 bokeh
 tabulate
 
+flask
+
 casadi>=3.6.6
 
+# ML libraries
 jax[cuda12]
+jaxtyping
 optax
 flax
 clu
@@ -38,4 +42,5 @@ setuptools==74.0.0
 tensorflow
 tensorflow_datasets
 
-flask
+# Experience buffer for reinforcement learning
+flashbax
