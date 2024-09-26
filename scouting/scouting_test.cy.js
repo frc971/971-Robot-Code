@@ -119,7 +119,7 @@ function submitDataScouting(
       ' Ended Match; stageType: kHARMONY, trapNote: false, spotlight: false '
     );
   // Ensure that the penalties action is only submitted once.
-  cy.get('#review_data li').contains('Penalties').should('have.length', 1);
+  cy.get('#review_data li:contains("Penalties")').its('length').should('eq', 1);
 
   clickButton('Submit');
   headerShouldBe(teamNumber + ' Success ');
