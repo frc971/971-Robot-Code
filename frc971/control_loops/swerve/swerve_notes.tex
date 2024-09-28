@@ -376,7 +376,7 @@ The linear velocity differential equations are relatively simple as it's just ad
 \end{gather}
 However, the angular velocity differential equation is more complicated as the torque added per module varies in sign
 \begin{gather}
-    \ddot{\theta} = \frac{\Sigma\left(\harpoon{r} \times \harpoon{F}_{mod}\right) + \tau_{d}}{J_{robot}}
+    \ddot{\theta} = \frac{\Sigma\left(R\left(\theta\right)\harpoon{r} \times \harpoon{F}_{mod}\right) + \tau_{d}}{J_{robot}}
 \end{gather}
 \subsection{Simplified longitudinal dynamics}
 
