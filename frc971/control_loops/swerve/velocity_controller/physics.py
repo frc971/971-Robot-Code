@@ -1,8 +1,8 @@
-import jax
+import jax, numpy
 from functools import partial
-from frc971.control_loops.swerve import dynamics
 from absl import logging
-from frc971.control_loops.swerve import jax_dynamics
+from frc971.control_loops.swerve import dynamics, jax_dynamics
+from frc971.control_loops.python import controls
 from flax.typing import PRNGKey
 
 
@@ -15,11 +15,12 @@ class Problem(object):
         self.num_outputs = num_outputs
         self.num_goals = num_goals
         self.action_limit = action_limit
+        self.dt = 0.005
 
     def integrate_dynamics(self, X: jax.typing.ArrayLike,
                            U: jax.typing.ArrayLike):
         m = 2  # RK4 steps per interval
-        dt = 0.005 / m
+        dt = self.dt / m
 
         def iteration(i, X):
             weights = jax.numpy.array([[0.0, 0.5, 0.5, 1.0],
@@ -76,19 +77,29 @@ class TurretProblem(Problem):
                          num_outputs=1,
                          num_goals=2,
                          action_limit=30.0)
+        self.A = numpy.matrix([[1., 0.00456639], [0., 0.83172142]])
+        self.B = numpy.matrix([[0.00065992], [0.25610763]])
+
+        self.Q = numpy.matrix([[2.77777778, 0.], [0., 0.01]])
+        self.R = numpy.matrix([[0.00694444]])
+
+        # Compute the optimal LQR cost + controller.
+        self.F, self.P = controls.dlqr(self.A,
+                                       self.B,
+                                       self.Q,
+                                       self.R,
+                                       optimal_cost_function=True)
 
     def xdot(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike):
-        A = jax.numpy.array([[0., 1.], [0., -36.85154548]])
-        B = jax.numpy.array([[0.], [56.08534375]])
+        A_continuous = jax.numpy.array([[0., 1.], [0., -36.85154548]])
+        B_continuous = jax.numpy.array([[0.], [56.08534375]])
 
-        return A @ X + B @ U
+        return A_continuous @ X + B_continuous @ U
 
     def cost(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
              goal: jax.typing.ArrayLike):
-        Q = jax.numpy.array([[2.77777778, 0.], [0., 0.01]])
-        R = jax.numpy.array([[0.00694444]])
-
-        return (X - goal).T @ Q @ (X - goal) + U.T @ R @ U
+        return (X - goal).T @ jax.numpy.array(
+            self.Q) @ (X - goal) + U.T @ jax.numpy.array(self.R) @ U
 
     def random_states(self, rng: PRNGKey, dimensions=None):
         rng1, rng2 = jax.random.split(rng)
