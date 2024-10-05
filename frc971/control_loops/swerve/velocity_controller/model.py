@@ -97,9 +97,10 @@ class SquashedGaussianMLPActor(nn.Module):
     @nn.compact
     def __call__(self,
                  observation: ArrayLike,
+                 R: ArrayLike,
                  deterministic: bool = False,
                  rng: PRNGKey | None = None):
-        x = observation
+        x = jax.numpy.hstack((observation, R))
         # Apply the dense layers
         for i, hidden_size in enumerate(self.hidden_sizes):
             x = nn.Dense(
@@ -168,9 +169,10 @@ class MLPQFunction(nn.Module):
     activation: Callable = nn.activation.tanh
 
     @nn.compact
-    def __call__(self, observation: ArrayLike, action: ArrayLike):
+    def __call__(self, observation: ArrayLike, R: ArrayLike,
+                 action: ArrayLike):
         # Estimate Q with a simple multi layer dense network.
-        x = jax.numpy.hstack((observation, action))
+        x = jax.numpy.hstack((observation, R, action))
         for i, hidden_size in enumerate(self.hidden_sizes):
             x = nn.Dense(
                 name=f'denselayer{i}',
@@ -222,25 +224,29 @@ class TrainState(flax.struct.PyTreeNode):
                  rng: PRNGKey,
                  params: flax.core.FrozenDict[str, typing.Any],
                  observation: ArrayLike,
+                 R: ArrayLike,
                  deterministic: bool = False):
         return self.pi_apply_fn(
             {'params': params['pi']},
             observation=self.problem.unwrap_angles(observation),
+            R=R,
             deterministic=deterministic,
             rngs={'pi': rng})
 
     def q1_apply(self, params: flax.core.FrozenDict[str, typing.Any],
-                 observation: ArrayLike, action: ArrayLike):
+                 observation: ArrayLike, R: ArrayLike, action: ArrayLike):
         return self.q1_apply_fn(
             {'params': params['q1']},
             observation=self.problem.unwrap_angles(observation),
+            R=R,
             action=action)
 
     def q2_apply(self, params: flax.core.FrozenDict[str, typing.Any],
-                 observation: ArrayLike, action: ArrayLike):
+                 observation: ArrayLike, R: ArrayLike, action: ArrayLike):
         return self.q2_apply_fn(
             {'params': params['q2']},
             observation=self.problem.unwrap_angles(observation),
+            R=R,
             action=action)
 
     def pi_apply_gradients(self, step: int, grads):
@@ -389,15 +395,18 @@ def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
         pi_params = pi.init(
             pi_rng,
             observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
         )['params']
         q1_params = q1.init(
             q1_rng,
             observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
             action=jax.numpy.ones([problem.num_outputs]),
         )['params']
         q2_params = q2.init(
             q2_rng,
             observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
             action=jax.numpy.ones([problem.num_outputs]),
         )['params']
 

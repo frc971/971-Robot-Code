@@ -122,6 +122,7 @@ def generate_data(step=None):
         return state.q1_apply(
             state.params,
             observation=state.problem.unwrap_angles(jax.numpy.array([X, Y])),
+            R=goal,
             action=jax.numpy.array([0.]),
         )[0]
 
@@ -129,11 +130,12 @@ def generate_data(step=None):
         return state.q2_apply(
             state.params,
             observation=state.problem.unwrap_angles(jax.numpy.array([X, Y])),
+            R=goal,
             action=jax.numpy.array([0.]),
         )[0]
 
     def lqr_cost(X, Y):
-        x = jax.numpy.array([X, Y])
+        x = jax.numpy.array([X, Y]) - goal
         return -x.T @ jax.numpy.array(P) @ x
 
     def compute_q(params, x, y):
@@ -143,11 +145,13 @@ def generate_data(step=None):
             state.q1_apply(
                 params,
                 observation=X,
+                R=goal,
                 action=jax.numpy.array([0.]),
             )[0],
             state.q2_apply(
                 params,
                 observation=X,
+                R=goal,
                 action=jax.numpy.array([0.]),
             )[0])
 
@@ -160,10 +164,6 @@ def generate_data(step=None):
                                                                      grid_Y)
     lqr_cost_grid = jax.vmap(jax.vmap(lqr_cost))(grid_X, grid_Y)
 
-    # TODO(austin): Stuff to figure out:
-    # 3: Make it converge faster.  Use both GPUs better?
-    # 4: Can we feed in a reference position and get it to learn to stabilize there?
-
     # Now compute the two controller surfaces.
     def compute_lqr_U(X, Y):
         x = jax.numpy.array([X, Y])
@@ -174,6 +174,7 @@ def generate_data(step=None):
         U, _, _, _ = state.pi_apply(rng,
                                     state.params,
                                     observation=state.problem.unwrap_angles(x),
+                                    R=goal,
                                     deterministic=True)
         return U[0]
 
@@ -190,15 +191,18 @@ def generate_data(step=None):
         U, _, _, _ = state.pi_apply(rng,
                                     params,
                                     observation=state.problem.unwrap_angles(X),
+                                    R=goal,
                                     deterministic=True)
         U_lqr = F @ (goal - X_lqr)
 
         cost = jax.numpy.minimum(
             state.q1_apply(params,
                            observation=state.problem.unwrap_angles(X),
+                           R=goal,
                            action=U),
             state.q2_apply(params,
                            observation=state.problem.unwrap_angles(X),
+                           R=goal,
                            action=U))
 
         U_plot = data.U.at[i, :].set(U)
@@ -289,24 +293,32 @@ class Plotter(object):
         self.fig0, self.axs0 = pylab.subplots(3)
         self.fig0.supxlabel('Seconds')
 
-        self.x, = self.axs0[0].plot([], [], label="x")
-        self.v, = self.axs0[0].plot([], [], label="v")
-        self.x_lqr, = self.axs0[0].plot([], [], label="x_lqr")
-        self.v_lqr, = self.axs0[0].plot([], [], label="v_lqr")
+        self.axs_velocity = self.axs0[0].twinx()
 
-        self.axs0[0].set_ylabel('Velocity')
+        self.x, = self.axs0[0].plot([], [], label="x")
+        self.x_lqr, = self.axs0[0].plot([], [], label="x_lqr")
+
+        self.axs0[0].set_ylabel('Position')
         self.axs0[0].legend()
+        self.axs0[0].grid()
+
+        self.v, = self.axs_velocity.plot([], [], label="v", color='C2')
+        self.v_lqr, = self.axs_velocity.plot([], [], label="v_lqr", color='C3')
+        self.axs_velocity.set_ylabel('Velocity')
+        self.axs_velocity.legend()
 
         self.uaxis, = self.axs0[1].plot([], [], label="U")
         self.uaxis_lqr, = self.axs0[1].plot([], [], label="U_lqr")
 
         self.axs0[1].set_ylabel('Amps')
         self.axs0[1].legend()
+        self.axs0[1].grid()
 
         self.costaxis, = self.axs0[2].plot([], [], label="cost")
         self.costlqraxis, = self.axs0[2].plot([], [], label="cost lqr")
         self.axs0[2].set_ylabel('Cost')
         self.axs0[2].legend()
+        self.axs0[2].grid()
 
         self.costfig = pyplot.figure(figsize=pyplot.figaspect(0.5))
         self.cost3dax = [
@@ -348,6 +360,9 @@ class Plotter(object):
 
         self.axs0[0].relim()
         self.axs0[0].autoscale_view()
+
+        self.axs_velocity.relim()
+        self.axs_velocity.autoscale_view()
 
         self.axs0[1].relim()
         self.axs0[1].autoscale_view()

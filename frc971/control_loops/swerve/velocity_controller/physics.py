@@ -44,20 +44,16 @@ class Problem(object):
     def unwrap_angles(self, X: jax.typing.ArrayLike):
         return X
 
-    @partial(jax.jit, static_argnums=[0])
     def xdot(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike):
         raise NotImplemented("xdot not implemented")
 
-    @partial(jax.jit, static_argnums=[0])
     def cost(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
              goal: jax.typing.ArrayLike):
         raise NotImplemented("cost not implemented")
 
-    @partial(jax.jit, static_argnums=[0])
     def random_states(self, rng: PRNGKey, dimensions=None):
         raise NotImplemented("random_states not implemented")
 
-    #@partial(jax.jit, static_argnums=[0])
     def random_actions(self, rng: PRNGKey, dimensions=None):
         """Produces a uniformly random action in the action space."""
         return jax.random.uniform(
@@ -66,6 +62,10 @@ class Problem(object):
             minval=-self.action_limit,
             maxval=self.action_limit,
         )
+
+    def random_goals(self, rng: PRNGKey, dimensions=None):
+        """Produces a random goal in the goal space."""
+        raise NotImplemented("random_states not implemented")
 
 
 class TurretProblem(Problem):
@@ -77,22 +77,19 @@ class TurretProblem(Problem):
                          num_goals=2,
                          action_limit=30.0)
 
-    @partial(jax.jit, static_argnums=[0])
     def xdot(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike):
         A = jax.numpy.array([[0., 1.], [0., -36.85154548]])
         B = jax.numpy.array([[0.], [56.08534375]])
 
         return A @ X + B @ U
 
-    @partial(jax.jit, static_argnums=[0])
     def cost(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
              goal: jax.typing.ArrayLike):
         Q = jax.numpy.array([[2.77777778, 0.], [0., 0.01]])
         R = jax.numpy.array([[0.00694444]])
 
-        return X.T @ Q @ X + U.T @ R @ U
+        return (X - goal).T @ Q @ (X - goal) + U.T @ R @ U
 
-    #@partial(jax.jit, static_argnums=[0])
     def random_states(self, rng: PRNGKey, dimensions=None):
         rng1, rng2 = jax.random.split(rng)
 
@@ -103,3 +100,12 @@ class TurretProblem(Problem):
              jax.random.uniform(rng2, (dimensions or FLAGS.num_agents, 1),
                                 minval=-10.0,
                                 maxval=10.0)))
+
+    def random_goals(self, rng: PRNGKey, dimensions=None):
+        """Produces a random goal in the goal space."""
+        return jax.numpy.hstack((
+            jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 1),
+                               minval=-0.1,
+                               maxval=0.1),
+            jax.numpy.zeros((dimensions or FLAGS.num_agents, 1)),
+        ))

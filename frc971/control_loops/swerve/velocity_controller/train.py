@@ -121,18 +121,22 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     actions = data['actions']
     rewards = data['rewards']
     observations2 = data['observations2']
+    R = data['goals']
 
     # Compute the ending actions from the current network.
     action2, logp_pi2, _, _ = state.pi_apply(rng=rng,
                                              params=params,
-                                             observation=observations2)
+                                             observation=observations2,
+                                             R=R)
 
     # Compute target network Q values
     q1_pi_target = state.q1_apply(state.target_params,
                                   observation=observations2,
+                                  R=R,
                                   action=action2)
     q2_pi_target = state.q2_apply(state.target_params,
                                   observation=observations2,
+                                  R=R,
                                   action=action2)
     q_pi_target = jax.numpy.minimum(q1_pi_target, q2_pi_target)
 
@@ -143,8 +147,8 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
                                            (q_pi_target - alpha * logp_pi2))
 
     # Compute the starting Q values from the Q network being optimized.
-    q1 = state.q1_apply(params, observation=observations1, action=actions)
-    q2 = state.q2_apply(params, observation=observations1, action=actions)
+    q1 = state.q1_apply(params, observation=observations1, R=R, action=actions)
+    q2 = state.q2_apply(params, observation=observations1, R=R, action=actions)
 
     # Mean squared error loss against Bellman backup
     q1_loss = ((q1 - bellman_backup)**2).mean()
@@ -169,17 +173,21 @@ def compute_batched_loss_q(state: TrainState, rng: PRNGKey, params,
 def compute_loss_pi(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     """Computes the Soft Actor-Critic loss for pi."""
     observations1 = data['observations1']
+    R = data['goals']
     # TODO(austin): We've got differentiable policy and differentiable physics.  Can we use those here?  Have Q learn the future, not the current step?
 
     # Compute the action
     pi, logp_pi, _, _ = state.pi_apply(rng=rng,
                                        params=params,
-                                       observation=observations1)
+                                       observation=observations1,
+                                       R=R)
     q1_pi = state.q1_apply(jax.lax.stop_gradient(params),
                            observation=observations1,
+                           R=R,
                            action=pi)
     q2_pi = state.q2_apply(jax.lax.stop_gradient(params),
                            observation=observations1,
+                           R=R,
                            action=pi)
 
     # And compute the Q of that action.
@@ -286,12 +294,7 @@ def collect_experience(state: TrainState, replay_buffer_state,
         state.problem.random_states(initialization_rng, FLAGS.num_agents),
         state.sharding)
 
-    R = jax.numpy.hstack((
-        jax.random.uniform(goal_rng, (FLAGS.num_agents, 1),
-                           minval=-0.1,
-                           maxval=0.1),
-        jax.numpy.zeros((FLAGS.num_agents, 1)),
-    ))
+    R = state.problem.random_goals(goal_rng, FLAGS.num_agents)
 
     def loop(i, val):
         """Runs 1 step of our simulation."""
@@ -309,6 +312,7 @@ def collect_experience(state: TrainState, replay_buffer_state,
                 rng=action_rng,
                 params=state.params,
                 observation=observation,
+                R=R,
                 deterministic=False)
             return pi_action
 
@@ -336,6 +340,7 @@ def collect_experience(state: TrainState, replay_buffer_state,
                 'observations2': observation2,
                 'actions': pi_action,
                 'rewards': reward.reshape((FLAGS.num_agents, 1)),
+                'goals': R,
             })
 
         return observation2, pi_rng, replay_buffer_state
@@ -432,6 +437,8 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
         jax.numpy.zeros((problem.num_outputs, )),
         'rewards':
         jax.numpy.zeros((1, )),
+        'goals':
+        jax.numpy.zeros((problem.num_states, )),
     })
 
     replay_buffer_state_sharding = nn.get_sharding(replay_buffer_state,
