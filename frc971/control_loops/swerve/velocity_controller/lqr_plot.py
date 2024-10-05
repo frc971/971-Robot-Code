@@ -94,13 +94,13 @@ def generate_data(step=None):
     grid_X = jax.numpy.array(grid_X)
     grid_Y = jax.numpy.array(grid_Y)
     # Load the training state.
-    physics_constants = jax_dynamics.Coefficients()
+    problem = physics.TurretProblem()
 
     rng = jax.random.key(0)
     rng, init_rng = jax.random.split(rng)
 
-    state = create_train_state(init_rng, physics_constants,
-                               FLAGS.q_learning_rate, FLAGS.pi_learning_rate)
+    state = create_train_state(init_rng, problem, FLAGS.q_learning_rate,
+                               FLAGS.pi_learning_rate)
 
     state = restore_checkpoint(state, FLAGS.workdir)
     if step is not None and state.step == step:
@@ -121,15 +121,15 @@ def generate_data(step=None):
     def compute_q1(X, Y):
         return state.q1_apply(
             state.params,
-            unwrap_angles(jax.numpy.array([X, Y])),
-            jax.numpy.array([0.]),
+            observation=state.problem.unwrap_angles(jax.numpy.array([X, Y])),
+            action=jax.numpy.array([0.]),
         )[0]
 
     def compute_q2(X, Y):
         return state.q2_apply(
             state.params,
-            unwrap_angles(jax.numpy.array([X, Y])),
-            jax.numpy.array([0.]),
+            observation=state.problem.unwrap_angles(jax.numpy.array([X, Y])),
+            action=jax.numpy.array([0.]),
         )[0]
 
     def lqr_cost(X, Y):
@@ -137,18 +137,18 @@ def generate_data(step=None):
         return -x.T @ jax.numpy.array(P) @ x
 
     def compute_q(params, x, y):
-        X = unwrap_angles(jax.numpy.array([x, y]))
+        X = state.problem.unwrap_angles(jax.numpy.array([x, y]))
 
         return jax.numpy.minimum(
             state.q1_apply(
                 params,
-                X,
-                jax.numpy.array([0.]),
+                observation=X,
+                action=jax.numpy.array([0.]),
             )[0],
             state.q2_apply(
                 params,
-                X,
-                jax.numpy.array([0.]),
+                observation=X,
+                action=jax.numpy.array([0.]),
             )[0])
 
     cost_grid1 = jax.vmap(jax.vmap(compute_q1))(grid_X, grid_Y)
@@ -173,7 +173,7 @@ def generate_data(step=None):
         x = jax.numpy.array([X, Y])
         U, _, _, _ = state.pi_apply(rng,
                                     state.params,
-                                    observation=unwrap_angles(x),
+                                    observation=state.problem.unwrap_angles(x),
                                     deterministic=True)
         return U[0]
 
@@ -189,12 +189,17 @@ def generate_data(step=None):
 
         U, _, _, _ = state.pi_apply(rng,
                                     params,
-                                    observation=unwrap_angles(X),
+                                    observation=state.problem.unwrap_angles(X),
                                     deterministic=True)
         U_lqr = F @ (goal - X_lqr)
 
-        cost = jax.numpy.minimum(state.q1_apply(params, unwrap_angles(X), U),
-                                 state.q2_apply(params, unwrap_angles(X), U))
+        cost = jax.numpy.minimum(
+            state.q1_apply(params,
+                           observation=state.problem.unwrap_angles(X),
+                           action=U),
+            state.q2_apply(params,
+                           observation=state.problem.unwrap_angles(X),
+                           action=U))
 
         U_plot = data.U.at[i, :].set(U)
         U_lqr_plot = data.U_lqr.at[i, :].set(U_lqr)
@@ -206,8 +211,8 @@ def generate_data(step=None):
         X = A @ X + B @ U
         X_lqr = A @ X_lqr + B @ U_lqr
 
-        reward = data.reward - physics.state_cost(X, U, goal)
-        reward_lqr = data.reward_lqr - physics.state_cost(X_lqr, U_lqr, goal)
+        reward = data.reward - state.problem.cost(X, U, goal)
+        reward_lqr = data.reward_lqr - state.problem.cost(X_lqr, U_lqr, goal)
 
         return X, X_lqr, data._replace(
             t=t,
@@ -230,10 +235,10 @@ def generate_data(step=None):
     X, X_lqr, data, params = integrate(
         Data(
             t=jax.numpy.zeros((FLAGS.horizon, )),
-            X=jax.numpy.zeros((FLAGS.horizon, physics.NUM_STATES)),
-            X_lqr=jax.numpy.zeros((FLAGS.horizon, physics.NUM_STATES)),
-            U=jax.numpy.zeros((FLAGS.horizon, physics.NUM_OUTPUTS)),
-            U_lqr=jax.numpy.zeros((FLAGS.horizon, physics.NUM_OUTPUTS)),
+            X=jax.numpy.zeros((FLAGS.horizon, state.problem.num_states)),
+            X_lqr=jax.numpy.zeros((FLAGS.horizon, state.problem.num_states)),
+            U=jax.numpy.zeros((FLAGS.horizon, state.problem.num_outputs)),
+            U_lqr=jax.numpy.zeros((FLAGS.horizon, state.problem.num_outputs)),
             cost=jax.numpy.zeros((FLAGS.horizon, 1)),
             cost_lqr=jax.numpy.zeros((FLAGS.horizon, 1)),
             q1_grid=cost_grid1,
