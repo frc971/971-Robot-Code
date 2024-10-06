@@ -785,7 +785,16 @@ class SwerveSimulation {
         },
         &result_py);
 
-    DefineVector2dFunction(
+    DefineVector2dVelocityFunction(
+        "F_vel",
+        "Returns the force on the wheel in absolute coordinates based on the "
+        "velocity controller",
+        [](const Module &m, int dimension) {
+          return ccode(*m.direct.F.get(dimension, 0));
+        },
+        &result_py);
+
+    DefineVector2dVelocityFunction(
         "mounting_location",
         "Returns the mounting location of wheel in robot coordinates",
         [](const Module &m, int dimension) {
@@ -832,6 +841,34 @@ class SwerveSimulation {
     result_py->emplace_back(absl::Substitute("# $0.", documentation));
     result_py->emplace_back(absl::Substitute("def $0(i, X, U):", name));
     WriteCasadiVariables(result_py);
+    result_py->emplace_back(
+        absl::Substitute("    result = casadi.SX.sym('$0', 2, 1)", name));
+    for (size_t m = 0; m < kNumModules; ++m) {
+      if (m == 0) {
+        result_py->emplace_back("    if i == 0:");
+      } else {
+        result_py->emplace_back(absl::Substitute("    elif i == $0:", m));
+      }
+      for (int j = 0; j < 2; ++j) {
+        result_py->emplace_back(absl::Substitute("        result[$0, 0] = $1",
+                                                 j, scalar_fn(modules_[m], j)));
+      }
+    }
+    result_py->emplace_back("    else:");
+    result_py->emplace_back(
+        "        raise ValueError(\"Invalid module number\")");
+    result_py->emplace_back(absl::Substitute(
+        "    return casadi.Function('$0', [X, U], [result])", name));
+  }
+
+  void DefineVector2dVelocityFunction(
+      std::string_view name, std::string_view documentation,
+      std::function<std::string(const Module &, int)> scalar_fn,
+      std::vector<std::string> *result_py) {
+    result_py->emplace_back("");
+    result_py->emplace_back(absl::Substitute("# $0.", documentation));
+    result_py->emplace_back(absl::Substitute("def $0(i, X, U):", name));
+    WriteCasadiVelocityVariables(result_py);
     result_py->emplace_back(
         absl::Substitute("    result = casadi.SX.sym('$0', 2, 1)", name));
     for (size_t m = 0; m < kNumModules; ++m) {
