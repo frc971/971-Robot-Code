@@ -469,3 +469,21 @@ cc_test(
         "@com_google_absl//absl/log",
     ],
 )
+
+cc_library(
+    name = "inverse_kinematics",
+    hdrs = ["inverse_kinematics.h"],
+    deps = [
+        ":simplified_dynamics",
+        "//aos/util:math",
+    ],
+)
+
+cc_test(
+    name = "inverse_kinematics_test",
+    srcs = ["inverse_kinematics_test.cc"],
+    deps = [
+        ":inverse_kinematics",
+        "//aos/testing:googletest",
+    ],
+)
