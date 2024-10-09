@@ -368,3 +368,28 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "simplified_dynamics",
+    hdrs = ["simplified_dynamics.h"],
+    deps = [
+        ":auto_diff_jacobian",
+        ":eigen_dynamics",
+        ":motors",
+        "//aos/util:math",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "simplified_dynamics_test",
+    srcs = ["simplified_dynamics_test.cc"],
+    deps = [
+        ":simplified_dynamics",
+        "//aos/testing:googletest",
+        "//aos/time",
+        "//frc971/control_loops:jacobian",
+        "@com_google_absl//absl/log",
+    ],
+)
