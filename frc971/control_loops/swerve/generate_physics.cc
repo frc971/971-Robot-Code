@@ -336,7 +336,7 @@ class SwerveSimulation {
     result_h.emplace_back(
         "inline constexpr size_t kNumVelocityStates = "
         "static_cast<size_t>(VelocityStates::kNumStates);");
-    result_h.emplace_back("struct Inputs {");
+    result_h.emplace_back("struct InputStates {");
     result_h.emplace_back("enum States {");
     result_h.emplace_back("  kIs0 = 0,");
     result_h.emplace_back("  kId0 = 1,");
@@ -351,7 +351,7 @@ class SwerveSimulation {
     result_h.emplace_back("};");
     result_h.emplace_back(
         "inline constexpr size_t kNumInputs = "
-        "static_cast<size_t>(Inputs::kNumInputs);");
+        "static_cast<size_t>(InputStates::kNumInputs);");
     result_h.emplace_back("");
     result_h.emplace_back("// Returns the derivative of our state vector");
     result_h.emplace_back(
@@ -361,29 +361,6 @@ class SwerveSimulation {
         "1>> X,");
     result_h.emplace_back(
         "    Eigen::Ref<const Eigen::Matrix<double, kNumInputs, 1>> U);");
-    result_h.emplace_back("");
-    result_h.emplace_back(
-        "Eigen::Matrix<double, kNumVelocityStates, 1> ToVelocityState(");
-    result_h.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
-        "1>> X);");
-    result_h.emplace_back("");
-    result_h.emplace_back(
-        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> FromVelocityState(");
-    result_h.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> "
-        "X);");
-    result_h.emplace_back("");
-    result_h.emplace_back(
-        "inline Eigen::Matrix<double, kNumVelocityStates, 1> VelocityPhysics(");
-    result_h.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> "
-        "X,");
-    result_h.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumInputs, 1>> U) {");
-    result_h.emplace_back(
-        "  return ToVelocityState(SwervePhysics(FromVelocityState(X), U));");
-    result_h.emplace_back("}");
     result_h.emplace_back("");
     result_h.emplace_back("}  // namespace frc971::control_loops::swerve");
     result_h.emplace_back("");
@@ -396,40 +373,6 @@ class SwerveSimulation {
     result_cc.emplace_back("#include <cmath>");
     result_cc.emplace_back("");
     result_cc.emplace_back("namespace frc971::control_loops::swerve {");
-    result_cc.emplace_back("");
-    result_cc.emplace_back(
-        "Eigen::Matrix<double, kNumVelocityStates, 1> ToVelocityState(");
-    result_cc.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumFullDynamicsStates, "
-        "1>> X) {");
-    result_cc.emplace_back(
-        "    Eigen::Matrix<double, kNumVelocityStates, 1> velocity;");
-    const std::vector<std::string_view> velocity_states = {
-        "kThetas0", "kOmegas0", "kThetas1", "kOmegas1", "kThetas2", "kOmegas2",
-        "kThetas3", "kOmegas3", "kTheta",   "kVx",      "kVy",      "kOmega"};
-    for (const std::string_view velocity_state : velocity_states) {
-      result_cc.emplace_back(absl::StrFormat(
-          "  velocity(VelocityStates::%s) = X(FullDynamicsStates::%s);",
-          velocity_state, velocity_state));
-    }
-    result_cc.emplace_back("  return velocity;");
-    result_cc.emplace_back("}");
-    result_cc.emplace_back("");
-    result_cc.emplace_back(
-        "Eigen::Matrix<double, kNumFullDynamicsStates, 1> FromVelocityState(");
-    result_cc.emplace_back(
-        "    Eigen::Ref<const Eigen::Matrix<double, kNumVelocityStates, 1>> X) "
-        "{");
-    result_cc.emplace_back(
-        "    Eigen::Matrix<double, kNumFullDynamicsStates, 1> full;");
-    result_cc.emplace_back("    full.setZero();");
-    for (const std::string_view velocity_state : velocity_states) {
-      result_cc.emplace_back(absl::StrFormat(
-          "  full(FullDynamicsStates::%s) = X(VelocityStates::%s);",
-          velocity_state, velocity_state));
-    }
-    result_cc.emplace_back("  return full;");
-    result_cc.emplace_back("}");
     result_cc.emplace_back("");
     result_cc.emplace_back(
         "Eigen::Matrix<double, kNumFullDynamicsStates, 1> SwervePhysics(");
