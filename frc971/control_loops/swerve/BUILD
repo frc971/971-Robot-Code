@@ -400,6 +400,34 @@ cc_binary(
 )
 
 cc_library(
+    name = "linearization_utils",
+    hdrs = ["linearization_utils.h"],
+)
+
+cc_library(
+    name = "linearized_controller",
+    hdrs = ["linearized_controller.h"],
+    deps = [
+        ":eigen_dynamics",
+        ":linearization_utils",
+        "//frc971/control_loops:c2d",
+        "//frc971/control_loops:dlqr",
+        "//frc971/control_loops:jacobian",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "linearized_controller_test",
+    srcs = ["linearized_controller_test.cc"],
+    deps = [
+        ":linearized_controller",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "auto_diff_jacobian",
     hdrs = ["auto_diff_jacobian.h"],
     target_compatible_with = ["@platforms//os:linux"],
