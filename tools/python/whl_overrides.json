@@ -3,6 +3,38 @@
         "sha256": "526a04eadab8b4ee719ce68f204172ead1027549089702d99b9059f129ff1308",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/absl_py-2.1.0-py3-none-any.whl"
     },
+    "aim==3.24.0": {
+        "sha256": "1789bcc9edf69ae90bb18a6f3fa4862095b8020eadc7e5e0e93ba4f242250947",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/aim-3.24.0-cp39-cp39-manylinux_2_28_x86_64.whl"
+    },
+    "aim_ui==3.24.0": {
+        "sha256": "b62fbcb0ea4b036b99985d4c649220cdbe4523f05408dcb2324ffc7e4539f321",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/aim_ui-3.24.0-py3-none-any.whl"
+    },
+    "aimrecords==0.0.7": {
+        "sha256": "b9276890891c5fd68f817e20fc5d466a80c01e22fa468eaa979331448a75d601",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/aimrecords-0.0.7-py2.py3-none-any.whl"
+    },
+    "aimrocks==0.5.2": {
+        "sha256": "e6a79076d669dbf221442399da893baff6c1549031edbb5d556042d1b9b6525c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/aimrocks-0.5.2-cp39-cp39-manylinux_2_24_x86_64.whl"
+    },
+    "aiofiles==24.1.0": {
+        "sha256": "b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/aiofiles-24.1.0-py3-none-any.whl"
+    },
+    "alembic==1.13.3": {
+        "sha256": "908e905976d15235fae59c9ac42c4c5b75cfcefe3d27c0fbf7ae15a37715d80e",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/alembic-1.13.3-py3-none-any.whl"
+    },
+    "annotated_types==0.7.0": {
+        "sha256": "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/annotated_types-0.7.0-py3-none-any.whl"
+    },
+    "anyio==4.6.0": {
+        "sha256": "c7d2e9d63e31599eeb636c8c5c03a7e108d73b345f064f1c19fdc87b79036a9a",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/anyio-4.6.0-py3-none-any.whl"
+    },
     "array_record==0.5.1": {
         "sha256": "9922862216a9d3be76fdc27968af1ec0ea20f986329998ba45b0f01ee3e646fa",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/array_record-0.5.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
@@ -10,6 +42,10 @@
     "astunparse==1.6.3": {
         "sha256": "c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/astunparse-1.6.3-py2.py3-none-any.whl"
+    },
+    "base58==2.0.1": {
+        "sha256": "447adc750d6b642987ffc6d397ecd15a799852d5f6a1d308d384500243825058",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/base58-2.0.1-py3-none-any.whl"
     },
     "blinker==1.8.2": {
         "sha256": "1779309f71bf239144b9399d06ae925637cf6634cf6bd131104184531bf67c01",
@@ -19,6 +55,18 @@
         "sha256": "c6f33817f866fc67fbeb5df79cd13a8bb592c05c591f3fd7f4f22b824f7afa01",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/bokeh-3.4.3-py3-none-any.whl"
     },
+    "boto3==1.35.27": {
+        "sha256": "3da139ca038032e92086e26d23833b557f0c257520162bfd3d6f580bf8032c86",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/boto3-1.35.27-py3-none-any.whl"
+    },
+    "botocore==1.35.27": {
+        "sha256": "c299c70b5330a8634e032883ce8a72c2c6d9fdbc985d8191199cb86b92e7cbbd",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/botocore-1.35.27-py3-none-any.whl"
+    },
+    "cachetools==5.5.0": {
+        "sha256": "02134e8439cdc2ffb62023ce1debca2944c3f289d66bb17ead3ab3dede74b292",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cachetools-5.5.0-py3-none-any.whl"
+    },
     "casadi==3.6.6": {
         "sha256": "cc3594b348f306018b142638d0a8c4026f80e996b4e9798fc504899256a7b029",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/casadi-3.6.6-cp39-none-manylinux2014_x86_64.whl"
@@ -26,6 +74,10 @@
     "certifi==2024.8.30": {
         "sha256": "922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/certifi-2024.8.30-py3-none-any.whl"
+    },
+    "cffi==1.17.1": {
+        "sha256": "cdf5ce3acdfd1661132f2a9c19cac174758dc2352bfe37d98aa7512c6b7178b3",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cffi-1.17.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "charset_normalizer==3.3.2": {
         "sha256": "b261ccdec7821281dade748d088bb6e9b69e6d15b30652b74cbbac25e280b796",
@@ -51,6 +103,10 @@
         "sha256": "68a32389b06b82c2fdd68276148d7b9275b5f5cf13e5417e4252f6d1a34f72a2",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/contourpy-1.3.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
+    "cryptography==43.0.1": {
+        "sha256": "511f4273808ab590912a93ddb4e3914dfd8a388fed883361b02dea3791f292e1",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cryptography-43.0.1-cp39-abi3-manylinux_2_28_x86_64.whl"
+    },
     "cycler==0.12.1": {
         "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cycler-0.12.1-py3-none-any.whl"
@@ -62,6 +118,18 @@
     "etils==1.5.2": {
         "sha256": "6dc882d355e1e98a5d1a148d6323679dc47c9a5792939b9de72615aa4737eb0b",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/etils-1.5.2-py3-none-any.whl"
+    },
+    "exceptiongroup==1.2.2": {
+        "sha256": "3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/exceptiongroup-1.2.2-py3-none-any.whl"
+    },
+    "fastapi==0.115.0": {
+        "sha256": "17ea427674467486e997206a5ab25760f6b09e069f099b96f5b55a32fb6f1631",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/fastapi-0.115.0-py3-none-any.whl"
+    },
+    "filelock==3.16.1": {
+        "sha256": "2082e5703d51fbf98ea75855d9d5527e33d8ff23099bec374a134febee6946b0",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/filelock-3.16.1-py3-none-any.whl"
     },
     "flashbax==0.1.2": {
         "sha256": "ac50b2580808ce63787da0ae240db14986e3404ade98a33335e6d7a5efe84859",
@@ -103,9 +171,17 @@
         "sha256": "b32482794a366b5366a32c92a9a9201b107821889935a02b3e51f6b432ea84ed",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/google_pasta-0.2.0-py3-none-any.whl"
     },
+    "greenlet==3.1.1": {
+        "sha256": "63e4844797b975b9af3a3fb8f7866ff08775f5426925e1e0bbcfe7932059a12c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/greenlet-3.1.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl"
+    },
     "grpcio==1.66.1": {
         "sha256": "48b0d92d45ce3be2084b92fb5bae2f64c208fea8ceed7fccf6a7b524d3c4942e",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/grpcio-1.66.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "h11==0.14.0": {
+        "sha256": "e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/h11-0.14.0-py3-none-any.whl"
     },
     "h5py==3.11.0": {
         "sha256": "67462d0669f8f5459529de179f7771bd697389fcb3faab54d63bf788599a48ea",
@@ -155,6 +231,10 @@
         "sha256": "bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jinja2-3.1.4-py3-none-any.whl"
     },
+    "jmespath==1.0.1": {
+        "sha256": "02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/jmespath-1.0.1-py3-none-any.whl"
+    },
     "keras==3.5.0": {
         "sha256": "d37a3c623935713473ceb25241b52bce9d1e0ff5b36e5d0f6f47ed55f8500c9a",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/keras-3.5.0-py3-none-any.whl"
@@ -166,6 +246,10 @@
     "libclang==18.1.1": {
         "sha256": "c533091d8a3bbf7460a00cb6c1a71da93bffe148f172c7d03b1c31fbf8aa2a0b",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/libclang-18.1.1-py2.py3-none-manylinux2010_x86_64.whl"
+    },
+    "mako==1.3.5": {
+        "sha256": "260f1dbc3a519453a9c856dedfe4beb4e50bd5a26d96386cb6c80856556bb91a",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Mako-1.3.5-py3-none-any.whl"
     },
     "markdown==3.7": {
         "sha256": "7eb6df5690b81a1d7942992c97fad2938e956e79df20cbc6186e9c3a77b1c803",
@@ -331,6 +415,18 @@
         "sha256": "5eb499c081ff03ffed8edaa115325edf46eda7f89b53793a4b70dfc72180cc31",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pycairo-1.26.1-cp39-cp39-manylinux_2_34_x86_64.whl"
     },
+    "pycparser==2.22": {
+        "sha256": "c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pycparser-2.22-py3-none-any.whl"
+    },
+    "pydantic==2.9.2": {
+        "sha256": "f048cec7b26778210e28a0459867920654d48e5e62db0958433636cde4254f12",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pydantic-2.9.2-py3-none-any.whl"
+    },
+    "pydantic_core==2.23.4": {
+        "sha256": "1278e0d324f6908e872730c9102b0112477a7f7cf88b308e4fc36ce1bdb6d58c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pydantic_core-2.23.4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
     "pygments==2.18.0": {
         "sha256": "b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pygments-2.18.0-py3-none-any.whl"
@@ -371,9 +467,17 @@
         "sha256": "70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/requests-2.32.3-py3-none-any.whl"
     },
+    "restrictedpython==7.2": {
+        "sha256": "139cb41da6e57521745a566d05825f7a09e6a884f7fa922568cff0a70b84ce6b",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/RestrictedPython-7.2-py3-none-any.whl"
+    },
     "rich==13.8.0": {
         "sha256": "2e85306a063b9492dffc86278197a60cbece75bcb766022f3436f567cae11bdc",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/rich-13.8.0-py3-none-any.whl"
+    },
+    "s3transfer==0.10.2": {
+        "sha256": "eca1c20de70a39daee580aef4986996620f365c4e0fda6a86100231d62f1bf69",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/s3transfer-0.10.2-py3-none-any.whl"
     },
     "scipy==1.13.1": {
         "sha256": "637e98dcf185ba7f8e663e122ebf908c4702420477ae52a04f9908707456ba4d",
@@ -390,6 +494,18 @@
     "six==1.16.0": {
         "sha256": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/six-1.16.0-py2.py3-none-any.whl"
+    },
+    "sniffio==1.3.1": {
+        "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/sniffio-1.3.1-py3-none-any.whl"
+    },
+    "sqlalchemy==2.0.35": {
+        "sha256": "890da8cd1941fa3dab28c5bac3b9da8502e7e366f895b3b8e500896f12f94d11",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/SQLAlchemy-2.0.35-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "starlette==0.38.6": {
+        "sha256": "4517a1409e2e73ee4951214ba012052b9e16f60e90d73cfb06192c19203bbb05",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/starlette-0.38.6-py3-none-any.whl"
     },
     "sympy==1.13.2": {
         "sha256": "c51d75517712f1aed280d4ce58506a4a88d635d6b5dd48b39102a7ae1f3fcfe9",
@@ -463,9 +579,13 @@
         "sha256": "9068bc196136463f5245e51efda838afa15aaeca9903f49050dfa2679db4d252",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tzdata-2024.1-py2.py3-none-any.whl"
     },
-    "urllib3==2.2.2": {
-        "sha256": "a448b2f64d686155468037e1ace9f2d2199776e17f0a46610480d311f73e3472",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-2.2.2-py3-none-any.whl"
+    "urllib3==1.26.20": {
+        "sha256": "0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-1.26.20-py2.py3-none-any.whl"
+    },
+    "uvicorn==0.30.6": {
+        "sha256": "65fd46fe3fda5bdc1b03b94eb634923ff18cd35b2f084813ea79d1f103f711b5",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/uvicorn-0.30.6-py3-none-any.whl"
     },
     "validators==0.34.0": {
         "sha256": "c804b476e3e6d3786fa07a30073a4ef694e617805eb1946ceee3fe5a9b8b1321",
@@ -474,6 +594,10 @@
     "watchdog==5.0.2": {
         "sha256": "726eef8f8c634ac6584f86c9c53353a010d9f311f6c15a034f3800a7a891d941",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/watchdog-5.0.2-py3-none-manylinux2014_x86_64.whl"
+    },
+    "websockets==13.1": {
+        "sha256": "6d2aad13a200e5934f5a6767492fb07151e1de1d6079c003ab31e1823733ae79",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/websockets-13.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "werkzeug==3.0.4": {
         "sha256": "02c9eb92b7d6c06f31a782811505d2157837cea66aaede3e217c7c27c039476c",

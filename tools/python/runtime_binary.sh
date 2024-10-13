@@ -27,6 +27,9 @@ for path in ${PYTHONPATH//:/ }; do
     LD_LIBRARY_PATH+=":${path}/../gtk_runtime/lib/x86_64-linux-gnu"
     LD_LIBRARY_PATH+=":${path}/../gtk_runtime/usr/lib/x86_64-linux-gnu"
     LD_LIBRARY_PATH+=":${path}/../gtk_runtime/usr/lib"
+    if [[ -e "${path}/../pip_deps_nvidia_nccl_cu12" ]]; then
+      LD_LIBRARY_PATH+=":${path}/../pip_deps_nvidia_nccl_cu12/site-packages/nvidia/nccl/lib/"
+    fi
     export LD_LIBRARY_PATH
     break
   fi
