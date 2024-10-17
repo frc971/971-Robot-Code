@@ -60,6 +60,7 @@ class TestSwervePhysics(unittest.TestCase):
         Xdot = self.position_swerve_full_dynamics(X, U)
         Xdot_jax = jax_dynamics.full_dynamics(self.coefficients, X[:, 0], U[:,
                                                                             0])
+        self.assertEqual(Xdot.shape[0], Xdot_jax.shape[0])
 
         self.assertLess(
             numpy.linalg.norm(Xdot[:, 0] - Xdot_jax),
@@ -71,6 +72,9 @@ class TestSwervePhysics(unittest.TestCase):
         velocity_physics = self.velocity_swerve_physics(X_velocity, U)
         velocity_physics_jax = jax_dynamics.velocity_dynamics(
             self.coefficients, X_velocity[:, 0], U[:, 0])
+
+        self.assertEqual(velocity_physics.shape[0],
+                         velocity_physics_jax.shape[0])
 
         self.assertLess(
             numpy.linalg.norm(velocity_physics[:, 0] - velocity_physics_jax),
