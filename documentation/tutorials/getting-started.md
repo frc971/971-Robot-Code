@@ -80,7 +80,7 @@ These steps assume you are on the most up to date debian linux, however they can
 
 ## Running the Code
 
-To run the code you'll need to download the repository from [gerrit](https://software.frc971.org/gerrit/admin/repos/971-Robot-Code), make sure to select ssh and not http.
+To run the code you'll need to download the repository from [gerrit](https://software.frc971.org/gerrit/admin/repos/971-Robot-Code), make sure to select ssh and not http. Click on SSH, and clone with commit message hook. Copy the command, and run it locally on terminal.
 To learn more about git, open a terminal and run `man git`, or see [git(1)](https://manpages.debian.org/buster/git-man/git.1.en.html) (especially the NOTES section).
 
 Once the repositoy is selected you'll want to make sure to configure your name, email on git. This is required to ensure you're following the [contributing guidelines above](#contributing). You can do this by running these following commands:
