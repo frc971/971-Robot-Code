@@ -113,7 +113,6 @@ class SquashedGaussianMLPActor(nn.Module):
         mu = nn.Dense(
             features=self.action_space,
             name='mu',
-            kernel_init=nn.initializers.zeros,
         )(x)
 
         log_std_layer = nn.Dense(features=self.action_space,
@@ -180,8 +179,10 @@ class MLPQFunction(nn.Module):
             )(x)
             x = self.activation(x)
 
-        x = nn.Dense(name=f'q', features=1,
-                     kernel_init=nn.initializers.zeros)(x)
+        x = nn.Dense(
+            name=f'q',
+            features=1,
+        )(x)
 
         return x
 
