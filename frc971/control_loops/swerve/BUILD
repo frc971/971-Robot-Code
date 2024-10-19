@@ -227,11 +227,15 @@ py_test(
     main = "physics_test.py",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
+        ":casadi_velocity_mpc_lib",
         ":dynamics",
         ":jax_dynamics",
         ":physics_test_utils",
+        "@pip//absl_py",
         "@pip//casadi",
+        "@pip//matplotlib",
         "@pip//numpy",
+        "@pip//pygobject",
         "@pip//scipy",
     ],
 )
@@ -248,12 +252,28 @@ py_test(
     main = "physics_test.py",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
+        ":casadi_velocity_mpc_lib",
         ":dynamics",
         ":jax_dynamics",
         ":physics_test_utils",
+        "@pip//absl_py",
+        "@pip//casadi",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
+    ],
+)
+
+py_binary(
+    name = "casadi_velocity_mpc_lib",
+    srcs = [
+        "casadi_velocity_mpc_lib.py",
+    ],
+    deps = [
+        ":dynamics",
         "@pip//casadi",
         "@pip//numpy",
-        "@pip//scipy",
     ],
 )
 
@@ -263,9 +283,8 @@ py_binary(
         "casadi_velocity_mpc.py",
     ],
     deps = [
-        ":dynamics",
+        ":casadi_velocity_mpc_lib",
         "@pip//absl_py",
-        "@pip//casadi",
         "@pip//matplotlib",
         "@pip//numpy",
         "@pip//pygobject",

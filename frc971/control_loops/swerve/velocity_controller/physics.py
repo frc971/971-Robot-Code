@@ -1,7 +1,7 @@
 import jax, numpy
 from functools import partial
 from absl import logging
-from frc971.control_loops.swerve import dynamics, jax_dynamics
+from frc971.control_loops.swerve import jax_dynamics
 from frc971.control_loops.python import controls
 from flax.typing import PRNGKey
 

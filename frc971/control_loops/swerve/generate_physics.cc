@@ -70,6 +70,7 @@ namespace frc971::control_loops::swerve {
 // State per module.
 struct Module {
   DenseMatrix mounting_location;
+  DenseMatrix rotated_mounting_location;
 
   RCP<const Symbol> Is;
 
@@ -938,6 +939,14 @@ class SwerveSimulation {
         },
         &result_py);
 
+    DefineVector2dVelocityFunction(
+        "rotated_mounting_location",
+        "Returns the mounting location of wheel in field aligned coordinates",
+        [](const Module &m, int dimension) {
+          return ccode(*m.rotated_mounting_location.get(dimension, 0));
+        },
+        &result_py);
+
     DefineScalarFunction(
         "Ms", "Returns the self aligning moment of the ith wheel",
         [this](const Module &m) {
@@ -1189,17 +1198,18 @@ class SwerveSimulation {
                     DenseMatrix(2, 1, {result.full.Fwx, result.Fwy}),
                     result.full.F);
 
-    DenseMatrix rotated_mounting_location = DenseMatrix(2, 1);
+    result.rotated_mounting_location = DenseMatrix(2, 1);
     mul_dense_dense(R(theta_), result.mounting_location,
-                    rotated_mounting_location);
-    result.full.torque = force_cross(rotated_mounting_location, result.full.F);
+                    result.rotated_mounting_location);
+    result.full.torque =
+        force_cross(result.rotated_mounting_location, result.full.F);
 
     result.direct.F = DenseMatrix(2, 1);
     mul_dense_dense(R(add(theta_, result.thetas)),
                     DenseMatrix(2, 1, {result.direct.Fwx, result.Fwy}),
                     result.direct.F);
     result.direct.torque =
-        force_cross(rotated_mounting_location, result.direct.F);
+        force_cross(result.rotated_mounting_location, result.direct.F);
 
     VLOG(1);
     VLOG(1) << "full torque = " << result.full.torque->__str__();

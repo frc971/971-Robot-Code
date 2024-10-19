@@ -20,7 +20,6 @@ from frc971.control_loops.swerve import jax_dynamics
 from functools import partial
 import flashbax
 from jax.experimental.ode import odeint
-from frc971.control_loops.swerve import dynamics
 import orbax.checkpoint
 from frc971.control_loops.swerve.velocity_controller.model import *
 from frc971.control_loops.swerve.velocity_controller.physics import *
