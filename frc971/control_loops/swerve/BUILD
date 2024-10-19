@@ -144,12 +144,14 @@ run_binary(
         "dynamics.cc",
         "dynamics.h",
         "dynamics.py",
+        "dynamics_constants.py",
     ],
     args = [
         "--output_base=$(BINDIR)/",
         "--cc_output_path=$(location :dynamics.cc)",
         "--h_output_path=$(location :dynamics.h)",
         "--casadi_py_output_path=$(location :dynamics.py)",
+        "--constants_output_path=$(location :dynamics_constants.py)",
     ],
     tool = ":generate_physics",
 )
@@ -204,10 +206,10 @@ py_library(
 py_library(
     name = "jax_dynamics",
     srcs = [
+        "dynamics_constants.py",
         "jax_dynamics.py",
     ],
     deps = [
-        ":dynamics",
         "//frc971/control_loops/python:controls",
         "@pip//jax",
     ],

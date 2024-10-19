@@ -32,6 +32,8 @@ ABSL_FLAG(std::string, h_output_path, "",
           "Path to write generated header code to");
 ABSL_FLAG(std::string, casadi_py_output_path, "",
           "Path to write casadi generated py code to");
+ABSL_FLAG(std::string, constants_output_path, "",
+          "Path to write constants python code to");
 ABSL_FLAG(double, caster, 0.01, "Caster in meters for the module.");
 
 ABSL_FLAG(bool, symbolic, false, "If true, write everything out symbolically.");
@@ -625,6 +627,80 @@ class SwerveSimulation {
     }
   }
 
+  void WriteConstantsFile(std::string_view path) {
+    std::vector<std::string> result_py;
+
+    // Write out the header.
+    result_py.emplace_back("#!/usr/bin/env python3");
+    result_py.emplace_back("");
+
+    WriteConstants(&result_py);
+
+    aos::util::WriteStringToFileOrDie(path, absl::StrJoin(result_py, "\n"));
+  }
+
+  void WriteConstants(std::vector<std::string> *result_py) {
+    result_py->emplace_back(absl::Substitute("WHEEL_RADIUS = $0", ccode(*rw_)));
+    result_py->emplace_back(
+        absl::Substitute("ROBOT_WIDTH = $0", ccode(*robot_width_)));
+    result_py->emplace_back(absl::Substitute("CASTER = $0", ccode(*caster_)));
+    result_py->emplace_back("STATE_THETAS0 = 0");
+    result_py->emplace_back("STATE_THETAD0 = 1");
+    result_py->emplace_back("STATE_OMEGAS0 = 2");
+    result_py->emplace_back("STATE_OMEGAD0 = 3");
+    result_py->emplace_back("STATE_THETAS1 = 4");
+    result_py->emplace_back("STATE_THETAD1 = 5");
+    result_py->emplace_back("STATE_OMEGAS1 = 6");
+    result_py->emplace_back("STATE_OMEGAD1 = 7");
+    result_py->emplace_back("STATE_THETAS2 = 8");
+    result_py->emplace_back("STATE_THETAD2 = 9");
+    result_py->emplace_back("STATE_OMEGAS2 = 10");
+    result_py->emplace_back("STATE_OMEGAD2 = 11");
+    result_py->emplace_back("STATE_THETAS3 = 12");
+    result_py->emplace_back("STATE_THETAD3 = 13");
+    result_py->emplace_back("STATE_OMEGAS3 = 14");
+    result_py->emplace_back("STATE_OMEGAD3 = 15");
+    result_py->emplace_back("STATE_X = 16");
+    result_py->emplace_back("STATE_Y = 17");
+    result_py->emplace_back("STATE_THETA = 18");
+    result_py->emplace_back("STATE_VX = 19");
+    result_py->emplace_back("STATE_VY = 20");
+    result_py->emplace_back("STATE_OMEGA = 21");
+    result_py->emplace_back("STATE_FX = 22");
+    result_py->emplace_back("STATE_FY = 23");
+    result_py->emplace_back("STATE_MOMENT = 24");
+    result_py->emplace_back("NUM_STATES = 25");
+    result_py->emplace_back("");
+    result_py->emplace_back("VELOCITY_STATE_THETAS0 = 0");
+    result_py->emplace_back("VELOCITY_STATE_OMEGAS0 = 1");
+    result_py->emplace_back("VELOCITY_STATE_THETAS1 = 2");
+    result_py->emplace_back("VELOCITY_STATE_OMEGAS1 = 3");
+    result_py->emplace_back("VELOCITY_STATE_THETAS2 = 4");
+    result_py->emplace_back("VELOCITY_STATE_OMEGAS2 = 5");
+    result_py->emplace_back("VELOCITY_STATE_THETAS3 = 6");
+    result_py->emplace_back("VELOCITY_STATE_OMEGAS3 = 7");
+    result_py->emplace_back("VELOCITY_STATE_THETA = 8");
+    result_py->emplace_back("VELOCITY_STATE_VX = 9");
+    result_py->emplace_back("VELOCITY_STATE_VY = 10");
+    result_py->emplace_back("VELOCITY_STATE_OMEGA = 11");
+    // result_py->emplace_back("VELOCITY_STATE_FX = 16");
+    // result_py->emplace_back("VELOCITY_STATE_FY = 17");
+    // result_py->emplace_back("VELOCITY_STATE_MOMENT = 18");
+    result_py->emplace_back("NUM_VELOCITY_STATES = 12");
+    result_py->emplace_back("");
+    result_py->emplace_back("");
+    result_py->emplace_back("# Is = STEER_CURRENT_COUPLING_FACTOR * Id");
+    result_py->emplace_back(absl::Substitute(
+        "STEER_CURRENT_COUPLING_FACTOR = $0",
+        ccode(*(neg(
+            mul(div(Gs_, Kts_),
+                mul(div(Ktd_, mul(Gd_, rw_)),
+                    neg(mul(add(neg(wb_), mul(add(rs_, rp_),
+                                              sub(integer(1), div(rb1_, rp_)))),
+                            div(rw_, rb2_))))))))));
+    result_py->emplace_back("");
+  }
+
   // Writes the physics out to the provided .cc and .h path.
   void WriteCasadi(std::string_view py_path) {
     std::vector<std::string> result_py;
@@ -634,54 +710,9 @@ class SwerveSimulation {
     result_py.emplace_back("");
     result_py.emplace_back("import casadi, numpy");
     result_py.emplace_back("");
-    result_py.emplace_back(absl::Substitute("WHEEL_RADIUS = $0", ccode(*rw_)));
-    result_py.emplace_back(
-        absl::Substitute("ROBOT_WIDTH = $0", ccode(*robot_width_)));
-    result_py.emplace_back(absl::Substitute("CASTER = $0", ccode(*caster_)));
-    result_py.emplace_back("STATE_THETAS0 = 0");
-    result_py.emplace_back("STATE_THETAD0 = 1");
-    result_py.emplace_back("STATE_OMEGAS0 = 2");
-    result_py.emplace_back("STATE_OMEGAD0 = 3");
-    result_py.emplace_back("STATE_THETAS1 = 4");
-    result_py.emplace_back("STATE_THETAD1 = 5");
-    result_py.emplace_back("STATE_OMEGAS1 = 6");
-    result_py.emplace_back("STATE_OMEGAD1 = 7");
-    result_py.emplace_back("STATE_THETAS2 = 8");
-    result_py.emplace_back("STATE_THETAD2 = 9");
-    result_py.emplace_back("STATE_OMEGAS2 = 10");
-    result_py.emplace_back("STATE_OMEGAD2 = 11");
-    result_py.emplace_back("STATE_THETAS3 = 12");
-    result_py.emplace_back("STATE_THETAD3 = 13");
-    result_py.emplace_back("STATE_OMEGAS3 = 14");
-    result_py.emplace_back("STATE_OMEGAD3 = 15");
-    result_py.emplace_back("STATE_X = 16");
-    result_py.emplace_back("STATE_Y = 17");
-    result_py.emplace_back("STATE_THETA = 18");
-    result_py.emplace_back("STATE_VX = 19");
-    result_py.emplace_back("STATE_VY = 20");
-    result_py.emplace_back("STATE_OMEGA = 21");
-    result_py.emplace_back("STATE_FX = 22");
-    result_py.emplace_back("STATE_FY = 23");
-    result_py.emplace_back("STATE_MOMENT = 24");
-    result_py.emplace_back("NUM_STATES = 25");
-    result_py.emplace_back("");
-    result_py.emplace_back("VELOCITY_STATE_THETAS0 = 0");
-    result_py.emplace_back("VELOCITY_STATE_OMEGAS0 = 1");
-    result_py.emplace_back("VELOCITY_STATE_THETAS1 = 2");
-    result_py.emplace_back("VELOCITY_STATE_OMEGAS1 = 3");
-    result_py.emplace_back("VELOCITY_STATE_THETAS2 = 4");
-    result_py.emplace_back("VELOCITY_STATE_OMEGAS2 = 5");
-    result_py.emplace_back("VELOCITY_STATE_THETAS3 = 6");
-    result_py.emplace_back("VELOCITY_STATE_OMEGAS3 = 7");
-    result_py.emplace_back("VELOCITY_STATE_THETA = 8");
-    result_py.emplace_back("VELOCITY_STATE_VX = 9");
-    result_py.emplace_back("VELOCITY_STATE_VY = 10");
-    result_py.emplace_back("VELOCITY_STATE_OMEGA = 11");
-    // result_py.emplace_back("VELOCITY_STATE_FX = 16");
-    // result_py.emplace_back("VELOCITY_STATE_FY = 17");
-    // result_py.emplace_back("VELOCITY_STATE_MOMENT = 18");
-    result_py.emplace_back("NUM_VELOCITY_STATES = 12");
-    result_py.emplace_back("");
+
+    WriteConstants(&result_py);
+
     result_py.emplace_back("def to_velocity_state(X):");
     result_py.emplace_back("    return numpy.array([");
     result_py.emplace_back("        [X[STATE_THETAS0, 0]],");
@@ -732,27 +763,6 @@ class SwerveSimulation {
                            "casadi.exp($1.0 * x))) * $0.0]))) / $0.0)",
                            kLogGain, kAbsGain));
     }
-    result_py.emplace_back("");
-    result_py.emplace_back("# Is = STEER_CURRENT_COUPLING_FACTOR * Id");
-    result_py.emplace_back(absl::Substitute(
-        "STEER_CURRENT_COUPLING_FACTOR = $0",
-        ccode(*(neg(
-            mul(div(Gs_, Kts_),
-                mul(div(Ktd_, mul(Gd_, rw_)),
-                    neg(mul(add(neg(wb_), mul(add(rs_, rp_),
-                                              sub(integer(1), div(rb1_, rp_)))),
-                            div(rw_, rb2_))))))))));
-    result_py.emplace_back("");
-    result_py.emplace_back("# Is = STEER_CURRENT_COUPLING_FACTOR * Id");
-    result_py.emplace_back(absl::Substitute(
-        "STEER_CURRENT_COUPLING_FACTOR = $0",
-        ccode(*(neg(
-            mul(div(Gs_, Kts_),
-                mul(div(Ktd_, mul(Gd_, rw_)),
-                    neg(mul(add(neg(wb_), mul(add(rs_, rp_),
-                                              sub(integer(1), div(rb1_, rp_)))),
-                            div(rw_, rb2_))))))))));
-    result_py.emplace_back("");
 
     result_py.emplace_back("# Returns the derivative of our state vector");
     result_py.emplace_back("# [thetas0, thetad0, omegas0, omegad0,");
@@ -1282,6 +1292,10 @@ int main(int argc, char **argv) {
   }
   if (!absl::GetFlag(FLAGS_casadi_py_output_path).empty()) {
     sim.WriteCasadi(absl::GetFlag(FLAGS_casadi_py_output_path));
+  }
+
+  if (!absl::GetFlag(FLAGS_constants_output_path).empty()) {
+    sim.WriteConstantsFile(absl::GetFlag(FLAGS_constants_output_path));
   }
 
   return 0;
