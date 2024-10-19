@@ -41,9 +41,12 @@ setuptools==74.0.0
 
 tensorflow
 tensorflow_datasets
+tensorflow_probability
+tf_keras
 
 # Experience buffer for reinforcement learning
 flashbax
 
 # Experiment tracking
 aim
+plotly
