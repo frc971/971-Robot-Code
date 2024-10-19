@@ -566,7 +566,9 @@ void ConfigRemapper::MakeRemappedConfig() {
 
     // Add the schema if it doesn't exist.
     if (schema_map.find(c->type()->string_view()) == schema_map.end()) {
-      CHECK(c->has_schema());
+      if (!c->has_schema()) {
+        LOG(FATAL) << "Could not find schema for " << c->type()->string_view();
+      }
       schema_map.insert(std::make_pair(c->type()->string_view(),
                                        RecursiveCopyFlatBuffer(c->schema())));
     }
