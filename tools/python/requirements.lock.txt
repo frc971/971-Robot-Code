@@ -20,6 +20,7 @@ absl-py==2.1.0 \
     #   tensorflow
     #   tensorflow-datasets
     #   tensorflow-metadata
+    #   tensorflow-probability
 aim==3.24.0 \
     --hash=sha256:1266fac2453f2d356d2e39c98d15b46ba7a71ecab14cdaa6eaa6d390f5add898 \
     --hash=sha256:1322659dcecb701c264f5067375c74811faf3514bb316e1ca1e53b9de6b62766 \
@@ -400,6 +401,10 @@ click==8.1.7 \
     #   mkdocs
     #   tensorflow-datasets
     #   uvicorn
+cloudpickle==3.1.0 \
+    --hash=sha256:81a929b6e3c7335c863c771d673d105f02efdb89dfaba0c90495d1c64796601b \
+    --hash=sha256:fe11acda67f61aaaec473e3afe030feb131d78a43461b718185363384f1ba12e
+    # via tensorflow-probability
 clu==0.0.12 \
     --hash=sha256:0d183e7d25f7dd0700444510a264e24700e2f068bdabd199ed22866f7e54edba \
     --hash=sha256:f71eaa1afbd30f57f7709257ba7e1feb8ad5c1c3dcae3606672a138678bb3ce4
@@ -510,6 +515,10 @@ cycler==0.12.1 \
     --hash=sha256:85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30 \
     --hash=sha256:88bb128f02ba341da8ef447245a9e138fae777f6a23943da4540077d3601eb1c
     # via matplotlib
+decorator==5.1.1 \
+    --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
+    --hash=sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186
+    # via tensorflow-probability
 dm-tree==0.1.8 \
     --hash=sha256:054b461f8176f4bce7a21f7b1870f873a1ced3bdbe1282c816c550bb43c71fa6 \
     --hash=sha256:09964470f76a5201aff2e8f9b26842976de7889300676f927930f6285e256760 \
@@ -557,7 +566,9 @@ dm-tree==0.1.8 \
     --hash=sha256:ea9e59e0451e7d29aece402d9f908f2e2a80922bcde2ebfd5dcb07750fcbfee8 \
     --hash=sha256:f7ac31b9aecccb2c6e1ab29706f6ded3eba0c2c69c770322c9c685929c3d6afb \
     --hash=sha256:fa42a605d099ee7d41ba2b5fb75e21423951fd26e5d50583a00471238fb3021d
-    # via tensorflow-datasets
+    # via
+    #   tensorflow-datasets
+    #   tensorflow-probability
 etils[enp,epath,epy,etree]==1.5.2 \
     --hash=sha256:6dc882d355e1e98a5d1a148d6323679dc47c9a5792939b9de72615aa4737eb0b \
     --hash=sha256:ba6a3e1aff95c769130776aa176c11540637f5dd881f3b79172a5149b6b1c446
@@ -649,7 +660,9 @@ fsspec==2024.6.1 \
 gast==0.6.0 \
     --hash=sha256:52b182313f7330389f72b069ba00f174cfe2a06411099547288839c6cbafbd54 \
     --hash=sha256:88fc5300d32c7ac6ca7b515310862f71e6fdf2c029bbec7c66c0f5dd47b6b1fb
-    # via tensorflow
+    # via
+    #   tensorflow
+    #   tensorflow-probability
 ghp-import==2.1.0 \
     --hash=sha256:8337dd7b50877f163d4c0289bc1f1c7f127550241988d568c1db512c4324a619 \
     --hash=sha256:9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343
@@ -1335,6 +1348,7 @@ numpy==1.26.4 \
     #   tensorboard
     #   tensorflow
     #   tensorflow-datasets
+    #   tensorflow-probability
     #   tensorstore
 nvidia-cublas-cu12==12.6.1.4 \
     --hash=sha256:5dd125ece5469dbdceebe2e9536ad8fc4abd38aa394a7ace42fc8a930a1e81e3 \
@@ -1534,6 +1548,7 @@ packaging==24.1 \
     #   keras
     #   matplotlib
     #   mkdocs
+    #   plotly
     #   tensorboard
     #   tensorflow
 pandas==2.2.2 \
@@ -1666,6 +1681,10 @@ platformdirs==4.2.2 \
     # via
     #   mkdocs-get-deps
     #   yapf
+plotly==5.24.1 \
+    --hash=sha256:dbc8ac8339d248a4bcc36e08a5659bacfe1b079390b8953533f4eb22169b4bae \
+    --hash=sha256:f67073a1e637eb0dc3e46324d9d51e2fe76e9727c892dde64ddf1e1b51f29089
+    # via -r tools/python/requirements.txt
 promise==2.3 \
     --hash=sha256:dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0
     # via tensorflow-datasets
@@ -2079,6 +2098,7 @@ six==1.16.0 \
     #   python-dateutil
     #   tensorboard
     #   tensorflow
+    #   tensorflow-probability
 sniffio==1.3.1 \
     --hash=sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2 \
     --hash=sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc
@@ -2148,6 +2168,10 @@ tabulate==0.9.0 \
     --hash=sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c \
     --hash=sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f
     # via -r tools/python/requirements.txt
+tenacity==9.0.0 \
+    --hash=sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b \
+    --hash=sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539
+    # via plotly
 tensorboard==2.17.1 \
     --hash=sha256:253701a224000eeca01eee6f7e978aea7b408f60b91eb0babdb04e78947b773e
     # via tensorflow
@@ -2173,7 +2197,9 @@ tensorflow==2.17.0 \
     --hash=sha256:e8d26d6c24ccfb139db1306599257ca8f5cfe254ef2d023bfb667f374a17a64d \
     --hash=sha256:ee18b4fcd627c5e872eabb25092af6c808b6ec77948662c88fc5c89a60eb0211 \
     --hash=sha256:ef615c133cf4d592a073feda634ccbeb521a554be57de74f8c318d38febbeab5
-    # via -r tools/python/requirements.txt
+    # via
+    #   -r tools/python/requirements.txt
+    #   tf-keras
 tensorflow-datasets==4.9.3 \
     --hash=sha256:09cd60eccab0d5a9d15f53e76ee0f1b530ee5aa3665e42be621a4810d9fa5db6 \
     --hash=sha256:90390077dde2c9e4e240754ddfc5bb50b482946d421c8a34677c3afdb0463427
@@ -2199,6 +2225,9 @@ tensorflow-io-gcs-filesystem==0.37.1 \
 tensorflow-metadata==1.15.0 \
     --hash=sha256:cb84d8e159128aeae7b3f6013ccd7969c69d2e6d1a7b255dbfa6f5344d962986
     # via tensorflow-datasets
+tensorflow-probability==0.24.0 \
+    --hash=sha256:8c1774683e38359dbcaf3697e79b7e6a4e69b9c7b3679e78ee18f43e59e5759b
+    # via -r tools/python/requirements.txt
 tensorstore==0.1.64 \
     --hash=sha256:1a78aedbddccc09ea283b145496da03dbc7eb8693ae4e01074ed791d72b7eac2 \
     --hash=sha256:24a4cebaf9d0e75d494342948f68edc971d6bb90e23192ddf8d98397fb1ff3cb \
@@ -2231,6 +2260,10 @@ termcolor==2.4.0 \
     # via
     #   tensorflow
     #   tensorflow-datasets
+tf-keras==2.17.0 \
+    --hash=sha256:cc97717e4dc08487f327b0740a984043a9e0123c7a4e21206711669d3ec41c88 \
+    --hash=sha256:fda97c18da30da0f72a5a7e80f3eee343b09f4c206dad6c57c944fb2cd18560e
+    # via -r tools/python/requirements.txt
 toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f

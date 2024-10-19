@@ -36,8 +36,8 @@ absl.flags.DEFINE_float(
 
 absl.flags.DEFINE_float(
     'final_q_learning_rate',
-    default=0.00002,
-    help='Training learning rate.',
+    default=0.001,
+    help='Fraction of --q_learning_rate to reduce by by the end.',
 )
 
 absl.flags.DEFINE_float(
@@ -48,8 +48,8 @@ absl.flags.DEFINE_float(
 
 absl.flags.DEFINE_float(
     'final_pi_learning_rate',
-    default=0.00002,
-    help='Training learning rate.',
+    default=0.001,
+    help='Fraction of --pi_learning_rate to reduce by by the end.',
 )
 
 absl.flags.DEFINE_integer(
@@ -92,14 +92,15 @@ class SquashedGaussianMLPActor(nn.Module):
     activation: Callable = nn.activation.relu
 
     # Max action we can apply
-    action_limit: float = 30.0
+    action_limit: float = 1
 
     @nn.compact
     def __call__(self,
-                 observations: ArrayLike,
+                 observation: ArrayLike,
+                 R: ArrayLike,
                  deterministic: bool = False,
                  rng: PRNGKey | None = None):
-        x = observations
+        x = jax.numpy.hstack((observation, R))
         # Apply the dense layers
         for i, hidden_size in enumerate(self.hidden_sizes):
             x = nn.Dense(
@@ -168,9 +169,10 @@ class MLPQFunction(nn.Module):
     activation: Callable = nn.activation.tanh
 
     @nn.compact
-    def __call__(self, observations, actions):
+    def __call__(self, observation: ArrayLike, R: ArrayLike,
+                 action: ArrayLike):
         # Estimate Q with a simple multi layer dense network.
-        x = jax.numpy.hstack((observations, actions))
+        x = jax.numpy.hstack((observation, R, action))
         for i, hidden_size in enumerate(self.hidden_sizes):
             x = nn.Dense(
                 name=f'denselayer{i}',
@@ -185,8 +187,7 @@ class MLPQFunction(nn.Module):
 
 
 class TrainState(flax.struct.PyTreeNode):
-    physics_constants: jax_dynamics.CoefficientsType = flax.struct.field(
-        pytree_node=False)
+    problem: Problem = flax.struct.field(pytree_node=False)
 
     step: int | jax.Array = flax.struct.field(pytree_node=True)
     substep: int | jax.Array = flax.struct.field(pytree_node=True)
@@ -221,23 +222,34 @@ class TrainState(flax.struct.PyTreeNode):
 
     def pi_apply(self,
                  rng: PRNGKey,
-                 params,
-                 observation,
+                 params: flax.core.FrozenDict[str, typing.Any],
+                 observation: ArrayLike,
+                 R: ArrayLike,
                  deterministic: bool = False):
-        return self.pi_apply_fn({'params': params['pi']},
-                                physics.unwrap_angles(observation),
-                                deterministic=deterministic,
-                                rngs={'pi': rng})
+        return self.pi_apply_fn(
+            {'params': params['pi']},
+            observation=self.problem.unwrap_angles(observation),
+            R=R,
+            deterministic=deterministic,
+            rngs={'pi': rng})
 
-    def q1_apply(self, params, observation, action):
-        return self.q1_apply_fn({'params': params['q1']},
-                                physics.unwrap_angles(observation), action)
+    def q1_apply(self, params: flax.core.FrozenDict[str, typing.Any],
+                 observation: ArrayLike, R: ArrayLike, action: ArrayLike):
+        return self.q1_apply_fn(
+            {'params': params['q1']},
+            observation=self.problem.unwrap_angles(observation),
+            R=R,
+            action=action)
 
-    def q2_apply(self, params, observation, action):
-        return self.q2_apply_fn({'params': params['q2']},
-                                physics.unwrap_angles(observation), action)
+    def q2_apply(self, params: flax.core.FrozenDict[str, typing.Any],
+                 observation: ArrayLike, R: ArrayLike, action: ArrayLike):
+        return self.q2_apply_fn(
+            {'params': params['q2']},
+            observation=self.problem.unwrap_angles(observation),
+            R=R,
+            action=action)
 
-    def pi_apply_gradients(self, step, grads):
+    def pi_apply_gradients(self, step: int, grads):
         updates, new_pi_opt_state = self.pi_tx.update(grads, self.pi_opt_state,
                                                       self.params)
         new_params = optax.apply_updates(self.params, updates)
@@ -249,7 +261,7 @@ class TrainState(flax.struct.PyTreeNode):
             pi_opt_state=new_pi_opt_state,
         )
 
-    def q_apply_gradients(self, step, grads):
+    def q_apply_gradients(self, step: int, grads):
         updates, new_q_opt_state = self.q_tx.update(grads, self.q_opt_state,
                                                     self.params)
         new_params = optax.apply_updates(self.params, updates)
@@ -291,9 +303,8 @@ class TrainState(flax.struct.PyTreeNode):
         )
 
     @classmethod
-    def create(cls, *, physics_constants: jax_dynamics.CoefficientsType,
-               params, pi_tx, q_tx, alpha_tx, pi_apply_fn, q1_apply_fn,
-               q2_apply_fn, **kwargs):
+    def create(cls, *, problem: Problem, params, pi_tx, q_tx, alpha_tx,
+               pi_apply_fn, q1_apply_fn, q2_apply_fn, **kwargs):
         """Creates a new instance with ``step=0`` and initialized ``opt_state``."""
 
         pi_tx = optax.multi_transform(
@@ -343,7 +354,7 @@ class TrainState(flax.struct.PyTreeNode):
             length=FLAGS.replay_size)
 
         result = cls(
-            physics_constants=physics_constants,
+            problem=problem,
             step=0,
             substep=0,
             params=params,
@@ -357,7 +368,7 @@ class TrainState(flax.struct.PyTreeNode):
             q_opt_state=q_opt_state,
             alpha_tx=alpha_tx,
             alpha_opt_state=alpha_opt_state,
-            target_entropy=-physics.NUM_STATES,
+            target_entropy=-problem.num_states,
             mesh=mesh,
             sharding=sharding,
             replicated_sharding=replicated_sharding,
@@ -367,10 +378,12 @@ class TrainState(flax.struct.PyTreeNode):
         return jax.device_put(result, replicated_sharding)
 
 
-def create_train_state(rng, physics_constants: jax_dynamics.CoefficientsType,
-                       q_learning_rate, pi_learning_rate):
+def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
+                       pi_learning_rate):
     """Creates initial `TrainState`."""
-    pi = SquashedGaussianMLPActor(action_space=physics.NUM_OUTPUTS)
+    pi = SquashedGaussianMLPActor(activation=nn.activation.gelu,
+                                  action_space=problem.num_outputs,
+                                  action_limit=problem.action_limit)
     # We want q1 and q2 to have different network architectures so they pick up differnet things.
     q1 = MLPQFunction(activation=nn.activation.gelu, hidden_sizes=[128, 256])
     q2 = MLPQFunction(activation=nn.activation.gelu, hidden_sizes=[256, 128])
@@ -381,17 +394,20 @@ def create_train_state(rng, physics_constants: jax_dynamics.CoefficientsType,
 
         pi_params = pi.init(
             pi_rng,
-            jax.numpy.ones([physics.NUM_UNWRAPPED_STATES]),
+            observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
         )['params']
         q1_params = q1.init(
             q1_rng,
-            jax.numpy.ones([physics.NUM_UNWRAPPED_STATES]),
-            jax.numpy.ones([physics.NUM_OUTPUTS]),
+            observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
+            action=jax.numpy.ones([problem.num_outputs]),
         )['params']
         q2_params = q2.init(
             q2_rng,
-            jax.numpy.ones([physics.NUM_UNWRAPPED_STATES]),
-            jax.numpy.ones([physics.NUM_OUTPUTS]),
+            observation=jax.numpy.ones([problem.num_unwrapped_states]),
+            R=jax.numpy.ones([problem.num_goals]),
+            action=jax.numpy.ones([problem.num_outputs]),
         )['params']
 
         if FLAGS.alpha < 0.0:
@@ -411,7 +427,7 @@ def create_train_state(rng, physics_constants: jax_dynamics.CoefficientsType,
     alpha_tx = optax.sgd(learning_rate=q_learning_rate)
 
     result = TrainState.create(
-        physics_constants=physics_constants,
+        problem=problem,
         params=init_params(rng),
         pi_tx=pi_tx,
         q_tx=q_tx,

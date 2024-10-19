@@ -24,6 +24,7 @@ from clu import platform
 import jax
 import tensorflow as tf
 from frc971.control_loops.swerve import jax_dynamics
+from frc971.control_loops.swerve.velocity_controller import physics
 
 jax._src.deprecations.accelerate('tracer-hash')
 # Enable the compilation cache
@@ -63,8 +64,8 @@ def main(argv):
         FLAGS.workdir,
     )
 
-    physics_constants = jax_dynamics.Coefficients()
-    state = train.train(FLAGS.workdir, physics_constants)
+    problem = physics.TurretProblem()
+    state = train.train(FLAGS.workdir, problem)
 
 
 if __name__ == '__main__':

@@ -91,6 +91,10 @@
         "sha256": "ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/click-8.1.7-py3-none-any.whl"
     },
+    "cloudpickle==3.1.0": {
+        "sha256": "fe11acda67f61aaaec473e3afe030feb131d78a43461b718185363384f1ba12e",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cloudpickle-3.1.0-py3-none-any.whl"
+    },
     "clu==0.0.12": {
         "sha256": "0d183e7d25f7dd0700444510a264e24700e2f068bdabd199ed22866f7e54edba",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/clu-0.0.12-py3-none-any.whl"
@@ -110,6 +114,10 @@
     "cycler==0.12.1": {
         "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cycler-0.12.1-py3-none-any.whl"
+    },
+    "decorator==5.1.1": {
+        "sha256": "b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/decorator-5.1.1-py3-none-any.whl"
     },
     "dm_tree==0.1.8": {
         "sha256": "181c35521d480d0365f39300542cb6cd7fd2b77351bb43d7acfda15aef63b317",
@@ -399,6 +407,10 @@
         "sha256": "2d7a1657e36a80ea911db832a8a6ece5ee53d8de21edd5cc5879af6530b1bfee",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/platformdirs-4.2.2-py3-none-any.whl"
     },
+    "plotly==5.24.1": {
+        "sha256": "f67073a1e637eb0dc3e46324d9d51e2fe76e9727c892dde64ddf1e1b51f29089",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/plotly-5.24.1-py3-none-any.whl"
+    },
     "promise==2.3": {
         "sha256": "d10acd69e1aed4de5840e3915edf51c877dfc7c7ae440fd081019edbf62820a4",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/promise-2.3-py3-none-any.whl"
@@ -515,6 +527,10 @@
         "sha256": "024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tabulate-0.9.0-py3-none-any.whl"
     },
+    "tenacity==9.0.0": {
+        "sha256": "93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tenacity-9.0.0-py3-none-any.whl"
+    },
     "tensorboard==2.17.1": {
         "sha256": "253701a224000eeca01eee6f7e978aea7b408f60b91eb0babdb04e78947b773e",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tensorboard-2.17.1-py3-none-any.whl"
@@ -539,6 +555,10 @@
         "sha256": "cb84d8e159128aeae7b3f6013ccd7969c69d2e6d1a7b255dbfa6f5344d962986",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tensorflow_metadata-1.15.0-py3-none-any.whl"
     },
+    "tensorflow_probability==0.24.0": {
+        "sha256": "8c1774683e38359dbcaf3697e79b7e6a4e69b9c7b3679e78ee18f43e59e5759b",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tensorflow_probability-0.24.0-py2.py3-none-any.whl"
+    },
     "tensorstore==0.1.64": {
         "sha256": "72f76231ce12bfd266358a096e9c6000a2d86c1f4f24c3891c29b2edfffc5df4",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tensorstore-0.1.64-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
@@ -546,6 +566,10 @@
     "termcolor==2.4.0": {
         "sha256": "9297c0df9c99445c2412e832e882a7884038a25617c60cea2ad69488d4040d63",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/termcolor-2.4.0-py3-none-any.whl"
+    },
+    "tf_keras==2.17.0": {
+        "sha256": "cc97717e4dc08487f327b0740a984043a9e0123c7a4e21206711669d3ec41c88",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/tf_keras-2.17.0-py3-none-any.whl"
     },
     "toml==0.10.2": {
         "sha256": "806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
