@@ -216,8 +216,9 @@ def compute_loss_alpha(state: TrainState, rng: PRNGKey, params,
                        data: ArrayLike):
     """Computes the Soft Actor-Critic loss for alpha."""
     observations1 = data['observations1']
+    R = data['goals']
     pi, logp_pi, _, _ = jax.lax.stop_gradient(
-        state.pi_apply(rng=rng, params=params, observation=observations1))
+        state.pi_apply(rng=rng, params=params, R=R, observation=observations1))
 
     return (-jax.numpy.exp(params['logalpha']) *
             (logp_pi + state.target_entropy)).mean()
