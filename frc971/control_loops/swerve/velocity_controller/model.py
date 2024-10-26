@@ -73,6 +73,18 @@ absl.flags.DEFINE_integer(
     help='Batch size for learning Q and pi',
 )
 
+absl.flags.DEFINE_boolean(
+    'skip_layer',
+    default=False,
+    help='If true, add skip layer connections to the Q network.',
+)
+
+absl.flags.DEFINE_boolean(
+    'rmsnorm',
+    default=False,
+    help='If true, use rmsnorm instead of layer norm.',
+)
+
 HIDDEN_WEIGHTS = 256
 
 LOG_STD_MIN = -20
@@ -171,12 +183,20 @@ class MLPQFunction(nn.Module):
         # Estimate Q with a simple multi layer dense network.
         x = jax.numpy.hstack((observation, R, action))
         for i, hidden_size in enumerate(self.hidden_sizes):
+            # Add d2rl skip layer connections if requested
+            if FLAGS.skip_layer and i != 0:
+                x = jax.numpy.hstack((x, observation, R, action))
+
             x = nn.Dense(
                 name=f'denselayer{i}',
                 features=hidden_size,
             )(x)
-            # Layernorm also improves stability.
-            x = nn.LayerNorm(name=f'layernorm{i}')(x)
+
+            if FLAGS.rmsnorm:
+                x = nn.RMSNorm(name=f'rmsnorm{i}')(x)
+            else:
+                # Layernorm also improves stability.
+                x = nn.LayerNorm(name=f'layernorm{i}')(x)
             x = self.activation(x)
 
         x = nn.Dense(
