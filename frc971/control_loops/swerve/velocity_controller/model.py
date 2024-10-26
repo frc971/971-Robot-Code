@@ -409,12 +409,12 @@ class TrainState(flax.struct.PyTreeNode):
 def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
                        pi_learning_rate, alpha_learning_rate):
     """Creates initial `TrainState`."""
-    pi = SquashedGaussianMLPActor(activation=nn.activation.gelu,
+    pi = SquashedGaussianMLPActor(activation=nn.activation.silu,
                                   action_space=problem.num_outputs,
                                   action_limit=problem.action_limit)
     # We want q1 and q2 to have different network architectures so they pick up differnet things.
-    q1 = MLPQFunction(activation=nn.activation.gelu, hidden_sizes=[128, 256])
-    q2 = MLPQFunction(activation=nn.activation.gelu, hidden_sizes=[256, 128])
+    q1 = MLPQFunction(activation=nn.activation.silu, hidden_sizes=[128, 256])
+    q2 = MLPQFunction(activation=nn.activation.silu, hidden_sizes=[256, 128])
 
     @jax.jit
     def init_params(rng):
