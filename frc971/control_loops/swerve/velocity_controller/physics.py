@@ -125,3 +125,123 @@ class TurretProblem(Problem):
                                maxval=0.1),
             jax.numpy.zeros((dimensions or FLAGS.num_agents, 1)),
         ))
+
+
+class SwerveProblem(Problem):
+
+    def __init__(self, coefficients: jax_dynamics.CoefficientsType):
+        super().__init__(num_states=jax_dynamics.NUM_VELOCITY_STATES,
+                         num_unwrapped_states=17,
+                         num_outputs=8,
+                         num_goals=3,
+                         action_limit=40.0)
+
+        self.coefficients = coefficients
+
+    def random_actions(self,
+                       rng: PRNGKey,
+                       X: jax.typing.ArrayLike,
+                       goal: jax.typing.ArrayLike,
+                       dimensions=None):
+        """Produces a uniformly random action in the action space."""
+        return jax.random.uniform(
+            rng,
+            (dimensions or FLAGS.num_agents, self.num_outputs),
+            minval=-1.0,
+            maxval=1.0,
+        )
+
+    def unwrap_angles(self, X: jax.typing.ArrayLike):
+        return jax.numpy.stack([
+            jax.numpy.cos(X[..., jax_dynamics.VELOCITY_STATE_THETAS0]),
+            jax.numpy.sin(X[..., jax_dynamics.VELOCITY_STATE_THETAS0]),
+            X[..., jax_dynamics.VELOCITY_STATE_OMEGAS0],
+            jax.numpy.cos(X[..., jax_dynamics.VELOCITY_STATE_THETAS1]),
+            jax.numpy.sin(X[..., jax_dynamics.VELOCITY_STATE_THETAS1]),
+            X[..., jax_dynamics.VELOCITY_STATE_OMEGAS1],
+            jax.numpy.cos(X[..., jax_dynamics.VELOCITY_STATE_THETAS2]),
+            jax.numpy.sin(X[..., jax_dynamics.VELOCITY_STATE_THETAS2]),
+            X[..., jax_dynamics.VELOCITY_STATE_OMEGAS2],
+            jax.numpy.cos(X[..., jax_dynamics.VELOCITY_STATE_THETAS3]),
+            jax.numpy.sin(X[..., jax_dynamics.VELOCITY_STATE_THETAS3]),
+            X[..., jax_dynamics.VELOCITY_STATE_OMEGAS3],
+            jax.numpy.cos(X[..., jax_dynamics.VELOCITY_STATE_THETA]),
+            jax.numpy.sin(X[..., jax_dynamics.VELOCITY_STATE_THETA]),
+            X[..., jax_dynamics.VELOCITY_STATE_VX],
+            X[..., jax_dynamics.VELOCITY_STATE_VY],
+            X[..., jax_dynamics.VELOCITY_STATE_OMEGA],
+        ],
+                               axis=-1)
+
+    def xdot(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike):
+        return jax_dynamics.velocity_dynamics(self.coefficients, X,
+                                              self.action_limit * U)
+
+    def reward(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
+               goal: jax.typing.ArrayLike):
+        return -jax_dynamics.mpc_cost(coefficients=self.coefficients,
+                                      X=X,
+                                      U=self.action_limit * U,
+                                      goal=goal)
+
+    def random_states(self, rng: PRNGKey, dimensions=None):
+        rng, rng1, rng2, rng3, rng4, rng5, rng6, rng7, rng8, rng9, rng10, rng11 = jax.random.split(
+            rng, num=12)
+
+        return jax.numpy.hstack((
+            # VELOCITY_STATE_THETAS0 = 0
+            self._random_angle(rng1, dimensions),
+            # VELOCITY_STATE_OMEGAS0 = 1
+            self._random_module_velocity(rng2, dimensions),
+            # VELOCITY_STATE_THETAS1 = 2
+            self._random_angle(rng3, dimensions),
+            # VELOCITY_STATE_OMEGAS1 = 3
+            self._random_module_velocity(rng4, dimensions),
+            # VELOCITY_STATE_THETAS2 = 4
+            self._random_angle(rng5, dimensions),
+            # VELOCITY_STATE_OMEGAS2 = 5
+            self._random_module_velocity(rng6, dimensions),
+            # VELOCITY_STATE_THETAS3 = 6
+            self._random_angle(rng7, dimensions),
+            # VELOCITY_STATE_OMEGAS3 = 7
+            self._random_module_velocity(rng8, dimensions),
+            # VELOCITY_STATE_THETA = 8
+            self._random_angle(rng9, dimensions),
+            # VELOCITY_STATE_VX = 9
+            # VELOCITY_STATE_VY = 10
+            self._random_robot_velocity(rng10, dimensions),
+            # VELOCITY_STATE_OMEGA = 11
+            self._random_robot_angular_velocity(rng11, dimensions),
+        ))
+
+    def random_goals(self, rng: PRNGKey, dimensions=None):
+        """Produces a random goal in the goal space."""
+        return jax.numpy.hstack((
+            jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 1),
+                               minval=1.0,
+                               maxval=1.0),
+            jax.numpy.zeros((dimensions or FLAGS.num_agents, 2)),
+        ))
+
+    MODULE_VELOCITY = 1.0
+    ROBOT_ANGULAR_VELOCITY = 0.5
+
+    def _random_angle(self, rng: PRNGKey, dimensions=None):
+        return jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 1),
+                                  minval=-0.1 * jax.numpy.pi,
+                                  maxval=0.1 * jax.numpy.pi)
+
+    def _random_module_velocity(self, rng: PRNGKey, dimensions=None):
+        return jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 1),
+                                  minval=-self.MODULE_VELOCITY,
+                                  maxval=self.MODULE_VELOCITY)
+
+    def _random_robot_velocity(self, rng: PRNGKey, dimensions=None):
+        return jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 2),
+                                  minval=0.9,
+                                  maxval=1.1)
+
+    def _random_robot_angular_velocity(self, rng: PRNGKey, dimensions=None):
+        return jax.random.uniform(rng, (dimensions or FLAGS.num_agents, 1),
+                                  minval=-self.ROBOT_ANGULAR_VELOCITY,
+                                  maxval=self.ROBOT_ANGULAR_VELOCITY)

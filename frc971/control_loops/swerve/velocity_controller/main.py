@@ -39,6 +39,9 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('workdir', None, 'Directory to store model data.')
 
+flags.DEFINE_bool('swerve', True,
+                  'If true, train the swerve model, otherwise do the turret.')
+
 
 def main(argv):
     if len(argv) > 1:
@@ -64,7 +67,12 @@ def main(argv):
         FLAGS.workdir,
     )
 
-    problem = physics.TurretProblem()
+    if FLAGS.swerve:
+        physics_constants = jax_dynamics.Coefficients()
+        problem = physics.SwerveProblem(physics_constants)
+    else:
+        problem = physics.TurretProblem()
+
     state = train.train(FLAGS.workdir, problem)
 
 

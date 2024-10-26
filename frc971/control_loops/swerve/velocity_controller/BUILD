@@ -61,6 +61,30 @@ py_library(
 )
 
 py_binary(
+    name = "plot",
+    srcs = [
+        "model.py",
+        "plot.py",
+    ],
+    deps = [
+        ":experience_buffer",
+        ":physics",
+        "//frc971/control_loops/swerve:jax_dynamics",
+        "@pip//absl_py",
+        "@pip//flashbax",
+        "@pip//flax",
+        "@pip//jax",
+        "@pip//jaxtyping",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//tensorflow",
+        "@pip//tensorflow_probability",
+        "@pip//tf_keras",
+    ],
+)
+
+py_binary(
     name = "lqr_plot",
     srcs = [
         "lqr_plot.py",

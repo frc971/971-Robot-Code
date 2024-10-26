@@ -447,7 +447,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
         'rewards':
         jax.numpy.zeros((1, )),
         'goals':
-        jax.numpy.zeros((problem.num_states, )),
+        jax.numpy.zeros((problem.num_goals, )),
     })
 
     logging.debug(nn.get_sharding(replay_buffer_state, state.mesh))
