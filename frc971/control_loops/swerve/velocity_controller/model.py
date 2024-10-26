@@ -98,6 +98,12 @@ absl.flags.DEFINE_boolean(
     help='If true, use the solver from dreamer v3 instead of adam.',
 )
 
+absl.flags.DEFINE_float(
+    'initial_logalpha',
+    default=0.0,
+    help='The initial value to set logalpha to.',
+)
+
 HIDDEN_WEIGHTS = 256
 
 LOG_STD_MIN = -20
@@ -445,7 +451,7 @@ def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
         )['params']
 
         if FLAGS.alpha < 0.0:
-            logalpha = 0.0
+            logalpha = FLAGS.initial_logalpha
         else:
             logalpha = jax.numpy.log(FLAGS.alpha)
 
