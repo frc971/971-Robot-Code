@@ -340,6 +340,7 @@ class Plotter(object):
             return
         self.last_trajectory_step = data.step
         logging.info('Updating trajectory plots')
+        self.fig0.suptitle(f'Step {data.step}')
 
         # Put data in the trajectory plots.
         self.x.set_data(data.t, data.X[:, 0])
@@ -371,6 +372,7 @@ class Plotter(object):
             return
         logging.info('Updating cost plots')
         self.last_cost_step = data.step
+        self.costfig.suptitle(f'Step {data.step}')
         # Put data in the cost plots.
         if hasattr(self, 'costsurf'):
             for surf in self.costsurf:
@@ -407,6 +409,7 @@ class Plotter(object):
             return
         self.last_U_step = data.step
         logging.info('Updating U plots')
+        self.Ufig.suptitle(f'Step {data.step}')
         # Put data in the controller plots.
         if hasattr(self, 'Usurf'):
             for surf in self.Usurf:
