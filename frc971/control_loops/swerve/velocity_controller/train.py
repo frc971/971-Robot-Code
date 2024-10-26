@@ -156,19 +156,6 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
 
 
 @jax.jit
-def compute_batched_loss_q(state: TrainState, rng: PRNGKey, params,
-                           data: ArrayLike):
-
-    def bound_compute_loss_q(rng, data):
-        return compute_loss_q(state, rng, params, data)
-
-    return jax.vmap(bound_compute_loss_q)(
-        jax.random.split(rng, FLAGS.num_agents),
-        data,
-    ).mean()
-
-
-@jax.jit
 def compute_loss_pi(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     """Computes the Soft Actor-Critic loss for pi."""
     observations1 = data['observations1']
@@ -199,6 +186,32 @@ def compute_loss_pi(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
 
 
 @jax.jit
+def compute_loss_alpha(state: TrainState, rng: PRNGKey, params,
+                       data: ArrayLike):
+    """Computes the Soft Actor-Critic loss for alpha."""
+    observations1 = data['observations1']
+    R = data['goals']
+    pi, logp_pi, _ = jax.lax.stop_gradient(
+        state.pi_apply(rng=rng, params=params, observation=observations1, R=R))
+
+    return (-jax.numpy.exp(params['logalpha']) *
+            (logp_pi + state.target_entropy)).mean(), logp_pi.mean()
+
+
+@jax.jit
+def compute_batched_loss_q(state: TrainState, rng: PRNGKey, params,
+                           data: ArrayLike):
+
+    def bound_compute_loss_q(rng, data):
+        return compute_loss_q(state, rng, params, data)
+
+    return jax.vmap(bound_compute_loss_q)(
+        jax.random.split(rng, FLAGS.num_agents),
+        data,
+    ).mean()
+
+
+@jax.jit
 def compute_batched_loss_pi(state: TrainState, rng: PRNGKey, params,
                             data: ArrayLike):
 
@@ -209,19 +222,6 @@ def compute_batched_loss_pi(state: TrainState, rng: PRNGKey, params,
         jax.random.split(rng, FLAGS.num_agents),
         data,
     ).mean()
-
-
-@jax.jit
-def compute_loss_alpha(state: TrainState, rng: PRNGKey, params,
-                       data: ArrayLike):
-    """Computes the Soft Actor-Critic loss for alpha."""
-    observations1 = data['observations1']
-    R = data['goals']
-    pi, logp_pi, _, _ = jax.lax.stop_gradient(
-        state.pi_apply(rng=rng, params=params, R=R, observation=observations1))
-
-    return (-jax.numpy.exp(params['logalpha']) *
-            (logp_pi + state.target_entropy)).mean()
 
 
 @jax.jit
