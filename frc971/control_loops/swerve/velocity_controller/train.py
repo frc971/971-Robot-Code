@@ -35,7 +35,7 @@ absl.flags.DEFINE_integer(
 )
 
 absl.flags.DEFINE_integer(
-    'start_steps',
+    'random_sample_steps',
     default=10000,
     help='Number of steps to randomly sample before using the policy',
 )
@@ -319,7 +319,7 @@ def collect_experience(state: TrainState, replay_buffer_state,
             return pi_action
 
         pi_action = jax.lax.cond(
-            step <= FLAGS.start_steps,
+            step <= FLAGS.random_sample_steps,
             true_fn,
             false_fn,
             i,
@@ -400,6 +400,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
         'q_learning_rate': FLAGS.q_learning_rate,
         'pi_learning_rate': FLAGS.pi_learning_rate,
         'alpha_learning_rate': FLAGS.alpha_learning_rate,
+        'random_sample_steps': FLAGS.random_sample_steps,
         'batch_size': FLAGS.batch_size,
         'horizon': FLAGS.horizon,
         'warmup_steps': FLAGS.warmup_steps,
