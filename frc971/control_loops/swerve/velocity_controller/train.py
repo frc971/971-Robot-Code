@@ -399,6 +399,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
     run['hparams'] = {
         'q_learning_rate': FLAGS.q_learning_rate,
         'pi_learning_rate': FLAGS.pi_learning_rate,
+        'alpha_learning_rate': FLAGS.alpha_learning_rate,
         'batch_size': FLAGS.batch_size,
         'horizon': FLAGS.horizon,
         'warmup_steps': FLAGS.warmup_steps,
@@ -425,6 +426,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
         problem,
         q_learning_rate=q_learning_rate,
         pi_learning_rate=pi_learning_rate,
+        alpha_learning_rate=FLAGS.alpha_learning_rate,
     )
     state = restore_checkpoint(state, workdir)
 

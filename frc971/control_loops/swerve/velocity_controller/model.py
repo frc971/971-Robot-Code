@@ -32,6 +32,12 @@ absl.flags.DEFINE_integer(
 )
 
 absl.flags.DEFINE_float(
+    'alpha_learning_rate',
+    default=0.004,
+    help='Training learning rate for entropy.',
+)
+
+absl.flags.DEFINE_float(
     'q_learning_rate',
     default=0.002,
     help='Training learning rate.',
@@ -372,7 +378,7 @@ class TrainState(flax.struct.PyTreeNode):
 
 
 def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
-                       pi_learning_rate):
+                       pi_learning_rate, alpha_learning_rate):
     """Creates initial `TrainState`."""
     pi = SquashedGaussianMLPActor(activation=nn.activation.gelu,
                                   action_space=problem.num_outputs,
@@ -415,9 +421,9 @@ def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
             'logalpha': logalpha,
         }
 
-    pi_tx = optax.sgd(learning_rate=pi_learning_rate)
-    q_tx = optax.sgd(learning_rate=q_learning_rate)
-    alpha_tx = optax.sgd(learning_rate=q_learning_rate)
+    pi_tx = optax.adam(learning_rate=pi_learning_rate)
+    q_tx = optax.adam(learning_rate=q_learning_rate)
+    alpha_tx = optax.adam(learning_rate=alpha_learning_rate)
 
     result = TrainState.create(
         problem=problem,

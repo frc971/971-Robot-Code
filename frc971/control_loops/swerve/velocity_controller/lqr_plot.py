@@ -87,8 +87,13 @@ def generate_data(step=None):
     rng = jax.random.key(0)
     rng, init_rng = jax.random.split(rng)
 
-    state = create_train_state(init_rng, problem, FLAGS.q_learning_rate,
-                               FLAGS.pi_learning_rate)
+    state = create_train_state(
+        init_rng,
+        problem,
+        q_learning_rate=FLAGS.q_learning_rate,
+        pi_learning_rate=FLAGS.pi_learning_rate,
+        alpha_learning_rate=FLAGS.alpha_learning_rate,
+    )
 
     state = restore_checkpoint(state, FLAGS.workdir)
     if step is not None and state.step == step:
