@@ -424,8 +424,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
     )
     state = restore_checkpoint(state, workdir)
 
-    state_sharding = nn.get_sharding(state, state.mesh)
-    logging.info(state_sharding)
+    logging.debug(nn.get_sharding(state, state.mesh))
 
     replay_buffer_state = state.replay_buffer.init({
         'observations1':
@@ -440,9 +439,7 @@ def train(workdir: str, problem: Problem) -> train_state.TrainState:
         jax.numpy.zeros((problem.num_states, )),
     })
 
-    replay_buffer_state_sharding = nn.get_sharding(replay_buffer_state,
-                                                   state.mesh)
-    logging.info(replay_buffer_state_sharding)
+    logging.debug(nn.get_sharding(replay_buffer_state, state.mesh))
 
     # Number of gradients to accumulate before doing decent.
     update_after = FLAGS.batch_size // FLAGS.num_agents
