@@ -28,11 +28,11 @@ py_binary(
     srcs = [
         "main.py",
         "model.py",
-        "physics.py",
         "train.py",
     ],
     deps = [
         ":experience_buffer",
+        ":physics",
         "//frc971/control_loops/swerve:jax_dynamics",
         "@pip//absl_py",
         "@pip//aim",
@@ -47,15 +47,26 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "physics",
+    srcs = ["physics.py"],
+    deps = [
+        "//frc971/control_loops/swerve:jax_dynamics",
+        "@pip//flax",
+        "@pip//jax",
+        "@pip//jaxtyping",
+    ],
+)
+
 py_binary(
     name = "lqr_plot",
     srcs = [
         "lqr_plot.py",
         "model.py",
-        "physics.py",
     ],
     deps = [
         ":experience_buffer",
+        ":physics",
         "//frc971/control_loops/swerve:jax_dynamics",
         "@pip//absl_py",
         "@pip//flashbax",
