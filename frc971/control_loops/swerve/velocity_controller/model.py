@@ -61,6 +61,13 @@ absl.flags.DEFINE_float(
     help='Fraction of --pi_learning_rate to reduce by by the end.',
 )
 
+absl.flags.DEFINE_float(
+    'target_entropy_scalar',
+    default=1.0,
+    help=
+    'Target entropy scalar for use when using automatic temperature adjustment.',
+)
+
 absl.flags.DEFINE_integer(
     'replay_size',
     default=2000000,
@@ -389,7 +396,7 @@ class TrainState(flax.struct.PyTreeNode):
             q_opt_state=q_opt_state,
             alpha_tx=alpha_tx,
             alpha_opt_state=alpha_opt_state,
-            target_entropy=-problem.num_states,
+            target_entropy=-problem.num_outputs * FLAGS.target_entropy_scalar,
             mesh=mesh,
             sharding=sharding,
             replicated_sharding=replicated_sharding,
