@@ -76,6 +76,13 @@ absl.flags.DEFINE_bool(
     help='If true, explode on any NaNs found, and print them.',
 )
 
+absl.flags.DEFINE_bool(
+    'maximum_entropy_q',
+    default=True,
+    help=
+    'If false, do not add the maximum entropy term to the bellman backup for Q.',
+)
+
 
 def save_checkpoint(state: TrainState, workdir: str):
     """Saves a checkpoint in the workdir."""
@@ -142,8 +149,12 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     alpha = jax.numpy.exp(params['logalpha'])
 
     # Now we can compute the Bellman backup
-    bellman_backup = jax.lax.stop_gradient(rewards + FLAGS.gamma *
-                                           (q_pi_target - alpha * logp_pi2))
+    if FLAGS.maximum_entropy_q:
+        bellman_backup = jax.lax.stop_gradient(
+            rewards + FLAGS.gamma * (q_pi_target - alpha * logp_pi2))
+    else:
+        bellman_backup = jax.lax.stop_gradient(rewards +
+                                               FLAGS.gamma * q_pi_target)
 
     # Compute the starting Q values from the Q network being optimized.
     q1 = state.q1_apply(params, observation=observations1, R=R, action=actions)
