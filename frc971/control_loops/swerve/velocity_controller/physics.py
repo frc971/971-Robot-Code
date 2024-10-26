@@ -55,13 +55,17 @@ class Problem(object):
     def random_states(self, rng: PRNGKey, dimensions=None):
         raise NotImplemented("random_states not implemented")
 
-    def random_actions(self, rng: PRNGKey, dimensions=None):
+    def random_actions(self,
+                       rng: PRNGKey,
+                       X: jax.typing.ArrayLike,
+                       goal: jax.typing.ArrayLike,
+                       dimensions=None):
         """Produces a uniformly random action in the action space."""
         return jax.random.uniform(
             rng,
             (dimensions or FLAGS.num_agents, self.num_outputs),
-            minval=-self.action_limit,
-            maxval=self.action_limit,
+            minval=-1.0,
+            maxval=1.0,
         )
 
     def random_goals(self, rng: PRNGKey, dimensions=None):
@@ -94,12 +98,13 @@ class TurretProblem(Problem):
         A_continuous = jax.numpy.array([[0., 1.], [0., -36.85154548]])
         B_continuous = jax.numpy.array([[0.], [56.08534375]])
 
+        U = U * self.action_limit
         return A_continuous @ X + B_continuous @ U
 
-    def cost(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
-             goal: jax.typing.ArrayLike):
-        return (X - goal).T @ jax.numpy.array(
-            self.Q) @ (X - goal) + U.T @ jax.numpy.array(self.R) @ U
+    def reward(self, X: jax.typing.ArrayLike, U: jax.typing.ArrayLike,
+               goal: jax.typing.ArrayLike):
+        return -(X - goal).T @ jax.numpy.array(
+            self.Q) @ (X - goal) - U.T @ jax.numpy.array(self.R) @ U
 
     def random_states(self, rng: PRNGKey, dimensions=None):
         rng1, rng2 = jax.random.split(rng)

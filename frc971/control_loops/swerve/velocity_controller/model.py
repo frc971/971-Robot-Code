@@ -14,9 +14,12 @@ from flax.training import train_state
 from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from frc971.control_loops.swerve import jax_dynamics
-from frc971.control_loops.swerve import dynamics
 from frc971.control_loops.swerve.velocity_controller import physics
 from frc971.control_loops.swerve.velocity_controller import experience_buffer
+from tensorflow_probability.substrates import jax as tfp
+
+tfd = tfp.distributions
+tfb = tfp.bijectors
 
 from flax.typing import PRNGKey
 
@@ -127,36 +130,25 @@ class SquashedGaussianMLPActor(nn.Module):
         if rng is None:
             rng = self.make_rng('pi')
 
-        # Grab a random sample
-        random_sample = jax.random.normal(rng, shape=std.shape)
+        pi_distribution = tfd.TransformedDistribution(
+            distribution=tfd.Normal(loc=mu, scale=std),
+            bijector=tfb.Tanh(),
+        )
 
         if deterministic:
             # We are testing the optimal policy, just use the mean.
-            pi_action = mu
+            pi_action = flax.linen.activation.tanh(mu)
         else:
-            # Use the reparameterization trick.  Adjust the unit gausian with
-            # something we can solve for to get the desired noise.
-            pi_action = random_sample * std + mu
+            pi_action = pi_distribution.sample(shape=(1, ), seed=rng)
 
-        logp_pi = gaussian_likelihood(random_sample, log_std)
-        # Adjustment to log prob
-        # NOTE: This formula is a little bit magic. To get an understanding of where it
-        # comes from, check out the original SAC paper (arXiv 1801.01290) and look in
-        # appendix C. This is a more numerically-stable equivalent to Eq 21.
-        delta = (2.0 * (jax.numpy.log(2.0) - pi_action -
-                        flax.linen.softplus(-2.0 * pi_action)))
+        logp_pi = pi_distribution.log_prob(pi_action)
 
-        if len(delta.shape) > 1:
-            delta = jax.numpy.sum(delta, keepdims=True, axis=1)
+        if len(logp_pi.shape) > 1:
+            logp_pi = jax.numpy.sum(logp_pi, keepdims=True, axis=1)
         else:
-            delta = jax.numpy.sum(delta, keepdims=True)
+            logp_pi = jax.numpy.sum(logp_pi, keepdims=True)
 
-        logp_pi = logp_pi - delta
-
-        # Now, saturate the action to the limit using tanh
-        pi_action = self.action_limit * flax.linen.activation.tanh(pi_action)
-
-        return pi_action, logp_pi, self.action_limit * std, random_sample
+        return pi_action, logp_pi, self.action_limit * std
 
 
 class MLPQFunction(nn.Module):

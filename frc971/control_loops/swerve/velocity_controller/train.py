@@ -123,10 +123,10 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     R = data['goals']
 
     # Compute the ending actions from the current network.
-    action2, logp_pi2, _, _ = state.pi_apply(rng=rng,
-                                             params=params,
-                                             observation=observations2,
-                                             R=R)
+    action2, logp_pi2, _ = state.pi_apply(rng=rng,
+                                          params=params,
+                                          observation=observations2,
+                                          R=R)
 
     # Compute target network Q values
     q1_pi_target = state.q1_apply(state.target_params,
@@ -176,10 +176,10 @@ def compute_loss_pi(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     # TODO(austin): We've got differentiable policy and differentiable physics.  Can we use those here?  Have Q learn the future, not the current step?
 
     # Compute the action
-    pi, logp_pi, _, _ = state.pi_apply(rng=rng,
-                                       params=params,
-                                       observation=observations1,
-                                       R=R)
+    pi, logp_pi, _ = state.pi_apply(rng=rng,
+                                    params=params,
+                                    observation=observations1,
+                                    R=R)
     q1_pi = state.q1_apply(jax.lax.stop_gradient(params),
                            observation=observations1,
                            R=R,
@@ -304,16 +304,18 @@ def collect_experience(state: TrainState, replay_buffer_state,
 
         def true_fn(i):
             # We are at the beginning of the process, pick a random action.
-            return state.problem.random_actions(action_rng, FLAGS.num_agents)
+            return state.problem.random_actions(action_rng,
+                                                X=observation,
+                                                goal=R,
+                                                dimensions=FLAGS.num_agents)
 
         def false_fn(i):
             # We are past the beginning of the process, use the trained network.
-            pi_action, logp_pi, std, random_sample = state.pi_apply(
-                rng=action_rng,
-                params=state.params,
-                observation=observation,
-                R=R,
-                deterministic=False)
+            pi_action, _, _ = state.pi_apply(rng=action_rng,
+                                             params=state.params,
+                                             observation=observation,
+                                             R=R,
+                                             deterministic=False)
             return pi_action
 
         pi_action = jax.lax.cond(
@@ -331,8 +333,9 @@ def collect_experience(state: TrainState, replay_buffer_state,
         # Soft Actor-Critic is designed to maximize reward.  LQR minimizes
         # cost.  There is nothing which assumes anything about the sign of
         # the reward, so use the negative of the cost.
-        reward = -jax.vmap(state.problem.cost)(
-            X=observation2, U=pi_action, goal=R)
+        reward = jax.vmap(state.problem.reward)(X=observation2,
+                                                U=pi_action,
+                                                goal=R)
 
         replay_buffer_state = state.replay_buffer.add(
             replay_buffer_state, {

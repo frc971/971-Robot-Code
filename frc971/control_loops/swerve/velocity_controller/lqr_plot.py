@@ -156,12 +156,12 @@ def generate_data(step=None):
 
     def compute_pi_U(X, Y):
         x = jax.numpy.array([X, Y])
-        U, _, _, _ = state.pi_apply(rng,
-                                    state.params,
-                                    observation=state.problem.unwrap_angles(x),
-                                    R=goal,
-                                    deterministic=True)
-        return U[0]
+        U, _, _ = state.pi_apply(rng,
+                                 state.params,
+                                 observation=state.problem.unwrap_angles(x),
+                                 R=goal,
+                                 deterministic=True)
+        return U[0] * problem.action_limit
 
     lqr_cost_U = jax.vmap(jax.vmap(compute_lqr_U))(grid_X, grid_Y)
     pi_cost_U = jax.vmap(jax.vmap(compute_pi_U))(grid_X, grid_Y)
@@ -173,22 +173,25 @@ def generate_data(step=None):
         X, X_lqr, data, params = val
         t = data.t.at[i].set(i * problem.dt)
 
-        U, _, _, _ = state.pi_apply(rng,
-                                    params,
-                                    observation=state.problem.unwrap_angles(X),
-                                    R=goal,
-                                    deterministic=True)
+        normalized_U, _, _ = state.pi_apply(
+            rng,
+            params,
+            observation=state.problem.unwrap_angles(X),
+            R=goal,
+            deterministic=True)
         U_lqr = problem.F @ (goal - X_lqr)
 
         cost = jax.numpy.minimum(
             state.q1_apply(params,
                            observation=state.problem.unwrap_angles(X),
                            R=goal,
-                           action=U),
+                           action=normalized_U),
             state.q2_apply(params,
                            observation=state.problem.unwrap_angles(X),
                            R=goal,
-                           action=U))
+                           action=normalized_U))
+
+        U = normalized_U * problem.action_limit
 
         U_plot = data.U.at[i, :].set(U)
         U_lqr_plot = data.U_lqr.at[i, :].set(U_lqr)
@@ -200,8 +203,9 @@ def generate_data(step=None):
         X = problem.A @ X + problem.B @ U
         X_lqr = problem.A @ X_lqr + problem.B @ U_lqr
 
-        reward = data.reward - state.problem.cost(X, U, goal)
-        reward_lqr = data.reward_lqr - state.problem.cost(X_lqr, U_lqr, goal)
+        reward = data.reward + state.problem.reward(X, normalized_U, goal)
+        reward_lqr = data.reward_lqr + state.problem.reward(
+            X_lqr, U_lqr / problem.action_limit, goal)
 
         return X, X_lqr, data._replace(
             t=t,

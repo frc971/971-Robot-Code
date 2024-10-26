@@ -44,6 +44,8 @@ py_binary(
         "@pip//matplotlib",
         "@pip//numpy",
         "@pip//tensorflow",
+        "@pip//tensorflow_probability",
+        "@pip//tf_keras",
     ],
 )
 
