@@ -175,6 +175,8 @@ class MLPQFunction(nn.Module):
                 name=f'denselayer{i}',
                 features=hidden_size,
             )(x)
+            # Layernorm also improves stability.
+            x = nn.LayerNorm(name=f'layernorm{i}')(x)
             x = self.activation(x)
 
         x = nn.Dense(
