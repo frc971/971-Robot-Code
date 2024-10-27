@@ -1,3 +1,6 @@
+# Machine learning based on Soft Actor Critic(SAC) which was initially proposed in https://arxiv.org/pdf/1801.01290.
+# Our implementation was heavily based on OpenAI's spinning up reference implementation https://spinningup.openai.com/en/latest/algorithms/sac.html.
+
 import absl
 import time
 import collections
@@ -149,6 +152,7 @@ def compute_loss_q(state: TrainState, rng: PRNGKey, params, data: ArrayLike):
     alpha = jax.numpy.exp(params['logalpha'])
 
     # Now we can compute the Bellman backup
+    # Max entropy SAC is based on https://arxiv.org/pdf/1812.05905.
     if FLAGS.maximum_entropy_q:
         bellman_backup = jax.lax.stop_gradient(
             rewards + FLAGS.gamma * (q_pi_target - alpha * logp_pi2))
@@ -340,9 +344,6 @@ def collect_experience(state: TrainState, replay_buffer_state,
             lambda o, pi: state.problem.integrate_dynamics(o, pi),
             in_axes=(0, 0))(observation, pi_action)
 
-        # Soft Actor-Critic is designed to maximize reward.  LQR minimizes
-        # cost.  There is nothing which assumes anything about the sign of
-        # the reward, so use the negative of the cost.
         reward = jax.vmap(state.problem.reward)(X=observation2,
                                                 U=pi_action,
                                                 goal=R)

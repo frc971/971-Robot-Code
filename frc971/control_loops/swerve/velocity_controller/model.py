@@ -202,7 +202,8 @@ class MLPQFunction(nn.Module):
         # Estimate Q with a simple multi layer dense network.
         x = jax.numpy.hstack((observation, R, action))
         for i, hidden_size in enumerate(self.hidden_sizes):
-            # Add d2rl skip layer connections if requested
+            # Add d2rl skip layer connections if requested.
+            # Idea from D2RL: https://arxiv.org/pdf/2010.09163.
             if FLAGS.skip_layer and i != 0:
                 x = jax.numpy.hstack((x, observation, R, action))
 
@@ -212,9 +213,11 @@ class MLPQFunction(nn.Module):
             )(x)
 
             if FLAGS.rmsnorm:
+                # Idea from Dreamerv3: https://arxiv.org/pdf/2301.04104v2.
                 x = nn.RMSNorm(name=f'rmsnorm{i}')(x)
             else:
                 # Layernorm also improves stability.
+                # Idea from RLPD: https://arxiv.org/pdf/2302.02948.
                 x = nn.LayerNorm(name=f'layernorm{i}')(x)
             x = self.activation(x)
 
@@ -425,6 +428,7 @@ def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
                                   action_space=problem.num_outputs,
                                   action_limit=problem.action_limit)
     # We want q1 and q2 to have different network architectures so they pick up differnet things.
+    # SiLu is used in DreamerV3 so we use it: https://arxiv.org/pdf/2301.04104v2.
     q1 = MLPQFunction(activation=nn.activation.silu, hidden_sizes=[128, 256])
     q2 = MLPQFunction(activation=nn.activation.silu, hidden_sizes=[256, 128])
 
@@ -485,7 +489,7 @@ def create_train_state(rng: PRNGKey, problem: Problem, q_learning_rate,
     return result
 
 
-# Solver from dreamer v3.
+# Solver from dreamer v3: https://arxiv.org/pdf/2301.04104v2.
 # TODO(austin): How many of these pieces are actually in optax already?
 def scale_by_rms(beta=0.999, eps=1e-8):
 
