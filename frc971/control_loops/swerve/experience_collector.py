@@ -166,6 +166,12 @@ def save_experience(problem, mpc, experience, experience_number):
     fig0.savefig(f'state_{experience_number}.svg')
     fig1.savefig(f'steer_{experience_number}.svg')
 
+    # Free the memory associated with the figures.
+    fig0.clf()
+    fig1.clf()
+    pylab.close(fig0)
+    pylab.close(fig1)
+
 
 def main(argv):
     if FLAGS.outputdir:
