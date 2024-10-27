@@ -292,6 +292,33 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "experience_collector",
+    srcs = [
+        "experience_collector.py",
+    ],
+    deps = [
+        ":casadi_velocity_mpc_lib",
+        ":jax_dynamics",
+        "//frc971/control_loops/swerve/velocity_controller:physics",
+        "@pip//absl_py",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
+        "@pip//tensorflow",
+    ],
+)
+
+py_binary(
+    name = "multi_experience_collector",
+    srcs = ["multi_experience_collector.py"],
+    data = [":experience_collector"],
+    deps = [
+        "@pip//absl_py",
+    ],
+)
+
 py_library(
     name = "physics_test_utils",
     srcs = [

@@ -24,11 +24,6 @@ flags.DEFINE_float('duration', 0.5, 'Time to simulate in seconds.')
 flags.DEFINE_bool('pickle', False, 'Write optimization results.')
 flags.DEFINE_string('outputdir', None, 'Directory to write problem results to')
 
-# Full print level on ipopt. Piping to a file and using a filter or search method is suggested
-# grad_x prints out the gradient at each iteration in the following sequence: U0, X1, U1, etc.
-flags.DEFINE_bool('full_debug', False,
-                  'If true, turn on all the debugging in the solver.')
-
 
 class Solver(object):
 

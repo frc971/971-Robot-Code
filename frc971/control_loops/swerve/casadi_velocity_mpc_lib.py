@@ -3,11 +3,19 @@
 from frc971.control_loops.swerve import dynamics
 import casadi
 import numpy
+from absl import flags
+
+FLAGS = flags.FLAGS
+
+# Full print level on ipopt. Piping to a file and using a filter or search method is suggested
+# grad_x prints out the gradient at each iteration in the following sequence: U0, X1, U1, etc.
+flags.DEFINE_bool('full_debug', False,
+                  'If true, turn on all the debugging in the solver.')
 
 
 class MPC(object):
 
-    def __init__(self, solver='fatrop', jit=True):
+    def __init__(self, solver='fatrop', jit=True, N=200):
         self.fdot = dynamics.swerve_full_dynamics(
             casadi.SX.sym("X", dynamics.NUM_STATES, 1),
             casadi.SX.sym("U", 8, 1))
@@ -47,7 +55,7 @@ class MPC(object):
         self.next_X = self.make_physics()
         self.cost = self.make_cost()
 
-        self.N = 200
+        self.N = N
 
         # Start with an empty nonlinear program.
         self.w = []
