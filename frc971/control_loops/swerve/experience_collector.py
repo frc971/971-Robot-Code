@@ -20,6 +20,7 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.50'
 
 from absl import flags
 from absl import app
+from absl import logging
 import pickle
 import numpy
 from frc971.control_loops.swerve import dynamics
@@ -64,6 +65,8 @@ def collect_experience(problem, mpc, rng):
     R_goal[2, 0] = FLAGS.omega
 
     solution = mpc.solve(p=numpy.vstack((X_initial, R_goal)))
+    sys.stderr.flush()
+    sys.stdout.flush()
 
     # Solver doesn't solve for the last state.  So we get N-1 states back.
     experience = {
@@ -77,6 +80,7 @@ def collect_experience(problem, mpc, rng):
     if not FLAGS.quiet:
         print('x(0):', X_initial.transpose())
 
+    logging.info('Finished solving')
     X_prior = X_initial.squeeze()
     for j in range(mpc.N - 1):
         if not FLAGS.quiet:
@@ -86,14 +90,17 @@ def collect_experience(problem, mpc, rng):
         X_prior = mpc.unpack_x(solution, j + 1)
         experience['observations2'][j, :] = X_prior
         experience['actions'][j, :] = mpc.unpack_u(solution, j)
+        experience['goals'][j, :] = R_goal[:, 0]
+
+    logging.info('Finished all but reward')
+    for j in range(mpc.N - 1):
         experience['rewards'][j, :] = problem.reward(
             X=X_prior,
             U=mpc.unpack_u(solution, j),
             goal=R_goal[:, 0],
         )
-        experience['goals'][j, :] = R_goal[:, 0]
-        sys.stderr.flush()
-        sys.stdout.flush()
+    sys.stderr.flush()
+    sys.stdout.flush()
 
     return experience
 
@@ -178,9 +185,10 @@ def main(argv):
     for i in range(FLAGS.num_solutions):
         rng, rng_init = jax.random.split(rng)
         experience = collect_experience(problem, mpc, rng_init)
+        logging.info('Solved problem %d', i)
 
         save_experience(problem, mpc, experience, i)
-        logging.info('Solved problem %d', i)
+        logging.info('Wrote problem %d', i)
 
 
 if __name__ == '__main__':
