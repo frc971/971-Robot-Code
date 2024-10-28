@@ -354,6 +354,7 @@ def to_velocity_state(X):
     ])
 
 
+@jax.jit
 def mpc_cost(coefficients: CoefficientsType, X, U, goal):
     J = 0
 
