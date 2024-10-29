@@ -398,3 +398,21 @@ cc_binary(
         "@com_google_absl//absl/log:check",
     ],
 )
+
+cc_library(
+    name = "auto_diff_jacobian",
+    hdrs = ["auto_diff_jacobian.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@com_google_ceres_solver//:ceres",
+    ],
+)
+
+cc_test(
+    name = "auto_diff_jacobian_test",
+    srcs = ["auto_diff_jacobian_test.cc"],
+    deps = [
+        ":auto_diff_jacobian",
+        "//aos/testing:googletest",
+    ],
+)
