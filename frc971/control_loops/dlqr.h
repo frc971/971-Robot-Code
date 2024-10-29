@@ -41,7 +41,9 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
          ::Eigen::Matrix<double, kM, kN> *K,
          ::Eigen::Matrix<double, kN, kN> *S) {
   *K = ::Eigen::Matrix<double, kM, kN>::Zero();
-  *S = ::Eigen::Matrix<double, kN, kN>::Zero();
+  if (S != nullptr) {
+    *S = ::Eigen::Matrix<double, kN, kN>::Zero();
+  }
   // Discrete (not continuous)
   char DICO = 'D';
   // B and R are provided instead of G.
