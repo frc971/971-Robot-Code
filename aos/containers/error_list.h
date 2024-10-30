@@ -5,6 +5,7 @@
 
 #include <algorithm>
 
+#include "absl/log/check.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers/vector.h"
@@ -128,7 +129,11 @@ class ErrorList {
       flatbuffers::FlatBufferBuilder *fbb) const {
     return fbb->CreateVector(array_.data(), array_.size());
   }
-};  // namespace aos
+  template <typename StaticBuilder>
+  void ToStaticFlatbuffer(StaticBuilder *vector_builder) const {
+    CHECK(vector_builder->FromData(array_.data(), array_.size()));
+  }
+};
 
 }  // namespace aos
 

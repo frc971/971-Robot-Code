@@ -47,6 +47,8 @@ class ContinuousAbsoluteEncoderZeroingEstimator
   virtual flatbuffers::Offset<State> GetEstimatorState(
       flatbuffers::FlatBufferBuilder *fbb) const override;
 
+  void GetEstimatorState(AbsoluteEncoderEstimatorStateStatic *fbs) const;
+
  private:
   struct PositionStruct {
     PositionStruct(const AbsolutePosition &position_buffer)
