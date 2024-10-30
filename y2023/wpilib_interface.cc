@@ -166,11 +166,11 @@ class Falcon {
     inverted_ = invert;
 
     ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kDrivetrainStatorCurrentLimit();
+    current_limits.StatorCurrentLimit = units::current::ampere_t{
+        constants::Values::kDrivetrainStatorCurrentLimit()};
     current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kDrivetrainSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimit = units::current::ampere_t{
+        constants::Values::kDrivetrainSupplyCurrentLimit()};
     current_limits.SupplyCurrentLimitEnable = true;
 
     ctre::phoenix6::configs::MotorOutputConfigs output_configs;
@@ -196,11 +196,11 @@ class Falcon {
 
   void WriteRollerConfigs() {
     ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kRollerStatorCurrentLimit();
+    current_limits.StatorCurrentLimit = units::current::ampere_t{
+        constants::Values::kRollerStatorCurrentLimit()};
     current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kRollerSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimit = units::current::ampere_t{
+        constants::Values::kRollerSupplyCurrentLimit()};
     current_limits.SupplyCurrentLimitEnable = true;
 
     ctre::phoenix6::configs::MotorOutputConfigs output_configs;

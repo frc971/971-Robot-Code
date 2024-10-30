@@ -58,11 +58,12 @@ void TalonFX::PrintConfigs() {
 
 void TalonFX::WriteConfigs() {
   ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-  current_limits.StatorCurrentLimit = stator_current_limit_;
+  current_limits.StatorCurrentLimit =
+      units::current::ampere_t{stator_current_limit_};
   current_limits.StatorCurrentLimitEnable = true;
-  current_limits.SupplyCurrentLimit = supply_current_limit_;
+  current_limits.SupplyCurrentLimit =
+      units::current::ampere_t{supply_current_limit_};
   current_limits.SupplyCurrentLimitEnable = true;
-  current_limits.SupplyTimeThreshold = 0.0;
 
   ctre::phoenix6::configs::MotorOutputConfigs output_configs;
   output_configs.NeutralMode = neutral_mode_;
