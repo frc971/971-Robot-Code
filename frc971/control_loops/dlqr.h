@@ -1,7 +1,12 @@
 #ifndef FRC971_CONTROL_LOOPS_DLQR_H_
 #define FRC971_CONTROL_LOOPS_DLQR_H_
 
-#include <Eigen/Dense>
+#include <Eigen/Cholesky>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <tl/expected.hpp>
+
+#include "frc971/control_loops/dare.h"
 
 namespace frc971::controls {
 
@@ -23,96 +28,33 @@ int Controllability(const ::Eigen::Matrix<Scalar, num_states, num_states> &A,
       .rank();
 }
 
-extern "C" {
-// Forward declaration for slicot fortran library.
-void sb02od_(char *DICO, char *JOBB, char *FACT, char *UPLO, char *JOBL,
-             char *SORT, long *N, long *M, long *P, double *A, long *LDA,
-             double *B, long *LDB, double *Q, long *LDQ, double *R, long *LDR,
-             double *L, long *LDL, double *RCOND, double *X, long *LDX,
-             double *ALFAR, double *ALFAI, double *BETA, double *S, long *LDS,
-             double *T, long *LDT, double *U, long *LDU, double *TOL,
-             long *IWORK, double *DWORK, long *LDWORK, long *BWORK, long *INFO);
-}
-
-// Computes the optimal LQR controller K for the provided system and costs.
-template <int kN, int kM>
-int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
-         ::Eigen::Matrix<double, kN, kN> Q, ::Eigen::Matrix<double, kM, kM> R,
-         ::Eigen::Matrix<double, kM, kN> *K,
-         ::Eigen::Matrix<double, kN, kN> *S) {
-  *K = ::Eigen::Matrix<double, kM, kN>::Zero();
-  if (S != nullptr) {
-    *S = ::Eigen::Matrix<double, kN, kN>::Zero();
+/**
+ * Computes the optimal discrete LQR controller gain K for the provided system
+ * and costs.
+ *
+ * @param A The system matrix.
+ * @param B The input matrix.
+ * @param Q The state cost matrix.
+ * @param R The input cost matrix.
+ * @param check_preconditions Whether to check preconditions (30% less time if
+ *   user is sure preconditions are already met).
+ * @return The controller gain K on success, or DAREError on failure.
+ */
+template <int num_states, int num_inputs>
+tl::expected<Eigen::Matrix<double, num_inputs, num_states>, DAREError> dlqr(
+    const Eigen::Matrix<double, num_states, num_states> &A,
+    const Eigen::Matrix<double, num_states, num_inputs> &B,
+    const Eigen::Matrix<double, num_states, num_states> &Q,
+    const Eigen::Matrix<double, num_inputs, num_inputs> &R,
+    bool check_preconditions = true) {
+  if (auto X = dare<num_states, num_inputs>(A, B, Q, R, check_preconditions)) {
+    // K = (BᵀSB + R)⁻¹BᵀSA
+    return (B.transpose() * X.value() * B + R)
+        .llt()
+        .solve(B.transpose() * X.value() * A);
+  } else {
+    return tl::unexpected{X.error()};
   }
-  // Discrete (not continuous)
-  char DICO = 'D';
-  // B and R are provided instead of G.
-  char JOBB = 'B';
-  // Not factored, Q and R are provide.
-  char FACT = 'N';
-  // Store the upper triangle of Q and R.
-  char UPLO = 'U';
-  // L is zero.
-  char JOBL = 'Z';
-  // Stable eigenvalues first in the sort order
-  char SORT = 'S';
-
-  long N = kN;
-  long M = kM;
-  // Not needed since FACT = N
-  long P = 0;
-
-  long LDL = 1;
-
-  double RCOND = 0.0;
-  ::Eigen::Matrix<double, kN, kN> X = ::Eigen::Matrix<double, kN, kN>::Zero();
-
-  double ALFAR[kN * 2];
-  double ALFAI[kN * 2];
-  double BETA[kN * 2];
-  memset(ALFAR, 0, sizeof(ALFAR));
-  memset(ALFAI, 0, sizeof(ALFAI));
-  memset(BETA, 0, sizeof(BETA));
-
-  long LDS = 2 * kN + kM;
-  ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN + kM> S_schur =
-      ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN + kM>::Zero();
-
-  ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN> T =
-      ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN>::Zero();
-  long LDT = 2 * kN + kM;
-
-  ::Eigen::Matrix<double, 2 * kN, 2 * kN> U =
-      ::Eigen::Matrix<double, 2 * kN, 2 * kN>::Zero();
-  long LDU = 2 * kN;
-
-  double TOL = 0.0;
-
-  long IWORK[2 * kN > kM ? 2 * kN : kM];
-  memset(IWORK, 0, sizeof(IWORK));
-
-  long LDWORK = 16 * kN + 3 * kM + 16;
-
-  double DWORK[LDWORK];
-  memset(DWORK, 0, sizeof(DWORK));
-
-  long INFO = 0;
-
-  long BWORK[kN * 2];
-  memset(BWORK, 0, sizeof(BWORK));
-
-  // TODO(austin): I can't tell if anything here is transposed...
-  sb02od_(&DICO, &JOBB, &FACT, &UPLO, &JOBL, &SORT, &N, &M, &P, A.data(), &N,
-          B.data(), &N, Q.data(), &N, R.data(), &M, nullptr, &LDL, &RCOND,
-          X.data(), &N, ALFAR, ALFAI, BETA, S_schur.data(), &LDS, T.data(),
-          &LDT, U.data(), &LDU, &TOL, IWORK, DWORK, &LDWORK, BWORK, &INFO);
-
-  *K = (R + B.transpose() * X * B).inverse() * B.transpose() * X * A;
-  if (S != nullptr) {
-    *S = X;
-  }
-
-  return INFO;
 }
 
 }  // namespace frc971::controls

@@ -530,6 +530,33 @@ cc_library(
 )
 
 cc_library(
+    name = "dare",
+    hdrs = [
+        "dare.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_tartanllama_expected",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "dare_test",
+    srcs = [
+        "dare_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":dare",
+        "//aos/testing:googletest",
+        "@com_google_absl//absl/log",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
     name = "dlqr",
     hdrs = [
         "dlqr.h",
@@ -537,8 +564,9 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":dare",
+        "@com_github_tartanllama_expected",
         "@org_tuxfamily_eigen//:eigen",
-        "@slycot_repo//:slicot",
     ],
 )
 

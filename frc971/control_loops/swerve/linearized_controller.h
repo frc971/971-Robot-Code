@@ -85,15 +85,14 @@ class LinearizedController {
             << frc971::controls::Controllability(discrete_dynamics.A,
                                                  discrete_dynamics.B);
     Eigen::Matrix<Scalar, kNumInputs, NStates> K;
-    Eigen::Matrix<Scalar, NStates, NStates> S;
-    // TODO(james): Swap this to a cheaper DARE solver; we should probably just
-    // do something like we do in Trajectory::CalculatePathGains for the tank
-    // spline controller where we approximate the infinite-horizon DARE solution
-    // by doing a finite-horizon LQR.
-    // Currently the dlqr call represents ~60% of the time spent in the
-    // RunController() method.
-    frc971::controls::dlqr(discrete_dynamics.A, discrete_dynamics.B, params_.Q,
-                           params_.R, &K, &S);
+    if (frc971::controls::is_stabilizable(discrete_dynamics.A,
+                                          discrete_dynamics.B)) {
+      K = frc971::controls::dlqr(discrete_dynamics.A, discrete_dynamics.B,
+                                 params_.Q, params_.R, false)
+              .value();
+    } else {
+      K.setZero();
+    }
     auto dlqr_time = aos::monotonic_clock::now();
     const Input U_feedback = K * (goal - X);
     const Input U = U_ff + U_feedback;

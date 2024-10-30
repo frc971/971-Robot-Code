@@ -66,16 +66,13 @@ void AB(const DrivetrainConfig<double> &dt_config,
                                     const ::Eigen::Matrix<double, 3, 2> &B,
                                     const ::Eigen::Matrix<double, 3, 3> &Q,
                                     const ::Eigen::Matrix<double, 2, 2> &R) {
-  Eigen::Matrix<double, 2, 3> K;
-  Eigen::Matrix<double, 3, 3> S;
-  int info = ::frc971::controls::dlqr<3, 2>(A, B, Q, R, &K, &S);
-  if (info != 0) {
+  if (auto K = ::frc971::controls::dlqr<3, 2>(A, B, Q, R)) {
+    return K.value();
+  } else {
     // We allow a FATAL error here since this should only be called during
     // initialization.
-    AOS_LOG(FATAL, "Failed to solve %d, controllability: %d\n", info,
-            controls::Controllability(A, B));
+    AOS_LOG(FATAL, "Failed to solve for K: %s\n", to_string(K.error()));
   }
-  return K;
 }
 
 ::Eigen::Matrix<double, 2, 3> CalcKff(const ::Eigen::Matrix<double, 3, 2> &B) {
