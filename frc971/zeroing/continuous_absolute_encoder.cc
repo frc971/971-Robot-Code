@@ -165,4 +165,14 @@ ContinuousAbsoluteEncoderZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
+void ContinuousAbsoluteEncoderZeroingEstimator::GetEstimatorState(
+    AbsoluteEncoderEstimatorStateStatic *fbs) const {
+  errors_.ToStaticFlatbuffer(fbs->add_errors());
+
+  fbs->set_error(error_);
+  fbs->set_zeroed(zeroed_);
+  fbs->set_position(position_);
+  fbs->set_absolute_position(filtered_absolute_encoder_);
+}
+
 }  // namespace frc971::zeroing

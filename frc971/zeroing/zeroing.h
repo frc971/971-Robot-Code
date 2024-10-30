@@ -10,7 +10,7 @@
 #include "flatbuffers/flatbuffers.h"
 
 #include "frc971/constants.h"
-#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/control_loops_static.h"
 
 // TODO(pschrader): Flag an error if encoder index pulse is not n revolutions
 // away from the last one (i.e. got extra counts from noise, etc..)
