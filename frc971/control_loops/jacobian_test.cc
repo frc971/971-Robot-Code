@@ -19,17 +19,17 @@ namespace frc971::control_loops::testing {
 
 // Test that we can recover A from AxBufn pretty accurately.
 TEST(RungeKuttaTest, Ax) {
-  ::Eigen::Matrix<double, 4, 4> NewA =
-      NumericalJacobianX<4, 2>(AxBufn, ::Eigen::Matrix<double, 4, 1>::Zero(),
-                               ::Eigen::Matrix<double, 2, 1>::Zero());
+  ::Eigen::Matrix<double, 4, 4> NewA = NumericalJacobianX<4, 2, double>(
+      AxBufn, ::Eigen::Matrix<double, 4, 1>::Zero(),
+      ::Eigen::Matrix<double, 2, 1>::Zero());
   EXPECT_TRUE(NewA.isApprox(A));
 }
 
 // Test that we can recover B from AxBufn pretty accurately.
 TEST(RungeKuttaTest, Bu) {
-  ::Eigen::Matrix<double, 4, 2> NewB =
-      NumericalJacobianU<4, 2>(AxBufn, ::Eigen::Matrix<double, 4, 1>::Zero(),
-                               ::Eigen::Matrix<double, 2, 1>::Zero());
+  ::Eigen::Matrix<double, 4, 2> NewB = NumericalJacobianU<4, 2, double>(
+      AxBufn, ::Eigen::Matrix<double, 4, 1>::Zero(),
+      ::Eigen::Matrix<double, 2, 1>::Zero());
   EXPECT_TRUE(NewB.isApprox(B));
 }
 
