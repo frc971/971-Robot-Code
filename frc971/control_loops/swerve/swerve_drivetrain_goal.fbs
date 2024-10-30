@@ -1,3 +1,6 @@
+include "frc971/math/matrix.fbs";
+include "frc971/control_loops/swerve/swerve_drivetrain_joystick_goal.fbs";
+
 namespace frc971.control_loops.swerve;
 
 // States what translation control type goal we will care about
@@ -22,11 +25,20 @@ table SwerveModuleGoal {
   translation_speed:double (id: 3);
 }
 
+attribute "static_length";
+
+table LinearVelocityGoal {
+  state:frc971.fbs.Matrix (id: 0);
+  input:frc971.fbs.Matrix (id: 1);
+}
+
 table Goal {
     front_left_goal:SwerveModuleGoal (id: 0);
     front_right_goal:SwerveModuleGoal (id: 1);
     back_left_goal:SwerveModuleGoal (id: 2);
     back_right_goal:SwerveModuleGoal (id: 3);
+    linear_velocity_goal:LinearVelocityGoal (id: 4);
+    joystick_goal:JoystickGoal (id: 5);
 }
 
 root_type Goal;

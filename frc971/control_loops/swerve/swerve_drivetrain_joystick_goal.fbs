@@ -1,0 +1,9 @@
+namespace frc971.control_loops.swerve;
+
+table JoystickGoal {
+  vx:float (id: 0);
+  vy:float (id: 1);
+  omega:float (id: 2);
+}
+
+root_type JoystickGoal;

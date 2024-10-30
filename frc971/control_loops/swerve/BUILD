@@ -14,8 +14,17 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
+    name = "swerve_drivetrain_joystick_goal_fbs",
+    srcs = ["swerve_drivetrain_joystick_goal.fbs"],
+)
+
+static_flatbuffer(
     name = "swerve_drivetrain_goal_fbs",
     srcs = ["swerve_drivetrain_goal.fbs"],
+    deps = [
+        ":swerve_drivetrain_joystick_goal_fbs",
+        "//frc971/math:matrix_fbs",
+    ],
 )
 
 static_flatbuffer(
