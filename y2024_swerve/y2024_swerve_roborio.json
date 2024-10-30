@@ -305,8 +305,7 @@
             "name": "wpilib_interface",
             "executable_name": "wpilib_interface",
             "args": [
-                "--nodie_on_malloc",
-                "--ctre_diag_server"
+              "--nodie_on_malloc"
             ],
             "nodes": [
                 "roborio"
