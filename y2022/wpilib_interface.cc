@@ -129,9 +129,11 @@ void PrintConfigs(ctre::phoenix6::hardware::TalonFX *talon) {
 void WriteConfigs(ctre::phoenix6::hardware::TalonFX *talon,
                   double stator_current_limit, double supply_current_limit) {
   ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-  current_limits.StatorCurrentLimit = stator_current_limit;
+  current_limits.StatorCurrentLimit =
+      units::current::ampere_t{stator_current_limit};
   current_limits.StatorCurrentLimitEnable = true;
-  current_limits.SupplyCurrentLimit = supply_current_limit;
+  current_limits.SupplyCurrentLimit =
+      units::current::ampere_t{supply_current_limit};
   current_limits.SupplyCurrentLimitEnable = true;
 
   ctre::phoenix6::configs::TalonFXConfiguration configuration;
@@ -483,10 +485,10 @@ class SuperstructureWriter
     for (auto &falcon : {catapult_falcon_1_can_, catapult_falcon_2_can_}) {
       ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
       current_limits.StatorCurrentLimit =
-          Values::kIntakeRollerStatorCurrentLimit();
+          units::current::ampere_t{Values::kIntakeRollerStatorCurrentLimit()};
       current_limits.StatorCurrentLimitEnable = true;
       current_limits.SupplyCurrentLimit =
-          Values::kIntakeRollerSupplyCurrentLimit();
+          units::current::ampere_t{Values::kIntakeRollerSupplyCurrentLimit()};
       current_limits.SupplyCurrentLimitEnable = true;
 
       ctre::phoenix6::configs::TalonFXConfiguration configuration;

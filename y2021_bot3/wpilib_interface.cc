@@ -119,9 +119,11 @@ void PrintConfigs(ctre::phoenix6::hardware::TalonFX *talon) {
 void WriteConfigs(ctre::phoenix6::hardware::TalonFX *talon,
                   double stator_current_limit, double supply_current_limit) {
   ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-  current_limits.StatorCurrentLimit = stator_current_limit;
+  current_limits.StatorCurrentLimit =
+      units::current::ampere_t{stator_current_limit};
   current_limits.StatorCurrentLimitEnable = true;
-  current_limits.SupplyCurrentLimit = supply_current_limit;
+  current_limits.SupplyCurrentLimit =
+      units::current::ampere_t{supply_current_limit};
   current_limits.SupplyCurrentLimitEnable = true;
 
   ctre::phoenix6::configs::TalonFXConfiguration configuration;
@@ -249,7 +251,8 @@ class SuperstructureWriter
       ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     climber_falcon_ = ::std::move(t);
     ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-    current_limits.SupplyCurrentLimit = Values::kClimberSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimit =
+        units::current::ampere_t{Values::kClimberSupplyCurrentLimit()};
     current_limits.SupplyCurrentLimitEnable = true;
 
     ctre::phoenix6::configs::TalonFXConfiguration configuration;

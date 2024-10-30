@@ -702,14 +702,16 @@ http_archive(
 cc_library(
     name = 'api-cpp',
     visibility = ['//visibility:public'],
-    hdrs = glob(['ctre/phoenix6/**/*.hpp']),
+    hdrs = glob(['ctre/phoenix6/**/*.hpp', 'ctre/unit/**/*.h']),
     includes = ["."],
-    deps = ["@//third_party/allwpilib/wpimath"],
+    deps = ["@//third_party/allwpilib/wpimath",
+            "@ctre_phoenix6_tools_headers//:tools",
+            ],
 )
 """,
-    sha256 = "1b9295ac868d619d0263f285b372a22297798e45c8fdeb83ca99154a097c5c98",
+    sha256 = "67fdd9a4bf275c69666bbc8bf38312eea8a85bf9fda3901d02af3a18136ffb3e",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.1.0/api-cpp-24.1.0-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.50.0-alpha-2/api-cpp-24.50.0-alpha-2-headers.zip",
     ],
 )
 
@@ -731,9 +733,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "51f4921f8995e3e80ba347a90f6fa5c0cb7d0e438923a1a736554f263e2d5b8e",
+    sha256 = "00da14f437cfeb2c344674dee59fe70477a3a0d612eb93a1441188dc94a5136f",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.1.0/api-cpp-24.1.0-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.50.0-alpha-2/api-cpp-24.50.0-alpha-2-linuxathena.zip",
     ],
 )
 
@@ -743,12 +745,12 @@ http_archive(
 cc_library(
     name = 'tools',
     visibility = ['//visibility:public'],
-    hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
+    hdrs = glob(['ctre/**/*.h', 'ctre/phoenix/**/*.hpp', 'ctre/phoenix6/**/*.hpp']),
 )
 """,
-    sha256 = "72be3e50205e2546736361e3aba9c0de5d5318b263c195600f9b558c3d92cb9e",
+    sha256 = "77624291ec19a03c9e068347ef800e435782444722793d56c9e39f6108da33a8",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.1.0/tools-24.1.0-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.50.0-alpha-2/tools-24.50.0-alpha-2-headers.zip",
     ],
 )
 
@@ -770,9 +772,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "76d30cb8c0988eb6accab10e77ceae492782edb64c06f7df628b8c161cf0220a",
+    sha256 = "217bcd6aecb71224fd32725f857da58e61a6ea451ca07f85fb55e49f83dbf113",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.1.0/tools-24.1.0-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.50.0-alpha-2/tools-24.50.0-alpha-2-linuxathena.zip",
     ],
 )
 
@@ -782,12 +784,13 @@ http_archive(
 cc_library(
     name = 'api-cpp',
     visibility = ['//visibility:public'],
-    hdrs = glob(['ctre/phoenix/**/*.h']),
+    hdrs = glob(['ctre/phoenix/**/*.h', 'ctre/unit/**/*.h']),
+    includes = ["."]
 )
 """,
-    sha256 = "d2790e2495a59a3b14ab4b0fd03c2e25292d6874168f5642165acb0d1bab2f99",
+    sha256 = "4fba20441ea1d61f8487897682c723a48ee2c2741946eab4062b4248434c0afc",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.33.0/api-cpp-5.33.0-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.34.0-alpha-1/api-cpp-5.34.0-alpha-1-headers.zip",
     ],
 )
 
@@ -824,9 +827,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "56cb8272d623721560eea360730d2508f4f365e2ac1060aec5fbd546cffc0771",
+    sha256 = "cd39f32341037a7ec1074710044b332db6ca607dfd548b5f951c75f7a8506ab5",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.33.0/cci-5.33.0-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.34.0-alpha-1/cci-5.34.0-alpha-1-headers.zip",
     ],
 )
 
@@ -867,6 +870,7 @@ filegroup(
     target_compatible_with = ['@platforms//cpu:arm64'],
 )
 
+
 # TODO(max): Use cc_import once they add a defines property.
 # See: https://github.com/bazelbuild/bazel/issues/19753
 cc_library(
@@ -891,9 +895,9 @@ cc_library(
     ],
 )
 """,
-    sha256 = "635b19f019d1283749fb23a95ad9e13ddd9d5013cff4c838303d898e7d9556bd",
+    sha256 = "0f1312f39eacc490fb253198c2d0e61e48ae00eff6a87cfd362358b1ad36a930",
     urls = [
-        "https://software.frc971.org/Build-Dependencies/phoenix6_24.2.0_5.4.2024.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/phoenix6_24.50.0-alpha-2_arm64-2024.10.26.tar.gz",
     ],
 )
 
