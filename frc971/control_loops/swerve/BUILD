@@ -411,10 +411,12 @@ cc_binary(
 cc_library(
     name = "linearization_utils",
     hdrs = ["linearization_utils.h"],
+    deps = ["//frc971/control_loops:jacobian"],
 )
 
 cc_library(
     name = "linearized_controller",
+    srcs = ["linearized_controller.cc"],
     hdrs = ["linearized_controller.h"],
     deps = [
         ":eigen_dynamics",
@@ -422,6 +424,7 @@ cc_library(
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
     ],
@@ -460,6 +463,7 @@ cc_library(
     deps = [
         ":auto_diff_jacobian",
         ":eigen_dynamics",
+        ":linearization_utils",
         ":motors",
         "//aos/util:math",
         "@com_google_absl//absl/log",

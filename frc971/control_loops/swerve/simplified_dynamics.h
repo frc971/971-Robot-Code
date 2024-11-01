@@ -6,6 +6,7 @@
 #include "aos/util/math.h"
 #include "frc971/control_loops/swerve/auto_diff_jacobian.h"
 #include "frc971/control_loops/swerve/dynamics.h"
+#include "frc971/control_loops/swerve/linearization_utils.h"
 #include "frc971/control_loops/swerve/motors.h"
 
 namespace frc971::control_loops::swerve {
@@ -108,7 +109,33 @@ class SimplifiedDynamics {
   using PositionBMatrix =
       Eigen::Matrix<ScalarT, kNumPositionStates, kNumInputs>;
   template <typename ScalarT = Scalar>
+  using VelocityBMatrix =
+      Eigen::Matrix<ScalarT, kNumVelocityStates, kNumInputs>;
+  template <typename ScalarT = Scalar>
   using Input = Eigen::Matrix<ScalarT, kNumInputs, 1>;
+
+  // Provide an interface to the dynamics which overrides the virtual methods in
+  // the DynamicsInterface, to enable use in controllers/filters that expect the
+  // dynamics to present a particular interface.
+  class VirtualVelocityDynamics
+      : public DynamicsInterface<Scalar, kNumVelocityStates, kNumInputs> {
+   public:
+    using LinearDynamics = DynamicsInterface<Scalar, kNumVelocityStates,
+                                             kNumInputs>::LinearDynamics;
+    VirtualVelocityDynamics(const Parameters &params) : dynamics_(params) {}
+    VelocityState<> operator()(const VelocityState<> &X,
+                               const Input<> &U) const override {
+      return dynamics_.VelocityDynamics(X, U);
+    }
+    LinearDynamics LinearizeDynamics(const VelocityState<> &X,
+                                     const Input<> &U) const override {
+      auto pair = dynamics_.LinearizedVelocityDynamics(X, U);
+      return {pair.first, pair.second};
+    }
+
+   private:
+    const SimplifiedDynamics<Scalar> dynamics_;
+  };
 
   SimplifiedDynamics(const Parameters &params) : params_(params) {
     for (size_t module_index = 0; module_index < params_.modules.size();
@@ -145,7 +172,7 @@ class SimplifiedDynamics {
   }
 
   std::pair<PositionStateSquare<>, PositionBMatrix<>> LinearizedDynamics(
-      const PositionState<> &state, const Input<> &input) {
+      const PositionState<> &state, const Input<> &input) const {
     DynamicsFunctor functor(*this);
     Eigen::Matrix<Scalar, kNumPositionStates + kNumInputs, 1> parameters;
     parameters.template topRows<kNumPositionStates>() = state;
@@ -160,6 +187,19 @@ class SimplifiedDynamics {
         jacobian.template block<kNumPositionStates, kNumPositionStates>(0, 0),
         jacobian.template block<kNumPositionStates, kNumInputs>(
             0, kNumPositionStates)};
+  }
+
+  std::pair<VelocityStateSquare<>, VelocityBMatrix<>>
+  LinearizedVelocityDynamics(const VelocityState<> &state,
+                             const Input<> &input) const {
+    PositionState<> position_state = PositionState<>::Zero();
+    position_state.template topRows<kNumVelocityStates>() = state;
+    auto position_dynamics = LinearizedDynamics(position_state, input);
+    return {
+        position_dynamics.first
+            .template block<kNumVelocityStates, kNumVelocityStates>(0, 0),
+        position_dynamics.second.template block<kNumVelocityStates, kNumInputs>(
+            0, 0)};
   }
 
  private:

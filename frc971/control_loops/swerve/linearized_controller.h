@@ -1,5 +1,9 @@
+#ifndef frc971_CONTROL_LOOPS_SWERVE_LINEARIZED_CONTROLLER_H_
+#define frc971_CONTROL_LOOPS_SWERVE_LINEARIZED_CONTROLLER_H_
 #include <memory>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include <Eigen/Dense>
@@ -9,6 +13,9 @@
 #include "frc971/control_loops/jacobian.h"
 #include "frc971/control_loops/swerve/dynamics.h"
 #include "frc971/control_loops/swerve/linearization_utils.h"
+
+ABSL_DECLARE_FLAG(bool, use_slicot);
+ABSL_DECLARE_FLAG(int, dare_iterations);
 
 namespace frc971::control_loops::swerve {
 
@@ -23,7 +30,9 @@ class LinearizedController {
   typedef Eigen::Matrix<Scalar, kNumInputs, 1> Input;
   typedef Eigen::Matrix<Scalar, kNumInputs, kNumInputs> InputSquare;
   typedef Eigen::Matrix<Scalar, NStates, kNumInputs> BMatrix;
-  typedef DynamicsInterface<State, Input> Dynamics;
+  typedef Eigen::Matrix<Scalar, kNumInputs, NStates> GainMatrix;
+  typedef DynamicsInterface<Scalar, NStates, kNumInputs> Dynamics;
+  typedef Dynamics::LinearDynamics LinearDynamics;
 
   struct Parameters {
     // State cost matrix.
@@ -40,12 +49,6 @@ class LinearizedController {
     std::unique_ptr<Dynamics> dynamics;
   };
 
-  // Represents the linearized dynamics of the system.
-  struct LinearDynamics {
-    StateSquare A;
-    BMatrix B;
-  };
-
   // Debug information for a given cycle of the controller.
   struct ControllerDebug {
     // Feedforward input which we provided.
@@ -53,6 +56,7 @@ class LinearizedController {
     // Calculated feedback input to provide.
     Input U_feedback;
     Eigen::Matrix<Scalar, kNumInputs, NStates> feedback_contributions;
+    int sb02od_exit_code;
   };
 
   struct ControllerResult {
@@ -63,6 +67,10 @@ class LinearizedController {
 
   LinearizedController(Parameters params) : params_(std::move(params)) {}
 
+  const LinearDynamics LinearizeDynamics(const State &X, const Input &U) const {
+    return params_.dynamics->LinearizeDynamics(X, U);
+  }
+
   // Runs the controller for a given iteration, relinearizing the dynamics about
   // the provided current state X, attempting to control the robot to the
   // desired goal state.
@@ -70,12 +78,9 @@ class LinearizedController {
   ControllerResult RunController(const State &X, const State &goal,
                                  Input U_ff) {
     auto start_time = aos::monotonic_clock::now();
-    // TODO(james): Swap this to the auto-diff methods; this is currently about
-    // a third of the total time spent in this method when run on the roborio.
-    const struct LinearDynamics continuous_dynamics =
-        LinearizeDynamics(X, U_ff);
+    const LinearDynamics continuous_dynamics = LinearizeDynamics(X, U_ff);
     auto linearization_time = aos::monotonic_clock::now();
-    struct LinearDynamics discrete_dynamics;
+    LinearDynamics discrete_dynamics;
     frc971::controls::C2D(continuous_dynamics.A, continuous_dynamics.B,
                           params_.dt, &discrete_dynamics.A,
                           &discrete_dynamics.B);
@@ -84,16 +89,12 @@ class LinearizedController {
             << "): "
             << frc971::controls::Controllability(discrete_dynamics.A,
                                                  discrete_dynamics.B);
-    Eigen::Matrix<Scalar, kNumInputs, NStates> K;
-    Eigen::Matrix<Scalar, NStates, NStates> S;
-    // TODO(james): Swap this to a cheaper DARE solver; we should probably just
-    // do something like we do in Trajectory::CalculatePathGains for the tank
-    // spline controller where we approximate the infinite-horizon DARE solution
-    // by doing a finite-horizon LQR.
-    // Currently the dlqr call represents ~60% of the time spent in the
-    // RunController() method.
-    frc971::controls::dlqr(discrete_dynamics.A, discrete_dynamics.B, params_.Q,
-                           params_.R, &K, &S);
+    int sb02od_exit_code = -1;
+    GainMatrix K = SolveDare(
+        discrete_dynamics.A, discrete_dynamics.B, params_.Q, params_.R,
+        absl::GetFlag(FLAGS_use_slicot) ? DareSolver::Slicot
+                                        : DareSolver::IterativeApproximation,
+        &sb02od_exit_code);
     auto dlqr_time = aos::monotonic_clock::now();
     const Input U_feedback = K * (goal - X);
     const Input U = U_ff + U_feedback;
@@ -111,16 +112,61 @@ class LinearizedController {
     return {.U = U,
             .debug = {.U_ff = U_ff,
                       .U_feedback = U_feedback,
-                      .feedback_contributions = feedback_contributions}};
+                      .feedback_contributions = feedback_contributions,
+                      .sb02od_exit_code = sb02od_exit_code}};
   }
 
-  LinearDynamics LinearizeDynamics(const State &X, const Input &U) {
-    return {.A = NumericalJacobianX(*params_.dynamics, X, U),
-            .B = NumericalJacobianU(*params_.dynamics, X, U)};
+  // Specifies what version of the DARE solver to use when attempting to solve
+  // for the LQR gains. The SLICOT solver finds an actual solution the the DARE,
+  // but takes longer and can be less stable, while the iterative method does a
+  // more alzy approximation which effectively performs a finite-horizon LQR.
+  enum class DareSolver { Slicot, IterativeApproximation };
+
+  GainMatrix SolveDare(const StateSquare &A, const BMatrix &B,
+                       const StateSquare &Q, const InputSquare &R,
+                       DareSolver solver, int *sb02od_exit_code) {
+    if (solver == DareSolver::Slicot) {
+      Eigen::Matrix<double, kNumInputs, NStates> K;
+      // TODO(james): Swap this to a cheaper DARE solver; we should probably
+      // just do something like we do in Trajectory::CalculatePathGains for the
+      // tank spline controller where we approximate the infinite-horizon DARE
+      // solution by doing a finite-horizon LQR.
+      *sb02od_exit_code = (frc971::controls::dlqr<NStates, kNumInputs>(
+          A.template cast<double>(), B.template cast<double>(),
+          Q.template cast<double>(), R.template cast<double>(), &K, nullptr));
+      if (*sb02od_exit_code == 0) {
+        last_K_ = K.template cast<Scalar>();
+      }
+      return last_K_;
+    } else {
+      // This mode effectively approximates the solution to the DARE as a
+      // finite-horizon LQR
+      // (https://en.wikipedia.org/wiki/Linear%E2%80%93quadratic_regulator#Finite-horizon,_discrete-time).
+      // For sufficiently large iteration counts this should be correct,
+      // although it will be much less efficient than a proper solver.
+      StateSquare P = Q;
+      const int kDareIters = absl::GetFlag(FLAGS_dare_iterations);
+      BMatrix APB;
+      InputSquare RBPBinv;
+      for (int ii = 0; ii < kDareIters; ++ii) {
+        const StateSquare AP = A.transpose() * P;
+        CHECK(AP.allFinite());
+        APB = AP * B;
+        CHECK(APB.allFinite());
+        RBPBinv = (R + B.transpose() * P * B).inverse();
+        P = AP * A - APB * RBPBinv * APB.transpose() + Q;
+      }
+      CHECK(P.allFinite());
+      CHECK_LT(P.norm(), 1e30) << "LQR calculations became unstable.";
+      return (R + B.transpose() * P * B).inverse() *
+             (A.transpose() * P * B).transpose();
+    }
   }
 
  private:
   const Parameters params_;
+  GainMatrix last_K_ = GainMatrix::Zero();
 };
 
 }  // namespace frc971::control_loops::swerve
+#endif  // frc971_CONTROL_LOOPS_SWERVE_LINEARIZED_CONTROLLER_H_
