@@ -1,4 +1,5 @@
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/math/matrix.fbs";
 
 namespace frc971.control_loops.swerve;
 
@@ -11,11 +12,31 @@ table SwerveModuleStatus {
     translation_speed:double (id: 2);
 }
 
+attribute "static_length";
+
+// Represents the state of the "naive estimator" which does not even perform
+// any Kalman filter corrections to estimate the swerve drivetrain tstate.
+table NaiveEstimatorStatus {
+  // Zeroing state of each swerve module.
+  estimator_states:[frc971.AbsoluteEncoderEstimatorState] (id: 0, static_length: 4);
+  // Internal state of the estimator; see naive_estimator.h.
+  velocity_state:frc971.fbs.Matrix (id: 1);
+  // Exposed robot heading & velocities (these are components of velocity_state
+  // which are exposed for human readability).
+  yaw:float (id: 2);
+  vx:float (id: 3);
+  vy:float (id: 4);
+  omega:float (id: 5);
+  // Estimated per-module drive velocities, in m/s.
+  module_drive_velocities:[float] (id: 6);
+}
+
 table Status {
     front_left_status:SwerveModuleStatus (id: 0);
     front_right_status:SwerveModuleStatus (id: 1);
     back_left_status:SwerveModuleStatus (id: 2);
     back_right_status:SwerveModuleStatus (id: 3);
+    naive_estimator:NaiveEstimatorStatus (id: 4);
 }
 
 root_type Status;

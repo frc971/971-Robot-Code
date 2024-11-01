@@ -18,7 +18,8 @@
         },
         {
             "name": "/swerve",
-            "type": "frc971.control_loops.swerve.Status"
+            "type": "frc971.control_loops.swerve.Status",
+            "max_size": 4096
         }
     ],
     "imports": [

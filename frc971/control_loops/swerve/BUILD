@@ -500,3 +500,18 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "naive_estimator",
+    srcs = ["naive_estimator.cc"],
+    hdrs = ["naive_estimator.h"],
+    deps = [
+        ":simplified_dynamics",
+        ":swerve_drivetrain_can_position_fbs",
+        ":swerve_drivetrain_position_fbs",
+        ":swerve_drivetrain_status_fbs",
+        ":swerve_zeroing_fbs",
+        "//frc971/math:flatbuffers_matrix",
+        "//frc971/zeroing:continuous_absolute_encoder",
+    ],
+)
