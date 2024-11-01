@@ -50,6 +50,12 @@ class SimplifiedDynamics {
     Scalar steer_ratio;
     // meters of driving = drive_ratio * radians of motor shaft
     Scalar drive_ratio;
+    // A number to add to the steer module inertia (beyond just the rotor
+    // inertia of the motor). In practice this may end up just serving as a bit
+    // of a drag term (or be unused entirely), as we don't currently believe the
+    // *actual* inertia of the gearbox/wheel should be significant compared to
+    // the rotor inertia.
+    Scalar extra_steer_inertia;
   };
   struct Parameters {
     // Mass of the robot, in kg.
@@ -248,14 +254,18 @@ class SimplifiedDynamics {
       // Steering dynamics for an individual module assume ~zero friction,
       // and thus ~the only inertia is from the motor rotor itself.
       // torque_motor = stall_torque / stall_current * current
-      // accel_motor = torque_motor / motor_inertia
+      // accel_motor = torque_motor / (motor_inertia + extra_steer_inertia *
+      //                               steer_ratio)
       // accel_steer = accel_motor * steer_ratio
       const Motor &steer_motor = module_params().steer_motor;
       const LocalScalar steer_motor_accel =
           input(IsIdx()) *
-          static_cast<Scalar>(
-              module_params().steer_ratio * steer_motor.stall_torque /
-              (steer_motor.stall_current * steer_motor.motor_inertia));
+          static_cast<Scalar>(module_params().steer_ratio *
+                              steer_motor.stall_torque /
+                              (steer_motor.stall_current *
+                               (steer_motor.motor_inertia +
+                                module_params().steer_ratio *
+                                    module_params().extra_steer_inertia)));
 
       // For the impacts of the modules on the overall robot
       // dynamics (X, Y, and theta acceleration), we calculate the forces

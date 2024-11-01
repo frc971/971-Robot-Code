@@ -27,7 +27,8 @@ class SimplifiedDynamicsTest : public ::testing::Test {
         .steer_motor = KrakenFOC(),
         .drive_motor = KrakenFOC(),
         .steer_ratio = 0.1,
-        .drive_ratio = 0.01};
+        .drive_ratio = 0.01,
+        .extra_steer_inertia = 0.0};
   }
   static Parameters MakeParams(bool wheel_alignment) {
     return {.mass = 60,
