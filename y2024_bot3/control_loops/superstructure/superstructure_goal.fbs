@@ -2,6 +2,33 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2024_bot3.control_loops.superstructure;
 
-table Goal {
+// Represents goal for the intake rollers
+// INTAKE will turn on the rollers to intake the note.
+// SCORE will turn on the rollers to shoot the note.
+// SPIT will turn on the rollers (in reverse) to spit out the note.
+enum IntakeGoal : ubyte {
+    NONE = 0,
+    INTAKE = 1,
+    SCORE = 2,
+    SPIT = 3,
 }
+
+// Represents goal for the intake arm
+// IDLE will place the arm at the resting position.
+// INTAKE will place the arm at the intake position.
+// AMP will place the arm at the amp scoring position.
+enum PivotGoal: ubyte {
+    IDLE = 0,
+    INTAKE = 1,
+    AMP = 2,
+}
+
+table Goal {
+    // Intake roller goal
+    roller_goal: IntakeGoal = NONE (id: 0);
+
+    // Arm position goal
+    arm_position: PivotGoal (id: 1);
+}
+
 root_type Goal;

@@ -4,6 +4,11 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2024_bot3.control_loops.superstructure;
 
 table Position {
+    // Zero for the intake position value is horizontal, positive is up.
+    arm:frc971.PotAndAbsolutePosition (id: 0);
+
+    // Beambreak for the intake, 1 means note is present.
+    intake_beambreak:bool (id: 1);
 }
 
 root_type Position;
