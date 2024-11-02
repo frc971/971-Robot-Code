@@ -505,8 +505,8 @@
       </button>
     </div>
   </div>
-  <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
-    <h2>Successfully submitted data.</h2>
+  <div *ngSwitchCase="'End'" id="End" class="container-fluid">
+    <span class="success_message" role="alert">{{ successMessage }}</span>
     <div class="d-grid gap-5" *ngIf="nextTeamNumber != ''">
       <button class="btn btn-primary" (click)="goToNextTeam();">
         SCOUT NEXT TEAM

@@ -53,7 +53,7 @@ type Section =
   | 'Dead'
   | 'Review and Submit'
   | 'QR Code'
-  | 'Success';
+  | 'End';
 
 type CompType = 'PreScouting' | 'Practice' | 'Regular';
 
@@ -124,6 +124,7 @@ export class EntryComponent implements OnInit {
   actionList: ActionT[] = [];
   progressMessage: string = '';
   errorMessage: string = '';
+  successMessage: string = '';
   autoPhase: boolean = true;
   mobilityCompleted: boolean = false;
   // TODO(phil): Come up with a better name here.
@@ -452,7 +453,7 @@ export class EntryComponent implements OnInit {
 
     if (res.ok) {
       // We successfully submitted the data. Report success.
-      this.section = 'Success';
+      this.section = 'End';
       this.actionList = [];
 
       // Keep track of the position of the last robot, use to figure out what
@@ -515,6 +516,7 @@ export class EntryComponent implements OnInit {
       this.matchList = [];
       this.progressMessage = '';
       this.errorMessage = '';
+      this.successMessage = 'Successfully submitted data!';
       this.autoPhase = true;
       this.actionList = [];
       this.mobilityCompleted = false;
@@ -529,6 +531,8 @@ export class EntryComponent implements OnInit {
 
       const errorMessage = parsedResponse.errorMessage();
       this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      this.successMessage =
+        'There was an error when submitting the data. Refer to the error message for more information.';
     }
   }
 }
