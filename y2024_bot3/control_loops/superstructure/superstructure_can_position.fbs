@@ -11,6 +11,12 @@ table CANPosition {
     // The ctre::phoenix::StatusCode of the measurement
     // Should be OK = 0
     status:int (id: 1);
+
+    // CAN Position of the roller falcon
+    intake_roller:frc971.control_loops.CANTalonFX (id: 2);
+
+    // CAN Position of the arm pivot falcon
+    arm_pivot:frc971.control_loops.CANTalonFX (id: 3);
 }
 
 root_type CANPosition;

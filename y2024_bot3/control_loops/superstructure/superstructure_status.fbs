@@ -3,12 +3,36 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2024_bot3.control_loops.superstructure;
 
-table Status {
-  // All subsystems know their location.
-  zeroed:bool (id: 0);
+// Equivalent to IntakeGoal enum in goal flatbuffer
+enum IntakeRollerStatus : ubyte {
+    NONE = 0,
+    INTAKE = 1,
+    SCORE = 2,
+    SPIT = 3,
+}
 
-  // If true, we have aborted. This is the or of all subsystem estops.
-  estopped:bool (id: 1);
+// Equivalent to PivotGoal enum in goal flatbuffer
+enum ArmStatus: ubyte {
+    IDLE = 0,
+    INTAKE = 1,
+    AMP = 2,
+}
+
+table Status {
+    // All subsystems know their location.
+    zeroed:bool (id: 0);
+
+    // If true, we have aborted. This is the or of all subsystem estops.
+    estopped:bool (id: 1);
+
+    // Estimated Angles + Velocities of the Intake
+    arm:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+
+    // Tells us what IntakeGoal is
+    intake_roller_status: IntakeRollerStatus (id: 3);
+
+    // Tells us what PivotGoal is
+    arm_status: ArmStatus (id: 4);
 }
 
 root_type Status;

@@ -1,6 +1,11 @@
 namespace y2024_bot3.control_loops.superstructure;
 
 table Output {
+    // Roller voltage, positive is for intake and scoring
+    roller_voltage: double (id: 0);
+
+    // Arm voltage, positive is moving arm up
+    arm_voltage: double (id: 1);
 }
 
 root_type Output;
