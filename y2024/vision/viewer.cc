@@ -86,7 +86,9 @@ void ViewerMain() {
 
   frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
       &event_loop);
-  CHECK(absl::GetFlag(FLAGS_channel).length() == 8);
+  CHECK(absl::GetFlag(FLAGS_channel).length() == 8)
+      << " channel should be of the form '/cameraN' for viewing images from "
+         "camera N";
   int camera_id = std::stoi(absl::GetFlag(FLAGS_channel).substr(7, 1));
   const auto *calibration_data = FindCameraCalibration(
       constants_fetcher.constants(), event_loop.node()->name()->string_view(),
