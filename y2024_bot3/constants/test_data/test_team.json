@@ -1,4 +1,21 @@
+{% from 'y2024_bot3/constants/common.jinja2' import arm_zero %}
+
 {
-  "robot": {},
+  "robot": {
+    "arm_constants": {
+      {% set _ = arm_zero.update(
+          {
+              "measured_absolute_position" : 0.0992895926495078
+          }
+      ) %}
+      "zeroing_constants": {{ arm_zero | tojson(indent=2)}},
+      "potentiometer_offset": {{ 0 }},
+      "arm_positions": {
+        "intake": 0,
+        "idle": 1,
+        "amp": 2
+      }
+    }
+  },
   {% include 'y2024_bot3/constants/common.json' %}
 }

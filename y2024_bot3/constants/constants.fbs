@@ -10,12 +10,26 @@ table CameraConfiguration {
   calibration:frc971.vision.calibration.CameraCalibration (id: 0);
 }
 
+table ArmPositions {
+  intake:double (id: 0);
+  idle:double (id: 1);
+  amp:double (id: 2);
+}
+
+table PotAndAbsEncoderConstants {
+  zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
+  potentiometer_offset:double (id: 1);
+  arm_positions:ArmPositions (id: 2);
+}
+
 table RobotConstants {
+  arm_constants:PotAndAbsEncoderConstants (id: 0);
 }
 
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
+  arm:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 1);
 }
 
 table Constants {

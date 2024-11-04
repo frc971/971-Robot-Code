@@ -12,6 +12,7 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/absolute_encoder.h"
 #include "y2024_bot3/constants/simulated_constants_sender.h"
+#include "y2024_bot3/control_loops/superstructure/arm/arm_plant.h"
 #include "y2024_bot3/control_loops/superstructure/superstructure.h"
 #include "y2024_bot3/control_loops/superstructure/superstructure_can_position_generated.h"
 
@@ -56,10 +57,28 @@ class SuperstructureSimulation {
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<Output>("/superstructure")) {
-    (void)dt_;
-    (void)simulated_robot_constants;
+            event_loop_->MakeFetcher<Output>("/superstructure")),
+        arm_(new CappedTestPlant(arm::MakeArmPlant()),
+             PositionSensorSimulator(simulated_robot_constants->robot()
+                                         ->arm_constants()
+                                         ->zeroing_constants()
+                                         ->one_revolution_distance()),
+             {.subsystem_params = {simulated_robot_constants->common()->arm(),
+                                   simulated_robot_constants->robot()
+                                       ->arm_constants()
+                                       ->zeroing_constants()},
+              .potentiometer_offset = simulated_robot_constants->robot()
+                                          ->arm_constants()
+                                          ->potentiometer_offset()},
+             frc971::constants::Range::FromFlatbuffer(
+                 simulated_robot_constants->common()->arm()->range()),
+             simulated_robot_constants->robot()
+                 ->arm_constants()
+                 ->zeroing_constants()
+                 ->measured_absolute_position(),
+             dt_)
 
+  {
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
@@ -78,7 +97,14 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
+    frc971::PotAndAbsolutePosition::Builder arm_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> arm_offset =
+        arm_.encoder()->GetSensorValues(&arm_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
+
+    position_builder.add_arm(arm_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
@@ -93,6 +119,8 @@ class SuperstructureSimulation {
   ::aos::Sender<CANPosition> superstructure_can_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
+
+  PotAndAbsoluteEncoderSimulator arm_;
 
   bool first_ = true;
 };
@@ -154,6 +182,29 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         << ": No status";
     ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr)
         << ": No output";
+
+    double set_point;
+    auto arm_positions =
+        simulated_robot_constants_->robot()->arm_constants()->arm_positions();
+
+    switch (superstructure_goal_fetcher_->arm_position()) {
+      case PivotGoal::IDLE:
+        set_point = arm_positions->idle();
+        break;
+      case PivotGoal::INTAKE:
+        set_point = arm_positions->intake();
+        break;
+      case PivotGoal::AMP:
+        set_point = arm_positions->amp();
+        break;
+      default:
+        LOG(FATAL) << "PivotGoal is not IDLE, INTAKE, or AMP";
+    }
+
+    EXPECT_NEAR(
+        set_point,
+        superstructure_status_fetcher_->arm()->unprofiled_goal_position(),
+        0.03);
   }
 
   void CheckIfZeroed() {
@@ -211,7 +262,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
 // Tests that the superstructure does nothing when the goal is to remain
 // still.
-
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
   WaitUntilZeroed();
@@ -238,6 +288,52 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+TEST_F(SuperstructureTest, ArmPivotMovement) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(20));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::INTAKE);
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::AMP);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::AMP);
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::IDLE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::IDLE);
+
+  VerifyNearGoal();
 }
 
 }  // namespace y2024_bot3::control_loops::superstructure::testing

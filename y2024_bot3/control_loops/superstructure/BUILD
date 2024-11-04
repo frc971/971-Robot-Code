@@ -142,6 +142,7 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
+        "//y2024_bot3/control_loops/superstructure/arm:arm_plants",
     ],
 )
 

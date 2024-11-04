@@ -6,3 +6,19 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//y2024_bot3/control_loops:python_init"],
 )
+
+py_binary(
+    name = "arm",
+    srcs = [
+        "arm.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:controls",
+        "//frc971/control_loops/python:linear_system",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
