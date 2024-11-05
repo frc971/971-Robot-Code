@@ -114,22 +114,22 @@ static size_t DeviceScanInclusiveScanByKeyScratchSpace(size_t elements) {
 
 }  // namespace
 
-template <InputFormat INPUT_FORMAT>
-constexpr size_t InputFormatToChannels(void)
+size_t InputFormatToChannels(const InputFormat input_format)
 {
-  if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+  if (input_format == InputFormat::Mono8) {
     return 1;
   }
-  if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
+  if (input_format == InputFormat::YCbCr422) {
     return 2;
   }
-  if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
+  if (input_format == InputFormat::BGR8) {
     return 3;
   }
-  if constexpr (INPUT_FORMAT == InputFormat::BGRA8) {
+  if (input_format == InputFormat::BGRA8) {
     return 4;
   }
   // TODO : Probably need a throw or assert here
+  return -1;
 }
 
 template<size_t MULTIPLE> size_t roundUp(const size_t value)
@@ -137,11 +137,11 @@ template<size_t MULTIPLE> size_t roundUp(const size_t value)
   return ((value + MULTIPLE - 1) / MULTIPLE) * MULTIPLE;
 }
 
-template <InputFormat INPUT_FORMAT>
-GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
-                                       apriltag_detector_t *tag_detector,
-                                       CameraMatrix camera_matrix,
-                                       DistCoeffs distortion_coefficients)
+GpuDetector::GpuDetector(size_t width, size_t height,
+                         apriltag_detector_t *tag_detector,
+                         CameraMatrix camera_matrix,
+                         DistCoeffs distortion_coefficients,
+                         InputFormat input_format)
     : width_(width),
       height_(roundUp<8>(height)),
       // Save actual input size. Round up everything else to have a height
@@ -152,7 +152,7 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
       // block to 0.  From there the extra rows are never written.
       // From that point, hopefully the rest of the code thinks the image is
       // the rounded up size, so the algorithm will work on any size image.
-      input_size_(width * height * InputFormatToChannels<INPUT_FORMAT>()),
+      input_size_(width * height * InputFormatToChannels(input_format)),
       tag_detector_(tag_detector),
       gray_image_host_(width * height_),
       num_compressed_union_marker_pair_host_(1),
@@ -160,7 +160,7 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
       num_selected_blobs_host_(1),
       num_compressed_peaks_host_(1),
       num_quad_peaked_quads_host_(1),
-      color_image_device_(width * height_ * InputFormatToChannels<INPUT_FORMAT>()), // TODO : try allocating as write-combined?
+      color_image_device_(width * height_ * InputFormatToChannels(input_format)),  // TODO : try allocating as write-combined?
       gray_image_device_(width * height_),
       decimated_image_device_(width / 2 * height_ / 2),
       unfiltered_minmax_image_device_((width / 2 / 4 * height_ / 2 / 4) * 2),
@@ -206,12 +206,25 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
               cub::KeyValuePair<long, MinMaxExtents>>(kMaxBlobs)),
       temp_storage_line_fit_scan_device_(
           DeviceScanInclusiveScanByKeyScratchSpace<uint32_t, LineFitPoint>(
-              sorted_selected_blobs_device_.size())) {
+              sorted_selected_blobs_device_.size())),
+      input_format_(input_format) {
   // If the input image is grayscale, alias the gray image to the color image.
   // InternalCudaToGreyscaleAndDecimateHalide will skip copying between the
   // color and gray images as a result.
   fit_quads_host_.reserve(kMaxBlobs);
   quad_corners_host_.reserve(kMaxBlobs);
+
+  if (input_format == InputFormat::Mono8) {
+    threshold_ = std::make_unique<Threshold<InputFormat::Mono8>>();
+  } else if (input_format == InputFormat::YCbCr422) {
+    threshold_ = std::make_unique<Threshold<InputFormat::YCbCr422>>();
+  } else if (input_format == InputFormat::BGR8) {
+    threshold_ = std::make_unique<Threshold<InputFormat::BGR8>>();
+  } else if (input_format == InputFormat::BGRA8) {
+    threshold_ = std::make_unique<Threshold<InputFormat::BGRA8>>();
+  } else {
+    // TODO : Probably need a throw or assert here
+  }
 
   CHECK_EQ(tag_detector_->quad_decimate, 2);
   CHECK(!tag_detector_->qtp.deglitch);
@@ -239,8 +252,7 @@ GpuDetector<INPUT_FORMAT>::GpuDetector(size_t width, size_t height,
   zarray_ensure_capacity(detections_, kMaxBlobs);
 }
 
-template <InputFormat INPUT_FORMAT>
-GpuDetector<INPUT_FORMAT>::~GpuDetector() {
+GpuDetector::~GpuDetector() {
   for (int i = 0; i < zarray_size(detections_); ++i) {
     apriltag_detection_t *det;
     zarray_get(detections_, i, &det);
@@ -720,8 +732,7 @@ struct MergePeakExtents {
 
 }  // namespace
 
-template <InputFormat INPUT_FORMAT>
-void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
+void GpuDetector::Detect(const uint8_t *image) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
   event_timings_.start("e2e", stream_.get());
@@ -740,7 +751,7 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
 
   // Threshold the image.
   event_timings_.start("CudaToGreyscaleAndDecimateHalide", stream_.get());
-  CudaToGreyscaleAndDecimateHalide<INPUT_FORMAT>(
+  threshold_->CudaToGreyscaleAndDecimateHalide(
       color_image_device_.get(), gray_image_device_.get(),
       decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
@@ -825,7 +836,7 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   after_compact_.Record(&stream_);
 
   {
-    if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
+    if (input_format_ == InputFormat::Mono8) {
       // special case for Mono8 inputs - just assign pointers
       // rather than copying data
       gray_image_host_ptr_ = image;
@@ -833,9 +844,9 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
       // Run this on a separate stream to overlap with later GPU compute
       after_image_memcpy_to_device_.Synchronize();
       event_timings_.start("CudaToGreyscale", greyscale_stream_.get());
-      CudaToGreyscale<INPUT_FORMAT>(color_image_device_.get(),
-                                    gray_image_device_.get(), width_, height_,
-                                    &greyscale_stream_);
+      threshold_->CudaToGreyscale(color_image_device_.get(),
+                                  gray_image_device_.get(), width_, height_,
+                                  &greyscale_stream_);
       event_timings_.end("CudaToGreyscale");
 
       event_timings_.start("grey_image_memcpy_to_host",
@@ -845,7 +856,6 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
       // TODO - this leaves the grayscale host image in pinned HostMemory
       //        does that make decode tags slower?
       //         Eventually make gray_image_host_ptr point to an unpinned mem buffer?
-      //         
       gray_image_host_ptr_ = gray_image_host_.get();
     }
     after_memcpy_gray_.Record(&greyscale_stream_);
@@ -1247,10 +1257,5 @@ void GpuDetector<INPUT_FORMAT>::Detect(const uint8_t *image) {
   first_ = false;
 #endif
 }
-
-template class GpuDetector<InputFormat::Mono8>;
-template class GpuDetector<InputFormat::YCbCr422>;
-template class GpuDetector<InputFormat::BGR8>;
-template class GpuDetector<InputFormat::BGRA8>;
 
 }  // namespace frc971::apriltag

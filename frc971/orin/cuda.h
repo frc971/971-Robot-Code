@@ -135,7 +135,7 @@ class GpuMemory {
  public:
   // Allocates a block of memory for holding up to size objects of type T in
   // device memory.
-  GpuMemory(size_t size) : size_(size), owns_memory_(true) {
+  GpuMemory(size_t size) : size_(size) {
     CHECK_CUDA(cudaMalloc((void **)(&memory_), size * sizeof(T)));
     // Since we could be allocating extra rows to pad to a given alignment,
     // make sure the padding is a known value.
@@ -254,7 +254,7 @@ class GpuMemory {
  private:
   T *memory_;
   size_t size_;
-  bool owns_memory_;
+  bool owns_memory_{true};
 };
 
 // Synchronizes and CHECKs for success the last CUDA operation.

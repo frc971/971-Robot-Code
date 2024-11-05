@@ -13,6 +13,7 @@
 #include "frc971/orin/gpu_image.h"
 #include "frc971/orin/line_fit_filter.h"
 #include "frc971/orin/points.h"
+#include "frc971/orin/threshold.h"
 
 namespace frc971::apriltag {
 
@@ -76,15 +77,7 @@ struct DistCoeffs {
   double k3;
 };
 
-// Undistort pixels based on our camera model, using iterative algorithm
-// Returns false if we fail to converge
-// Make this a free function rather than a static member function to make
-// remove the need for callers to know the template arg from GpuDetector
-bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
-               const DistCoeffs *distortion_coefficients);
-
 // GPU based april tag detector.
-template <InputFormat INPUT_FORMAT>
 class GpuDetector {
  public:
   // The number of blobs we will consider when counting april tags.
@@ -93,7 +86,8 @@ class GpuDetector {
   // Constructs a detector, reserving space for detecting tags of the provided
   // with and height, using the provided detector options.
   GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector,
-              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients);
+              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients,
+              InputFormat input_format);
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
@@ -203,12 +197,21 @@ class GpuDetector {
     distortion_coefficients_ = distortion_coefficients;
   }
 
+  // Undistort pixels based on our camera model, using iterative algorithm
+  // Returns false if we fail to converge
+  // Make this a free function rather than a static member function to make
+  // remove the need for callers to know the template arg from GpuDetector
+  static bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
+                        const DistCoeffs *distortion_coefficients);
+
  private:
   void UpdateFitQuads();
 
   void AdjustPixelCenters();
 
   void DecodeTags();
+
+  static void QuadDecodeTask(void *_u);
 
   // Creates a GPU image wrapped around the provided memory.
   template <typename T>
@@ -355,11 +358,10 @@ class GpuDetector {
   GpuMemory<uint8_t> temp_storage_selected_extents_scan_device_;
   GpuMemory<uint8_t> temp_storage_line_fit_scan_device_;
 
-  bool graph_created_{false};
-  cudaGraph_t graph_;
-  cudaGraphExec_t graph_instance_;
-
   Timings event_timings_;
+
+  InputFormat input_format_;
+  std::unique_ptr<BaseThreshold> threshold_;
 
   // Cumulative duration of april tag detection.
   std::chrono::nanoseconds execution_duration_{0};

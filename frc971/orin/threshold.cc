@@ -12,7 +12,6 @@
 
 // TODO - remove after debugging
 #include <memory>
-#include <ros/console.h>
 
 #include "frc971/orin/threshold.h"
 
@@ -212,9 +211,10 @@ __global__ void InternalThreshold(const uint8_t *decimated_image,
 }  // namespace
 
 template <InputFormat INPUT_FORMAT>
-void CudaToGreyscale(const uint8_t *color_image, uint8_t *gray_image,
-                     uint32_t width, uint32_t height, CudaStream *stream) {
-
+void Threshold<INPUT_FORMAT>::CudaToGreyscale(const uint8_t *color_image,
+                                              uint8_t *gray_image,
+                                              uint32_t width, uint32_t height,
+                                              CudaStream *stream) {
   constexpr size_t kThreads = 256;
   {
     // Step one, convert to gray and decimate.
@@ -227,7 +227,7 @@ void CudaToGreyscale(const uint8_t *color_image, uint8_t *gray_image,
 }
 
 template <InputFormat INPUT_FORMAT>
-void CudaToGreyscaleAndDecimateHalide(
+void Threshold<INPUT_FORMAT>::CudaToGreyscaleAndDecimateHalide(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
     uint8_t *thresholded_image, uint32_t width, uint32_t height,
@@ -240,34 +240,19 @@ void CudaToGreyscaleAndDecimateHalide(
 
   {
     // Step one, convert to gray and decimate.
-    size_t kBlocks = (decimated_width * decimated_height + kThreads - 1) / kThreads / 4;
+    const size_t kBlocks = (decimated_width * decimated_height + kThreads - 1) / kThreads / 4;
     // GpuMemory<uint8_t> decimated_image_device_2(decimated_width * decimated_height);  // temp debug
     InternalCudaToGreyscaleAndDecimateHalide<INPUT_FORMAT><<<kBlocks, kThreads, 0,
                                                stream->get()>>>(
         color_image, decimated_image, width, height);
     MaybeCheckAndSynchronize();
-
-#if 0
-    HostMemory<uint8_t> decimated_image_host (decimated_width * decimated_height);
-    HostMemory<uint8_t> decimated_image_host_2 (decimated_width * decimated_height);
-    CHECK_CUDA(cudaMemcpy(
-        reinterpret_cast<void *>(decimated_image_host.get()), decimated_image,
-        sizeof(uint8_t) * decimated_width * decimated_height,
-        cudaMemcpyDeviceToHost));
-    decimated_image_device_2.MemcpyTo(&decimated_image_host_2);
-    for (size_t i = 0; i < decimated_width * decimated_height; i++) {
-      if (std::abs(static_cast<int>(decimated_image_host.get()[i]) - decimated_image_host_2.get()[i]) > 1)
-        ROS_ERROR_STREAM("Decimated image mismatch at " << i << " " << decimated_image_host.get()[i] << " " << decimated_image_host_2.get()[i]);
-    } 
-    ROS_ERROR_STREAM("Decimated image matches");
-#endif
   }
 
   {
     // Step 2, compute a min/max for each block of 4x4 (16) pixels.
-    dim3 threads(16, 16, 1);
-    dim3 blocks((decimated_width / 4 + 15) / 16,
-                (decimated_height / 4 + 15) / 16, 1);
+    const dim3 threads(16, 16, 1);
+    const dim3 blocks((decimated_width / 4 + 15) / 16,
+                      (decimated_height / 4 + 15) / 16, 1);
 
     InternalBlockMinMax<<<blocks, threads, 0, stream->get()>>>(
         decimated_image, reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
@@ -295,37 +280,9 @@ void CudaToGreyscaleAndDecimateHalide(
   }
 }
 
-template void CudaToGreyscale<InputFormat::Mono8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint32_t width,
-    uint32_t height, CudaStream *stream);
-template void CudaToGreyscale<InputFormat::YCbCr422>(
-    const uint8_t *color_image, uint8_t *gray_image, uint32_t width,
-    uint32_t height, CudaStream *stream);
-template void CudaToGreyscale<InputFormat::BGR8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint32_t width,
-    uint32_t height, CudaStream *stream);
-template void CudaToGreyscale<InputFormat::BGRA8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint32_t width,
-    uint32_t height, CudaStream *stream);
+template class Threshold<InputFormat::Mono8>;
+template class Threshold<InputFormat::YCbCr422>;
+template class Threshold<InputFormat::BGR8>;
+template class Threshold<InputFormat::BGRA8>;
 
-template void CudaToGreyscaleAndDecimateHalide<InputFormat::Mono8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, uint32_t width, uint32_t height,
-    uint32_t min_white_black_diff, CudaStream *stream);
-template void CudaToGreyscaleAndDecimateHalide<InputFormat::YCbCr422>(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, uint32_t width, uint32_t height,
-    uint32_t min_white_black_diff, CudaStream *stream);
-template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGR8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, uint32_t width, uint32_t height,
-    uint32_t min_white_black_diff, CudaStream *stream);
-template void CudaToGreyscaleAndDecimateHalide<InputFormat::BGRA8>(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
-    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
-    uint8_t *thresholded_image, uint32_t width, uint32_t height,
-    uint32_t min_white_black_diff, CudaStream *stream);
-}  // namespace frc971::apriltag
+} // namespace frc971::apriltag
