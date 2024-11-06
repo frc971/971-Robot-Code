@@ -26,7 +26,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       constants_fetcher_(event_loop),
       robot_constants_(&constants_fetcher_.constants()),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      arm_(robot_constants_->common()->arm(),
+           robot_constants_->robot()->arm_constants()->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -38,21 +40,57 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
-  (void)position;
-
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
   }
 
   OutputT output_struct;
 
-  if (unsafe_goal != nullptr) {
-  }
-
   if (joystick_state_fetcher_.Fetch() &&
       joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
+
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
+      arm_goal_buffer;
+
+  ArmStatus arm_status = ArmStatus::IDLE;
+  double arm_position =
+      robot_constants_->robot()->arm_constants()->arm_positions()->idle();
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->arm_position()) {
+      case PivotGoal::INTAKE:
+        arm_status = ArmStatus::INTAKE;
+        arm_position = robot_constants_->robot()
+                           ->arm_constants()
+                           ->arm_positions()
+                           ->intake();
+        break;
+      case PivotGoal::AMP:
+        arm_status = ArmStatus::AMP;
+        arm_position =
+            robot_constants_->robot()->arm_constants()->arm_positions()->amp();
+        break;
+      default:
+        arm_position =
+            robot_constants_->robot()->arm_constants()->arm_positions()->idle();
+    }
+  }
+
+  arm_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *arm_goal_buffer.fbb(), arm_position));
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *arm_goal = &arm_goal_buffer.message();
+
+  // static_zeroing_single_dof_profiled_subsystem.h
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      arm_offset =
+          arm_.Iterate(arm_goal, position->arm(),
+                       output != nullptr ? &output_struct.arm_voltage : nullptr,
+                       status->fbb());
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
@@ -60,11 +98,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = true;
-  const bool estopped = false;
+  const bool zeroed = arm_.zeroed();
+  const bool estopped = arm_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
+  status_builder.add_arm(arm_offset);
+  status_builder.add_arm_status(arm_status);
 
   (void)status->Send(status_builder.Finish());
 }

@@ -1,2 +1,21 @@
 "common": {
+  "arm": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 2.0,
+      "max_acceleration": 10.0
+    },
+    "range": {
+        "lower_hard": -50,
+        "upper_hard": 50,
+        "lower": -50,
+        "upper": 50
+    },
+    "loop": {% include 'y2024_bot3/control_loops/superstructure/arm/integral_arm_plant.json' %}
+  }
 }

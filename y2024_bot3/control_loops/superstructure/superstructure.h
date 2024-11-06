@@ -35,6 +35,8 @@ class Superstructure
 
   double robot_velocity() const;
 
+  inline const PotAndAbsoluteEncoderSubsystem &arm() const { return arm_; }
+
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
                             aos::Sender<Output>::Builder *output,
@@ -46,6 +48,8 @@ class Superstructure
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
+
+  PotAndAbsoluteEncoderSubsystem arm_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
