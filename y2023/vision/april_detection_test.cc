@@ -11,6 +11,7 @@
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/vision/target_mapper.h"
 #include "frc971/vision/vision_generated.h"
+#include "frc971/vision/vision_util_lib.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/constants/constants_list_generated.h"
 #include "y2023/vision/aprilrobotics.h"
@@ -61,7 +62,7 @@ class AprilDetectionTest : public ::testing::Test {
     ASSERT_EQ(april_pose_fetcher_->target_poses()->size(), 1);
 
     frc971::vision::TargetMapper::TargetPose target_pose =
-        frc971::vision::PoseUtils::TargetPoseFromFbs(
+        frc971::vision::TargetMapper::TargetPoseFromFbs(
             *april_pose_fetcher_->target_poses()->Get(0));
 
     ASSERT_EQ(april_pose_fetcher_->target_poses()->Get(0)->id(), 8);
