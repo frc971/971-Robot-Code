@@ -55,10 +55,11 @@ typedef struct {
   uint32_t Usart2ClockSelection; /*!< Specifies USART2 clock source.
                                       This parameter can be a value of @ref
                                     RCCEx_USART2_Clock_Source */
-
+#if defined(USART3)
   uint32_t Usart3ClockSelection; /*!< Specifies USART3 clock source.
                                       This parameter can be a value of @ref
                                     RCCEx_USART3_Clock_Source */
+#endif                           /* UART3 */
 
 #if defined(UART4)
   uint32_t Uart4ClockSelection; /*!< Specifies UART4 clock source.
@@ -391,6 +392,7 @@ typedef struct {
  * @}
  */
 
+#if defined(SPI_I2S_SUPPORT)
 /** @defgroup RCCEx_I2S_Clock_Source I2S Clock Source
  * @{
  */
@@ -401,6 +403,8 @@ typedef struct {
 /**
  * @}
  */
+#endif /* SPI_I2S_SUPPORT */
+
 #if defined(FDCAN1)
 /** @defgroup RCCEx_FDCAN_Clock_Source FDCAN Clock Source
  * @{
@@ -579,7 +583,7 @@ typedef struct {
  * @{
  */
 #define RCC_CRS_HSI48CALIBRATION_DEFAULT                                       \
-  0x00000020U /*!< The default value is 32, which corresponds to the middle of \
+  0x00000040U /*!< The default value is 64, which corresponds to the middle of \
                  the trimming interval. The trimming step is around 67 kHz     \
                  between two consecutive TRIM steps. A higher TRIM value       \
                    corresponds to a higher output frequency */
@@ -932,6 +936,8 @@ typedef struct {
  *
  * @retval None
  */
+
+#if defined(SAI1)
 #define __HAL_RCC_SAI1_CONFIG(__SAI1_CLKSOURCE__) \
   MODIFY_REG(RCC->CCIPR, RCC_CCIPR_SAI1SEL, (__SAI1_CLKSOURCE__))
 
@@ -944,7 +950,9 @@ typedef struct {
  *
  */
 #define __HAL_RCC_GET_SAI1_SOURCE() (READ_BIT(RCC->CCIPR, RCC_CCIPR_SAI1SEL))
+#endif /* SAI1 */
 
+#if defined(SPI_I2S_SUPPORT)
 /**
  * @brief  Macro to configure the I2S clock source.
  * @param  __I2S_CLKSOURCE__ defines the I2S clock source. This clock is derived
@@ -970,6 +978,7 @@ typedef struct {
  */
 #define __HAL_RCC_GET_I2S_SOURCE() \
   ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_I2S23SEL)))
+#endif /* SPI_I2S_SUPPORT */
 
 #if defined(FDCAN1)
 /**
@@ -1563,7 +1572,6 @@ void HAL_RCCEx_CRS_ErrorCallback(uint32_t Error);
    (((__SELECTION__) & RCC_PERIPHCLK_RTC) == RCC_PERIPHCLK_RTC))
 
 #elif defined(STM32G431xx) || defined(STM32G441xx)
-
 #define IS_RCC_PERIPHCLOCK(__SELECTION__)                                  \
   ((((__SELECTION__) & RCC_PERIPHCLK_USART1) == RCC_PERIPHCLK_USART1) ||   \
    (((__SELECTION__) & RCC_PERIPHCLK_USART2) == RCC_PERIPHCLK_USART2) ||   \
@@ -1582,6 +1590,36 @@ void HAL_RCCEx_CRS_ErrorCallback(uint32_t Error);
    (((__SELECTION__) & RCC_PERIPHCLK_ADC12) == RCC_PERIPHCLK_ADC12) ||     \
    (((__SELECTION__) & RCC_PERIPHCLK_RTC) == RCC_PERIPHCLK_RTC))
 
+#elif defined(STM32G411xB) || defined(STM32G411xC)
+#define IS_RCC_PERIPHCLOCK(__SELECTION__)                                  \
+  ((((__SELECTION__) & RCC_PERIPHCLK_USART1) == RCC_PERIPHCLK_USART1) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_USART2) == RCC_PERIPHCLK_USART2) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_UART4) == RCC_PERIPHCLK_UART4) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_LPUART1) == RCC_PERIPHCLK_LPUART1) || \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2C1) == RCC_PERIPHCLK_I2C1) ||       \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2C2) == RCC_PERIPHCLK_I2C2) ||       \
+   (((__SELECTION__) & RCC_PERIPHCLK_LPTIM1) == RCC_PERIPHCLK_LPTIM1) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2S) == RCC_PERIPHCLK_I2S) ||         \
+   (((__SELECTION__) & RCC_PERIPHCLK_FDCAN) == RCC_PERIPHCLK_FDCAN) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_RNG) == RCC_PERIPHCLK_RNG) ||         \
+   (((__SELECTION__) & RCC_PERIPHCLK_ADC12) == RCC_PERIPHCLK_ADC12) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_RTC) == RCC_PERIPHCLK_RTC))
+#elif defined(STM32G414xx)
+#define IS_RCC_PERIPHCLOCK(__SELECTION__)                                  \
+  ((((__SELECTION__) & RCC_PERIPHCLK_USART1) == RCC_PERIPHCLK_USART1) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_USART2) == RCC_PERIPHCLK_USART2) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_UART4) == RCC_PERIPHCLK_UART4) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_UART5) == RCC_PERIPHCLK_UART5) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_LPUART1) == RCC_PERIPHCLK_LPUART1) || \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2C1) == RCC_PERIPHCLK_I2C1) ||       \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2C2) == RCC_PERIPHCLK_I2C2) ||       \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2C3) == RCC_PERIPHCLK_I2C3) ||       \
+   (((__SELECTION__) & RCC_PERIPHCLK_LPTIM1) == RCC_PERIPHCLK_LPTIM1) ||   \
+   (((__SELECTION__) & RCC_PERIPHCLK_I2S) == RCC_PERIPHCLK_I2S) ||         \
+   (((__SELECTION__) & RCC_PERIPHCLK_FDCAN) == RCC_PERIPHCLK_FDCAN) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_RNG) == RCC_PERIPHCLK_RNG) ||         \
+   (((__SELECTION__) & RCC_PERIPHCLK_ADC12) == RCC_PERIPHCLK_ADC12) ||     \
+   (((__SELECTION__) & RCC_PERIPHCLK_RTC) == RCC_PERIPHCLK_RTC))
 #elif defined(STM32GBK1CB)
 #define IS_RCC_PERIPHCLOCK(__SELECTION__)                                  \
   ((((__SELECTION__) & RCC_PERIPHCLK_USART1) == RCC_PERIPHCLK_USART1) ||   \
@@ -1673,11 +1711,13 @@ void HAL_RCCEx_CRS_ErrorCallback(uint32_t Error);
    ((__SOURCE__) == RCC_LPTIM1CLKSOURCE_HSI) ||   \
    ((__SOURCE__) == RCC_LPTIM1CLKSOURCE_LSE))
 
+#if defined(SAI1)
 #define IS_RCC_SAI1CLKSOURCE(__SOURCE__)         \
   (((__SOURCE__) == RCC_SAI1CLKSOURCE_SYSCLK) || \
    ((__SOURCE__) == RCC_SAI1CLKSOURCE_PLL) ||    \
    ((__SOURCE__) == RCC_SAI1CLKSOURCE_EXT) ||    \
    ((__SOURCE__) == RCC_SAI1CLKSOURCE_HSI))
+#endif /* SAI1 */
 
 #define IS_RCC_I2SCLKSOURCE(__SOURCE__)         \
   (((__SOURCE__) == RCC_I2SCLKSOURCE_SYSCLK) || \

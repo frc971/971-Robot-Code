@@ -69,7 +69,7 @@
   parameter.
 
     (#) Clear Exti configuration of a dedicated line using
-  HAL_EXTI_GetConfigLine().
+  HAL_EXTI_ClearConfigLine().
         (++) Provide exiting handle as parameter.
 
     (#) Register callback to treat Exti interrupts using
@@ -335,7 +335,8 @@ HAL_StatusTypeDef HAL_EXTI_GetConfigLine(EXTI_HandleTypeDef *hexti,
 
       regval = SYSCFG->EXTICR[linepos >> 2u];
       pExtiConfig->GPIOSel =
-          ((regval >> (SYSCFG_EXTICR1_EXTI1_Pos * ((linepos & 0x03u)))));
+          (regval >> (SYSCFG_EXTICR1_EXTI1_Pos * (linepos & 0x03u))) &
+          SYSCFG_EXTICR1_EXTI0;
     }
   }
 

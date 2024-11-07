@@ -458,11 +458,14 @@ HAL_StatusTypeDef HAL_FLASHEx_EnableSecMemProtection(uint32_t Bank) {
     if ((Bank & FLASH_BANK_2) != 0U) {
       SET_BIT(FLASH->CR, FLASH_CR_SEC_PROT2);
     }
-  } else
-#endif
-  {
+  } else {
     SET_BIT(FLASH->CR, FLASH_CR_SEC_PROT1);
   }
+#else
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(Bank);
+  SET_BIT(FLASH->CR, FLASH_CR_SEC_PROT1);
+#endif /* FLASH_OPTR_DBANK */
 
   return HAL_OK;
 }
@@ -563,7 +566,10 @@ void FLASH_PageErase(uint32_t Page, uint32_t Banks) {
       SET_BIT(FLASH->CR, FLASH_CR_BKER);
     }
   }
-#endif
+#else
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(Banks);
+#endif /* FLASH_OPTR_DBANK */
 
   /* Proceed to erase the page */
   MODIFY_REG(FLASH->CR, FLASH_CR_PNB, ((Page & 0xFFU) << FLASH_CR_PNB_Pos));
@@ -755,6 +761,17 @@ static HAL_StatusTypeDef FLASH_OB_UserConfig(uint32_t UserType,
   status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
 
   if (status == HAL_OK) {
+#if defined(FLASH_OPTR_PB4_PUPEN)
+    if ((UserType & OB_USER_PB4_PUPEN) != 0U) {
+      /* PB4_PUPEN option byte should be modified */
+      assert_param(IS_OB_USER_PB4_PUPEN(UserConfig & FLASH_OPTR_PB4_PUPEN));
+
+      /* Set value and mask for PB4_PUPEN option byte */
+      optr_reg_val |= (UserConfig & FLASH_OPTR_PB4_PUPEN);
+      optr_reg_mask |= FLASH_OPTR_PB4_PUPEN;
+    }
+#endif /* FLASH_OPTR_PB4_PUPEN */
+
     if ((UserType & OB_USER_BOR_LEV) != 0U) {
       /* BOR level option byte should be modified */
       assert_param(IS_OB_USER_BOR_LEVEL(UserConfig & FLASH_OPTR_BOR_LEV));
@@ -855,7 +872,6 @@ static HAL_StatusTypeDef FLASH_OB_UserConfig(uint32_t UserType,
       optr_reg_val |= (UserConfig & FLASH_OPTR_SRAM_PE);
       optr_reg_mask |= FLASH_OPTR_SRAM_PE;
     }
-
     if ((UserType & OB_USER_CCMSRAM_RST) != 0U) {
       /* CCMSRAM_RST option byte should be modified */
       assert_param(IS_OB_USER_CCMSRAM_RST(UserConfig & FLASH_OPTR_CCMSRAM_RST));
@@ -864,7 +880,6 @@ static HAL_StatusTypeDef FLASH_OB_UserConfig(uint32_t UserType,
       optr_reg_val |= (UserConfig & FLASH_OPTR_CCMSRAM_RST);
       optr_reg_mask |= FLASH_OPTR_CCMSRAM_RST;
     }
-
     if ((UserType & OB_USER_nSWBOOT0) != 0U) {
       /* nSWBOOT0 option byte should be modified */
       assert_param(IS_OB_USER_SWBOOT0(UserConfig & FLASH_OPTR_nSWBOOT0));

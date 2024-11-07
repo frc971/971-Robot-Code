@@ -17,6 +17,7 @@
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ex.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ramfunc.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_gpio.o"
+"./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_iwdg.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pcd.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pcd_ex.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr.o"

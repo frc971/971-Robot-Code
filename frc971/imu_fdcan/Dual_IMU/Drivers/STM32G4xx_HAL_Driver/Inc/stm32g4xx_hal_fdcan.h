@@ -263,13 +263,16 @@ typedef struct {
                          - 0 and (SRAMCAN_FLS_NBR-1), if IdType is
                       FDCAN_STANDARD_ID
                          - 0 and (SRAMCAN_FLE_NBR-1), if IdType is
-                      FDCAN_EXTENDED_ID */
+                      FDCAN_EXTENDED_ID When the frame is a Non-Filter matching
+                      frame, this parameter is unused. */
 
   uint32_t IsFilterMatchingFrame; /*!< Specifies whether the accepted frame did
                                      not match any Rx filter. Acceptance of
                                      non-matching frames may be enabled via
-                                         HAL_FDCAN_ConfigGlobalFilter().
-                                         This parameter can be 0 or 1 */
+                                       HAL_FDCAN_ConfigGlobalFilter().
+                                       This parameter takes 0 if the frame
+                                     matched an Rx filter or 1 if it did not
+                                     match any Rx filter */
 
 } FDCAN_RxHeaderTypeDef;
 
@@ -364,7 +367,7 @@ typedef struct {
 
   uint32_t Activity; /*!< Specifies the FDCAN module communication state.
                           This parameter can be a value of @ref
-                        FDCAN_communication_state */
+                        FDCAN_communication_state             */
 
   uint32_t ErrorPassive; /*!< Specifies the FDCAN module error status.
                               This parameter can be:
@@ -373,8 +376,8 @@ typedef struct {
 
   uint32_t Warning; /*!< Specifies the FDCAN module warning status.
                          This parameter can be:
-                          - 0 : error counters (RxErrorCnt and TxErrorCnt)
-                                are below the Error_Warning limit of 96
+                          - 0 : error counters (RxErrorCnt and TxErrorCnt) are
+                       below the Error_Warning limit of 96
                           - 1 : at least one of error counters has reached the
                        Error_Warning limit of 96 */
 
@@ -388,18 +391,18 @@ typedef struct {
                             - 0 : Last received CAN FD message did not have its
                          ESI flag set
                             - 1 : Last received CAN FD message had its ESI flag
-                         set */
+                         set                    */
 
   uint32_t RxBRSflag; /*!< Specifies BRS flag of last received CAN FD message.
                            This parameter can be:
                             - 0 : Last received CAN FD message did not have its
                          BRS flag set
                             - 1 : Last received CAN FD message had its BRS flag
-                         set */
+                         set                    */
 
   uint32_t
       RxFDFflag; /*!< Specifies if CAN FD message (FDF flag set) has been
-                    received since last protocol status.This parameter can be:
+                    received since last protocol status. This parameter can be:
                        - 0 : No CAN FD message received
                        - 1 : CAN FD message received */
 
@@ -424,13 +427,12 @@ typedef struct {
   uint32_t RxErrorCnt; /*!< Specifies the Receive Error Counter Value.
                             This parameter can be a number between 0 and 127 */
 
-  uint32_t
-      RxErrorPassive; /*!< Specifies the Receive Error Passive status.
-                           This parameter can be:
-                            - 0 : The Receive Error Counter (RxErrorCnt) is
-                         below the error passive level of 128
-                            - 1 : The Receive Error Counter (RxErrorCnt)
-                                  has reached the error passive level of 128 */
+  uint32_t RxErrorPassive; /*!< Specifies the Receive Error Passive status.
+                                This parameter can be:
+                                 - 0 : The Receive Error Counter (RxErrorCnt) is
+                              below the error passive level of 128
+                                 - 1 : The Receive Error Counter (RxErrorCnt)
+                              has reached the error passive level of 128 */
 
   uint32_t
       ErrorLogging; /*!< Specifies the Transmit/Receive error logging counter
@@ -439,7 +441,7 @@ typedef struct {
                        protocol error causes the TxErrorCnt or the RxErrorCnt to
                        be incremented. The counter stops at 255; the next
                        increment of TxErrorCnt or RxErrorCnt sets interrupt flag
-                       FDCAN_FLAG_ERROR_LOGGING_OVERFLOW */
+                         FDCAN_FLAG_ERROR_LOGGING_OVERFLOW */
 
 } FDCAN_ErrorCountersTypeDef;
 
@@ -610,9 +612,9 @@ typedef void (*pFDCAN_ErrorStatusCallbackTypeDef)(
 #define HAL_FDCAN_ERROR_RAM_ACCESS \
   ((uint32_t)0x00000080U) /*!< Message RAM Access Failure */
 #define HAL_FDCAN_ERROR_FIFO_EMPTY \
-  ((uint32_t)0x00000100U) /*!< Put element in full FIFO */
+  ((uint32_t)0x00000100U) /*!< Get element from empty FIFO */
 #define HAL_FDCAN_ERROR_FIFO_FULL \
-  ((uint32_t)0x00000200U) /*!< Get element from empty FIFO */
+  ((uint32_t)0x00000200U) /*!< Put element in full FIFO */
 #define HAL_FDCAN_ERROR_LOG_OVERFLOW \
   FDCAN_IR_ELO /*!< Overflow of CAN Error Logging Counter */
 #define HAL_FDCAN_ERROR_RAM_WDG \
@@ -736,21 +738,21 @@ typedef void (*pFDCAN_ErrorStatusCallbackTypeDef)(
  * @{
  */
 #define FDCAN_DLC_BYTES_0 ((uint32_t)0x00000000U)  /*!< 0 bytes data field  */
-#define FDCAN_DLC_BYTES_1 ((uint32_t)0x00010000U)  /*!< 1 bytes data field  */
-#define FDCAN_DLC_BYTES_2 ((uint32_t)0x00020000U)  /*!< 2 bytes data field  */
-#define FDCAN_DLC_BYTES_3 ((uint32_t)0x00030000U)  /*!< 3 bytes data field  */
-#define FDCAN_DLC_BYTES_4 ((uint32_t)0x00040000U)  /*!< 4 bytes data field  */
-#define FDCAN_DLC_BYTES_5 ((uint32_t)0x00050000U)  /*!< 5 bytes data field  */
-#define FDCAN_DLC_BYTES_6 ((uint32_t)0x00060000U)  /*!< 6 bytes data field  */
-#define FDCAN_DLC_BYTES_7 ((uint32_t)0x00070000U)  /*!< 7 bytes data field  */
-#define FDCAN_DLC_BYTES_8 ((uint32_t)0x00080000U)  /*!< 8 bytes data field  */
-#define FDCAN_DLC_BYTES_12 ((uint32_t)0x00090000U) /*!< 12 bytes data field */
-#define FDCAN_DLC_BYTES_16 ((uint32_t)0x000A0000U) /*!< 16 bytes data field */
-#define FDCAN_DLC_BYTES_20 ((uint32_t)0x000B0000U) /*!< 20 bytes data field */
-#define FDCAN_DLC_BYTES_24 ((uint32_t)0x000C0000U) /*!< 24 bytes data field */
-#define FDCAN_DLC_BYTES_32 ((uint32_t)0x000D0000U) /*!< 32 bytes data field */
-#define FDCAN_DLC_BYTES_48 ((uint32_t)0x000E0000U) /*!< 48 bytes data field */
-#define FDCAN_DLC_BYTES_64 ((uint32_t)0x000F0000U) /*!< 64 bytes data field */
+#define FDCAN_DLC_BYTES_1 ((uint32_t)0x00000001U)  /*!< 1 bytes data field  */
+#define FDCAN_DLC_BYTES_2 ((uint32_t)0x00000002U)  /*!< 2 bytes data field  */
+#define FDCAN_DLC_BYTES_3 ((uint32_t)0x00000003U)  /*!< 3 bytes data field  */
+#define FDCAN_DLC_BYTES_4 ((uint32_t)0x00000004U)  /*!< 4 bytes data field  */
+#define FDCAN_DLC_BYTES_5 ((uint32_t)0x00000005U)  /*!< 5 bytes data field  */
+#define FDCAN_DLC_BYTES_6 ((uint32_t)0x00000006U)  /*!< 6 bytes data field  */
+#define FDCAN_DLC_BYTES_7 ((uint32_t)0x00000007U)  /*!< 7 bytes data field  */
+#define FDCAN_DLC_BYTES_8 ((uint32_t)0x00000008U)  /*!< 8 bytes data field  */
+#define FDCAN_DLC_BYTES_12 ((uint32_t)0x00000009U) /*!< 12 bytes data field */
+#define FDCAN_DLC_BYTES_16 ((uint32_t)0x0000000AU) /*!< 16 bytes data field */
+#define FDCAN_DLC_BYTES_20 ((uint32_t)0x0000000BU) /*!< 20 bytes data field */
+#define FDCAN_DLC_BYTES_24 ((uint32_t)0x0000000CU) /*!< 24 bytes data field */
+#define FDCAN_DLC_BYTES_32 ((uint32_t)0x0000000DU) /*!< 32 bytes data field */
+#define FDCAN_DLC_BYTES_48 ((uint32_t)0x0000000EU) /*!< 48 bytes data field */
+#define FDCAN_DLC_BYTES_64 ((uint32_t)0x0000000FU) /*!< 64 bytes data field */
 /**
  * @}
  */
@@ -1463,8 +1465,8 @@ HAL_StatusTypeDef HAL_FDCAN_UnRegisterErrorStatusCallback(
  * @{
  */
 /* Configuration functions ****************************************************/
-HAL_StatusTypeDef HAL_FDCAN_ConfigFilter(FDCAN_HandleTypeDef *hfdcan,
-                                         FDCAN_FilterTypeDef *sFilterConfig);
+HAL_StatusTypeDef HAL_FDCAN_ConfigFilter(
+    FDCAN_HandleTypeDef *hfdcan, const FDCAN_FilterTypeDef *sFilterConfig);
 HAL_StatusTypeDef HAL_FDCAN_ConfigGlobalFilter(FDCAN_HandleTypeDef *hfdcan,
                                                uint32_t NonMatchingStd,
                                                uint32_t NonMatchingExt,
@@ -1483,14 +1485,14 @@ HAL_StatusTypeDef HAL_FDCAN_EnableTimestampCounter(FDCAN_HandleTypeDef *hfdcan,
                                                    uint32_t TimestampOperation);
 HAL_StatusTypeDef HAL_FDCAN_DisableTimestampCounter(
     FDCAN_HandleTypeDef *hfdcan);
-uint16_t HAL_FDCAN_GetTimestampCounter(FDCAN_HandleTypeDef *hfdcan);
+uint16_t HAL_FDCAN_GetTimestampCounter(const FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_ResetTimestampCounter(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_ConfigTimeoutCounter(FDCAN_HandleTypeDef *hfdcan,
                                                  uint32_t TimeoutOperation,
                                                  uint32_t TimeoutPeriod);
 HAL_StatusTypeDef HAL_FDCAN_EnableTimeoutCounter(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_DisableTimeoutCounter(FDCAN_HandleTypeDef *hfdcan);
-uint16_t HAL_FDCAN_GetTimeoutCounter(FDCAN_HandleTypeDef *hfdcan);
+uint16_t HAL_FDCAN_GetTimeoutCounter(const FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_ResetTimeoutCounter(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_ConfigTxDelayCompensation(
     FDCAN_HandleTypeDef *hfdcan, uint32_t TdcOffset, uint32_t TdcFilter);
@@ -1513,9 +1515,10 @@ HAL_StatusTypeDef HAL_FDCAN_DisableEdgeFiltering(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_Start(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_Stop(FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_AddMessageToTxFifoQ(
-    FDCAN_HandleTypeDef *hfdcan, FDCAN_TxHeaderTypeDef *pTxHeader,
-    uint8_t *pTxData);
-uint32_t HAL_FDCAN_GetLatestTxFifoQRequestBuffer(FDCAN_HandleTypeDef *hfdcan);
+    FDCAN_HandleTypeDef *hfdcan, const FDCAN_TxHeaderTypeDef *pTxHeader,
+    const uint8_t *pTxData);
+uint32_t HAL_FDCAN_GetLatestTxFifoQRequestBuffer(
+    const FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_AbortTxRequest(FDCAN_HandleTypeDef *hfdcan,
                                            uint32_t BufferIndex);
 HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef *hfdcan,
@@ -1525,17 +1528,19 @@ HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef *hfdcan,
 HAL_StatusTypeDef HAL_FDCAN_GetTxEvent(FDCAN_HandleTypeDef *hfdcan,
                                        FDCAN_TxEventFifoTypeDef *pTxEvent);
 HAL_StatusTypeDef HAL_FDCAN_GetHighPriorityMessageStatus(
-    FDCAN_HandleTypeDef *hfdcan, FDCAN_HpMsgStatusTypeDef *HpMsgStatus);
+    const FDCAN_HandleTypeDef *hfdcan, FDCAN_HpMsgStatusTypeDef *HpMsgStatus);
 HAL_StatusTypeDef HAL_FDCAN_GetProtocolStatus(
-    FDCAN_HandleTypeDef *hfdcan, FDCAN_ProtocolStatusTypeDef *ProtocolStatus);
+    const FDCAN_HandleTypeDef *hfdcan,
+    FDCAN_ProtocolStatusTypeDef *ProtocolStatus);
 HAL_StatusTypeDef HAL_FDCAN_GetErrorCounters(
-    FDCAN_HandleTypeDef *hfdcan, FDCAN_ErrorCountersTypeDef *ErrorCounters);
-uint32_t HAL_FDCAN_IsTxBufferMessagePending(FDCAN_HandleTypeDef *hfdcan,
+    const FDCAN_HandleTypeDef *hfdcan,
+    FDCAN_ErrorCountersTypeDef *ErrorCounters);
+uint32_t HAL_FDCAN_IsTxBufferMessagePending(const FDCAN_HandleTypeDef *hfdcan,
                                             uint32_t TxBufferIndex);
-uint32_t HAL_FDCAN_GetRxFifoFillLevel(FDCAN_HandleTypeDef *hfdcan,
+uint32_t HAL_FDCAN_GetRxFifoFillLevel(const FDCAN_HandleTypeDef *hfdcan,
                                       uint32_t RxFifo);
-uint32_t HAL_FDCAN_GetTxFifoFreeLevel(FDCAN_HandleTypeDef *hfdcan);
-uint32_t HAL_FDCAN_IsRestrictedOperationMode(FDCAN_HandleTypeDef *hfdcan);
+uint32_t HAL_FDCAN_GetTxFifoFreeLevel(const FDCAN_HandleTypeDef *hfdcan);
+uint32_t HAL_FDCAN_IsRestrictedOperationMode(const FDCAN_HandleTypeDef *hfdcan);
 HAL_StatusTypeDef HAL_FDCAN_ExitRestrictedOperationMode(
     FDCAN_HandleTypeDef *hfdcan);
 /**
@@ -1588,8 +1593,8 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan,
  * @{
  */
 /* Peripheral State functions *************************************************/
-uint32_t HAL_FDCAN_GetError(FDCAN_HandleTypeDef *hfdcan);
-HAL_FDCAN_StateTypeDef HAL_FDCAN_GetState(FDCAN_HandleTypeDef *hfdcan);
+uint32_t HAL_FDCAN_GetError(const FDCAN_HandleTypeDef *hfdcan);
+HAL_FDCAN_StateTypeDef HAL_FDCAN_GetState(const FDCAN_HandleTypeDef *hfdcan);
 /**
  * @}
  */
@@ -1732,6 +1737,12 @@ HAL_FDCAN_StateTypeDef HAL_FDCAN_GetState(FDCAN_HandleTypeDef *hfdcan);
    ((OPERATION) == FDCAN_TIMEOUT_TX_EVENT_FIFO) || \
    ((OPERATION) == FDCAN_TIMEOUT_RX_FIFO0) ||      \
    ((OPERATION) == FDCAN_TIMEOUT_RX_FIFO1))
+
+#define FDCAN_CHECK_IT_SOURCE(__IE__, __IT__) \
+  ((((__IE__) & (__IT__)) == (__IT__)) ? SET : RESET)
+
+#define FDCAN_CHECK_FLAG(__IR__, __FLAG__) \
+  ((((__IR__) & (__FLAG__)) == (__FLAG__)) ? SET : RESET)
 /**
  * @}
  */

@@ -489,7 +489,6 @@ typedef struct {
 /**
  * @}
  */
-
 /** @defgroup FLASH_OB_USER_CCMSRAM_RST FLASH Option Bytes User CCMSRAM Erase On
  * Reset Type
  * @{
@@ -502,7 +501,6 @@ typedef struct {
 /**
  * @}
  */
-
 /** @defgroup FLASH_OB_USER_nSWBOOT0 FLASH Option Bytes User Software BOOT0
  * @{
  */
@@ -1042,7 +1040,9 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
        ? (0x200UL << 10U)                                   \
        : (((*((uint32_t *)FLASH_SIZE_DATA_REGISTER)) & 0xFFFFUL) << 10U))
 #define FLASH_BANK_SIZE (FLASH_SIZE >> 1)
-#define FLASH_PAGE_NB 128U
+#define FLASH_PAGE_NB                 \
+  ((FLASH_SIZE == 0x00080000U) ? 128U \
+                               : ((FLASH_SIZE == 0x00040000U) ? 64U : 32U))
 #define FLASH_PAGE_SIZE_128_BITS 0x1000U /* 4 KB */
 #else
 #define FLASH_SIZE                                          \

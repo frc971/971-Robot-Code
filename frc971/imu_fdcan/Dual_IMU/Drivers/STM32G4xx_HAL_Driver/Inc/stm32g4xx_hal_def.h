@@ -61,7 +61,9 @@ typedef enum { HAL_UNLOCKED = 0x00U, HAL_LOCKED = 0x01U } HAL_LockTypeDef;
     (__DMA_HANDLE__).Parent = (__HANDLE__);                          \
   } while (0)
 
-#define UNUSED(X) (void)X
+#if !defined(UNUSED)
+#define UNUSED(X) (void)X /* To avoid gcc/g++ warnings */
+#endif                    /* UNUSED */
 
 /** @brief Reset the Handle's State field.
  * @param __HANDLE__: specifies the Peripheral Handle.

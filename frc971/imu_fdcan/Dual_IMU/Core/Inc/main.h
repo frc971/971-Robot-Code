@@ -185,7 +185,11 @@ typedef struct {
 
 /* USER CODE BEGIN Private defines */
 
+#define LSI_CLOCK_FREQ_HZ 32000  // 32 kHz
 #define IMU_SAMPLES_PER_MS 3
+#define CAN_WATCHDOG_TIMEOUT_US 20000  // 20 ms
+#define PWM_WATCHDOG_TIMEOUT_US 20000  // 20 ms
+#define SPI_WATCHDOG_TIMEOUT_US 20000  // 20 ms
 
 /* USER CODE END Private defines */
 

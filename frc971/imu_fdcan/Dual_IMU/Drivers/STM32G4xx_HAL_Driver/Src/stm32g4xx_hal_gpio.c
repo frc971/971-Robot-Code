@@ -447,7 +447,7 @@ void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
  * @param  GPIOx where x can be (A..G) to select the GPIO peripheral for
  * STM32G4xx family
  * @param  GPIO_Pin specifies the port bits to be locked.
- *         This parameter can be any combination of GPIO_Pin_x where x can be
+ *         This parameter can be any combination of GPIO_PIN_x where x can be
  * (0..15).
  * @retval None
  */

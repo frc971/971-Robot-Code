@@ -49,6 +49,8 @@ ADC_HandleTypeDef hadc5;
 
 FDCAN_HandleTypeDef hfdcan2;
 
+IWDG_HandleTypeDef hiwdg;
+
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
@@ -85,7 +87,7 @@ static DataTdk data_tdk;
 static uint8_t can_tx[64];
 static int can_tx_packet_counter;
 static CanData can_out;
-static int timer_index;
+static int timer_index = 0;
 
 static DataMurata murata_averaged;
 static DataTdk tdk_averaged;
@@ -106,6 +108,15 @@ static FourBytes spi3_rx;
 static FourBytes spi3_tx;
 static FourBytes spi_murata_rx;
 
+// Watchdog
+// Watchpuppies, really. When they starve, the main watchdog also starves;
+// system reset is triggered on main watchdog timeout.
+unsigned long last_can_watchdog_us;
+unsigned long last_pwm_watchdog_us;
+unsigned long last_spi_uno_watchdog_us;
+unsigned long last_spi_due_watchdog_us;
+unsigned long last_spi_tdk_watchdog_us;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,6 +132,7 @@ static void MX_TIM3_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 static void EnableLeds(void);
@@ -152,6 +164,11 @@ static void SpiTdk(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
                    SpiIn call);
 static void SpiMurata(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
                       SpiIn call);
+
+// Watchdog
+static uint16_t GetWatchdogTimeoutMs(void);
+static void DelayWithWatchdog(uint16_t delay_ms);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -197,17 +214,27 @@ int main(void) {
   MX_USB_PCD_Init();
   MX_TIM2_Init();
   MX_TIM1_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
-  EnableLeds();               // Set LEDs to red
+  HAL_IWDG_Refresh(&hiwdg);
+  EnableLeds();  // Set LEDs to red
+  HAL_IWDG_Refresh(&hiwdg);
+
   InitCan(&tx_header, 0x01);  // Initialize the CAN module
+  HAL_IWDG_Refresh(&hiwdg);
+
   InitMurata();  // Run the Murata power up sequence (see pg 30 of datasheet)
-  InitTdk();     // Run the TDK power up sequence (see pg 22 of datasheet)
+  HAL_IWDG_Refresh(&hiwdg);
+
+  InitTdk();  // Run the TDK power up sequence (see pg 22 of datasheet)
+  HAL_IWDG_Refresh(&hiwdg);
+
   HAL_TIM_Base_Start_IT(&htim2);  // Start 1 us timer
   HAL_TIM_Base_Start_IT(&htim1);  // Start 1 ms timer
-
   HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_4);
+  HAL_IWDG_Refresh(&hiwdg);
 
   /* USER CODE END 2 */
 
@@ -218,6 +245,41 @@ int main(void) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+    // Check when CAN, PWM and SPI were last successfully written. Use
+    // snapshotted timestamps to prevent race condition from interrupt loop
+    // updating during check.
+    unsigned long last_can_watchdog_us_copy = last_can_watchdog_us;
+    unsigned long last_pwm_watchdog_us_copy = last_pwm_watchdog_us;
+    unsigned long last_spi_uno_watchdog_us_copy = last_spi_uno_watchdog_us;
+    unsigned long last_spi_due_watchdog_us_copy = last_spi_due_watchdog_us;
+    unsigned long last_spi_tdk_watchdog_us_copy = last_spi_tdk_watchdog_us;
+    unsigned long current_time_us = __HAL_TIM_GetCounter(&htim2);
+
+    // Feed watchdog. Triggers system reset after 100 ms.
+    // We also check 3 sub-watchdogs that monitor the (interrupt) loops for CAN,
+    // PWM and SPI. This main watchdog is only fed when all are fed.
+
+    if (current_time_us - last_can_watchdog_us_copy > CAN_WATCHDOG_TIMEOUT_US) {
+      // TODO(sindy): add uart logging in future PR -- "CAN watchdog timeout"
+    } else if (current_time_us - last_pwm_watchdog_us_copy >
+               PWM_WATCHDOG_TIMEOUT_US) {
+      // TODO(sindy): add uart logging in future PR -- "PWM watchdog timeout"
+    } else if (current_time_us - last_spi_uno_watchdog_us_copy >
+               SPI_WATCHDOG_TIMEOUT_US) {
+      // TODO(sindy): add uart logging in future PR -- "SPI UNO watchdog
+      // timeout"
+    } else if (current_time_us - last_spi_due_watchdog_us_copy >
+               SPI_WATCHDOG_TIMEOUT_US) {
+      // TODO(sindy): add uart logging in future PR -- "SPI DUE watchdog
+      // timeout"
+    } else if (current_time_us - last_spi_tdk_watchdog_us_copy >
+               SPI_WATCHDOG_TIMEOUT_US) {
+      // TODO(sindy): add uart logging in future PR -- "SPI TDK watchdog
+      // timeout"
+    } else {
+      HAL_IWDG_Refresh(&hiwdg);
+    }
   }
   /* USER CODE END 3 */
 }
@@ -237,9 +299,11 @@ void SystemClock_Config(void) {
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
    */
-  RCC_OscInitStruct.OscillatorType =
-      RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 |
+                                     RCC_OSCILLATORTYPE_LSI |
+                                     RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
@@ -357,6 +421,31 @@ static void MX_FDCAN2_Init(void) {
   /* USER CODE BEGIN FDCAN2_Init 2 */
 
   /* USER CODE END FDCAN2_Init 2 */
+}
+
+/**
+ * @brief IWDG Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_IWDG_Init(void) {
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_16;
+  hiwdg.Init.Window = 4095;
+  hiwdg.Init.Reload = 200;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
 }
 
 /**
@@ -527,7 +616,7 @@ static void MX_TIM2_Init(void) {
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 168 - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4.294967295E9;
+  htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
@@ -777,7 +866,9 @@ static void PowerTdk(void) {
   // TDK_PWR_EN starts high, must be set low before reading
   HAL_GPIO_WritePin(TDK_PWR_EN_GPIO_Port, TDK_PWR_EN_Pin, GPIO_PIN_RESET);
   // TDK_EN starts high, must be set low after a delay from TDK_PWR_EN
-  HAL_Delay(1000);
+
+  DelayWithWatchdog(1000);
+
   HAL_GPIO_WritePin(TDK_EN_GPIO_Port, TDK_EN_Pin, GPIO_PIN_RESET);
 }
 
@@ -876,21 +967,21 @@ static bool InitMurata(void) {
 
   HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin,
                     GPIO_PIN_RESET);  // Reset UNO
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
   HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin,
                     GPIO_PIN_RESET);  // Reset DUE
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin, GPIO_PIN_SET);
 
-  HAL_Delay(25);
+  DelayWithWatchdog(25);
 
   SendSpiDue(MakeSpiReadMsgMurata(ACC_DC1_ADDRESS));  // cxx_cxy address
 
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   SendSpiUno(WRITE_OP_MODE_NORMAL);
-  HAL_Delay(70);
+  DelayWithWatchdog(70);
 
   SendSpiDue(WRITE_MODE_ASM_010);
   SendSpiDue(READ_MODE);
@@ -948,19 +1039,19 @@ static bool InitMurata(void) {
 
   HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin,
                     GPIO_PIN_RESET);  // Reset UNO
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
   HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin,
                     GPIO_PIN_RESET);  // Reset DUE
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin, GPIO_PIN_SET);
 
-  HAL_Delay(25);
+  DelayWithWatchdog(25);
 
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   SendSpiUno(WRITE_OP_MODE_NORMAL);
-  HAL_Delay(70);
+  DelayWithWatchdog(70);
 
   SendSpiUno(
       MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
@@ -968,19 +1059,19 @@ static bool InitMurata(void) {
 
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin,
                     GPIO_PIN_RESET);  // Reset DUE
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
   HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin, GPIO_PIN_SET);
-  HAL_Delay(25);
+  DelayWithWatchdog(25);
 
   SendSpiDue(WRITE_OP_MODE_NORMAL);
   SendSpiDue(WRITE_OP_MODE_NORMAL);
-  HAL_Delay(1);
+  DelayWithWatchdog(1);
 
   SendSpiDue(
       MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
 
   for (num_attempts = 0; num_attempts < 2; num_attempts++) {
-    HAL_Delay(405);
+    DelayWithWatchdog(405);
 
     SendSpiDue(WRITE_EOI_BIT);
     SendSpiUno(WRITE_EOI_BIT);
@@ -988,32 +1079,32 @@ static bool InitMurata(void) {
     /* UNO */
     SendSpiUno(READ_SUMMARY_STATUS);
     SendSpiUno(READ_SUMMARY_STATUS);
-    HAL_Delay(3);
+    DelayWithWatchdog(3);
     response_uno = SendSpiUno(READ_SUMMARY_STATUS);
     uno_ok = !CHECK_RS_ERROR(response_uno);
 
     /* DUE */
     SendSpiDue(READ_SUMMARY_STATUS);
     SendSpiDue(READ_SUMMARY_STATUS);
-    HAL_Delay(3);
+    DelayWithWatchdog(3);
     response_due = SendSpiDue(READ_SUMMARY_STATUS);
     due_ok = !CHECK_RS_ERROR(response_due);
 
     if ((due_ok == false || uno_ok == false) && (num_attempts == 0)) {
       HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin,
                         GPIO_PIN_RESET);  // Reset UNO
-      HAL_Delay(1);
+      DelayWithWatchdog(1);
       HAL_GPIO_WritePin(RESET_UNO_GPIO_Port, RESET_UNO_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin,
                         GPIO_PIN_RESET);  // Reset DUE
-      HAL_Delay(1);
+      DelayWithWatchdog(1);
       HAL_GPIO_WritePin(RESET_DUE_GPIO_Port, RESET_DUE_Pin, GPIO_PIN_SET);
-      HAL_Delay(25);
+      DelayWithWatchdog(25);
 
       SendSpiDue(WRITE_OP_MODE_NORMAL);
       SendSpiDue(WRITE_OP_MODE_NORMAL);
       SendSpiUno(WRITE_OP_MODE_NORMAL);
-      HAL_Delay(50);
+      DelayWithWatchdog(50);
 
       SendSpiUno(
           MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
@@ -1021,7 +1112,7 @@ static bool InitMurata(void) {
           MakeSpiMsgMurata(MURATA_ACC_FILTER_ADDR, MURATA_ACC_FILTER_300HZ));
       SendSpiDue(
           MakeSpiMsgMurata(MURATA_GYRO_FILTER_ADDR, MURATA_GYRO_FILTER_300HZ));
-      HAL_Delay(45);
+      DelayWithWatchdog(45);
     } else {
       break;
     }
@@ -1041,7 +1132,7 @@ static void InitTdk(void) {
 
   // Send 0x81 to PWR_MGMT to initialize SPI
   SendSpiTdk(PWR_MGMT_1, 0x81, false);
-  HAL_Delay(100);
+  DelayWithWatchdog(100);
 
   // Setting the sample rates for TDK
   SendSpiTdk(USER_CTRL, 0x55, false);
@@ -1100,6 +1191,7 @@ static void PWMSend(TIM_HandleTypeDef *htim, uint32_t channel, float data) {
           result = pwm_period * .9f;
         }
         TIM3->CCR3 = result;
+        last_pwm_watchdog_us = __HAL_TIM_GetCounter(&htim2);
         break;
 
       case TIM_CHANNEL_4:
@@ -1117,6 +1209,7 @@ static void PWMSend(TIM_HandleTypeDef *htim, uint32_t channel, float data) {
           result = pwm_period * .9f;
         }
         TIM3->CCR4 = result;
+        last_pwm_watchdog_us = __HAL_TIM_GetCounter(&htim2);
         break;
 
       default:
@@ -1377,6 +1470,7 @@ static void SpiTdk(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
       }
 
       *res = SPI_READY;
+      last_spi_tdk_watchdog_us = __HAL_TIM_GetCounter(&htim2);
       break;
   }
 }
@@ -1426,8 +1520,30 @@ static void SpiMurata(DataRawInt16 *data, SPI_HandleTypeDef *hspix, SpiOut *res,
       }
 
       *res = SPI_READY;
+      last_spi_uno_watchdog_us = __HAL_TIM_GetCounter(&htim2);
+      last_spi_due_watchdog_us = __HAL_TIM_GetCounter(&htim2);
       break;
   }
+}
+
+static uint16_t GetWatchdogTimeoutMs(void) {
+  return (uint16_t)((uint32_t)(1000) * hiwdg.Init.Reload *
+                    hiwdg.Init.Prescaler / LSI_CLOCK_FREQ_HZ);
+}
+
+static void DelayWithWatchdog(uint16_t delay_ms) {
+  // Delay without triggering watchdog reset. We do this by feeding the watchdog
+  // at least once during this interval; here we arbitrarily choose do it 3
+  // times. Note that this function will cause a delay of slightly longer than
+  // the requested due to nonzero compute time.
+  uint16_t watchdog_pet_period_ms = GetWatchdogTimeoutMs() / 3;
+  uint16_t remaining_delay_time_ms = delay_ms;
+  while (watchdog_pet_period_ms < remaining_delay_time_ms) {
+    HAL_Delay(watchdog_pet_period_ms);
+    HAL_IWDG_Refresh(&hiwdg);
+    remaining_delay_time_ms -= watchdog_pet_period_ms;
+  }
+  HAL_Delay(remaining_delay_time_ms);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -1472,6 +1588,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         }
       }
       can_tx_packet_counter += 3;
+      last_can_watchdog_us = __HAL_TIM_GetCounter(&htim2);
 
       SpiTdk(tdk_data, &hspi1, &tdk_state, SPI_RUN);
       SpiMurata(uno_data, &hspi2, &uno_state, SPI_RUN);
@@ -1519,7 +1636,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
     }
 
     tdk_data[timer_index].state++;
-    if (tdk_data[timer_index].state == 8) {
+    if (tdk_data[timer_index].state >= 8) {
       SpiCsEnd(hspi);
       tdk_data[timer_index].state = 0;
       can_out.tdk_counter++;
