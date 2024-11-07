@@ -11,6 +11,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_goal_static.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_joystick_goal_static.h"
 #include "frc971/input/driver_station_data.h"
 
 namespace frc971::input {
@@ -153,6 +155,57 @@ class DrivetrainInputReader {
 
   ::std::function<bool(const ::frc971::input::driver_station::Data &data)>
       vision_align_fn_;
+};
+
+class SwerveDrivetrainInputReader {
+  SwerveDrivetrainInputReader(::aos::EventLoop *event_loop,
+                              driver_station::JoystickAxis vx_axis,
+                              driver_station::JoystickAxis vy_axis,
+                              driver_station::JoystickAxis omega_axis)
+      : vx_axis_(vx_axis),
+        vy_axis_(vy_axis),
+        omega_axis_(omega_axis),
+        goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
+            "/drivetrain")) {}
+
+ public:
+  virtual ~SwerveDrivetrainInputReader() = default;
+
+  // Constructs the appropriate DrivetrainInputReader.
+  static std::unique_ptr<SwerveDrivetrainInputReader> Make(
+      ::aos::EventLoop *event_loop);
+
+  // Processes new joystick data and publishes drivetrain goal messages.
+  void HandleDrivetrain(const ::frc971::input::driver_station::Data &data);
+
+  // Sets the scalar for the steering wheel for closed loop mode converting
+  // steering ratio to meters displacement on the two wheels.
+  void set_wheel_multiplier(double wheel_multiplier) {
+    wheel_multiplier_ = wheel_multiplier;
+  }
+
+ protected:
+  const driver_station::JoystickAxis vx_axis_;
+  const driver_station::JoystickAxis vy_axis_;
+  const driver_station::JoystickAxis omega_axis_;
+
+  // Structure containing the (potentially adjusted) steering and throttle
+  // values from the joysticks.
+  struct SwerveGoals {
+    double vx;
+    double vy;
+    double omega;
+  };
+
+ private:
+  // Computes the steering and throttle from the provided driverstation data.
+  SwerveGoals GetSwerveGoals(const ::frc971::input::driver_station::Data &data);
+
+  ::aos::Sender<control_loops::swerve::GoalStatic> goal_sender_;
+
+  // The scale for the joysticks for closed loop mode converting
+  // joysticks to meters displacement on the two wheels.
+  double wheel_multiplier_ = 0.5;
 };
 
 // Implements DrivetrainInputReader for the original steering wheel.

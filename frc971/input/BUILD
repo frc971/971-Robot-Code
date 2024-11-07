@@ -38,6 +38,8 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:spline_goal_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_goal_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_joystick_goal_fbs",
         "//frc971/input:driver_station_data",
     ],
 )
@@ -87,6 +89,21 @@ cc_library(
         "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:auto_mode_fbs",
         "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/input:joystick_input",
+    ],
+)
+
+cc_library(
+    name = "swerve_joystick_input",
+    srcs = ["swerve_joystick_input.cc"],
+    hdrs = ["swerve_joystick_input.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":drivetrain_input",
+        ":redundant_joystick_data",
+        "//aos:init",
+        "//aos/actions:action_lib",
+        "//aos/logging",
         "//frc971/input:joystick_input",
     ],
 )

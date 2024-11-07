@@ -6,6 +6,7 @@
 
 #include "aos/commonmath.h"
 #include "aos/logging/logging.h"
+#include "drivetrain_input.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
@@ -118,6 +119,56 @@ void DrivetrainInputReader::HandleDrivetrain(
   }
 
   last_is_control_loop_driving_ = is_control_loop_driving;
+}
+
+void SwerveDrivetrainInputReader::HandleDrivetrain(
+    const ::frc971::input::driver_station::Data &data) {
+  const auto swerve_goals = GetSwerveGoals(data);
+  const double vx = swerve_goals.vx;
+  const double vy = swerve_goals.vy;
+  const double omega = swerve_goals.omega;
+
+  auto builder = goal_sender_.MakeStaticBuilder();
+
+  auto joystick_goal = builder->add_joystick_goal();
+
+  joystick_goal->set_vx(vx);
+  joystick_goal->set_vy(vy);
+  joystick_goal->set_omega(omega);
+
+  builder.CheckOk(builder.Send());
+}
+
+std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
+    ::aos::EventLoop *event_loop) {
+  // Swerve Controller
+  // axis (2, 2) will give you alternative omega axis (controls with vertical
+  // movement)
+  const JoystickAxis kVxAxis(2, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
+
+  std::unique_ptr<SwerveDrivetrainInputReader> result(
+      new SwerveDrivetrainInputReader(event_loop, kVxAxis, kVyAxis,
+                                      kOmegaAxis));
+  return result;
+}
+
+SwerveDrivetrainInputReader::SwerveGoals
+SwerveDrivetrainInputReader::GetSwerveGoals(
+    const ::frc971::input::driver_station::Data &data) {
+  // xbox
+  constexpr double kMovementDeadband = 0.05;
+  constexpr double kRotationDeadband = 0.05;
+
+  const double omega =
+      -aos::Deadband(-data.GetAxis(omega_axis_), kRotationDeadband, 1.0);
+
+  const double vx =
+      aos::Deadband(-data.GetAxis(vx_axis_), kMovementDeadband, 1.0);
+
+  const double vy =
+      aos::Deadband(-data.GetAxis(vy_axis_), kMovementDeadband, 1.0);
+
+  return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega};
 }
 
 DrivetrainInputReader::WheelAndThrottle

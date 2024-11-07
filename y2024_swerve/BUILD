@@ -27,6 +27,7 @@ robot_downloader(
         "//y2024/www:www_files",
     ],
     start_binaries = [
+        ":joystick_reader",
         "//aos/events/logging:logger_main",
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
@@ -43,6 +44,7 @@ robot_downloader(
 robot_downloader(
     name = "orin_download",
     binaries = [
+        "//frc971/wpilib:joystick_republish",
         "//aos/events:aos_timing_report_streamer",
         "//aos/events/logging:log_cat",
         "//aos:aos_jitter",
@@ -273,5 +275,23 @@ aos_config(
         "//aos/events:aos_config",
         "//frc971/control_loops/drivetrain:aos_config",
         "//frc971/input:aos_config",
+    ],
+)
+
+cc_binary(
+    name = "joystick_reader",
+    srcs = [
+        ":joystick_reader.cc",
+    ],
+    deps = [
+        "//aos:init",
+        "//aos/actions:action_lib",
+        "//aos/events:shm_event_loop",
+        "//aos/logging",
+        "//frc971/input:drivetrain_input",
+        "//frc971/input:joystick_input",
+        "//frc971/input:redundant_joystick_data",
+        "//frc971/input:swerve_joystick_input",
+        "//y2024/control_loops/drivetrain:drivetrain_base",
     ],
 )
