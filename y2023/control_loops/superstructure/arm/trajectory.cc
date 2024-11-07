@@ -736,14 +736,14 @@ void TrajectoryFollower::Reset() {
   const auto x_blocked = arm_X.block<4, 1>(0, 0);
 
   const ::Eigen::Matrix<double, 4, 4> final_A =
-      ::frc971::control_loops::NumericalJacobianX<4, 2>(
+      ::frc971::control_loops::NumericalJacobianX<4, 2, double>(
           [this](const auto &x_blocked, const auto &U, double dt) {
             return this->dynamics_->UnboundedDiscreteDynamics(x_blocked, U, dt);
           },
           x_blocked, arm_U, 0.00505);
 
   const ::Eigen::Matrix<double, 4, 2> final_B =
-      ::frc971::control_loops::NumericalJacobianU<4, 2>(
+      ::frc971::control_loops::NumericalJacobianU<4, 2, double>(
           [this](const auto &x_blocked, const auto &U, double dt) {
             return this->dynamics_->UnboundedDiscreteDynamics(x_blocked, U, dt);
           },

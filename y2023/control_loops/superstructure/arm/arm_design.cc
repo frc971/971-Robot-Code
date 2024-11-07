@@ -106,13 +106,13 @@ int Main() {
     const auto x_blocked = X.block<4, 1>(0, 0);
 
     const ::Eigen::Matrix<double, 4, 4> final_A =
-        ::frc971::control_loops::NumericalJacobianX<4, 2>(
+        ::frc971::control_loops::NumericalJacobianX<4, 2, double>(
             [dynamics](const auto &x_blocked, const auto &U, double kDt) {
               return dynamics.UnboundedDiscreteDynamics(x_blocked, U, kDt);
             },
             x_blocked, U, 0.00505);
     const ::Eigen::Matrix<double, 4, 2> final_B =
-        ::frc971::control_loops::NumericalJacobianU<4, 2>(
+        ::frc971::control_loops::NumericalJacobianU<4, 2, double>(
             [dynamics](const auto &x_blocked, const auto &U, double kDt) {
               return dynamics.UnboundedDiscreteDynamics(x_blocked, U, kDt);
             },

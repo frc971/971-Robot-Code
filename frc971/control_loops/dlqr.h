@@ -5,10 +5,10 @@
 
 namespace frc971::controls {
 
-template <int num_states, int num_inputs>
-int Controllability(const ::Eigen::Matrix<double, num_states, num_states> &A,
-                    const ::Eigen::Matrix<double, num_states, num_inputs> &B) {
-  Eigen::Matrix<double, num_states, num_states * num_inputs> controllability;
+template <typename Scalar, int num_states, int num_inputs>
+int Controllability(const ::Eigen::Matrix<Scalar, num_states, num_states> &A,
+                    const ::Eigen::Matrix<Scalar, num_states, num_inputs> &B) {
+  Eigen::Matrix<Scalar, num_states, num_states * num_inputs> controllability;
   controllability.block(0, 0, num_states, num_inputs) = B;
 
   for (size_t i = 1; i < num_states; i++) {
@@ -18,7 +18,7 @@ int Controllability(const ::Eigen::Matrix<double, num_states, num_states> &A,
   }
 
   return Eigen::FullPivLU<
-             Eigen::Matrix<double, num_states, num_states * num_inputs>>(
+             Eigen::Matrix<Scalar, num_states, num_states * num_inputs>>(
              controllability)
       .rank();
 }
