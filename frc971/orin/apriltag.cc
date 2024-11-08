@@ -144,6 +144,7 @@ GpuDetector::GpuDetector(size_t width, size_t height,
                          InputFormat input_format)
     : width_(width),
       height_(roundUp<8>(height)),
+      original_height_(height),
       // Save actual input size. Round up everything else to have a height
       // that's a multiple of 8.  The initial memcpy into the GPU color image
       // will just copy the actual number of bytes in the input image. This
@@ -844,9 +845,10 @@ void GpuDetector::Detect(const uint8_t *image) {
       // Run this on a separate stream to overlap with later GPU compute
       after_image_memcpy_to_device_.Synchronize();
       event_timings_.start("CudaToGreyscale", greyscale_stream_.get());
+      // Use original_height to prevent reading past the end of the image.
       threshold_->CudaToGreyscale(color_image_device_.get(),
-                                  gray_image_device_.get(), width_, height_,
-                                  &greyscale_stream_);
+                                  gray_image_device_.get(), width_,
+                                  original_height_, &greyscale_stream_);
       event_timings_.end("CudaToGreyscale");
 
       event_timings_.start("grey_image_memcpy_to_host",

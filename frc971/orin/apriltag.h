@@ -238,6 +238,7 @@ class GpuDetector {
   // Size of the image.
   const size_t width_;
   const size_t height_;
+  const size_t original_height_;
   const size_t input_size_;
 
   // Detector parameters.

@@ -640,7 +640,7 @@ void GpuDetector::DecodeTags() {
   after_memcpy_gray_.Synchronize();
   image_u8_t im_orig{
       .width = static_cast<int32_t>(width_),
-      .height = static_cast<int32_t>(height_),
+      .height = static_cast<int32_t>(original_height_),
       .stride = static_cast<int32_t>(width_),
       .buf = const_cast<uint8_t *>(gray_image_host_ptr_), 
       // TODO - find a better way to do this --^. Problem is that 
