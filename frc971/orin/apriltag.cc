@@ -804,9 +804,6 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   after_diff_.Record(&stream_);
 
-  // TODO - allocate this as HostMemory so we can do async copies of it
-  //        Same for all subsquent uses of this pattern
-  // int num_compressed_union_marker_pair_host;
   {
     event_timings_.start("IfUnionMarkerPair", stream_.get());
     // Remove empty points which aren't to be considered before sorting to speed
@@ -824,11 +821,6 @@ void GpuDetector::Detect(const uint8_t *image) {
     MaybeCheckAndSynchronize("cub::DeviceSelect::If");
     event_timings_.end("IfUnionMarkerPair");
     event_timings_.start("num_compressed_union_marker_pair_memcpy_d2h", stream_.get());
-    // TODO - as an experiment, make this an async d2h copy. Add an event
-    // just after it and a sync just before the data is used in the block
-    // below. There's not a lot that will run in parallel on the CPU between
-    // the record and sync, but there's occasionally speedups to be had by
-    // not having an implicit sync.
     num_compressed_union_marker_pair_device_.MemcpyAsyncTo(
         &num_compressed_union_marker_pair_host_, &stream_);
     event_timings_.end("num_compressed_union_marker_pair_memcpy_d2h");
@@ -885,7 +877,6 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   after_sort_.Record(&stream_);
 
-  // size_t num_quads_host = 0;
   {
     event_timings_.start("ReduceQuadBoundary", stream_.get());
     // Our next step is to compute the extents and dot product so we can filter
@@ -920,11 +911,6 @@ void GpuDetector::Detect(const uint8_t *image) {
     event_timings_.end("ReduceQuadBoundary");
 
     event_timings_.start("num_quads_memcpy_d2h", stream_.get());
-    // TODO - as an experiment, make this an async d2h copy. Add an event
-    // just after it and a sync just before the data is used in the block
-    // below. There's not a lot that will run in parallel on the CPU between
-    // the record and sync, but there's occasionally speedups to be had by
-    // not having an implicit sync.
     num_quads_device_.MemcpyAsyncTo(&num_quads_host_, &stream_);
     event_timings_.end("num_quads_memcpy_d2h");
   }
