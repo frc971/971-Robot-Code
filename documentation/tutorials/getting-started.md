@@ -43,8 +43,10 @@ To setup the buildserver you can follow these steps
     ```
 2. Fill out the 971 system access form pinned in the `#coding` channel in slack
     1. This has the same requirements as the form for Gerrit
-    2. You will need to run `cat ~/.ssh/id_971_ed25519` for the key used in the form.
+    2. You will need to run `cat ~/.ssh/id_971_ed25519.pub` for the key used in the form. This is your public key, you may share this, however `~/.ssh/id_971_ed25519` is a private key. Never share your private key.
+
 3. Wait for a slack message from Stephan Massalt saying you have access to the Buildserver
+
 4. Setting up an SSH aliases
     1. This makes it easier to access the buildserver with IDEs like vscode.
     2. **Note:** Similar to earlier, Powershell is required for this step on windows.
@@ -134,5 +136,4 @@ NOTE:
     bazel run --config=armv7 -c opt //y2020/vision:calibration_stripped
     ```
     You will then need to manually copy the resulting file over to the robot.
-
 
