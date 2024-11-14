@@ -32,7 +32,7 @@ class SwerveJoystickInput : public ::frc971::input::JoystickInput {
   virtual ~SwerveJoystickInput() {}
 
  protected:
-  bool was_running_action() { return was_running_; }
+  bool was_running_action() const { return was_running_; }
 
   // Returns true if an action is running.
   bool ActionRunning() { return action_queue_.Running(); }
