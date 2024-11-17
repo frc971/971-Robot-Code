@@ -7,51 +7,57 @@
 #include "motors/usb/hid.h"
 #include "motors/util.h"
 
-#define NUM_ENCODERS 2
-#define ENCODER_COUNTS_PER_REV 0x1000
-#define ENCODER_MOD (ENCODER_COUNTS_PER_REV - 1)
-#define ENCODER_RESET_TIME_MS 500
-#define ENCODER_FILTER_EXPONENT 6  // depth of IIR filtering where val 2^n
-#define MAX_FILTER_DELTA \
-  200  // reset encoder filter when the input value exceeds filtered value by
-       // this amount
-#define MAX_DUTY_CYCLE_DELTA 500
-#define BUTTON_BOARD_COUNT 3
-#define PROCESSOR_ID_COUNT 3  // number of driver stations
-#define PRINT_OFFSETS 0       // used to debug the zero's of the joystick
-#define SCALED_VALUE_MAX 0xFFFF
-
 namespace frc971 {
 namespace motors {
+
+constexpr int kNumEncoders = 2;
+constexpr uint16_t kEncoderCountsPerRev = 0x1000;
+constexpr int kEncoderMod = kEncoderCountsPerRev - 1;
+constexpr int kEncoderResetTime = 500;
+constexpr int kEncoderFilterExponent =
+    6;  // depth of IIR filtering where val 2^n
+constexpr int kMaxFilterDelta =
+    200;  // reset encoder filter when the input value exceeds filtered value by
+          // this amount
+constexpr int kMaxDutyCycleDelta = 500;
+constexpr int kButtonBoardCount = 3;
+constexpr int kProcessorIdCount = 3;  // number of driver stations
+constexpr int kPrintOffsets = 0;  // used to debug the zero's of the joystick
+constexpr uint16_t kScaledValueMax = 0xFFFF;
 
 struct JoystickAdcReadings {
   uint16_t analog0, analog1, analog2, analog3;
 };
 
-enum abs_Measurement_State {
-  INIT_ABS,      // Absolute position of encoder on startup, which is treated as
+enum AbsMeasurementState {
+  kInitAbs,      // Absolute position of encoder on startup, which is treated as
                  // center
-  START_PERIOD,  // Period reading needs to stay for to be considered stable.
+  kStartPeriod,  // Period reading needs to stay for to be considered stable.
                  // Rise-to-rise time of PWM
-  WAIT_PERIOD_DONE,
-  START_WIDTH,  // Rise-to-fall time of PWM
-  WAIT_WIDTH_DONE
+  kWaitPeriodDone,
+  kStartWidth,  // Rise-to-fall time of PWM
+  kWaitWidthDone
 };
 
 typedef struct {
-  abs_Measurement_State state;
+  uint16_t enc0_trim;
+  uint16_t enc1_trim;
+} EncoderTrim;
+
+typedef struct {
+  AbsMeasurementState state;
   uint32_t period;
   uint32_t width;
   uint32_t dutycycle;
   uint32_t last_erronious_dutycycle;  // Tracks out-of-range measurements so
                                       // that duty cycle can be reset
   bool intialized;
-} ABS_POSITION_S;
+} AbsPosition;
 
 typedef struct {
   uint16_t angle;
   uint16_t offset;
-  uint16_t resetTimer_ms;
+  uint16_t reset_timer_ms;
   uint16_t filtered_duty_cycle;
   uint32_t angle_filter;
   // The encoder value at center.
@@ -59,7 +65,7 @@ typedef struct {
   // The tared min and max values of the limits.
   uint16_t enc_min;
   uint16_t enc_max;
-} ENCODER_DATA_S;
+} EncoderData;
 
 // Identifies which board is used.
 typedef struct {
@@ -68,7 +74,7 @@ typedef struct {
       processor_index;  // There are two processors, one for each driver station
   uint32_t can_id0;
   uint32_t can_id1;
-} BOARD_CONFIG_S;
+} BoardConfig;
 
 typedef struct {
   uint32_t buttons;
@@ -78,7 +84,7 @@ typedef struct {
   uint16_t abs1;
   uint16_t abs2;
   uint16_t abs3;
-} MEASUREMENT_DATA_S;
+} MeasurementData;
 
 class DriverStation {
  public:
@@ -88,7 +94,7 @@ class DriverStation {
   static constexpr uint16_t kReportSize = 1 * 5 + 2;
 
  private:
-  BOARD_CONFIG_S board_config;
+  BoardConfig board_config;
 
   // Contains the while loop to read inputs, pack data, and send it via CAN and
   // USB
@@ -106,20 +112,20 @@ class DriverStation {
   void AdcInitJoystick();
   JoystickAdcReadings AdcReadJoystick(const DisableInterrupts &);
   void ComposeReport(char report[][kReportSize],
-                     MEASUREMENT_DATA_S *bbMeasurements, uint8_t board_id,
+                     MeasurementData *bb_measurements, uint8_t board_id,
                      int can_1_board, int can_2_board);
-  int ReadQuadrature(int encoderNum, uint16_t *encoderAngle);
-  int MeasureAbsPosition(uint32_t encoder_id, ABS_POSITION_S *abs_position);
-  int DetermineEncoderValues(ENCODER_DATA_S *enc, ABS_POSITION_S *absAngle,
-                             int encoderNum, uint16_t resetTime_ms);
-  void ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements, uint32_t board);
-  int UpdateMeasurementsFromCAN(MEASUREMENT_DATA_S *bbMeasurements,
-                                uint8_t *canRX_data);
-  void PackMeasurementsToCAN(MEASUREMENT_DATA_S *bbMeasurements,
-                             uint8_t *canTX_data);
+  int ReadQuadrature(int encoder_num, uint16_t *encoder_angle);
+  int MeasureAbsPosition(uint32_t encoder_id, AbsPosition *abs_position);
+  int DetermineEncoderValues(EncoderData *enc, AbsPosition *abs_angle,
+                             int encoder_num, uint16_t reset_time_ms);
+  void ZeroMeasurements(MeasurementData *bb_measurements, uint32_t board);
+  int UpdateMeasurementsFromCAN(MeasurementData *bb_measurements,
+                                uint8_t *can_rx_data);
+  void PackMeasurementsToCAN(MeasurementData *bb_measurements,
+                             uint8_t *can_tx_data);
   uint32_t ReadButtons();
 
-  int MeasurementsToJoystick(MEASUREMENT_DATA_S bbMeasurement);
+  int MeasurementsToJoystick(MeasurementData bbMeasurement);
 };
 }  // namespace motors
 }  // namespace frc971

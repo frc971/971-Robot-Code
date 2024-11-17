@@ -74,14 +74,14 @@ bool IsMyProcessorId(uint32_t id[4]) {
 }
 
 uint8_t ProcessorIndex() {
-  static uint32_t kPistolgripProcessorIds[PROCESSOR_ID_COUNT][4] = {
+  static uint32_t kPistolgripProcessorIds[kProcessorIdCount][4] = {
       {0x00000000, 0x00000000, 0x00000000, 0x00000000},
       {0x0036FFFF, 0xFFFFFFFF, 0x4E457285,
        0x60110022},  // One with cable tie labels
       {0x0035FFFF, 0xFFFFFFFF, 0x4E457285, 0x60130022},
   };
 
-  for (int i = 0; i < PROCESSOR_ID_COUNT; i++) {
+  for (int i = 0; i < kProcessorIdCount; i++) {
     if (IsMyProcessorId(kPistolgripProcessorIds[i])) {
       return i;
     }
@@ -90,7 +90,7 @@ uint8_t ProcessorIndex() {
   return 0;
 }
 
-uint16_t TareEncoder(ENCODER_DATA_S *encoder_data) {
+uint16_t TareEncoder(EncoderData *encoder_data) {
   return static_cast<uint16_t>((static_cast<uint32_t>(encoder_data->angle) -
                                 static_cast<uint32_t>(encoder_data->enc_trim) +
                                 0x800) &
@@ -102,7 +102,7 @@ uint16_t TareEncoder(ENCODER_DATA_S *encoder_data) {
 // The encoder has a larger range of motion in the + direction than the -
 // direction. We scale the readings so that min (-) maps to 0x0000, max (+) maps
 // to 0xFFFF and the center is at 0x8000.
-uint16_t ScaleEncoder(ENCODER_DATA_S *encoder_data, uint16_t adjusted_angle) {
+uint16_t ScaleEncoder(EncoderData *encoder_data, uint16_t adjusted_angle) {
   uint16_t result = 0x8000;
   if (adjusted_angle > 0x800) {
     const float scaled_angle =
@@ -120,7 +120,7 @@ uint16_t ScaleEncoder(ENCODER_DATA_S *encoder_data, uint16_t adjusted_angle) {
   return result;
 }
 
-uint16_t filterIIR(uint32_t *filterValue, uint16_t currentValue,
+uint16_t FilterIIR(uint32_t *filterValue, uint16_t currentValue,
                    uint16_t filterDepth, bool initFilter) {
   uint32_t localValue = 0;
 
@@ -138,62 +138,61 @@ uint16_t filterIIR(uint32_t *filterValue, uint16_t currentValue,
   return localValue >> filterDepth;
 }
 
-int DriverStation::DetermineEncoderValues(ENCODER_DATA_S *enc,
-                                          ABS_POSITION_S *absAngle,
-                                          int encoderNum,
-                                          uint16_t resetTime_ms) {
+int DriverStation::DetermineEncoderValues(EncoderData *enc,
+                                          AbsPosition *abs_angle,
+                                          int encoder_num,
+                                          uint16_t reset_time_ms) {
   uint16_t currentAngle = 0;
 
-  if (enc->angle > ENCODER_COUNTS_PER_REV) {
+  if (enc->angle > kEncoderCountsPerRev) {
     enc->angle = 0;
   }
 
-  if (ReadQuadrature(encoderNum, &currentAngle)) {
+  if (ReadQuadrature(encoder_num, &currentAngle)) {
     return -1;
   }
 
-  if (MeasureAbsPosition(encoderNum, absAngle)) {
+  if (MeasureAbsPosition(encoder_num, abs_angle)) {
     return -1;
   }
 
-  if (!absAngle->intialized) {
+  if (!abs_angle->intialized) {
     return 0;
   }
 
-  enc->resetTimer_ms++;
-  if (abs((int)(((currentAngle + enc->offset) & ENCODER_MOD) - enc->angle)) >
+  enc->reset_timer_ms++;
+  if (abs((int)(((currentAngle + enc->offset) & kEncoderMod) - enc->angle)) >
       0) {
-    enc->resetTimer_ms = 0;
-    (void)filterIIR(&(enc->angle_filter), absAngle->dutycycle,
-                    ENCODER_FILTER_EXPONENT, true);
+    (void)FilterIIR(&(enc->angle_filter), abs_angle->dutycycle,
+                    kEncoderFilterExponent, true);
   }
 
-  if (abs((int)(enc->angle - absAngle->dutycycle)) > MAX_FILTER_DELTA &&
-      enc->resetTimer_ms > 0) {
-    (void)filterIIR(&(enc->angle_filter), absAngle->dutycycle,
-                    ENCODER_FILTER_EXPONENT, true);
+  if (abs((int)(enc->angle - abs_angle->dutycycle)) > kMaxFilterDelta &&
+      enc->reset_timer_ms > 0) {
+    (void)FilterIIR(&(enc->angle_filter), abs_angle->dutycycle,
+                    kEncoderFilterExponent, true);
   }
 
-  if (enc->resetTimer_ms > resetTime_ms) {
+  if (enc->reset_timer_ms > reset_time_ms) {
     enc->filtered_duty_cycle =
-        filterIIR(&(enc->angle_filter), absAngle->dutycycle,
-                  ENCODER_FILTER_EXPONENT, false);
+        FilterIIR(&(enc->angle_filter), abs_angle->dutycycle,
+                  kEncoderFilterExponent, false);
     enc->offset =
         enc->filtered_duty_cycle -
         currentAngle; /* offset is calculated using filtered abs_position*/
-    enc->offset &= ENCODER_MOD;
-    enc->resetTimer_ms = resetTime_ms;
+    enc->offset &= kEncoderMod;
+    enc->reset_timer_ms = reset_time_ms;
   }
 
   enc->angle = currentAngle + enc->offset;
 
-  enc->angle &= ENCODER_MOD;
+  enc->angle &= kEncoderMod;
 
   return 0;
 }
 
 int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
-                                      ABS_POSITION_S *abs_position) {
+                                      AbsPosition *abs_position) {
   BigFTM *ftm = NULL;
   volatile uint32_t *volatile stat_ctrl0 = NULL;  // status and control
   volatile uint32_t *volatile stat_ctrl1 = NULL;
@@ -236,7 +235,7 @@ int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
   }
 
   switch (abs_position->state) {
-    case INIT_ABS:
+    case kInitAbs:
       ftm->MODE = FTM_MODE_WPDIS;
       ftm->MODE = FTM_MODE_WPDIS | FTM_MODE_FTMEN;
 
@@ -271,19 +270,19 @@ int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
                 FTM_SC_PS(4) /* Prescaler=16 */;
 
       ftm->MODE &= ~FTM_MODE_WPDIS;
-      abs_position->state = START_PERIOD;
+      abs_position->state = kStartPeriod;
       break;
 
-    case START_PERIOD:
+    case kStartPeriod:
       if ((ftm->COMBINE & decap_mask) != decap_mask) {
         ftm->COMBINE = decap_enable | decap_mask;
         *stat_ctrl0 = FTM_CSC_ELSA;
         *stat_ctrl1 = FTM_CSC_ELSA;
-        abs_position->state = WAIT_PERIOD_DONE;
+        abs_position->state = kWaitPeriodDone;
       }
       break;
 
-    case WAIT_PERIOD_DONE:
+    case kWaitPeriodDone:
       initial = *channel_val0;
       final = *channel_val1;
       if ((*stat_ctrl0 & FTM_CSC_CHF) && (*stat_ctrl1 & FTM_CSC_CHF)) {
@@ -293,20 +292,20 @@ int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
         *stat_ctrl0 &= ~FTM_CSC_CHF;
         *stat_ctrl1 &= ~FTM_CSC_CHF;
 
-        abs_position->state = START_WIDTH;
+        abs_position->state = kStartWidth;
       }
       break;
 
-    case START_WIDTH:
+    case kStartWidth:
       if ((ftm->COMBINE & decap_mask) != decap_mask) {
         ftm->COMBINE = decap_enable | decap_mask;
         *stat_ctrl0 = FTM_CSC_ELSA;
         *stat_ctrl1 = FTM_CSC_ELSB;
-        abs_position->state = WAIT_WIDTH_DONE;
+        abs_position->state = kWaitWidthDone;
       }
       break;
 
-    case WAIT_WIDTH_DONE:
+    case kWaitWidthDone:
       initial = *channel_val0;
       final = *channel_val1;
       if ((*stat_ctrl0 & FTM_CSC_CHF) && (*stat_ctrl1 & FTM_CSC_CHF)) {
@@ -317,45 +316,45 @@ int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
         *stat_ctrl1 &= ~FTM_CSC_CHF;
 
         if (abs_position->period != 0) {
-          if (((abs_position->width * ENCODER_COUNTS_PER_REV) /
-               abs_position->period) > ENCODER_MOD) {
-            abs_position->state = START_PERIOD;
+          if (((abs_position->width * kEncoderCountsPerRev) /
+               abs_position->period) > kEncoderMod) {
+            abs_position->state = kStartPeriod;
             break;
           }
 
           // Handle duty cycle out of range. Reset at next reasonable
           // measurement.
           if (abs_position->last_erronious_dutycycle ==
-              (abs_position->width * ENCODER_COUNTS_PER_REV) /
+              (abs_position->width * kEncoderCountsPerRev) /
                   abs_position->period) {
             abs_position->dutycycle =
-                (abs_position->width * ENCODER_COUNTS_PER_REV) /
+                (abs_position->width * kEncoderCountsPerRev) /
                 abs_position->period;
 
-            abs_position->state = START_PERIOD;
+            abs_position->state = kStartPeriod;
             break;
           }
 
-          if (abs((int)((abs_position->width * ENCODER_COUNTS_PER_REV) /
+          if (abs((int)((abs_position->width * kEncoderCountsPerRev) /
                         abs_position->period) -
-                  (int)abs_position->dutycycle) > MAX_DUTY_CYCLE_DELTA) {
+                  (int)abs_position->dutycycle) > kMaxDutyCycleDelta) {
             abs_position->last_erronious_dutycycle =
-                (abs_position->width * ENCODER_COUNTS_PER_REV) /
+                (abs_position->width * kEncoderCountsPerRev) /
                 abs_position->period;
 
-            abs_position->state = START_PERIOD;
+            abs_position->state = kStartPeriod;
             break;
           }
 
           abs_position->dutycycle =
-              (abs_position->width * ENCODER_COUNTS_PER_REV) /
+              (abs_position->width * kEncoderCountsPerRev) /
               abs_position->period;
           abs_position->intialized = true;
         } else {
           abs_position->period = 0xFFFF;
         }
 
-        abs_position->state = START_PERIOD;
+        abs_position->state = kStartPeriod;
       }
       break;
 
@@ -367,24 +366,24 @@ int DriverStation::MeasureAbsPosition(uint32_t encoder_id,
   return 0;
 }
 
-std::array<ENCODER_DATA_S, 2> MakeEncoderData(uint32_t processor_index) {
+std::array<EncoderData, 2> MakeEncoderData(uint32_t processor_index) {
   switch (processor_index) {
     case 0:
     default:
-      return {ENCODER_DATA_S{
+      return {EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0,
                   .enc_min = 0,
                   .enc_max = 0,
               },
-              ENCODER_DATA_S{
+              EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0,
@@ -396,20 +395,20 @@ std::array<ENCODER_DATA_S, 2> MakeEncoderData(uint32_t processor_index) {
       // enc_min should be < 0x7FF and enc_max > 0x800
       // for encoder 0 they should be ~ +/- 0x050 and encoder 1 ~ +/- 0x700 from
       // center
-      return {ENCODER_DATA_S{
+      return {EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0x0568,
                   .enc_min = 0x0741,
                   .enc_max = 0x08EB,
               },
-              ENCODER_DATA_S{
+              EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0x0987,
@@ -417,20 +416,20 @@ std::array<ENCODER_DATA_S, 2> MakeEncoderData(uint32_t processor_index) {
                   .enc_max = 0x0FD5,
               }};
     case 2:
-      return {ENCODER_DATA_S{
+      return {EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0x02CD,
                   .enc_min = 0x0746,
                   .enc_max = 0x0900,
               },
-              ENCODER_DATA_S{
+              EncoderData{
                   .angle = 0,
                   .offset = 0,
-                  .resetTimer_ms = 0,
+                  .reset_timer_ms = 0,
                   .filtered_duty_cycle = 0,
                   .angle_filter = 0,
                   .enc_trim = 0x0589,
@@ -444,18 +443,18 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
                                      teensy::HidFunction *joystick1,
                                      teensy::HidFunction *joystick2,
                                      uint32_t processor_index) {
-  std::array<ENCODER_DATA_S, NUM_ENCODERS> encoder_data =
+  std::array<EncoderData, kNumEncoders> encoder_data =
       MakeEncoderData(processor_index);
 
-  static ABS_POSITION_S abs_position[NUM_ENCODERS];
-  memset(abs_position, 0, NUM_ENCODERS * sizeof(ABS_POSITION_S));
+  static AbsPosition abs_position[kNumEncoders];
+  memset(abs_position, 0, kNumEncoders * sizeof(AbsPosition));
 
   uint8_t can_data_out[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   uint8_t can_data_in[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   static int length = 0;
 
-  MEASUREMENT_DATA_S measurements[BUTTON_BOARD_COUNT];
+  MeasurementData measurements[kButtonBoardCount];
 
   uint32_t start = micros();
   uint16_t can_timer_1 = 0;
@@ -468,10 +467,10 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
       adc = AdcReadJoystick(disable_interrupts);
     }
 
-    uint16_t tared_encoders[NUM_ENCODERS];
-    for (int i = 0; i < NUM_ENCODERS; i++) {
+    uint16_t tared_encoders[kNumEncoders];
+    for (int i = 0; i < kNumEncoders; i++) {
       (void)DetermineEncoderValues(&encoder_data[i], &abs_position[i], i,
-                                   ENCODER_RESET_TIME_MS);
+                                   kEncoderResetTime);
       tared_encoders[i] = TareEncoder(&encoder_data[i]);
     }
 
@@ -485,7 +484,7 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
     measurements[board_config.board_id - 1].enc1 =
         ScaleEncoder(&encoder_data[1], tared_encoders[1]);
 
-#if PRINT_OFFSETS
+#if kPrintOffsets
     static int counter = 0;
     counter++;
 
@@ -568,15 +567,15 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
   }
 }
 
-void DriverStation::ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements,
+void DriverStation::ZeroMeasurements(MeasurementData *bb_measurements,
                                      uint32_t board) {
-  bbMeasurements[board].buttons = 0;
-  bbMeasurements[board].abs0 = 0;
-  bbMeasurements[board].abs1 = 0;
-  bbMeasurements[board].abs2 = 0;
-  bbMeasurements[board].abs3 = 0;
-  bbMeasurements[board].enc0 = 0;
-  bbMeasurements[board].enc1 = 0;
+  bb_measurements[board].buttons = 0;
+  bb_measurements[board].abs0 = 0;
+  bb_measurements[board].abs1 = 0;
+  bb_measurements[board].abs2 = 0;
+  bb_measurements[board].abs3 = 0;
+  bb_measurements[board].enc0 = 0;
+  bb_measurements[board].enc1 = 0;
 }
 
 // clang-format off
@@ -592,8 +591,8 @@ void DriverStation::ZeroMeasurements(MEASUREMENT_DATA_S *bbMeasurements,
 // 6	  ABS2:7	  ABS2:6	  ABS2:5	  ABS2:4	  ABS2:3    ABS2:2	  ABS2:1   ABS2:0 
 // 7	  ABS3:7	  ABS3:6	  ABS3:5	  ABS3:4	  ABS3:3    ABS3:2  	ABS3:1   ABS3:0
 // clang-format on
-int DriverStation::UpdateMeasurementsFromCAN(MEASUREMENT_DATA_S *bbMeasurements,
-                                             uint8_t *canRX_data) {
+int DriverStation::UpdateMeasurementsFromCAN(MeasurementData *bb_measurements,
+                                             uint8_t *can_rx_data) {
   int bb_id = 0;
   uint32_t buttons = 0;
   uint16_t enc0 = 0;
@@ -602,60 +601,60 @@ int DriverStation::UpdateMeasurementsFromCAN(MEASUREMENT_DATA_S *bbMeasurements,
   uint16_t abs3 = 0;
 
   // Extract BB_id
-  bb_id = (int)((canRX_data[2] >> 2) & 0x03);
+  bb_id = (int)((can_rx_data[2] >> 2) & 0x03);
   bb_id--;
 
   if (bb_id == -1) {
     return -1;
   }
 
-  buttons = (uint32_t)canRX_data[0];
-  buttons |= (uint32_t)canRX_data[1] << 8;
-  buttons |= ((uint32_t)canRX_data[2] & 0x0F) << 16;
+  buttons = (uint32_t)can_rx_data[0];
+  buttons |= (uint32_t)can_rx_data[1] << 8;
+  buttons |= ((uint32_t)can_rx_data[2] & 0x0F) << 16;
 
-  bbMeasurements[bb_id].buttons = buttons;
+  bb_measurements[bb_id].buttons = buttons;
 
-  enc0 = (uint16_t)canRX_data[3];
-  enc0 |= ((uint16_t)canRX_data[4] & 0x0F) << 8;
+  enc0 = (uint16_t)can_rx_data[3];
+  enc0 |= ((uint16_t)can_rx_data[4] & 0x0F) << 8;
 
-  bbMeasurements[bb_id].enc0 = enc0 << 4;
+  bb_measurements[bb_id].enc0 = enc0 << 4;
 
-  enc1 = ((uint16_t)canRX_data[4] & 0xF0) >> 4;
-  enc1 |= ((uint16_t)canRX_data[5]) << 4;
+  enc1 = ((uint16_t)can_rx_data[4] & 0xF0) >> 4;
+  enc1 |= ((uint16_t)can_rx_data[5]) << 4;
 
-  bbMeasurements[bb_id].enc1 = enc1 << 4;
+  bb_measurements[bb_id].enc1 = enc1 << 4;
 
-  abs2 = ((uint16_t)canRX_data[6]) << 8;
+  abs2 = ((uint16_t)can_rx_data[6]) << 8;
 
-  bbMeasurements[bb_id].abs2 = abs2;
+  bb_measurements[bb_id].abs2 = abs2;
 
-  abs3 = ((uint16_t)canRX_data[7]) << 8;
+  abs3 = ((uint16_t)can_rx_data[7]) << 8;
 
-  bbMeasurements[bb_id].abs3 = abs3;
+  bb_measurements[bb_id].abs3 = abs3;
 
   return bb_id;
 }
 
-void DriverStation::PackMeasurementsToCAN(MEASUREMENT_DATA_S *bbMeasurements,
-                                          uint8_t *canTX_data) {
-  uint16_t encoder_measurements_0 = bbMeasurements->enc0 >> 4;
-  uint16_t encoder_measurements_1 = bbMeasurements->enc1 >> 4;
+void DriverStation::PackMeasurementsToCAN(MeasurementData *bb_measurements,
+                                          uint8_t *can_tx_data) {
+  uint16_t encoder_measurements_0 = bb_measurements->enc0 >> 4;
+  uint16_t encoder_measurements_1 = bb_measurements->enc1 >> 4;
 
   // taking button data
-  canTX_data[2] = (uint8_t)((bbMeasurements->buttons >> 16) & 0x0F);
-  canTX_data[1] = (uint8_t)((bbMeasurements->buttons >> 8) & 0xFF);
-  canTX_data[0] = (uint8_t)(bbMeasurements->buttons & 0xFF);
+  can_tx_data[2] = (uint8_t)((bb_measurements->buttons >> 16) & 0x0F);
+  can_tx_data[1] = (uint8_t)((bb_measurements->buttons >> 8) & 0xFF);
+  can_tx_data[0] = (uint8_t)(bb_measurements->buttons & 0xFF);
 
   // taking encdoer data
-  canTX_data[3] = (uint8_t)(encoder_measurements_0 & 0xFF);
-  canTX_data[4] = (uint8_t)((encoder_measurements_0 >> 8) & 0x0F);
+  can_tx_data[3] = (uint8_t)(encoder_measurements_0 & 0xFF);
+  can_tx_data[4] = (uint8_t)((encoder_measurements_0 >> 8) & 0x0F);
 
-  canTX_data[4] |= (uint8_t)((encoder_measurements_1 & 0x0F) << 4);
-  canTX_data[5] = (uint8_t)((encoder_measurements_1 >> 4) & 0xFF);
+  can_tx_data[4] |= (uint8_t)((encoder_measurements_1 & 0x0F) << 4);
+  can_tx_data[5] = (uint8_t)((encoder_measurements_1 >> 4) & 0xFF);
 
   // taking abs data
-  canTX_data[6] = (uint8_t)(bbMeasurements->abs2 >> 8);
-  canTX_data[7] = (uint8_t)(bbMeasurements->abs3 >> 8);
+  can_tx_data[6] = (uint8_t)(bb_measurements->abs2 >> 8);
+  can_tx_data[7] = (uint8_t)(bb_measurements->abs3 >> 8);
 }
 
 extern "C" {
@@ -705,15 +704,15 @@ void __stack_chk_fail(void) {
 
 // clang-format on
 void DriverStation::ComposeReport(char report[][kReportSize],
-                                  MEASUREMENT_DATA_S *bbMeasurements,
+                                  MeasurementData *bb_measurements,
                                   uint8_t board_id, int can_1_board,
                                   int can_2_board) {
   memset(report, 0, 3 * sizeof(*report));
 
-  report[0][0] = (char)(bbMeasurements[2].enc0 >> 8 & 0xFF);
+  report[0][0] = (char)(bb_measurements[2].enc0 >> 8 & 0xFF);
   report[0][1] = (char)((0x7F) & 0xFF);
   report[0][2] = (char)((0x7F) & 0xFF);
-  report[0][3] = (char)(bbMeasurements[2].enc0 & 0xFF);
+  report[0][3] = (char)(bb_measurements[2].enc0 & 0xFF);
   report[0][4] |= (char)(1 << (board_id - 1));
   if (can_1_board != -1) {
     report[0][4] |= (char)(1 << (can_1_board));
@@ -722,16 +721,16 @@ void DriverStation::ComposeReport(char report[][kReportSize],
     report[0][4] |= (char)(1 << (can_2_board));
   }
   report[0][4] |= (char)(1 << 3);
-  report[0][5] = (char)(bbMeasurements[2].buttons & 0x1F);  // BB1 BTN[7:0]
-  report[0][5] |= (char)((bbMeasurements[0].buttons << 5) & 0xFF);
+  report[0][5] = (char)(bb_measurements[2].buttons & 0x1F);  // BB1 BTN[7:0]
+  report[0][5] |= (char)((bb_measurements[0].buttons << 5) & 0xFF);
   report[0][6] =
-      (char)((bbMeasurements[0].buttons >> 3) & 0x1F);  // BB1 BTN[12:8]
-  report[0][6] |= (char)(1 << 5);                       // BB1 BTN[14:13]
+      (char)((bb_measurements[0].buttons >> 3) & 0x1F);  // BB1 BTN[12:8]
+  report[0][6] |= (char)(1 << 5);                        // BB1 BTN[14:13]
 
-  report[1][0] = (char)(((bbMeasurements[2].enc1) >> 8) & 0xFF);
+  report[1][0] = (char)(((bb_measurements[2].enc1) >> 8) & 0xFF);
   report[1][1] = (char)((0x7F) & 0xFF);
   report[1][2] = (char)((0x7F) & 0xFF);
-  report[1][3] = (char)((bbMeasurements[2].enc1) & 0xFF);
+  report[1][3] = (char)((bb_measurements[2].enc1) & 0xFF);
   report[1][4] |= (char)(1 << (board_id - 1));
   if (can_1_board != -1) {
     report[1][4] |= (char)(1 << (can_1_board));
@@ -741,14 +740,14 @@ void DriverStation::ComposeReport(char report[][kReportSize],
   }
   report[1][4] |= (char)(2 << 3);
   report[1][5] =
-      (char)((bbMeasurements[0].buttons >> 8) & 0xFF);        // BB1 BTN[16:13]
-  report[1][6] = (char)((bbMeasurements[1].buttons) & 0x1F);  // BB2 BTN[3:0]
-  report[1][6] |= (char)(2 << 5);                             // BB2 BTN[14:13]
+      (char)((bb_measurements[0].buttons >> 8) & 0xFF);        // BB1 BTN[16:13]
+  report[1][6] = (char)((bb_measurements[1].buttons) & 0x1F);  // BB2 BTN[3:0]
+  report[1][6] |= (char)(2 << 5);                              // BB2 BTN[14:13]
 
-  report[2][0] = (char)((bbMeasurements[1].abs0 >> 8) & 0xFF);
-  report[2][1] = (char)((bbMeasurements[1].abs1 >> 8) & 0xFF);
-  report[2][2] = (char)((bbMeasurements[1].abs2 >> 8) & 0xFF);
-  report[2][3] = (char)((bbMeasurements[1].abs3 >> 8) & 0xFF);
+  report[2][0] = (char)((bb_measurements[1].abs0 >> 8) & 0xFF);
+  report[2][1] = (char)((bb_measurements[1].abs1 >> 8) & 0xFF);
+  report[2][2] = (char)((bb_measurements[1].abs2 >> 8) & 0xFF);
+  report[2][3] = (char)((bb_measurements[1].abs3 >> 8) & 0xFF);
   report[2][4] |= (char)(1 << (board_id - 1));
   if (can_1_board != -1) {
     report[2][4] |= (char)(1 << (can_1_board));
@@ -758,10 +757,10 @@ void DriverStation::ComposeReport(char report[][kReportSize],
   }
   report[2][4] |= (char)(3 << 3);
   report[2][5] =
-      (char)((bbMeasurements[1].buttons >> 5) & 0xFF);  // BB2 BTN[8:4]
+      (char)((bb_measurements[1].buttons >> 5) & 0xFF);  // BB2 BTN[8:4]
   report[2][6] =
-      (char)((bbMeasurements[1].buttons >> 13) & 0x1F);  // BB2 BTN[16:9]
-  // report[2][5] = (char)(bbMeasurements[2].buttons & 0x1F);  // BB3 BTN[4:0]
+      (char)((bb_measurements[1].buttons >> 13) & 0x1F);  // BB2 BTN[16:9]
+  // report[2][5] = (char)(bb_measurements[2].buttons & 0x1F);  // BB3 BTN[4:0]
   report[2][6] |= (char)(3 << 5);  // BB3 BTN[14:13]
 
   if (board_id == 2) {
@@ -917,7 +916,7 @@ void DriverStation::EnableQD(LittleFTM *ftm, int encoder) {
 
   ftm->CNTIN = 0;
   ftm->CNT = 0;
-  ftm->MOD = ENCODER_COUNTS_PER_REV;
+  ftm->MOD = kEncoderCountsPerRev;
 
   if (encoder == 1) {
     ftm->QDCTRL = FTM_QDCTRL_PHBPOL;
@@ -949,14 +948,14 @@ void DriverStation::EnableQD(LittleFTM *ftm, int encoder) {
   ftm->MODE &= ~FTM_MODE_WPDIS;
 }
 
-int DriverStation::ReadQuadrature(int encoderNum, uint16_t *encoderAngle) {
-  switch (encoderNum) {
+int DriverStation::ReadQuadrature(int encoder_num, uint16_t *encoder_angle) {
+  switch (encoder_num) {
     case 0:
-      *encoderAngle = FTM2_CNT;
+      *encoder_angle = FTM2_CNT;
       break;
 
     case 1:
-      *encoderAngle = FTM1_CNT;
+      *encoder_angle = FTM1_CNT;
       break;
 
     default:
