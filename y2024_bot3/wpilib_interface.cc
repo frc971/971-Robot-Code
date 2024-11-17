@@ -34,6 +34,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/can_configuration_generated.h"
 #include "frc971/constants/constants_sender_lib.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/buffered_pcm.h"
@@ -47,6 +48,8 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
+#include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
+#include "frc971/wpilib/swerve/swerve_module.h"
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024_bot3/constants.h"
@@ -63,6 +66,8 @@ ABSL_FLAG(bool, ctre_diag_server, false,
 using ::aos::monotonic_clock;
 using ::frc971::CANConfiguration;
 using ::frc971::wpilib::TalonFX;
+using frc971::wpilib::swerve::DrivetrainWriter;
+using frc971::wpilib::swerve::SwerveModule;
 using ::y2024_bot3::constants::Values;
 namespace superstructure = ::y2024_bot3::control_loops::superstructure;
 namespace chrono = ::std::chrono;
@@ -73,12 +78,16 @@ namespace {
 
 constexpr double kMaxBringupPower = 12.0;
 
-constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
-    1000000  // arbitrary number because we deleted all the stuff in this array
-});
+constexpr double kMaxFastEncoderPulsesPerSecond =
+    std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+              Values::kMaxArmEncoderPulsesPerSecond()});
 
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
+
+double arm_pot_translate(double voltage) {
+  return voltage * Values::kArmPotRadiansPerVolt();
+}
 
 }  // namespace
 
@@ -86,16 +95,27 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::ShmEventLoop *event_loop,
-               const Constants *robot_constants)
+               const Constants *robot_constants,
+               frc971::wpilib::swerve::SwerveModules modules)
       : ::frc971::wpilib::SensorReader(event_loop),
         robot_constants_(robot_constants),
+        modules_(modules),
         superstructure_position_sender_(
             event_loop->MakeSender<superstructure::PositionStatic>(
-                "/superstructure")) {
+                "/superstructure")),
+        gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
+            "/drivetrain")),
+        drivetrain_position_sender_(
+            event_loop
+                ->MakeSender<frc971::control_loops::swerve::PositionStatic>(
+                    "/drivetrain")) {
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
   };
-  void Start() override { AddToDMA(&imu_yaw_rate_reader_); }
+  void Start() override {
+    AddToDMA(&imu_yaw_rate_reader_);
+    AddToDMA(&arm_sensors_.reader());
+  }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
     imu_yaw_rate_input_ = ::std::move(sensor);
@@ -103,10 +123,37 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void RunIteration() override {
-    aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
-        superstructure_position_sender_.MakeStaticBuilder();
+    {
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
+      CopyPosition(arm_sensors_, builder->add_arm(),
+                   Values::kArmEncoderCountsPerRevolution(),
+                   Values::kArmPotRatio(), arm_pot_translate, true,
+                   robot_constants_->robot()
+                       ->arm_constants()
+                       ->arm_potentiometer_offset());
 
-    builder.CheckOk(builder.Send());
+      builder->set_intake_beambreak(intake_beam_break_->Get());
+
+      builder.CheckOk(builder.Send());
+    }
+
+    {
+      auto builder = drivetrain_position_sender_.MakeStaticBuilder();
+      auto swerve_position_constants =
+          robot_constants_->common()->swerve_positions_constants();
+
+      modules_.front_left->PopulatePosition(builder->add_front_left(),
+                                            swerve_position_constants);
+      modules_.front_right->PopulatePosition(builder->add_front_right(),
+                                             swerve_position_constants);
+      modules_.back_left->PopulatePosition(builder->add_back_left(),
+                                           swerve_position_constants);
+      modules_.back_right->PopulatePosition(builder->add_back_right(),
+                                            swerve_position_constants);
+
+      builder.CheckOk(builder.Send());
+    }
 
     {
       auto builder = gyro_sender_.MakeBuilder();
@@ -117,15 +164,64 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
+  void set_intake_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    intake_beam_break_ = ::std::move(sensor);
+  }
+  void set_arm(::std::unique_ptr<frc::Encoder> encoder,
+               ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
+               ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    fast_encoder_filter_.Add(encoder.get());
+    arm_sensors_.set_encoder(::std::move(encoder));
+    arm_sensors_.set_absolute_pwm(::std::move(absolute_pwm));
+    arm_sensors_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_front_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    modules_.front_left->set_rotation_encoder(std::move(encoder),
+                                              std::move(absolute_pwm));
+  }
+
+  void set_front_right_encoder(
+      std::unique_ptr<frc::Encoder> encoder,
+      std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    modules_.front_right->set_rotation_encoder(std::move(encoder),
+                                               std::move(absolute_pwm));
+  }
+
+  void set_back_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                             std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    modules_.back_left->set_rotation_encoder(std::move(encoder),
+                                             std::move(absolute_pwm));
+  }
+
+  void set_back_right_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    modules_.back_right->set_rotation_encoder(std::move(encoder),
+                                              std::move(absolute_pwm));
+  }
+
  private:
   const Constants *robot_constants_;
 
+  frc971::wpilib::swerve::SwerveModules modules_;
   aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
+
+  frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer arm_sensors_;
+
+  aos::Sender<frc971::control_loops::swerve::PositionStatic>
+      drivetrain_position_sender_;
+
+  std::unique_ptr<frc::DigitalInput> intake_beam_break_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -160,11 +256,54 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
     AddLoop(&pdp_fetcher_event_loop);
 
+    const CurrentLimits *current_limits =
+        robot_constants->common()->current_limits();
+    std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
+
+    frc971::wpilib::swerve::SwerveModules modules{
+        .front_left = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{6, true},
+            frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
+            &signals_registry,
+            current_limits->drivetrain_stator_current_limit(),
+            current_limits->drivetrain_supply_current_limit()),
+        .front_right = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{3, true},
+            frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
+            &signals_registry,
+            current_limits->drivetrain_stator_current_limit(),
+            current_limits->drivetrain_supply_current_limit()),
+        .back_left = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{7, true},
+            frc971::wpilib::TalonFXParams{8, false}, "Drivetrain Bus",
+            &signals_registry,
+            current_limits->drivetrain_stator_current_limit(),
+            current_limits->drivetrain_supply_current_limit()),
+        .back_right = std::make_shared<SwerveModule>(
+            frc971::wpilib::TalonFXParams{2, true},
+            frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
+            &signals_registry,
+            current_limits->drivetrain_stator_current_limit(),
+            current_limits->drivetrain_supply_current_limit())};
+
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
-    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
+    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants,
+                               modules);
     sensor_reader.set_pwm_trigger(false);
+    sensor_reader.set_front_left_encoder(
+        make_encoder(3), std::make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_front_right_encoder(
+        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_back_left_encoder(make_encoder(2),
+                                        std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_back_right_encoder(
+        make_encoder(5), std::make_unique<frc::DigitalInput>(5));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
+    sensor_reader.set_intake_beambreak(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_arm(make_encoder(4), make_unique<frc::DigitalInput>(4),
+                          make_unique<frc::AnalogInput>(4));
+    // todo set the numbers
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -175,18 +314,24 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       c_Phoenix_Diagnostics_Dispose();
     }
 
-    std::vector<ctre::phoenix6::BaseStatusSignal *> canivore_signal_registry;
-    std::vector<ctre::phoenix6::BaseStatusSignal *> rio_signal_registry;
+    std::vector<std::shared_ptr<TalonFX>> falcons;
+
+    modules.PopulateFalconsVector(&falcons);
+
+    std::shared_ptr<TalonFX> arm =
+        std::make_shared<TalonFX>(9, true, "Drivetrain Bus", &signals_registry,
+                                  current_limits->arm_stator_current_limit(),
+                                  current_limits->arm_supply_current_limit());
+    falcons.push_back(arm);
+
+    std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
+        10, false, "Drivetrain Bus", &signals_registry,
+        current_limits->intake_roller_stator_current_limit(),
+        current_limits->intake_roller_supply_current_limit());
+    falcons.push_back(intake_roller);
 
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
-
-    ::aos::ShmEventLoop rio_sensor_reader_event_loop(&config.message());
-    rio_sensor_reader_event_loop.set_name("RioSensorReader");
-
-    // Creating list of talonfx for CANSensorReader
-    std::vector<std::shared_ptr<TalonFX>> canivore_talonfxs;
-    std::vector<std::shared_ptr<TalonFX>> rio_talonfxs;
 
     aos::Sender<y2024_bot3::control_loops::superstructure::CANPositionStatic>
         superstructure_can_position_sender =
@@ -194,29 +339,54 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 y2024_bot3::control_loops::superstructure::CANPositionStatic>(
                 "/superstructure/canivore");
 
-    aos::Sender<y2024_bot3::control_loops::superstructure::CANPositionStatic>
-        superstructure_rio_position_sender =
-            rio_sensor_reader_event_loop.MakeSender<
-                y2024_bot3::control_loops::superstructure::CANPositionStatic>(
-                "/superstructure/rio");
+    aos::Sender<frc971::control_loops::swerve::CanPositionStatic>
+        can_position_sender =
+            can_sensor_reader_event_loop
+                .MakeSender<frc971::control_loops::swerve::CanPositionStatic>(
+                    "/roborio/drivetrain");
 
-    frc971::wpilib::CANSensorReader rio_can_sensor_reader(
-        &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
-        rio_talonfxs,
-        [&superstructure_rio_position_sender](
-            ctre::phoenix::StatusCode status) {
+    frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
+        &can_sensor_reader_event_loop, std::move(signals_registry), falcons,
+        [&arm, &intake_roller, &superstructure_can_position_sender, &falcons,
+         &can_position_sender, &modules](ctre::phoenix::StatusCode status) {
+          for (auto falcon : falcons) {
+            falcon->RefreshNontimesyncedSignals();
+          }
+
           aos::Sender<
               y2024_bot3::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_can_builder =
-                  superstructure_rio_position_sender.MakeStaticBuilder();
+                  superstructure_can_position_sender.MakeStaticBuilder();
+          arm->SerializePosition(superstructure_can_builder->add_arm(),
+                                 constants::Values::kArmOutputRatio);
+          intake_roller->SerializePosition(
+              superstructure_can_builder->add_intake_roller(),
+              constants::Values::kIntakeRollerOutputRatio);
 
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
+
+          aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
+              StaticBuilder builder = can_position_sender.MakeStaticBuilder();
+
+          const frc971::wpilib::swerve::SwerveModule::ModuleGearRatios
+              gear_ratios{
+                  .rotation = constants::Values::kRotationModuleRatio,
+                  .translation = constants::Values::kTranslationModuleRatio()};
+          modules.front_left->PopulateCanPosition(builder->add_front_left(),
+                                                  gear_ratios);
+          modules.front_right->PopulateCanPosition(builder->add_front_right(),
+                                                   gear_ratios);
+          modules.back_left->PopulateCanPosition(builder->add_back_left(),
+                                                 gear_ratios);
+          modules.back_right->PopulateCanPosition(builder->add_back_right(),
+                                                  gear_ratios);
+
+          builder.CheckOk(builder.Send());
         },
         frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
 
     AddLoop(&can_sensor_reader_event_loop);
-    AddLoop(&rio_sensor_reader_event_loop);
 
     // Thread 5.
     ::aos::ShmEventLoop can_output_event_loop(&config.message());
@@ -228,9 +398,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
             [](const control_loops::superstructure::Output &output,
                const std::map<std::string_view, std::shared_ptr<TalonFX>>
                    &talonfx_map) {
-              (void)output;
-              (void)talonfx_map;
+              talonfx_map.find("arm")->second->WriteVoltage(
+                  output.arm_voltage());
+              talonfx_map.find("intake_roller")
+                  ->second->WriteVoltage(output.roller_voltage());
             });
+
+    can_superstructure_writer.add_talonfx("arm", arm);
+    can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_superstructure_writer](

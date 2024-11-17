@@ -7,14 +7,14 @@ filegroup(
         "**/*.html",
         "**/*.css",
         "**/*.png",
-    ]) + ["2024_bot3.png"],
+    ]) + ["2024.png"],
     visibility = ["//visibility:public"],
 )
 
 genrule(
-    name = "2024_bot3_field_png",
+    name = "2024_field_png",
     srcs = ["//third_party/y2024/field:pictures"],
-    outs = ["2024_bot3.png"],
+    outs = ["2024.png"],
     cmd = "cp third_party/y2024/field/2024.png $@",
 )
 

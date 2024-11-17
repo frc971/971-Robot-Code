@@ -6,8 +6,8 @@ import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
 import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
 import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
+import {ArmStatus, IntakeRollerStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {Position as SuperstructurePosition} from  '../control_loops/superstructure/superstructure_position_generated'
-import {Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
 
 
@@ -51,6 +51,19 @@ export class FieldHandler {
 
   private zeroingFaults: HTMLElement =
       (document.getElementById('zeroing_faults') as HTMLElement);
+
+  private armStatus: HTMLElement =
+      (document.getElementById('arm_status') as HTMLElement);
+  private rollerStatus: HTMLElement =
+      (document.getElementById('roller_status') as HTMLElement);
+  private rollerBeambreak: HTMLElement =
+      (document.getElementById('roller_beambreak') as HTMLElement);
+
+  // there is a encoder:double field in frc971.PotAndAbsolutePosition, do we need to include that as well?
+  private armAbsolutePosition: HTMLElement =
+      (document.getElementById('arm_absolute_position') as HTMLElement);
+  private armPotPosition: HTMLElement =
+      (document.getElementById('arm_pot_position') as HTMLElement);
 
   private leftDrivetrainEncoder: HTMLElement =
       (document.getElementById('left_drivetrain_encoder') as HTMLElement);
@@ -126,7 +139,7 @@ export class FieldHandler {
           this.handleSuperstructureStatus(data)
           });
       this.connection.addHandler(
-        '/superstructure', "y2024_bot3.control_loops.superstructure.Positon",
+        '/superstructure', "y2024_bot3.control_loops.superstructure.Position",
         (data) => {
           this.handleSuperstructurePosition(data)
           });
@@ -317,6 +330,23 @@ export class FieldHandler {
   draw(): void {
     this.reset();
     this.drawField();
+
+    if (this.superstructureStatus) {
+      this.armStatus.innerHTML =
+        ArmStatus[this.superstructureStatus.armStatus()];
+      this.rollerStatus.innerHTML =
+        IntakeRollerStatus[this.superstructureStatus.intakeRollerStatus()];
+    }
+    if (this.superstructurePosition) {
+      this.rollerBeambreak.innerHTML = this.superstructurePosition.intakeBeambreak().toString();
+
+      this.armAbsolutePosition.innerHTML = this.superstructurePosition.arm()
+                                            .absoluteEncoder()
+                                            .toString();
+      this.armPotPosition.innerHTML = this.superstructurePosition.arm()
+                                            .pot()
+                                            .toString();
+    }
 
     window.requestAnimationFrame(() => this.draw());
   }
