@@ -5,7 +5,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//frc971:downloader.bzl", "robot_downloader")
 
 robot_downloader(
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2018/vision:vision_status",

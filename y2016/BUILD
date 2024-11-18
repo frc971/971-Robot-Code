@@ -55,13 +55,7 @@ cc_binary(
 )
 
 robot_downloader(
-    data = [
-        ":aos_config",
-    ],
-    dirs = [
-        "//y2016/dashboard:www_files",
-    ],
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2016/control_loops/drivetrain:drivetrain",
@@ -72,6 +66,12 @@ robot_downloader(
         "//y2016/actors:superstructure_action",
         "//y2016/actors:vision_align_action",
         "//y2016/vision:target_receiver",
+    ],
+    data = [
+        ":aos_config",
+    ],
+    dirs = [
+        "//y2016/dashboard:www_files",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )

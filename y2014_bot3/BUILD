@@ -21,7 +21,7 @@ cc_binary(
 )
 
 robot_downloader(
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2014_bot3/actors:autonomous_action",

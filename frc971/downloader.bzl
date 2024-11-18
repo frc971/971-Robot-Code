@@ -2,7 +2,6 @@ load("//frc971/downloader:downloader.bzl", "aos_downloader")
 load("//tools/build_rules:label.bzl", "expand_label")
 
 def robot_downloader(
-        start_binaries,
         name = "download",
         binaries = [],
         data = [],
@@ -18,10 +17,9 @@ def robot_downloader(
 
     aos_downloader(
         name = name,
-        start_srcs = ([
+        srcs = ([
             "//aos:prime_start_binaries",
-        ] if target_type == "roborio" else []) + start_binaries,
-        srcs = [
+        ] if target_type == "roborio" else []) + [
             "//aos:prime_binaries",
         ] + binaries + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
@@ -31,11 +29,9 @@ def robot_downloader(
 
     aos_downloader(
         name = name + "_stripped",
-        start_srcs = ([
-                         "//aos:prime_start_binaries_stripped",
-                     ] if target_type == "roborio" else []) +
-                     [expand_label(binary) + ".stripped" for binary in start_binaries],
-        srcs = [
+        srcs = ([
+            "//aos:prime_start_binaries_stripped",
+        ] if target_type == "roborio" else []) + [
             "//aos:prime_binaries_stripped",
         ] + [expand_label(binary) + ".stripped" for binary in binaries] + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
