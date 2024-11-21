@@ -1,14 +1,14 @@
 load("//tools/build_rules:pandoc.bzl", "pandoc_html")
 
 articles = [
-    "create-a-new-autonomous",
-    "create-a-new-robot",
-    "create-a-simple-program-for-running-a-motor",
     "download-code-to-the-robot",
-    "make-a-drivebase-move",
     "submitting-code-for-a-review",
-    "tune-an-autonomous",
-    "using-bazel",
+    "getting-started",
+    "git-and-gerrit-basics",
+    "network_troubleshooting",
+    "rio-gdb",
+    "setup-pycharm-on-build-server",
+    "setup-ssh-vscode",
 ]
 
 [pandoc_html(
