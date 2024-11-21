@@ -5,20 +5,8 @@
 #include "y2024_bot3/constants/constants_generated.h"
 #include "y2024_bot3/control_loops/swerve/parameters.h"
 
-using frc971::control_loops::swerve::LinearVelocityController;
 using frc971::control_loops::swerve::SwerveControlLoops;
-
-LinearVelocityController::ControllerWeights CreateWeights(
-    const y2024_bot3::VelocityControllerWeights *weights) {
-  return LinearVelocityController::ControllerWeights{
-      .thetas_q = weights->thetas_q(),
-      .omegas_q = weights->omegas_q(),
-      .vel_q = weights->vel_q(),
-      .theta_q = weights->theta_q(),
-      .omega_q = weights->omega_q(),
-      .steer_current_r = weights->steer_current_r(),
-      .drive_current_r = weights->drive_current_r()};
-}
+using y2024_bot3::control_loops::CreateWeights;
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);
