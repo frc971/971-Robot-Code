@@ -25,6 +25,7 @@ cc_binary(
         "//aos/util:mcap_logger",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
+        "//frc971/vision:calibrate_multi_cameras_lib",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:target_mapper",
@@ -51,13 +52,14 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/orin:gpu_apriltag_lib",
+        "//frc971/vision:calibrate_multi_cameras_lib",
         "//third_party:cudart",
         "//third_party/apriltag",
         "//y2024/constants:constants_fbs",
+        # "@com_github_gflags_gflags//:gflags",
+        # "@com_github_google_glog//:glog",
         "@com_github_nvidia_cccl//:cccl",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        # "@com_github_nvidia_cuco//:cuco",
     ],
 )
 
@@ -77,12 +79,32 @@ cc_binary(
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
         "//frc971/constants:constants_sender_lib",
+        "//frc971/vision:calibrate_multi_cameras_lib",
         "//frc971/vision:vision_fbs",
         "//frc971/vision:vision_util_lib",
         "//third_party:opencv",
         "//y2024/constants:constants_fbs",
         "@com_google_absl//absl/strings",
     ],
+)
+
+py_test(
+    name = "calibrate_multi_cameras_test",
+    timeout = "long",
+    srcs = ["calibrate_multi_cameras_test.py"],
+    args = [
+        "--calibrate_binary",
+        "$(location :calibrate_multi_cameras)",
+        "--logfile",
+        "/data/logfiles/2024/sfr/post_extend_extrinsics",
+        "--team_number",
+        "971",
+    ],
+    data = [
+        ":calibrate_multi_cameras",
+        "//y2024/constants/calib_files",
+    ] + glob(["test_data/**"]),
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 cc_binary(
@@ -106,6 +128,7 @@ cc_binary(
         "//aos/util:mcap_logger",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
+        "//frc971/vision:calibrate_multi_cameras_lib",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:extrinsics_calibration",

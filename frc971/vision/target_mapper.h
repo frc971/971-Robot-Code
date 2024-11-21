@@ -12,6 +12,8 @@
 #include "frc971/vision/vision_util_lib.h"
 #include "frc971/vision/visualize_robot.h"
 
+ABSL_DECLARE_FLAG(int32_t, min_target_id);
+ABSL_DECLARE_FLAG(int32_t, max_target_id);
 ABSL_DECLARE_FLAG(double, outlier_std_devs);
 
 namespace frc971::vision {
