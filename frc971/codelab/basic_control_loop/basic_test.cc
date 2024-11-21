@@ -1,7 +1,7 @@
 // In this file, you can view the tests that are being run to determine
 // if the code works properly in different situations.
 
-#include "frc971/codelab/basic.h"
+#include "frc971/codelab/basic_control_loop/basic.h"
 
 #include <unistd.h>
 
@@ -11,10 +11,10 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/shm_event_loop.h"
-#include "frc971/codelab/basic_goal_generated.h"
-#include "frc971/codelab/basic_output_generated.h"
-#include "frc971/codelab/basic_position_generated.h"
-#include "frc971/codelab/basic_status_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_goal_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_output_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_position_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_status_generated.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 

@@ -2,10 +2,10 @@
 #define FRC971_CODELAB_BASIC_H_
 
 #include "aos/time/time.h"
-#include "frc971/codelab/basic_goal_generated.h"
-#include "frc971/codelab/basic_output_static.h"
-#include "frc971/codelab/basic_position_generated.h"
-#include "frc971/codelab/basic_status_static.h"
+#include "frc971/codelab/basic_control_loop/basic_goal_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_output_static.h"
+#include "frc971/codelab/basic_control_loop/basic_position_generated.h"
+#include "frc971/codelab/basic_control_loop/basic_status_static.h"
 #include "frc971/control_loops/control_loop.h"
 
 namespace frc971::codelab {
