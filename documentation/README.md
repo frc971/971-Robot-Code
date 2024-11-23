@@ -2,15 +2,16 @@
 This folder contains reference material for how to write robot code, organized
 as a set of markdown files.
 
-
 # Tutorials Index
-* [Create a new robot folder](tutorials/create-a-new-robot.md)
-* [Writing a program that runs a motor](tutorials/create-a-simple-program-for-running-a-motor.md)
-* [Download code to the robot](tutorials/download-code-to-the-robot.md)
-* [Make a drivebase move](tutorials/make-a-drivebase-move.md)
-* [Send and receive messages on a queue](tutorials/send-and-receive-messages-on-queues.md)
+
+## Basic setup and development tools
+* [Getting started](tutorials/getting-started.md)
+* [Git and Gerrit basics](tutorials/git-and-gerrit-basics.md)
 * [Submitting code for review](tutorials/submitting-code-for-a-review.md)
-* [Create a new autonomous routine](tutorials/create-a-new-autonomous.md)
-* [Tune an autonomous](tutorials/tune-an-autonomous.md)
 * [Set up access to the build server using vscode](tutorials/setup-ssh-vscode.md)
 * [Install PyCharm on the build server](tutorials/setup-pycharm-on-build-server.md)
+
+## Working with the robot
+* [Putting code on the robot](tutorials/download-code-to-the-robot.md)
+* [Network troubleshooting](tutorials/network_troubleshooting.md)
+* [Running gdb on the rio](tutorials/rio-gdb.md)
