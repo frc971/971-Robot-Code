@@ -17,6 +17,7 @@
 #include "aos/util/mcap_logger.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/pose.h"
+#include "frc971/vision/calibrate_multi_cameras_lib.h"
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_mapper.h"
@@ -38,8 +39,6 @@ ABSL_FLAG(std::string, field_name, "crescendo",
           "Field name, for the output json filename and flatbuffer field");
 ABSL_FLAG(std::string, json_path, "y2024/vision/maps/target_map.json",
           "Specify path for json with initial pose guesses.");
-ABSL_FLAG(double, max_pose_error, 1e-6,
-          "Throw out target poses with a higher pose error than this");
 ABSL_FLAG(double, max_pose_error_ratio, 0.4,
           "Throw out target poses with a higher pose error ratio than this");
 ABSL_FLAG(std::string, mcap_output_path, "", "Log to output.");
@@ -55,15 +54,8 @@ ABSL_FLAG(uint64_t, skip_to, 1,
 ABSL_FLAG(bool, solve, true, "Whether to solve for the field's target map.");
 ABSL_FLAG(bool, split_field, false,
           "Whether to break solve into two sides of field");
-ABSL_FLAG(int32_t, team_number, 0,
-          "Required: Use the calibration for a node with this team number");
-ABSL_FLAG(uint64_t, wait_key, 1,
-          "Time in ms to wait between images, if no click (0 to wait "
-          "indefinitely until click).");
 
 ABSL_DECLARE_FLAG(int32_t, frozen_target_id);
-ABSL_DECLARE_FLAG(int32_t, min_target_id);
-ABSL_DECLARE_FLAG(int32_t, max_target_id);
 ABSL_DECLARE_FLAG(bool, visualize_solver);
 
 namespace y2024::vision {

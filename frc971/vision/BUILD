@@ -152,8 +152,6 @@ cc_library(
         "//aos/scoped:scoped_fd",
         "//aos/util:threaded_consumer",
         "@com_google_absl//absl/base",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -470,6 +468,29 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/vision:target_map_fbs",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "calibrate_multi_cameras_lib",
+    srcs = ["calibrate_multi_cameras_lib.cc"],
+    hdrs = ["calibrate_multi_cameras_lib.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/util:mcap_logger",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:pose",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:extrinsics_calibration",
+        "//frc971/vision:target_mapper",
+        "//frc971/vision:vision_util_lib",
+        "//third_party:opencv",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
