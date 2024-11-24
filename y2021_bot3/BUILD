@@ -2,15 +2,15 @@ load("//aos:config.bzl", "aos_config")
 load("//frc971:downloader.bzl", "robot_downloader")
 
 robot_downloader(
-    data = [
-        ":aos_config",
-    ],
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2021_bot3/control_loops/drivetrain:drivetrain",
         "//y2021_bot3/control_loops/superstructure:superstructure",
         "//y2021_bot3/actors:binaries",
+    ],
+    data = [
+        ":aos_config",
     ],
 )
 

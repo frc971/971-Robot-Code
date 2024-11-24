@@ -1,5 +1,5 @@
 def _aos_downloader_impl(ctx):
-    all_files = ctx.files.srcs + ctx.files.start_srcs + [ctx.outputs._startlist]
+    all_files = ctx.files.srcs
     target_files = []
 
     # downloader looks for : in the inputs and uses the part after the : as
@@ -26,12 +26,7 @@ def _aos_downloader_impl(ctx):
         ]),
     )
 
-    ctx.actions.write(
-        output = ctx.outputs._startlist,
-        content = "\n".join([f.basename for f in ctx.files.start_srcs]) + "\n",
-    )
-
-    to_download = [ctx.outputs._startlist]
+    to_download = []
     to_download += all_files
     for d in ctx.attr.dirs:
         to_download += d.downloader_srcs
@@ -56,12 +51,9 @@ def _aos_downloader_dir_impl(ctx):
 
 Running this with `bazel run` will actually download everything.
 
-This also generates a start_list.txt file with the names of binaries to start.
-
 Attrs:
   srcs: The files to download. They currently all get shoved into one folder.
   dirs: A list of aos_downloader_dirs to download too.
-  start_srcs: Like srcs, except they also get put into start_list.txt.
 """
 
 aos_downloader = rule(
@@ -70,10 +62,6 @@ aos_downloader = rule(
             executable = True,
             cfg = "exec",
             default = Label("//frc971/downloader"),
-        ),
-        "start_srcs": attr.label_list(
-            mandatory = True,
-            allow_files = True,
         ),
         "srcs": attr.label_list(
             mandatory = True,
@@ -91,9 +79,6 @@ aos_downloader = rule(
         ),
     },
     executable = True,
-    outputs = {
-        "_startlist": "%{name}.start_list.dir/start_list.txt",
-    },
     implementation = _aos_downloader_impl,
 )
 

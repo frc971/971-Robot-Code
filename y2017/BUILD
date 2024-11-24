@@ -110,7 +110,7 @@ cc_binary(
 )
 
 robot_downloader(
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2017/control_loops/drivetrain:drivetrain",

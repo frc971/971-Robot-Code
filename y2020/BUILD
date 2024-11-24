@@ -13,6 +13,15 @@ robot_downloader(
     binaries = [
         ":setpoint_setter",
         "//aos/network:web_proxy_main",
+        "//aos/events/logging:logger_main",
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//y2020/actors:binaries",
+        "//y2020/control_loops/drivetrain:drivetrain",
+        "//y2020/control_loops/drivetrain:trajectory_generator",
+        "//y2020/control_loops/superstructure:superstructure",
     ],
     data = [
         ":aos_config",
@@ -25,18 +34,6 @@ robot_downloader(
         "//y2020/actors:splines",
         "//y2020/www:www_files",
     ],
-    start_binaries = [
-        "//aos/events/logging:logger_main",
-        "//aos/network:web_proxy_main",
-        ":joystick_reader",
-        ":wpilib_interface",
-        "//aos/network:message_bridge_client",
-        "//aos/network:message_bridge_server",
-        "//y2020/actors:binaries",
-        "//y2020/control_loops/drivetrain:drivetrain",
-        "//y2020/control_loops/drivetrain:trajectory_generator",
-        "//y2020/control_loops/superstructure:superstructure",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -45,19 +42,17 @@ robot_downloader(
     binaries = [
         "//frc971/vision:intrinsics_calibration",
         "//y2020/vision:viewer",
+        "//aos/events/logging:logger_main",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//aos/network:web_proxy_main",
+        "//y2020/vision:camera_reader",
     ],
     data = [
         ":aos_config",
     ],
     dirs = [
         "//y2020/www:www_files",
-    ],
-    start_binaries = [
-        "//aos/events/logging:logger_main",
-        "//aos/network:message_bridge_client",
-        "//aos/network:message_bridge_server",
-        "//aos/network:web_proxy_main",
-        "//y2020/vision:camera_reader",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",

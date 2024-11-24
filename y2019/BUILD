@@ -5,15 +5,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//frc971:downloader.bzl", "robot_downloader")
 
 robot_downloader(
-    data = [
-        ":aos_config",
-        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
-        "@ctre_phoenix_cci_athena//:shared_libraries",
-    ],
-    dirs = [
-        "//y2019/vision/server:www_files",
-    ],
-    start_binaries = [
+    binaries = [
         ":joystick_reader",
         ":wpilib_interface",
         "//y2019/control_loops/drivetrain:drivetrain",
@@ -21,6 +13,14 @@ robot_downloader(
         "//y2019/control_loops/superstructure:superstructure",
         "//y2019/actors:binaries",
         "//y2019/vision/server",
+    ],
+    data = [
+        ":aos_config",
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
+    ],
+    dirs = [
+        "//y2019/vision/server:www_files",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )

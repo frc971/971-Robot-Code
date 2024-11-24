@@ -12,6 +12,14 @@ robot_downloader(
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
         "//aos/events:aos_timing_report_streamer",
+        "//aos/events/logging:logger_main",
+        "//aos/starter:irq_affinity",
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//frc971/can_logger",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//y2024_defense/control_loops/drivetrain:drivetrain",
     ],
     data = [
         ":aos_config",
@@ -23,17 +31,6 @@ robot_downloader(
     ],
     dirs = [
         "//y2024_defense/www:www_files",
-    ],
-    start_binaries = [
-        "//aos/events/logging:logger_main",
-        "//aos/network:web_proxy_main",
-        "//aos/starter:irq_affinity",
-        ":joystick_reader",
-        ":wpilib_interface",
-        "//frc971/can_logger",
-        "//aos/network:message_bridge_client",
-        "//aos/network:message_bridge_server",
-        "//y2024_defense/control_loops/drivetrain:drivetrain",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )
@@ -48,6 +45,9 @@ robot_downloader(
         "//aos/events/logging:log_cat",
         "//y2024_defense/rockpi:imu_main",
         "//frc971/image_streamer:image_streamer",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//aos/events/logging:logger_main",
     ],
     data = [
         ":aos_config",
@@ -57,13 +57,6 @@ robot_downloader(
     ],
     dirs = [
         "//frc971/image_streamer/www:www_files",
-    ],
-    start_binaries = [
-        "//aos/network:message_bridge_client",
-        "//aos/network:message_bridge_server",
-        "//aos/network:web_proxy_main",
-        "//aos/starter:irq_affinity",
-        "//aos/events/logging:logger_main",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",

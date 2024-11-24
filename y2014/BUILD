@@ -49,7 +49,7 @@ cc_binary(
 )
 
 robot_downloader(
-    start_binaries = [
+    binaries = [
         ":hot_goal_reader",
         ":joystick_reader",
         ":wpilib_interface",

@@ -5,6 +5,11 @@ robot_downloader(
     binaries = [
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
+        "//aos/events/logging:logger_main",
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//y2022_bot3/control_loops/drivetrain:drivetrain",
+        "//y2022_bot3/control_loops/drivetrain:trajectory_generator",
     ],
     data = [
         ":aos_config",
@@ -14,13 +19,6 @@ robot_downloader(
     dirs = [
         "//y2022_bot3/actors:splines",
     ],
-    start_binaries = [
-        "//aos/events/logging:logger_main",
-        ":joystick_reader",
-        ":wpilib_interface",
-        "//y2022_bot3/control_loops/drivetrain:drivetrain",
-        "//y2022_bot3/control_loops/drivetrain:trajectory_generator",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -28,15 +26,13 @@ robot_downloader(
     name = "pi_download",
     binaries = [
         "//aos/events/logging:log_cat",
-    ],
-    data = [
-        ":aos_config",
-    ],
-    start_binaries = [
         "//aos/events/logging:logger_main",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
+    ],
+    data = [
+        ":aos_config",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",
