@@ -104,6 +104,11 @@ py_test(
         ":calibrate_multi_cameras",
         "//y2024/constants/calib_files",
     ] + glob(["test_data/**"]),
+    # Tagged manual because this currently depends on logfiles which are not
+    # available in the bazel sandbox.
+    # TODO(james): This really should not have been able to escape the sandbox
+    # to find files in /data; are we missing flags?
+    tags = ["manual"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 

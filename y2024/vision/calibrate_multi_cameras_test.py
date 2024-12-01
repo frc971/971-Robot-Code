@@ -112,8 +112,6 @@ class calibrate_multi_cameras_test(unittest.TestCase):
                 "--max_pose_error",
                 str(max_pose_error),
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             encoding="utf-8",
         )
 
