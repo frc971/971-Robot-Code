@@ -89,12 +89,17 @@ class LinearizedController {
             << "): "
             << frc971::controls::Controllability(discrete_dynamics.A,
                                                  discrete_dynamics.B);
-    int sb02od_exit_code = -1;
-    GainMatrix K = SolveDare(
-        discrete_dynamics.A, discrete_dynamics.B, params_.Q, params_.R,
-        absl::GetFlag(FLAGS_use_slicot) ? DareSolver::Slicot
-                                        : DareSolver::IterativeApproximation,
-        &sb02od_exit_code);
+    Eigen::Matrix<Scalar, kNumInputs, NStates> K;
+    if (frc971::controls::IsStabilizable(discrete_dynamics.A,
+                                         discrete_dynamics.B)) {
+      auto K_expected =
+          frc971::controls::dlqr(discrete_dynamics.A, discrete_dynamics.B,
+                                 params_.Q, params_.R, false);
+      CHECK(K_expected);
+      K = K_expected.value();
+    } else {
+      K.setZero();
+    }
     auto dlqr_time = aos::monotonic_clock::now();
     const Input U_feedback = K * (goal - X);
     const Input U = U_ff + U_feedback;
@@ -113,7 +118,7 @@ class LinearizedController {
             .debug = {.U_ff = U_ff,
                       .U_feedback = U_feedback,
                       .feedback_contributions = feedback_contributions,
-                      .sb02od_exit_code = sb02od_exit_code}};
+                      .sb02od_exit_code = 0}};
   }
 
   // Specifies what version of the DARE solver to use when attempting to solve
