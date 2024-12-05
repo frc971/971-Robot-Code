@@ -3,8 +3,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "gtest/gtest.h"
-#include <opencv2/features2d.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/features2d.hpp"
+#include "opencv2/imgproc.hpp"
 
 #if 1
 #include "y2020/vision/tools/python_code/sift_training_data_test.h"

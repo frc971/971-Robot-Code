@@ -1,8 +1,8 @@
 #include "frc971/vision/foxglove_image_converter_lib.h"
 
 #include "absl/flags/flag.h"
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/imgproc.hpp"
 
 ABSL_FLAG(int32_t, jpeg_quality, 60,
           "Compression quality of JPEGs, 0-100; lower numbers mean lower "

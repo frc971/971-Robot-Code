@@ -1,11 +1,11 @@
 #include "frc971/vision/extrinsics_calibration.h"
 
 #include "ceres/ceres.h"
-#include <opencv2/core.hpp>
-#include <opencv2/core/eigen.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/core/eigen.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "aos/analysis/in_process_plotter.h"
 #include "aos/time/time.h"

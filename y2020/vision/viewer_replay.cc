@@ -1,8 +1,8 @@
 #include "absl/flags/flag.h"
-#include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/calib3d.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"

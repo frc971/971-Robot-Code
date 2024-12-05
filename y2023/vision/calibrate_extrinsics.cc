@@ -1,7 +1,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 #include "absl/strings/str_format.h"
-#include <opencv2/core/eigen.hpp>
+#include "opencv2/core/eigen.hpp"
 
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"

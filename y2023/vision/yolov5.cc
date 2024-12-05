@@ -16,7 +16,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
-#include <opencv2/dnn.hpp>
+#include "opencv2/dnn.hpp"
 
 ABSL_FLAG(double, conf_threshold, 0.9,
           "Threshold value for confidence scores. Detections with a "

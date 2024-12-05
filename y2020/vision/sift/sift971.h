@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <opencv2/core/types.hpp>
-#include <opencv2/features2d.hpp>
+#include "opencv2/core/types.hpp"
+#include "opencv2/features2d.hpp"
 
 namespace frc971::vision {
 

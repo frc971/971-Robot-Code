@@ -8,8 +8,8 @@
 #include "Eigen/Geometry"
 #include "absl/types/span.h"
 #include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
-#include <opencv2/aruco/charuco.hpp>
-#include <opencv2/calib3d.hpp>
+#include "opencv2/aruco/charuco.hpp"
+#include "opencv2/calib3d.hpp"
 
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"

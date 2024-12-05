@@ -1,7 +1,7 @@
 #ifndef Y2022_VISION_BALL_COLOR_H_
 #define Y2022_VISION_BALL_COLOR_H_
 
-#include <opencv2/imgproc.hpp>
+#include "opencv2/imgproc.hpp"
 
 #include "aos/events/shm_event_loop.h"
 #include "frc971/input/joystick_state_generated.h"

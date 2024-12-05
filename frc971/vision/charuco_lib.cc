@@ -8,9 +8,9 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include <opencv2/core/eigen.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/core/eigen.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffers.h"

@@ -1,7 +1,7 @@
 #include "y2020/vision/sift/fast_gaussian.h"
 
 #include "gtest/gtest.h"
-#include <opencv2/imgproc.hpp>
+#include "opencv2/imgproc.hpp"
 
 #include "y2020/vision/sift/fast_gaussian_all.h"
 

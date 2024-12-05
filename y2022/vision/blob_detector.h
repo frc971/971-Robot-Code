@@ -1,8 +1,8 @@
 #ifndef Y2022_BLOB_DETECTOR_H_
 #define Y2022_BLOB_DETECTOR_H_
 
-#include <opencv2/features2d.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/features2d.hpp"
+#include "opencv2/imgproc.hpp"
 
 namespace y2022::vision {
 

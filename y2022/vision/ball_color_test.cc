@@ -4,8 +4,8 @@
 
 #include "absl/log/check.h"
 #include "gtest/gtest.h"
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"

@@ -3,11 +3,11 @@
 #include <chrono>
 
 #include "absl/flags/flag.h"
+#include "opencv2/highgui.hpp"
 #include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/apriltag_pose.h"
 #include "third_party/apriltag/tag16h5.h"
 #include "third_party/apriltag/tag36h11.h"
-#include <opencv2/highgui.hpp>
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"

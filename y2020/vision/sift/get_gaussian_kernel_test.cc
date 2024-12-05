@@ -6,8 +6,8 @@
 #include "absl/log/log.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include <opencv2/core/mat.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/core/mat.hpp"
+#include "opencv2/imgproc.hpp"
 
 namespace frc971::vision::testing {
 

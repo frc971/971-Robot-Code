@@ -5,7 +5,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include <opencv2/core/mat.hpp>
+#include "opencv2/core/mat.hpp"
 
 #include "HalideBuffer.h"
 

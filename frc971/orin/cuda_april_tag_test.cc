@@ -7,13 +7,13 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "gtest/gtest.h"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/common/unionfind.h"
 #include "third_party/apriltag/tag16h5.h"
 #include "third_party/apriltag/tag36h11.h"
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui.hpp>
 
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"

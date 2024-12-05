@@ -1,7 +1,7 @@
 #include "y2023/vision/aprilrobotics.h"
 
 #include "absl/flags/flag.h"
-#include <opencv2/highgui.hpp>
+#include "opencv2/highgui.hpp"
 
 #include "y2023/vision/vision_util.h"
 

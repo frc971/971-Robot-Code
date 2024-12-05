@@ -3,9 +3,9 @@
 
 #include <math.h>
 
-#include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/calib3d.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
