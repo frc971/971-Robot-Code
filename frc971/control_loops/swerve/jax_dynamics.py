@@ -232,6 +232,10 @@ def full_dynamics(coefficients: CoefficientsType, X, U):
 
     X_dot = module0 + module1 + module2 + module3
 
+    X_dot = X_dot.at[STATE_VX].add(X[STATE_FX] / coefficients.m)
+    X_dot = X_dot.at[STATE_VY].add(X[STATE_FY] / coefficients.m)
+    X_dot = X_dot.at[STATE_OMEGA].add(X[STATE_MOMENT] / coefficients.J)
+
     X_dot = X_dot.at[STATE_X:STATE_THETA + 1].set(
         jax.numpy.array([
             X[STATE_VX],
