@@ -59,7 +59,7 @@ PyObject *swerve_dynamics(PyObject * /*self*/, PyObject *args) {
   }
 
   std::optional<Eigen::Matrix<double, kNumInputs, 1>> U_eig =
-      ToEigen<kNumInputs>(X);
+      ToEigen<kNumInputs>(U);
 
   if (!U_eig.has_value()) {
     return nullptr;

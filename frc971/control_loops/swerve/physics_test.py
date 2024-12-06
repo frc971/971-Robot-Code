@@ -17,6 +17,7 @@ import unittest
 from frc971.control_loops.swerve import bigcaster_dynamics
 from frc971.control_loops.swerve import dynamics
 from frc971.control_loops.swerve import nocaster_dynamics
+from frc971.control_loops.swerve import non_soft_dynamics
 from frc971.control_loops.swerve import physics_test_utils as utils
 from frc971.control_loops.swerve import casadi_velocity_mpc_lib
 from frc971.control_loops.swerve import jax_dynamics
@@ -45,7 +46,7 @@ class TestSwervePhysics(unittest.TestCase):
                 f'Norm failed, full physics -> {X_velocity.T}, velocity physics -> {velocity_physics}, difference -> {velocity_physics - X_velocity}',
             )
 
-        self.validate_dynamics_equality(X, U)
+            self.validate_dynamics_equality(X, U)
 
         return Xdot
 
@@ -761,15 +762,13 @@ class TestSwervePhysics(unittest.TestCase):
 
     def test_cpp_consistency(self):
         """Tests that the C++ physics are consistent with the Python physics."""
-        # TODO(james): Currently the physics only match at X = 0 and U = 0.
-        # Fix this.
-        # Maybe due to different atan2 implementations?
         # TODO(james): Fold this into the general comparisons for JAX versus
         # casadi once the physics actually match.
-        for current in [0]:
+        self.wrap(non_soft_dynamics)
+        for current in [0, 10, 50, 100]:
             print(f"Current: {current}")
             steer_I = numpy.zeros((8, 1)) + current
-            for state_values in [0.0]:
+            for state_values in [0.0, 1.0, 2.0]:
                 print(f"States all set to: {state_values}")
                 X = numpy.zeros((dynamics.NUM_STATES, 1)) + state_values
                 Xdot_py = self.swerve_full_dynamics(X,
@@ -778,9 +777,12 @@ class TestSwervePhysics(unittest.TestCase):
                 Xdot_cpp = numpy.array(
                     cpp_dynamics(X.flatten().tolist(),
                                  steer_I.flatten().tolist())).reshape((25, 1))
-                for index in range(dynamics.NUM_STATES):
-                    self.assertAlmostEqual(Xdot_py[index, 0], Xdot_cpp[index,
-                                                                       0])
+
+                self.assertTrue(
+                    numpy.allclose(Xdot_py, Xdot_cpp),
+                    msg=
+                    f"diff: {Xdot_py-Xdot_cpp}\n\nX: {X.flatten()}\n\nU: {steer_I.flatten()}\n\nX_py: {Xdot_py.flatten()}\n\nX_cpp: {Xdot_cpp.flatten()}"
+                )
 
 
 if __name__ == "__main__":

@@ -152,13 +152,26 @@ run_binary(
     outs = [
         "dynamics.cc",
         "dynamics.h",
-        "dynamics.py",
-        "dynamics_constants.py",
+        "non_soft_dynamics.py",
     ],
     args = [
         "--output_base=$(BINDIR)/",
         "--cc_output_path=$(location :dynamics.cc)",
         "--h_output_path=$(location :dynamics.h)",
+        "--casadi_py_output_path=$(location :non_soft_dynamics.py)",
+        "--soft_atan2=false",
+    ],
+    tool = ":generate_physics",
+)
+
+run_binary(
+    name = "dynamics_codegen_standard",
+    outs = [
+        "dynamics.py",
+        "dynamics_constants.py",
+    ],
+    args = [
+        "--output_base=$(BINDIR)/",
         "--casadi_py_output_path=$(location :dynamics.py)",
         "--constants_output_path=$(location :dynamics_constants.py)",
     ],
@@ -206,6 +219,7 @@ py_library(
         "bigcaster_dynamics.py",
         "dynamics.py",
         "nocaster_dynamics.py",
+        "non_soft_dynamics.py",
     ],
     deps = [
         "@pip//casadi",
