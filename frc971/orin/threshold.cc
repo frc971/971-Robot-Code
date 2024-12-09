@@ -38,8 +38,8 @@ __global__ void InternalCudaToGreyscale(const uint8_t *color_image,
 
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
       gray_image[i] = color_image[i];  // Grayscale input is already aliased to color device image 
-    } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
-      gray_image[i] = color_image[i * 2];  // YUY input
+    } else if constexpr ((INPUT_FORMAT == InputFormat::YCbCr422) || (INPUT_FORMAT == InputFormat::Mono16)) {
+      gray_image[i] = color_image[i * 2];  // YUY input, luckily also works to grab the MSBits of Mono16
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
       gray_image[i] = 0.114f * static_cast<float>(color_image[i * 3]) +
                       0.587f * static_cast<float>(color_image[i * 3 + 1]) +
@@ -75,8 +75,8 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
 
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
       pixel = color_image[in_i];
-    } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
-      pixel = color_image[in_i * 2];  // YUY input
+    } else if constexpr ((INPUT_FORMAT == InputFormat::YCbCr422) || (INPUT_FORMAT == InputFormat::Mono16)) {
+      gray_image[i] = color_image[i * 2];  // YUY input, luckily also works to grab the MSBits of Mono16
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
       pixel = 0.114f * static_cast<float>(color_image[in_i * 3]) +
               0.587f * static_cast<float>(color_image[in_i * 3 + 1]) +
@@ -86,7 +86,6 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
               0.587f * static_cast<float>(color_image[in_i * 4 + 1]) +
               0.299f * static_cast<float>(color_image[in_i * 4 + 2]);  // BGRA input, skip alpha channel
     }
-
 
     decimated_image[out_row * out_width + out_col] = pixel;
     out_i += blockDim.x * gridDim.x;
@@ -281,6 +280,7 @@ void Threshold<INPUT_FORMAT>::CudaToGreyscaleAndDecimateHalide(
 }
 
 template class Threshold<InputFormat::Mono8>;
+template class Threshold<InputFormat::Mono16>;
 template class Threshold<InputFormat::YCbCr422>;
 template class Threshold<InputFormat::BGR8>;
 template class Threshold<InputFormat::BGRA8>;

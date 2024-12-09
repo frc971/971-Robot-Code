@@ -201,7 +201,7 @@ class GpuMemory {
   void MemcpyAsyncTo(T *host_memory, size_t size, CudaStream *stream) const {
     CHECK_CUDA(cudaMemcpyAsync(reinterpret_cast<void *>(host_memory),
                                reinterpret_cast<void *>(memory_),
-                               sizeof(T) * size, cudaMemcpyDeviceToHost,
+                               sizeof(T) * std::min(size, size_), cudaMemcpyDeviceToHost,
                                stream->get()));
   }
   void MemcpyAsyncTo(T *host_memory, CudaStream *stream) const {
