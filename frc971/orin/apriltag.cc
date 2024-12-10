@@ -220,6 +220,8 @@ GpuDetector::GpuDetector(size_t width, size_t height,
 
   if (input_format == InputFormat::Mono8) {
     threshold_ = std::make_unique<Threshold<InputFormat::Mono8>>();
+  } else if (input_format == InputFormat::Mono16) {
+    threshold_ = std::make_unique<Threshold<InputFormat::Mono16>>();
   } else if (input_format == InputFormat::YCbCr422) {
     threshold_ = std::make_unique<Threshold<InputFormat::YCbCr422>>();
   } else if (input_format == InputFormat::BGR8) {
