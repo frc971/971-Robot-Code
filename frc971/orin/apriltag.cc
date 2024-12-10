@@ -119,6 +119,9 @@ size_t InputFormatToChannels(const InputFormat input_format)
   if (input_format == InputFormat::Mono8) {
     return 1;
   }
+  if (input_format == InputFormat::Mono16) {
+    return 2;
+  }
   if (input_format == InputFormat::YCbCr422) {
     return 2;
   }
