@@ -550,7 +550,6 @@ cc_library(
     name = "can_sensor_reader",
     srcs = ["can_sensor_reader.cc"],
     hdrs = ["can_sensor_reader.h"],
-    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
     deps = [
         ":talonfx",

@@ -239,6 +239,7 @@ cc_binary(
         "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",
         "//frc971/wpilib/swerve:swerve_drivetrain_writer",
+        "//frc971/wpilib/swerve:swerve_util",
         "//third_party:phoenix",
         "//third_party:phoenix6",
         "//third_party:wpilib",

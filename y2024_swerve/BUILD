@@ -164,6 +164,7 @@ cc_binary(
         "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",
         "//frc971/wpilib/swerve:swerve_drivetrain_writer",
+        "//frc971/wpilib/swerve:swerve_util",
         "//y2024_swerve/constants:constants_fbs",
     ],
 )
