@@ -26,10 +26,10 @@ namespace frc971::controls {
  * @param A System matrix.
  * @param B Input matrix.
  */
-template <int num_states, int num_inputs>
-bool IsStabilizable(const Eigen::Matrix<double, num_states, num_states> &A,
-                    const Eigen::Matrix<double, num_states, num_inputs> &B) {
-  Eigen::EigenSolver<Eigen::Matrix<double, num_states, num_states>> es{A,
+template <typename Scalar, int num_states, int num_inputs>
+bool IsStabilizable(const Eigen::Matrix<Scalar, num_states, num_states> &A,
+                    const Eigen::Matrix<Scalar, num_states, num_inputs> &B) {
+  Eigen::EigenSolver<Eigen::Matrix<Scalar, num_states, num_states>> es{A,
                                                                        false};
 
   for (int i = 0; i < A.rows(); ++i) {
@@ -37,13 +37,13 @@ bool IsStabilizable(const Eigen::Matrix<double, num_states, num_states> &A,
       continue;
     }
 
-    Eigen::Matrix<std::complex<double>, num_states, num_states + num_inputs> E;
-    E << es.eigenvalues()[i] * Eigen::Matrix<std::complex<double>, num_states,
+    Eigen::Matrix<std::complex<Scalar>, num_states, num_states + num_inputs> E;
+    E << es.eigenvalues()[i] * Eigen::Matrix<std::complex<Scalar>, num_states,
                                              num_states>::Identity() -
              A,
         B;
 
-    Eigen::ColPivHouseholderQR<Eigen::Matrix<std::complex<double>, num_states,
+    Eigen::ColPivHouseholderQR<Eigen::Matrix<std::complex<Scalar>, num_states,
                                              num_states + num_inputs>>
         qr{E};
     if (qr.rank() < num_states) {
@@ -66,10 +66,11 @@ bool IsStabilizable(const Eigen::Matrix<double, num_states, num_states> &A,
  * @param A System matrix.
  * @param C Output matrix.
  */
-template <int num_states, int num_outputs>
-bool IsDetectable(const Eigen::Matrix<double, num_states, num_states> &A,
-                  const Eigen::Matrix<double, num_outputs, num_states> &C) {
-  return IsStabilizable<num_states, num_outputs>(A.transpose(), C.transpose());
+template <typename Scalar, int num_states, int num_outputs>
+bool IsDetectable(const Eigen::Matrix<Scalar, num_states, num_states> &A,
+                  const Eigen::Matrix<Scalar, num_outputs, num_states> &C) {
+  return IsStabilizable<Scalar, num_states, num_outputs>(A.transpose(),
+                                                         C.transpose());
 }
 
 /**
@@ -80,8 +81,8 @@ bool IsDetectable(const Eigen::Matrix<double, num_states, num_states> &A,
  * @tparam num_states Number of columns or rows.
  * @param A matrix to be tested.
  */
-template <int num_states>
-bool IsSymmetric(const Eigen::Matrix<double, num_states, num_states> &A) {
+template <typename Scalar, int num_states>
+bool IsSymmetric(const Eigen::Matrix<Scalar, num_states, num_states> &A) {
   return (A - A.transpose()).norm() < 1e-10;
 }
 
@@ -93,9 +94,9 @@ bool IsSymmetric(const Eigen::Matrix<double, num_states, num_states> &A) {
  * @tparam num_states Number of columns or rows.
  * @param R the matrix to check.
  */
-template <int num_states>
+template <typename Scalar, int num_states>
 bool IsPositiveDefinite(
-    const Eigen::Matrix<double, num_states, num_states> &R) {
+    const Eigen::Matrix<Scalar, num_states, num_states> &R) {
   auto R_llt = R.llt();
   return R_llt.info() == Eigen::Success;
 }
@@ -110,9 +111,9 @@ bool IsPositiveDefinite(
  * @tparam num_states Number of columns or rows.
  * @param Q the matrix to check.
  */
-template <int num_states>
+template <typename Scalar, int num_states>
 bool IsPositiveSemiDefinite(
-    const Eigen::Matrix<double, num_states, num_states> &Q) {
+    const Eigen::Matrix<Scalar, num_states, num_states> &Q) {
   auto Q_ldlt = Q.ldlt();
   return Q_ldlt.info() == Eigen::Success &&
          (Q_ldlt.vectorD().array() >= 0.0).all();
@@ -183,28 +184,28 @@ void AbslStringify(Sink &sink, DareError e) {
  * machine precision.
  * @return Solution to the DARE on success, or DareError on failure.
  */
-template <int num_states, int num_inputs>
-tl::expected<Eigen::Matrix<double, num_states, num_states>, DareError> dare(
-    const Eigen::Matrix<double, num_states, num_states> &A,
-    const Eigen::Matrix<double, num_states, num_inputs> &B,
-    const Eigen::Matrix<double, num_states, num_states> &Q,
-    const Eigen::Matrix<double, num_inputs, num_inputs> &R,
+template <typename Scalar, int num_states, int num_inputs>
+tl::expected<Eigen::Matrix<Scalar, num_states, num_states>, DareError> dare(
+    const Eigen::Matrix<Scalar, num_states, num_states> &A,
+    const Eigen::Matrix<Scalar, num_states, num_inputs> &B,
+    const Eigen::Matrix<Scalar, num_states, num_states> &Q,
+    const Eigen::Matrix<Scalar, num_inputs, num_inputs> &R,
     bool check_preconditions = true, int max_iters = 50) {
-  using StateMatrix = Eigen::Matrix<double, num_states, num_states>;
+  using StateMatrix = Eigen::Matrix<Scalar, num_states, num_states>;
 
   if (check_preconditions) {
     // Require R be symmetric
-    if (!IsSymmetric<num_inputs>(R)) {
+    if (!IsSymmetric<Scalar, num_inputs>(R)) {
       return tl::unexpected{DareError::RNotSymmetric};
     }
 
     // Require R be positive definite
-    if (!IsPositiveDefinite<num_inputs>(R)) {
+    if (!IsPositiveDefinite<Scalar, num_inputs>(R)) {
       return tl::unexpected{DareError::RNotPositiveDefinite};
     }
 
     // Require Q be symmetric
-    if (!IsSymmetric<num_states>(Q)) {
+    if (!IsSymmetric<Scalar, num_states>(Q)) {
       return tl::unexpected{DareError::QNotSymmetric};
     }
 
@@ -217,12 +218,12 @@ tl::expected<Eigen::Matrix<double, num_states, num_states>, DareError> dare(
     //
     // Therefore, D having no negative diagonal entries is sufficient to prove Q
     // is positive semidefinite.
-    if (!IsPositiveSemiDefinite<num_states>(Q)) {
+    if (!IsPositiveSemiDefinite<Scalar, num_states>(Q)) {
       return tl::unexpected{DareError::QNotPositiveSemidefinite};
     }
 
     // Require (A, B) pair be stabilizable
-    if (!IsStabilizable<num_states, num_inputs>(A, B)) {
+    if (!IsStabilizable<Scalar, num_states, num_inputs>(A, B)) {
       return tl::unexpected{DareError::ABNotStabilizable};
     }
 
@@ -235,7 +236,7 @@ tl::expected<Eigen::Matrix<double, num_states, num_states>, DareError> dare(
                     StateMatrix{Q_ldlt.matrixL().transpose()} *
                     Q_ldlt.transpositionsP();
 
-    if (!IsDetectable<num_states, num_states>(A, C)) {
+    if (!IsDetectable<Scalar, num_states, num_states>(A, C)) {
       return tl::unexpected{DareError::ACNotDetectable};
     }
   }
