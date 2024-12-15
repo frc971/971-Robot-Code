@@ -3,7 +3,7 @@
 
 #include <optional>
 
-#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_static.h"
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/zeroing/averager.h"
 
@@ -40,7 +40,7 @@ class ImuZeroer {
   bool Zeroed() const;
   bool Faulted() const;
   bool InsertMeasurement(const IMUValues &values);
-  // PErforms the heavier-duty processing for managing zeroing.
+  // Performs the heavier-duty processing for managing zeroing.
   void ProcessMeasurements();
   void InsertAndProcessMeasurement(const IMUValues &values);
   Eigen::Vector3d GyroOffset() const;
@@ -49,6 +49,9 @@ class ImuZeroer {
 
   flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState> PopulateStatus(
       flatbuffers::FlatBufferBuilder *fbb) const;
+
+  void PopulateStatus(
+      control_loops::drivetrain::ImuZeroerStateStatic *status) const;
 
  private:
   // Maximum magnitude we allow the gyro zero to have--this is used to prevent
