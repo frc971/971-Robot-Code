@@ -150,7 +150,7 @@
             "name": "/roborio/drivetrain",
             "type": "frc971.control_loops.swerve.Status",
             "source_node": "roborio",
-            "max_size": 2056,
+            "max_size": 10000,
             "frequency": 250
         },
         {

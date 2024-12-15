@@ -174,6 +174,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                           frc::Encoder::k4X);
   }
   void Run() override {
+    // Setup CAN
+    if (!absl::GetFlag(FLAGS_ctre_diag_server)) {
+      c_Phoenix_Diagnostics_SetSecondsToStart(-1);
+      c_Phoenix_Diagnostics_Dispose();
+    }
+
+    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
+        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
+    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
+        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
     std::shared_ptr<const constants::Values> values =
         std::make_shared<const constants::Values>(constants::MakeValues());
 
@@ -271,21 +281,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                                   gear_ratios);
 
           builder.CheckOk(builder.Send());
-        });
+        },
+        CANSensorReader::SignalSync::kNoSync);
 
     AddLoop(&can_sensor_reader_event_loop);
 
     // Thread 2
-    // Setup CAN
-    if (!absl::GetFlag(FLAGS_ctre_diag_server)) {
-      c_Phoenix_Diagnostics_SetSecondsToStart(-1);
-      c_Phoenix_Diagnostics_Dispose();
-    }
-
-    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
-        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
-    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
     aos::ShmEventLoop drivetrain_writer_event_loop(&config.message());
     drivetrain_writer_event_loop.set_name("DrivetrainWriter");
