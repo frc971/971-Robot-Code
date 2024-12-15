@@ -31,12 +31,55 @@ table NaiveEstimatorStatus {
   module_drive_velocities:[float] (id: 6);
 }
 
+// Debugging information for the linear swerve controllers.
+table LinearControllerStatus {
+  // Current full goal state (including any inverse kinematics/dynamics.
+  goal_state:frc971.fbs.Matrix (id: 0);
+  // Current feedback components of the output currents.
+  feedback_currents:frc971.fbs.Matrix (id: 1);
+  // Current feedforwards components of the output currents.
+  feedforwards_currents:frc971.fbs.Matrix (id: 2);
+  // Matrix describing how each bit of state error contributes to the
+  // feedback currents. Each column corresponds to a single state and
+  // the columns summed together will equal the feedback_currents member.
+  feedback_contributions:frc971.fbs.Matrix (id: 3);
+  // Result of the DARE solver (0 = success).
+  sb02od_result:uint (id: 4);
+}
+
+// Debug information corresponding to a single measurement correction for
+// the kalman filter.
+table CorrectionDebug {
+  // The actual measurement for this correction.
+  measurement:frc971.fbs.Matrix (id: 0);
+  // The expected measurement at the time that we performed this correction.
+  expected:frc971.fbs.Matrix (id: 1);
+  // How much X_hat was updated by the predict step of this correction.
+  // Will be zero for corrections which do not involve any timestep.
+  predict_update:frc971.fbs.Matrix (id: 2);
+  // How much X_hat was updated by the correct step of this correction.
+  correct_update:frc971.fbs.Matrix (id: 3);
+}
+
+// Debug information for the kalman filter.
+table VelocityEkfStatus {
+  // Debug information indicating the various sensor updates which we can do.
+  gyro_correction:CorrectionDebug (id: 0);
+  steer_correction:CorrectionDebug (id: 1);
+  drive_correction:CorrectionDebug (id: 2);
+  // Current state estimate and covariance.
+  x_hat:frc971.fbs.Matrix (id: 3);
+  p:frc971.fbs.Matrix (id: 4);
+}
+
 table Status {
     front_left_status:SwerveModuleStatus (id: 0);
     front_right_status:SwerveModuleStatus (id: 1);
     back_left_status:SwerveModuleStatus (id: 2);
     back_right_status:SwerveModuleStatus (id: 3);
     naive_estimator:NaiveEstimatorStatus (id: 4);
+    linear_controller:LinearControllerStatus (id: 5);
+    velocity_ekf:VelocityEkfStatus (id: 6);
 }
 
 root_type Status;

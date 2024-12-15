@@ -68,6 +68,10 @@ class Ekf {
     Eigen::Matrix<Scalar, kNumMeasurements, 1> measurement;
     // The expected measurement when we did the correction.
     Eigen::Matrix<Scalar, kNumMeasurements, 1> expected;
+    // Amount that X_hat was updated by the predict step of the correction.
+    State predict_update;
+    // Amount that X_hat was updated by the correct portion of the correction.
+    State correct_update;
   };
 
   // Performs a predict & correct step for a given measurement.
@@ -90,11 +94,8 @@ class Ekf {
       const Measurement &measurement, const MeasurementSquare &R,
       const Input &U, const ExpectedMeasurementFunction &expected_measurement,
       const Eigen::Matrix<Scalar, kNumMeasurements, kNumStates> &H) {
-    if (!last_update_.has_value()) {
-      // TODO(james): May want to initialize more intelligently to avoid really
-      // extreme corrections.
-      last_update_ = now;
-    }
+    CHECK(last_update_.has_value())
+        << ": Must call Initialize() before doing EKF Corrections.";
     CHECK_LE(last_update_.value(), now);
     const aos::monotonic_clock::duration dt = now - last_update_.value();
     StateSquare Q_discrete, A_discrete;
@@ -105,12 +106,14 @@ class Ekf {
     controls::DiscretizeQAFast(Q_continuous_, linearized_dynamics.A, dt,
                                &Q_discrete, &A_discrete);
     VLOG(3) << "Discretized Q\n" << Q_discrete;
+    const State prior_state = X_hat_;
     // Only do a predict step if time actually passed; this optimizes things in
     // the scenario where we do multiple correction steps at once.
     if (dt.count() != 0) {
       Predict(dt, U, A_discrete, Q_discrete);
       last_update_ = now;
     }
+    const State predict_update = X_hat_ - prior_state;
 
     const Measurement expected =
         expected_measurement(Eigen::Map<const State>(X_hat_.data()));
@@ -121,7 +124,10 @@ class Ekf {
     const State update = K * (measurement - expected);
     VLOG(3) << "correction update\n" << update;
     X_hat_ += update;
-    return {.measurement = measurement, .expected = expected};
+    return {.measurement = measurement,
+            .expected = expected,
+            .predict_update = predict_update,
+            .correct_update = update};
   }
 
   // Uses Ceres to calculate the Jacobian of expected_measurement and calls
