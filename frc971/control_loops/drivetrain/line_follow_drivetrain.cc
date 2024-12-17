@@ -66,7 +66,7 @@ void AB(const DrivetrainConfig<double> &dt_config,
                                     const ::Eigen::Matrix<double, 3, 2> &B,
                                     const ::Eigen::Matrix<double, 3, 3> &Q,
                                     const ::Eigen::Matrix<double, 2, 2> &R) {
-  if (auto K = ::frc971::controls::dlqr<3, 2>(A, B, Q, R)) {
+  if (auto K = ::frc971::controls::dlqr<double, 3, 2>(A, B, Q, R)) {
     return K.value();
   } else {
     // We allow a FATAL error here since this should only be called during

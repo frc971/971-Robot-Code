@@ -404,7 +404,8 @@ void TrajectoryFollower::Reset() {
           },
           x_blocked, U, 0.00505);
 
-  if (auto sub_K = ::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R)) {
+  if (auto sub_K =
+          ::frc971::controls::dlqr<double, 4, 2>(final_A, final_B, Q, R)) {
     ::Eigen::EigenSolver<::Eigen::Matrix<double, 4, 4>> eigensolver(
         final_A - final_B * sub_K.value());
 

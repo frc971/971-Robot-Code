@@ -53,3 +53,10 @@ cc_test(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "eigen_matchers",
+    testonly = True,
+    hdrs = ["eigen_matchers.h"],
+    visibility = ["//visibility:public"],
+)

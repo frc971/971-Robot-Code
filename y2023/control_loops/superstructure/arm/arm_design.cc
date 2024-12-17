@@ -122,7 +122,8 @@ int Main() {
         dynamics.FF_U(x_blocked, ::Eigen::Matrix<double, 2, 1>::Zero(),
                       ::Eigen::Matrix<double, 2, 1>::Zero());
 
-    if (auto K = ::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R)) {
+    if (auto K =
+            ::frc971::controls::dlqr<double, 4, 2>(final_A, final_B, Q, R)) {
       ::Eigen::EigenSolver<::Eigen::Matrix<double, 4, 4>> eigensolver(
           final_A - final_B * K.value());
 

@@ -83,7 +83,7 @@ TEST(DARETest, NonInvertibleA) {
       {1, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
   ::Eigen::Matrix<double, 1, 1> R{0.25};
 
-  auto ret = frc971::controls::dare<4, 1>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 4, 1>(A, B, Q, R);
   EXPECT_TRUE(ret);
   auto X = ret.value();
 
@@ -98,7 +98,7 @@ TEST(DARETest, InvertibleA) {
   ::Eigen::Matrix<double, 2, 2> Q{{1, 0}, {0, 0}};
   ::Eigen::Matrix<double, 1, 1> R{{0.3}};
 
-  auto ret = frc971::controls::dare<2, 1>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 1>(A, B, Q, R);
   EXPECT_TRUE(ret);
   auto X = ret.value();
 
@@ -115,7 +115,7 @@ TEST(DARETest, FirstGeneralizedEigenvalueOfSTIsStable) {
   ::Eigen::Matrix<double, 2, 2> Q{{1, 0}, {0, 1}};
   ::Eigen::Matrix<double, 1, 1> R{1};
 
-  auto ret = frc971::controls::dare<2, 1>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 1>(A, B, Q, R);
   EXPECT_TRUE(ret);
   auto X = ret.value();
 
@@ -130,7 +130,7 @@ TEST(DARETest, IdentitySystem) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_TRUE(ret);
   auto X = ret.value();
 
@@ -145,7 +145,7 @@ TEST(DARETest, MoreInputsThanStates) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix3d R{Eigen::Matrix3d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 3>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 3>(A, B, Q, R);
   EXPECT_TRUE(ret);
   auto X = ret.value();
 
@@ -160,7 +160,7 @@ TEST(DARETest, QNotSymmetric) {
   const Eigen::Matrix2d Q{{1.0, 1.0}, {0.0, 1.0}};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_FALSE(ret);
   EXPECT_EQ(ret.error(), frc971::controls::DareError::QNotSymmetric);
 }
@@ -171,7 +171,7 @@ TEST(DARETest, QNotPositiveSemidefinite) {
   const Eigen::Matrix2d Q{-Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_FALSE(ret);
   EXPECT_EQ(ret.error(), frc971::controls::DareError::QNotPositiveSemidefinite);
 }
@@ -182,7 +182,7 @@ TEST(DARETest, RNotSymmetric) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{{1.0, 1.0}, {0.0, 1.0}};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_FALSE(ret);
   EXPECT_EQ(ret.error(), frc971::controls::DareError::RNotSymmetric);
 }
@@ -193,12 +193,12 @@ TEST(DARETest, RNotPositiveDefinite) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
 
   const Eigen::Matrix2d R1{Eigen::Matrix2d::Zero()};
-  auto ret1 = frc971::controls::dare<2, 2>(A, B, Q, R1);
+  auto ret1 = frc971::controls::dare<double, 2, 2>(A, B, Q, R1);
   EXPECT_FALSE(ret1);
   EXPECT_EQ(ret1.error(), frc971::controls::DareError::RNotPositiveDefinite);
 
   const Eigen::Matrix2d R2{-Eigen::Matrix2d::Identity()};
-  auto ret2 = frc971::controls::dare<2, 2>(A, B, Q, R2);
+  auto ret2 = frc971::controls::dare<double, 2, 2>(A, B, Q, R2);
   EXPECT_FALSE(ret2);
   EXPECT_EQ(ret2.error(), frc971::controls::DareError::RNotPositiveDefinite);
 }
@@ -209,7 +209,7 @@ TEST(DARETest, ABNotStabilizable) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_FALSE(ret);
   EXPECT_EQ(ret.error(), frc971::controls::DareError::ABNotStabilizable);
 }
@@ -220,7 +220,7 @@ TEST(DARETest, ACNotDetectable) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Zero()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  auto ret = frc971::controls::dare<2, 2>(A, B, Q, R);
+  auto ret = frc971::controls::dare<double, 2, 2>(A, B, Q, R);
   EXPECT_FALSE(ret);
   EXPECT_EQ(ret.error(), frc971::controls::DareError::ACNotDetectable);
 }
@@ -235,13 +235,13 @@ TEST(DARETest, QDecomposition) {
   // (A, C₁) should be detectable pair
   const Eigen::Matrix2d C_1{{0.0, 0.0}, {1.0, 0.0}};
   const Eigen::Matrix2d Q_1 = C_1.transpose() * C_1;
-  auto ret1 = frc971::controls::dare<2, 2>(A, B, Q_1, R);
+  auto ret1 = frc971::controls::dare<double, 2, 2>(A, B, Q_1, R);
   EXPECT_TRUE(ret1);
 
   // (A, C₂) shouldn't be detectable pair
   const Eigen::Matrix2d C_2 = C_1.transpose();
   const Eigen::Matrix2d Q_2 = C_2.transpose() * C_2;
-  auto ret2 = frc971::controls::dare<2, 2>(A, B, Q_2, R);
+  auto ret2 = frc971::controls::dare<double, 2, 2>(A, B, Q_2, R);
   EXPECT_FALSE(ret2);
   EXPECT_EQ(ret2.error(), frc971::controls::DareError::ACNotDetectable);
 }

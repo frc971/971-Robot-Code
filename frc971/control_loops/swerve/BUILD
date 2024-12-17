@@ -84,6 +84,17 @@ cc_library(
 )
 
 cc_test(
+    name = "velocity_ekf_test",
+    srcs = ["velocity_ekf_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":velocity_ekf",
+        "//aos/testing:googletest",
+        "//frc971/math:eigen_matchers",
+    ],
+)
+
+cc_test(
     name = "swerve_control_test",
     srcs = ["swerve_control_test.cc"],
     data = [
@@ -513,5 +524,19 @@ cc_library(
         ":swerve_zeroing_fbs",
         "//frc971/math:flatbuffers_matrix",
         "//frc971/zeroing:continuous_absolute_encoder",
+    ],
+)
+
+cc_library(
+    name = "velocity_ekf",
+    srcs = ["velocity_ekf.cc"],
+    hdrs = ["velocity_ekf.h"],
+    deps = [
+        ":linearization_utils",
+        ":simplified_dynamics",
+        ":swerve_drivetrain_status_fbs",
+        "//frc971/estimation:ekf",
+        "//frc971/math:flatbuffers_matrix",
+        "@com_google_absl//absl/flags:flag",
     ],
 )

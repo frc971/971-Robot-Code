@@ -119,7 +119,7 @@ PyObject *dare(PyObject * /*self*/, PyObject *args) {
   }
 
   // calculate DARE
-  auto ret = frc971::controls::dare<num_states, num_inputs>(
+  auto ret = frc971::controls::dare<double, num_states, num_inputs>(
       A_eig.value(), B_eig.value(), Q_eig.value(), R_eig.value());
 
   if (!ret) {
