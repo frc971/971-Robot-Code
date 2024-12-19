@@ -1,4 +1,3 @@
-#include "ros/console.h" // remove me after testing
 #include "frc971/orin/apriltag.h"
 
 #include <thrust/iterator/constant_iterator.h>
@@ -212,9 +211,6 @@ GpuDetector::GpuDetector(size_t width, size_t height,
           DeviceScanInclusiveScanByKeyScratchSpace<uint32_t, LineFitPoint>(
               sorted_selected_blobs_device_.size())),
       input_format_(input_format) {
-  // If the input image is grayscale, alias the gray image to the color image.
-  // InternalCudaToGreyscaleAndDecimateHalide will skip copying between the
-  // color and gray images as a result.
   fit_quads_host_.reserve(kMaxBlobs);
   quad_corners_host_.reserve(kMaxBlobs);
 
@@ -388,7 +384,7 @@ __global__ void BlobDiff(const uint8_t *thresholded_image,
   DO_CONN(1, 0, 0);
   DO_CONN(1, 1, 1);
   DO_CONN(0, 1, 2);
-  // TODO : should this be uint32_t to match type of rep1?
+
   const uint32_t rep_block_2 = rep1;
   const uint8_t v1_block_2 = v1;
 
@@ -437,7 +433,7 @@ class RewriteToIndexPoint {
 
   __host__ __device__ __forceinline__ IndexPoint
   operator()(const cub::KeyValuePair<long, QuadBoundaryPoint> &pt) const {
-    uint32_t index = blob_finder_.FindBlobIndex(pt.key);
+    const uint32_t index = blob_finder_.FindBlobIndex(pt.key);
     IndexPoint result(index, pt.value.point_bits());
     return result;
   }
@@ -971,7 +967,6 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   after_transform_extents_.Record(&stream_);
 
-  // int num_selected_blobs_host;
   {
     event_timings_.start("SelectIndexPoints", stream_.get());
     // Now, copy over all points which pass our thresholds.
@@ -1069,7 +1064,6 @@ void GpuDetector::Detect(const uint8_t *image) {
   }
   after_line_filter_.Record(&stream_);
 
-  // int num_compressed_peaks_host;
   {
     event_timings_.start("cub::DeviceSelect::IfPeaks", stream_.get());
     // Remove empty points which aren't to be considered before sorting to speed
@@ -1111,7 +1105,6 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   after_peak_sort_.Record(&stream_);
 
-  // int num_quad_peaked_quads_host;
   // Now that we have the peaks sorted, recompute the extents so we can easily
   // pick out the number and top 10 peaks for line fitting.
   {

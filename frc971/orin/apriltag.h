@@ -208,8 +208,6 @@ class GpuDetector {
 
   // Undistort pixels based on our camera model, using iterative algorithm
   // Returns false if we fail to converge
-  // Make this a free function rather than a static member function to make
-  // remove the need for callers to know the template arg from GpuDetector
   static bool UnDistort(double *u, double *v, const CameraMatrix *camera_matrix,
                         const DistCoeffs *distortion_coefficients);
 

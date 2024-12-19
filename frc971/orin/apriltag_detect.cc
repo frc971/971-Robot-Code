@@ -519,7 +519,8 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       double bestx = x0 + n0 * nx;
       double besty = y0 + n0 * ny;
 
-      GpuDetector::UnDistort(&bestx, &besty, camera_matrix, distortion_coefficients);
+      GpuDetector::UnDistort(&bestx, &besty, camera_matrix,
+                             distortion_coefficients);
 
       // update our line fit statistics
       Mx += bestx;
