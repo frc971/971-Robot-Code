@@ -10,9 +10,6 @@
 #define __forceinline__
 #endif
 
-// TODO - remove after debugging
-#include <memory>
-
 #include "frc971/orin/threshold.h"
 
 #include <stdint.h>
@@ -39,7 +36,7 @@ __global__ void InternalCudaToGreyscale(const uint8_t *color_image,
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
       gray_image[i] = color_image[i];  // Grayscale input is already aliased to color device image 
     } else if constexpr (INPUT_FORMAT == InputFormat::Mono16) {
-      gray_image[i] = ((uint16_t *)color_image)[i] >> 8;  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
+      gray_image[i] = color_image[i * 2 + 1];  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
     } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
       gray_image[i] = color_image[i * 2];  // YUY input
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
@@ -78,7 +75,7 @@ __global__ void InternalCudaToGreyscaleAndDecimateHalide(
     if constexpr (INPUT_FORMAT == InputFormat::Mono8) {
       pixel = color_image[in_i];
     } else if constexpr (INPUT_FORMAT == InputFormat::Mono16) {
-      pixel = ((uint16_t *)color_image)[in_i] >> 8;  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
+      pixel = color_image[in_i * 2 + 1] ;  // MSBits of Mono16 - does this also work on jetson or do we need a be/le split?
     } else if constexpr (INPUT_FORMAT == InputFormat::YCbCr422) {
       pixel = color_image[in_i * 2];  // YUY input
     } else if constexpr (INPUT_FORMAT == InputFormat::BGR8) {
@@ -231,7 +228,7 @@ void Threshold<INPUT_FORMAT>::CudaToGreyscale(const uint8_t *color_image,
 
 template <InputFormat INPUT_FORMAT>
 void Threshold<INPUT_FORMAT>::CudaToGreyscaleAndDecimateHalide(
-    const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
+    const uint8_t *color_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
     uint8_t *thresholded_image, uint32_t width, uint32_t height,
     uint32_t min_white_black_diff, CudaStream *stream) {

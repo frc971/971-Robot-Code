@@ -24,6 +24,10 @@
 #include "frc971/orin/threshold.h"
 #include "frc971/orin/transform_output_iterator.h"
 
+#include <opencv2/core/mat.hpp>     // for Mat
+#include <opencv2/core/mat.inl.hpp> // for _InputArray::_InputArray, _Input...
+#include <opencv2/highgui.hpp>      // for imshow, waitKey
+
 namespace frc971::apriltag {
 namespace {
 
@@ -758,7 +762,7 @@ void GpuDetector::Detect(const uint8_t *image) {
   // Threshold the image.
   event_timings_.start("CudaToGreyscaleAndDecimateHalide", stream_.get());
   threshold_->CudaToGreyscaleAndDecimateHalide(
-      color_image_device_.get(), gray_image_device_.get(),
+      color_image_device_.get(),
       decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
       height_, tag_detector_->qtp.min_white_black_diff, &stream_);
@@ -840,6 +844,8 @@ void GpuDetector::Detect(const uint8_t *image) {
       gray_image_host_ptr_ = image;
     } else {
       // Run this on a separate stream to overlap with later GPU compute
+      // TODO - insert a false dependency to hold this from running until
+      //        there's a free spot in GPU utilization
       after_image_memcpy_to_device_.Synchronize();
       event_timings_.start("CudaToGreyscale", greyscale_stream_.get());
       // Use original_height to prevent reading past the end of the image.
@@ -854,10 +860,18 @@ void GpuDetector::Detect(const uint8_t *image) {
       event_timings_.end("grey_image_memcpy_to_host");
       // TODO - this leaves the grayscale host image in pinned HostMemory
       //        does that make decode tags slower?
-      //         Eventually make gray_image_host_ptr point to an unpinned mem buffer?
+      //        Eventually make gray_image_host_ptr point to an unpinned mem buffer?
       gray_image_host_ptr_ = gray_image_host_.get();
     }
     after_memcpy_gray_.Record(&greyscale_stream_);
+  }
+
+  if (false)
+  {
+    after_memcpy_gray_.Synchronize();
+    cv::Mat gray_host_mat(original_height_, width_, CV_8UC1, const_cast<uint8_t *>(gray_image_host_ptr_));
+    cv::imshow("1", gray_host_mat);
+    cv::waitKey(10);
   }
 
   {

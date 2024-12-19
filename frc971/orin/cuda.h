@@ -184,7 +184,7 @@ class GpuMemory {
                                cudaMemcpyHostToDevice, stream->get()));
   }
   void MemcpyAsyncFrom(const T *host_memory, const size_t size, CudaStream *stream) {
-    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * size,
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * std::min(size, size_),
                                cudaMemcpyHostToDevice, stream->get()));
   }
   void MemcpyAsyncFrom(const HostMemory<T> *host_memory, CudaStream *stream) {
@@ -192,7 +192,7 @@ class GpuMemory {
                                cudaMemcpyHostToDevice, stream->get()));
   }
   void MemcpyAsyncFrom(const HostMemory<T> *host_memory, const size_t size, CudaStream *stream) {
-    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * size,
+    CHECK_CUDA(cudaMemcpyAsync(memory_, host_memory, sizeof(T) * std::min(size, size_),
                                cudaMemcpyHostToDevice, stream->get()));
   }
 
