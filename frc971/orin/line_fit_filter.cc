@@ -218,7 +218,7 @@ class ErrorCalculator {
   // Calculates the line fit error centered on the provided blob index in the
   // current extent.
   __device__ double CalculateError(ssize_t blob_index,
-                                            bool print = false) const {
+                                   bool print = false) const {
     // Index into the blob list for the current key.
     const size_t i0 = (blob_index + 2 * count_ - ksz_) % count_;
     const size_t i1 = (blob_index + count_ + ksz_) % count_;
