@@ -1,6 +1,48 @@
-{% from 'y2024_bot3/constants/common.jinja2' import arm_zero %}
+{% from 'y2024_bot3/constants/common.jinja2' import arm_zero, front_left_zero, front_right_zero, back_left_zero, back_right_zero %}
 
 {
+  "robot": {
+    "swerve_zeroing": {
+      {% set _ = front_left_zero.update(
+          {
+              "measured_absolute_position" : 2.934639251458032
+          }
+      ) %}
+      {% set _ = front_right_zero.update(
+          {
+              "measured_absolute_position" : 4.872094665936765
+          }
+      ) %}
+      {% set _ = back_left_zero.update(
+          {
+              "measured_absolute_position" : 0.05358620595755559
+          }
+      ) %}
+      {% set _ = back_right_zero.update(
+          {
+              "measured_absolute_position" : 5.672941265642591
+          }
+      ) %}
+      "front_left":  {{ front_left_zero | tojson(indent=2)}},
+      "front_right":  {{ front_right_zero | tojson(indent=2)}},
+      "back_left":  {{ back_left_zero | tojson(indent=2)}},
+      "back_right":  {{ back_right_zero | tojson(indent=2)}}
+    },
+    "arm_constants": {
+      {% set _ = arm_zero.update(
+          {
+              "measured_absolute_position" : 0.17940018799940982
+          }
+      ) %}
+      "zeroing_constants": {{ arm_zero | tojson(indent=2)}},
+      "arm_potentiometer_offset": {{ 5.249596184591311 }},
+      "arm_positions": {
+        "intake": 1.5340627000688336,
+        "idle": 0.3750421233651341,
+        "amp": -0.47363107344435573
+      }
+    }
+  },
   "cameras": [
     {
       "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_imu-9971-0_cam-24-10_2024-02-24_16-44-05.json' %}
@@ -15,21 +57,5 @@
       "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_orin1-9971-1_cam-24-11_2024-03-24_11-52-49.json' %}
     }
   ],
-  "robot": {
-    "arm_constants": {
-      {% set _ = arm_zero.update(
-          {
-              "measured_absolute_position" : 0.0992895926495078
-          }
-      ) %}
-      "zeroing_constants": {{ arm_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 0 }},
-      "arm_positions": {
-        "intake": 0,
-        "idle": 1,
-        "amp": 2
-      }
-    }
-  },
   {% include 'y2024_bot3/constants/common.json' %}
 }
