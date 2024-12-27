@@ -44,6 +44,7 @@ robot_downloader(
         "//aos/events:aos_timing_report_streamer",
         "//aos/events/logging:log_cat",
         "//aos:aos_jitter",
+        "//y2024_bot3/orin:ctre_interface",
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
         "//aos/util:foxglove_websocket",

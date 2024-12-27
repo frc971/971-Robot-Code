@@ -29,7 +29,7 @@ cc_library(
         "swerve_module.h",
     ],
     deps = [
-        "//frc971/wpilib:encoder_and_potentiometer",
+        "//frc971/control_loops/swerve:swerve_drivetrain_output_fbs",
         "//frc971/wpilib:talonfx",
     ],
 )

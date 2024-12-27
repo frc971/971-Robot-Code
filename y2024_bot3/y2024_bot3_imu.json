@@ -42,7 +42,23 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 30,
-      "max_size": 10912
+      "max_size": 11376
+    },
+    {
+      "name": "/imu/localizer",
+      "type": "frc971.IMUValuesBatch",
+      "source_node": "imu",
+      "frequency": 2200,
+      "max_size": 1600,
+      "num_senders": 2
+    },
+    {
+      "name": "/imu",
+      "type": "frc971.imu.DualImuBlenderStatus",
+      "source_node": "imu",
+      "frequency": 1100,
+      "num_senders": 1,
+      "max_size": 200
     },
     {
       "name": "/imu/aos",
@@ -233,7 +249,7 @@
       "max_size": 200
     },
     {
-      "name": "/can/cana",
+      "name": "/imu/can",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "imu",
       "frequency": 9000,
@@ -262,6 +278,29 @@
       "frequency": 1,
       "num_senders": 2,
       "max_size": 65536
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.Status",
+        "source_node": "imu",
+        "max_size": 10000,
+        "frequency": 250
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.CanPosition",
+        "source_node": "imu",
+        "frequency": 250,
+        "num_senders": 1,
+        "max_size": 656
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.Output",
+        "source_node": "imu",
+        "frequency": 400,
+        "max_size": 200,
+        "num_senders": 2
     }
   ],
   "applications": [
@@ -323,6 +362,7 @@
       "name": "imu_can_logger",
       "executable_name": "can_logger",
       "args": [
+        "--interface_name=cana",
         "--priority=59",
         "--affinity=5"
       ],
@@ -335,7 +375,7 @@
       "name": "can_translator",
       "executable_name": "can_translator",
       "args": [
-          "--channel=/can/cana"
+          "--channel=/can"
       ],
       "nodes": [
         "imu"
@@ -485,7 +525,36 @@
       "nodes": [
         "imu"
       ]
+    },
+    {
+        "name": "swerve_control_loops",
+        "args": [
+          "--nodie_on_malloc",
+          "-v=1"
+        ],
+        "nodes": [
+            "imu"
+        ]
+    },
+    {
+      "name": "ctre_interface",
+      "args": [
+            "--nodie_on_malloc",
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "localizer_logger",
+      "executable_name": "localizer_logger",
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
     }
+
   ],
   "maps": [
     {
@@ -517,11 +586,89 @@
     },
     {
       "match": {
+        "name": "/can*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/can"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Goal",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/roborio/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Position",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/roborio/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Status",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.CanPosition",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Output",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.RobotState",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/roborio/aos"
+      }
+    },
+    {
+      "match": {
         "name": "/hardware_monitor*",
         "source_node": "imu"
       },
       "rename": {
         "name": "/imu/hardware_monitor"
+      }
+    },
+    {
+      "match": {
+        "name": "/localizer*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/localizer"
       }
     }
   ],

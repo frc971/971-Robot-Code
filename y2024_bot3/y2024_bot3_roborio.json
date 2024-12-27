@@ -18,6 +18,13 @@
       ]
     },
     {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.sensors.GyroReading",
+      "source_node": "roborio",
+      "frequency": 250,
+      "num_senders": 2
+    },
+    {
       "name": "/roborio/aos",
       "type": "frc971.PDPValues",
       "source_node": "roborio",
@@ -25,10 +32,23 @@
       "max_size": 368
     },
     {
-      "name": "/roborio/aos",
-      "type": "aos.RobotState",
-      "source_node": "roborio",
-      "frequency": 250
+        "name": "/roborio/aos",
+        "type": "aos.RobotState",
+        "source_node": "roborio",
+        "frequency": 250,
+        "num_senders": 20,
+        "max_size": 192,
+        "logger": "LOCAL_AND_REMOTE_LOGGER",
+        "logger_nodes": [
+            "imu"
+        ],
+        "destination_nodes": [
+            {
+                "name": "imu",
+                "priority": 5,
+                "time_to_live": 50000000
+            }
+        ]
     },
     {
       "name": "/roborio/aos",
@@ -37,6 +57,24 @@
       "frequency": 50,
       "num_senders": 30,
       "max_size": 8192
+    },
+    {
+        "name": "/roborio/drivetrain",
+        "type": "frc971.control_loops.swerve.Position",
+        "source_node": "roborio",
+        "frequency": 250,
+        "num_senders": 1,
+        "logger": "LOCAL_AND_REMOTE_LOGGER",
+        "logger_nodes": [
+            "imu"
+        ],
+        "destination_nodes": [
+            {
+                "name": "imu",
+                "priority": 5,
+                "time_to_live": 50000000
+            }
+        ]
     },
     {
       "name": "/roborio/aos",
@@ -52,7 +90,7 @@
       "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2000
+      "max_size": 4800
     },
     {
       "name": "/roborio/aos",
@@ -131,6 +169,23 @@
       "num_senders": 2
     },
     {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.Goal",
+      "source_node": "roborio",
+      "frequency": 250,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "time_to_live": 50000000
+        }
+      ]
+    },
+    {
       "name": "/superstructure",
       "type": "y2024_bot3.control_loops.superstructure.Output",
       "source_node": "roborio",
@@ -154,21 +209,52 @@
       "num_senders": 2,
       "max_size": 1024
     },
+        {
+            "name": "/roborio/can",
+            "type": "frc971.can_logger.CanFrame",
+            "source_node": "roborio",
+            "frequency": 6000,
+            "num_senders": 2,
+            "max_size": 200
+        },
     {
-      "name": "/superstructure/rio",
-      "type": "y2024_bot3.control_loops.superstructure.CANPosition",
-      "source_node": "roborio",
-      "frequency": 220,
-      "num_senders": 2,
-      "max_size": 1024
+        "name": "/roborio/drivetrain",
+        "type": "frc971.control_loops.swerve.CanPosition",
+        "source_node": "roborio",
+        "frequency": 250,
+        "num_senders": 1,
+        "max_size": 656
     },
     {
-      "name": "/can",
-      "type": "frc971.can_logger.CanFrame",
-      "source_node": "roborio",
-      "frequency": 6000,
-      "num_senders": 2,
-      "max_size": 200
+        "name": "/roborio/drivetrain",
+        "type": "frc971.control_loops.drivetrain.LocalizerControl",
+        "source_node": "roborio",
+        "frequency": 250,
+        "max_size": 96,
+        "logger": "LOCAL_AND_REMOTE_LOGGER",
+        "logger_nodes": [
+            "imu"
+        ],
+        "destination_nodes": [
+            {
+                "name": "imu",
+                "priority": 5,
+                "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+                "timestamp_logger_nodes": [
+                    "roborio"
+                ],
+                "time_to_live": 0
+            }
+        ]
+    },
+    {
+        "name": "/roborio/aos/remote_timestamps/imu/roborio/drivetrain/frc971-control_loops-drivetrain-LocalizerControl",
+        "type": "aos.message_bridge.RemoteMessage",
+        "source_node": "roborio",
+        "logger": "NOT_LOGGED",
+        "frequency": 400,
+        "num_senders": 2,
+        "max_size": 200
     },
     {
       "name": "/roborio",
@@ -186,13 +272,6 @@
     }
   ],
   "applications": [
-    {
-      "name": "trajectory_generator",
-      "executable_name": "trajectory_generator",
-      "nodes": [
-        "roborio"
-      ]
-    },
     {
       "name": "superstructure",
       "executable_name": "superstructure",
@@ -294,26 +373,61 @@
       "nodes": [
         "roborio"
       ]
+    },
+    {
+      "name": "autonomous",
+      "executable_name": "autonomous_main",
+      "autostart": true,
+      "nodes": [
+        "roborio"
+      ]
     }
   ],
   "maps": [
     {
-      "match": {
-        "name": "/constants*",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/roborio/constants"
-      }
+        "match": {
+            "name": "/aos*",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/aos"
+        }
     },
     {
-      "match": {
-        "name": "/aos*",
-        "source_node": "roborio"
-      },
-      "rename": {
-        "name": "/roborio/aos"
-      }
+        "match": {
+            "name": "/autonomous*",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/autonomous"
+        }
+    },
+    {
+        "match": {
+            "name": "/can*",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/can"
+        }
+    },
+    {
+        "match": {
+            "name": "/drivetrain*",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/drivetrain"
+        }
+    },
+    {
+        "match": {
+            "name": "/constants*",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/constants"
+        }
     }
   ],
   "nodes": [
