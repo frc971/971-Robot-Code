@@ -104,7 +104,7 @@ class FilesystemMonitor {
       PCHECK(statvfs(mount_point.c_str(), &info) == 0);
 
       VLOG(1) << "overall size: " << info.f_frsize * info.f_blocks << ", free "
-              << info.f_bfree * info.f_bsize << ", inodes " << info.f_files
+              << info.f_bavail * info.f_bsize << ", inodes " << info.f_files
               << ", free " << info.f_ffree;
 
       flatbuffers::Offset<flatbuffers::String> path_offset =
@@ -116,7 +116,7 @@ class FilesystemMonitor {
       filesystem_builder.add_path(path_offset);
       filesystem_builder.add_type(type_offset);
       filesystem_builder.add_overall_space(info.f_frsize * info.f_blocks);
-      filesystem_builder.add_free_space(info.f_bfree * info.f_bsize);
+      filesystem_builder.add_free_space(info.f_bavail * info.f_bsize);
       filesystem_builder.add_overall_inodes(info.f_files);
       filesystem_builder.add_free_inodes(info.f_ffree);
 
