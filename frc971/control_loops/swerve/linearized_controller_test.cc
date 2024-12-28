@@ -1,5 +1,6 @@
 #include "frc971/control_loops/swerve/linearized_controller.h"
 
+#include "absl/flags/reflection.h"
 #include "gtest/gtest.h"
 
 namespace frc971::control_loops::swerve::test {
@@ -29,7 +30,11 @@ class LinearizedControllerTest : public ::testing::Test {
       : controller_({.Q = Eigen::Matrix<double, 2, 2>{{1.0, 0.0}, {0.0, 1.0}},
                      .R = MakeR(),
                      .dt = std::chrono::milliseconds(10),
-                     .dynamics = std::make_unique<LinearDynamics>()}) {}
+                     .dynamics = std::make_unique<LinearDynamics>()}) {
+    absl::SetFlag(&FLAGS_use_slicot, true);
+  }
+
+  absl::FlagSaver flag_saver_;
 
   Controller controller_;
 };
