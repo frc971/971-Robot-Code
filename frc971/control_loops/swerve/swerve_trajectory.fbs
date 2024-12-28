@@ -1,0 +1,26 @@
+namespace frc971.control_loops.swerve;
+
+table XYTheta {
+    x: double (id: 0);
+    y: double (id: 1);
+    theta: double (id: 2);
+}
+
+table SwervePoint {
+    time: double (id: 0);
+    position: XYTheta (id: 1);
+    velocity: XYTheta (id: 2);
+    acceleration: XYTheta (id: 3);
+}
+
+table TimestampedAction {
+    time: double (id: 0);
+    name: string (id: 1);
+}
+
+table SwerveTrajectory {
+    discretized_trajectory: [SwervePoint] (id: 0);
+    timestamped_actions: [TimestampedAction] (id: 1);
+}
+
+root_type SwerveTrajectory;

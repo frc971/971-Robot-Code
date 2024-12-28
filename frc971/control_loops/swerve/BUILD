@@ -54,6 +54,11 @@ static_flatbuffer(
     deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
+static_flatbuffer(
+    name = "swerve_trajectory_fbs",
+    srcs = ["swerve_trajectory.fbs"],
+)
+
 py_binary(
     name = "simulation",
     srcs = [
@@ -573,5 +578,20 @@ cc_library(
         "//frc971/estimation:ekf",
         "//frc971/math:flatbuffers_matrix",
         "@com_google_absl//absl/flags:flag",
+    ],
+)
+
+cc_library(
+    name = "autonomous_controller",
+    srcs = ["autonomous_controller.cc"],
+    hdrs = ["autonomous_controller.h"],
+    deps = [
+        ":simplified_dynamics",
+        ":swerve_drivetrain_goal_fbs",
+        ":swerve_drivetrain_status_fbs",
+        ":swerve_trajectory_fbs",
+        "//aos/events:event_loop",
+        "//frc971/input:joystick_state_fbs",
+        "//frc971/math:flatbuffers_matrix",
     ],
 )
