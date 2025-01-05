@@ -2,6 +2,8 @@ include "frc971/vision/calibration.fbs";
 include "frc971/vision/target_map.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
+include "frc971/wpilib/swerve/swerve_constants.fbs";
+include "frc971/control_loops/swerve/swerve_zeroing.fbs";
 include "frc971/math/matrix.fbs";
 
 namespace y2024_bot3;
@@ -18,18 +20,49 @@ table ArmPositions {
 
 table PotAndAbsEncoderConstants {
   zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
-  potentiometer_offset:double (id: 1);
+  arm_potentiometer_offset:double (id: 1);
   arm_positions:ArmPositions (id: 2);
 }
 
 table RobotConstants {
   arm_constants:PotAndAbsEncoderConstants (id: 0);
+  swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 1);
+}
+
+table IntakeVoltages {
+  spitting_voltage: double (id: 0);
+  operating_voltage: double (id: 1);
+}
+
+table CurrentLimits {
+  arm_stator_current_limit:double (id: 0);
+  arm_supply_current_limit:double (id: 1);
+  intake_roller_stator_current_limit:double (id: 2);
+  intake_roller_supply_current_limit:double (id: 3);
+  drivetrain_stator_current_limit:double (id: 4);
+  drivetrain_supply_current_limit:double (id: 5);
+}
+
+table VelocityControllerWeights {
+  thetas_q: double (id: 0);
+  omegas_q: double (id: 1);
+  is_r: double (id: 2);
+  is_t: double (id: 3);
+  vel_q: double (id: 4);
+  omega_q: double (id: 5);
+  theta_q: double (id: 6);
 }
 
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
   arm:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 1);
+  rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 2);
+  swerve_positions_constants:frc971.wpilib.swerve.SwervePositionConstants (id: 3);
+  arm_loading_position:double (id: 4);
+  intake_voltages:IntakeVoltages (id: 5);
+  current_limits:CurrentLimits (id: 6);
+  weights: VelocityControllerWeights (id: 7);
 }
 
 table Constants {

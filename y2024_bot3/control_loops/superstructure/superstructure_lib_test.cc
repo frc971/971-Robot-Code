@@ -14,7 +14,6 @@
 #include "y2024_bot3/constants/simulated_constants_sender.h"
 #include "y2024_bot3/control_loops/superstructure/arm/arm_plant.h"
 #include "y2024_bot3/control_loops/superstructure/superstructure.h"
-#include "y2024_bot3/control_loops/superstructure/superstructure_can_position_generated.h"
 
 ABSL_FLAG(std::string, output_folder, "",
           "If set, logs all channels to the provided logfile.");
@@ -52,8 +51,6 @@ class SuperstructureSimulation {
         dt_(dt),
         superstructure_position_sender_(
             event_loop_->MakeSender<Position>("/superstructure")),
-        superstructure_can_position_sender_(
-            event_loop_->MakeSender<CANPosition>("/superstructure/rio")),
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
@@ -69,7 +66,7 @@ class SuperstructureSimulation {
                                        ->zeroing_constants()},
               .potentiometer_offset = simulated_robot_constants->robot()
                                           ->arm_constants()
-                                          ->potentiometer_offset()},
+                                          ->arm_potentiometer_offset()},
              frc971::constants::Range::FromFlatbuffer(
                  simulated_robot_constants->common()->arm()->range()),
              simulated_robot_constants->robot()
@@ -116,7 +113,6 @@ class SuperstructureSimulation {
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
   ::aos::Sender<Position> superstructure_position_sender_;
-  ::aos::Sender<CANPosition> superstructure_can_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
@@ -153,8 +149,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             test_event_loop_->MakeFetcher<Position>("/superstructure")),
         superstructure_position_sender_(
             test_event_loop_->MakeSender<Position>("/superstructure")),
-        superstructure_can_position_sender_(
-            test_event_loop_->MakeSender<CANPosition>("/superstructure/rio")),
         superstructure_plant_event_loop_(MakeEventLoop("plant", roborio_)),
         superstructure_plant_(superstructure_plant_event_loop_.get(),
                               simulated_robot_constants_, dt()) {
@@ -249,7 +243,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
   ::aos::Fetcher<Position> superstructure_position_fetcher_;
   ::aos::Sender<Position> superstructure_position_sender_;
-  ::aos::Sender<CANPosition> superstructure_can_position_sender_;
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
   SuperstructureSimulation superstructure_plant_;

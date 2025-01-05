@@ -1,4 +1,7 @@
+{% from 'y2024_bot3/constants/common.jinja2' import M_PI %}
+
 "common": {
+  "target_map": {% include 'y2024_bot3/vision/maps/target_map.json' %},
   "arm": {
     "zeroing_voltage": 3.0,
     "operating_voltage": 12.0,
@@ -7,15 +10,60 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 2.0,
-      "max_acceleration": 10.0
+      "max_velocity": 6.0,
+      "max_acceleration": 40.0
     },
     "range": {
-        "lower_hard": -50,
-        "upper_hard": 50,
-        "lower": -50,
-        "upper": 50
+        "lower_hard": -0.4979327221131373,
+        "upper_hard": 1.557377933185559,
+        "lower": -0.4979327221131373,
+        "upper": 1.557377933185559
     },
     "loop": {% include 'y2024_bot3/control_loops/superstructure/arm/integral_arm_plant.json' %}
+  },
+  "rotation": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 12.0,
+      "max_acceleration": 55.0
+    },
+    "range": {
+        "lower_hard": -inf,
+        "upper_hard": inf,
+        "lower": -inf,
+        "upper": inf
+    },
+    "loop": {% include 'y2024_bot3/control_loops/drivetrain/integral_rotation_plant.json' %}
+  },
+  "intake_voltages": {
+    "spitting_voltage": -9.0,
+    "operating_voltage": 9.0
+  },
+  "arm_loading_position": 1,
+  "current_limits": {
+    "arm_stator_current_limit": 100,
+    "arm_supply_current_limit": 30,
+    "intake_roller_stator_current_limit": 100,
+    "intake_roller_supply_current_limit": 30,
+    "drivetrain_stator_current_limit": 100,
+    "drivetrain_supply_current_limit": 50
+  },
+  "swerve_positions_constants": {
+    "relative_encoder_scale": {{ 2.0 * M_PI / 4096 }},
+    "absolute_encoder_scale": {{ 2.0 * M_PI}}
+  },
+  "weights": {
+    "thetas_q": 1.0,
+    "omegas_q": 1e-4,
+    "is_r": 1e-5,
+    "is_t": 1e-3,
+    "vel_q": 50.0,
+    "theta_q": 50000.0,
+    "omega_q": 7.0
   }
 }
