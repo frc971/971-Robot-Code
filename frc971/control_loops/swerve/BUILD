@@ -451,6 +451,29 @@ cc_test(
 )
 
 cc_library(
+    name = "linear_velocity_controller",
+    srcs = ["linear_velocity_controller.cc"],
+    hdrs = ["linear_velocity_controller.h"],
+    deps = [
+        ":eigen_dynamics",
+        ":inverse_kinematics",
+        ":linearized_controller",
+        ":simplified_dynamics",
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
+
+cc_test(
+    name = "linear_velocity_controller_test",
+    srcs = ["linear_velocity_controller_test.cc"],
+    deps = [
+        ":linear_velocity_controller",
+        "//aos:realtime",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "auto_diff_jacobian",
     hdrs = ["auto_diff_jacobian.h"],
     target_compatible_with = ["@platforms//os:linux"],
