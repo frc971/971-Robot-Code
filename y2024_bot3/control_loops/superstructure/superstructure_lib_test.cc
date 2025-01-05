@@ -47,7 +47,8 @@ class SuperstructureSimulation {
   SuperstructureSimulation(::aos::EventLoop *event_loop,
                            const Constants *simulated_robot_constants,
                            chrono::nanoseconds dt)
-      : event_loop_(event_loop),
+      : intake_beambreak_(false),
+        event_loop_(event_loop),
         dt_(dt),
         superstructure_position_sender_(
             event_loop_->MakeSender<Position>("/superstructure")),
@@ -102,10 +103,14 @@ class SuperstructureSimulation {
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_arm(arm_offset);
+    position_builder.add_intake_beambreak(intake_beambreak_);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
+
+ public:
+  bool intake_beambreak_;
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -178,8 +183,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         << ": No output";
 
     double set_point;
+    double expected_intake_voltage = 0.0;
     auto arm_positions =
         simulated_robot_constants_->robot()->arm_constants()->arm_positions();
+    auto intake_voltages =
+        simulated_robot_constants_->common()->intake_voltages();
 
     switch (superstructure_goal_fetcher_->arm_position()) {
       case PivotGoal::IDLE:
@@ -191,14 +199,33 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::AMP:
         set_point = arm_positions->amp();
         break;
-      default:
-        LOG(FATAL) << "PivotGoal is not IDLE, INTAKE, or AMP";
+    }
+
+    switch (superstructure_goal_fetcher_->roller_goal()) {
+      case IntakeGoal::NONE:
+        expected_intake_voltage = 0.0;
+        break;
+      case IntakeGoal::INTAKE:
+        expected_intake_voltage = superstructure_plant_.intake_beambreak_
+                                      ? 0.0
+                                      : simulated_robot_constants_->common()
+                                            ->intake_voltages()
+                                            ->operating_voltage();
+        break;
+      case IntakeGoal::SCORE:
+        expected_intake_voltage = intake_voltages->operating_voltage();
+        break;
+      case IntakeGoal::SPIT:
+        expected_intake_voltage = intake_voltages->spitting_voltage();
+        break;
     }
 
     EXPECT_NEAR(
         set_point,
         superstructure_status_fetcher_->arm()->unprofiled_goal_position(),
         0.03);
+    EXPECT_EQ(expected_intake_voltage,
+              superstructure_output_fetcher_->roller_voltage());
   }
 
   void CheckIfZeroed() {
@@ -283,7 +310,7 @@ TEST_F(SuperstructureTest, DisableTest) {
   CheckIfZeroed();
 }
 
-TEST_F(SuperstructureTest, ArmPivotMovement) {
+TEST_F(SuperstructureTest, ArmAndRollerMovement) {
   SetEnabled(true);
   WaitUntilZeroed();
 
@@ -291,12 +318,16 @@ TEST_F(SuperstructureTest, ArmPivotMovement) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_arm_position(PivotGoal::INTAKE);
+    goal_builder.add_roller_goal(IntakeGoal::INTAKE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-  RunFor(chrono::seconds(20));
+  RunFor(chrono::seconds(10));
+
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::INTAKE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::INTAKE);
 
   VerifyNearGoal();
 
@@ -304,6 +335,7 @@ TEST_F(SuperstructureTest, ArmPivotMovement) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_arm_position(PivotGoal::AMP);
+    goal_builder.add_roller_goal(IntakeGoal::SCORE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -311,13 +343,71 @@ TEST_F(SuperstructureTest, ArmPivotMovement) {
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::AMP);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::SCORE);
 
   VerifyNearGoal();
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::AMP);
+    goal_builder.add_roller_goal(IntakeGoal::SPIT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::AMP);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::SPIT);
+
+  VerifyNearGoal();
+
+  superstructure_plant_.intake_beambreak_ = true;
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::INTAKE);
+    goal_builder.add_roller_goal(IntakeGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::INTAKE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::NONE);
+
+  superstructure_output_fetcher_.Fetch();
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_position(PivotGoal::INTAKE);
+    goal_builder.add_roller_goal(IntakeGoal::SPIT);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::INTAKE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::SPIT);
+
+  VerifyNearGoal();
+
+  superstructure_plant_.intake_beambreak_ = false;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_arm_position(PivotGoal::IDLE);
+    goal_builder.add_roller_goal(IntakeGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -325,6 +415,8 @@ TEST_F(SuperstructureTest, ArmPivotMovement) {
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->arm_status(), ArmStatus::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller_status(),
+            IntakeRollerStatus::NONE);
 
   VerifyNearGoal();
 }

@@ -13,8 +13,6 @@ ABSL_FLAG(bool, ignore_distance, false,
 
 namespace y2024_bot3::control_loops::superstructure {
 
-using ::aos::monotonic_clock;
-
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::RelativeEncoderProfiledJointStatus;
@@ -56,9 +54,37 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       arm_goal_buffer;
 
   ArmStatus arm_status = ArmStatus::IDLE;
+  IntakeRollerStatus intake_roller_status = IntakeRollerStatus::NONE;
   double arm_position =
       robot_constants_->robot()->arm_constants()->arm_positions()->idle();
+  double roller_voltage = 0.0;
   if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->roller_goal()) {
+      case IntakeGoal::INTAKE:
+        roller_voltage = position->intake_beambreak()
+                             ? 0.0
+                             : robot_constants_->common()
+                                   ->intake_voltages()
+                                   ->operating_voltage();
+        intake_roller_status = position->intake_beambreak()
+                                   ? IntakeRollerStatus::NONE
+                                   : IntakeRollerStatus::INTAKE;
+        break;
+      case IntakeGoal::SCORE:
+        intake_roller_status = IntakeRollerStatus::SCORE;
+        roller_voltage =
+            robot_constants_->common()->intake_voltages()->operating_voltage();
+        break;
+      case IntakeGoal::SPIT:
+        intake_roller_status = IntakeRollerStatus::SPIT;
+        roller_voltage =
+            robot_constants_->common()->intake_voltages()->spitting_voltage();
+        break;
+      case IntakeGoal::NONE:
+        roller_voltage = 0.0;
+        break;
+    }
+
     switch (unsafe_goal->arm_position()) {
       case PivotGoal::INTAKE:
         arm_status = ArmStatus::INTAKE;
@@ -77,6 +103,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
             robot_constants_->robot()->arm_constants()->arm_positions()->idle();
     }
   }
+  output_struct.roller_voltage = roller_voltage;
 
   arm_goal_buffer.Finish(
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -105,6 +132,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(estopped);
   status_builder.add_arm(arm_offset);
   status_builder.add_arm_status(arm_status);
+  status_builder.add_intake_roller_status(intake_roller_status);
 
   (void)status->Send(status_builder.Finish());
 }
