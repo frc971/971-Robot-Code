@@ -1,0 +1,12 @@
+"common": {
+  "swerve_positions_constants": {
+    "relative_encoder_scale": {{ 2.0 * 3.14 / 4096 }},
+    "absolute_encoder_scale": {{ 2.0 * 3.14}}
+  },
+  "current_limits": {
+    "drivetrain_stator_current_limit": 100,
+    "drivetrain_supply_current_limit": 50
+  },
+  "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}}
+}
+

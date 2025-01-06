@@ -1,6 +1,6 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//frc971/constants:validator.bzl", "constants_json")
 load("//tools/build_rules:template.bzl", "jinja2_template")
-load("//y2024_swerve/constants:validator.bzl", "constants_json")
 
 cc_library(
     name = "simulated_constants_sender",
@@ -103,10 +103,12 @@ constants_json(
     name = "constants_json",
     src = ":constants_unvalidated.json",
     out = "constants.json",
+    year_tool = "//y2024_swerve/constants:constants_formatter",
 )
 
 constants_json(
     name = "test_constants_json",
     src = ":test_constants_unvalidated.json",
     out = "test_constants.json",
+    year_tool = "//y2024_swerve/constants:constants_formatter",
 )

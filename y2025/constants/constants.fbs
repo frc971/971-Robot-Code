@@ -1,0 +1,36 @@
+include "frc971/vision/calibration.fbs";
+include "frc971/vision/target_map.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/zeroing/constants.fbs";
+include "frc971/math/matrix.fbs";
+include "frc971/wpilib/swerve/swerve_constants.fbs";
+
+namespace y2025;
+
+table CameraConfiguration {
+  calibration:frc971.vision.calibration.CameraCalibration (id: 0);
+}
+
+table RobotConstants {
+}
+
+// Common table for constants unrelated to the robot
+table Common {
+  target_map:frc971.vision.TargetMap (id: 0);
+  swerve_positions_constants:frc971.wpilib.swerve.SwervePositionConstants (id: 1);
+  current_limits:CurrentLimits (id: 2);
+  translation_module_ratio:double (id: 3);
+}
+
+table Constants {
+  cameras:[CameraConfiguration] (id: 0);
+  robot:RobotConstants (id: 1);
+  common:Common (id: 2);
+}
+
+table CurrentLimits {
+  drivetrain_stator_current_limit:double (id: 0);
+  drivetrain_supply_current_limit:double (id: 1);
+}
+
+root_type Constants;

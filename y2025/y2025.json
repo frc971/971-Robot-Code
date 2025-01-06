@@ -1,0 +1,19 @@
+{
+  "channel_storage_duration": 10000000000,
+  "maps": [
+    {
+      "match": {
+        "name": "/aos",
+        "type": "aos.RobotState"
+      },
+      "rename": {
+        "name": "/roborio/aos"
+      }
+    }
+  ],
+  "imports": [
+    "y2025_roborio.json",
+    "y2025_imu.json",
+    "y2025_orin1.json"
+  ]
+}
