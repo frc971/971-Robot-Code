@@ -266,6 +266,7 @@ cc_binary(
         "//frc971/input:drivetrain_input",
         "//frc971/input:joystick_input",
         "//frc971/input:redundant_joystick_data",
+        "//frc971/input:swerve_joystick_input",
         "//y2025/control_loops/superstructure:superstructure_goal_fbs",
         "//y2025/control_loops/superstructure:superstructure_status_fbs",
     ],

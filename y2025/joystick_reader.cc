@@ -21,8 +21,10 @@
 #include "frc971/input/drivetrain_input.h"
 #include "frc971/input/joystick_input.h"
 #include "frc971/input/redundant_joystick_data.h"
+#include "frc971/input/swerve_joystick_input.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2025/constants/constants_generated.h"
+#include "y2025/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_goal_static.h"
 #include "y2025/control_loops/superstructure/superstructure_status_static.h"
 
@@ -31,14 +33,49 @@ using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
+using y2025::control_loops::superstructure::GoalStatic;
+using y2025::control_loops::superstructure::Status;
 
 namespace y2025::input::joysticks {
 
 namespace superstructure = y2025::control_loops::superstructure;
 
+namespace swerve = frc971::control_loops::swerve;
 // ButtonLocation constants go here
+class Reader : public ::frc971::input::SwerveJoystickInput {
+ public:
+  Reader(::aos::EventLoop *event_loop, const y2025::Constants *robot_constants)
+      : ::frc971::input::SwerveJoystickInput(event_loop,
+                                             {.use_redundant_joysticks = true}),
+        superstructure_goal_sender_(
+            event_loop->MakeSender<GoalStatic>("/superstructure")),
+        superstructure_status_fetcher_(
+            event_loop->MakeFetcher<Status>("/superstructure")),
+        robot_constants_(robot_constants) {
+    CHECK(robot_constants_ != nullptr);
+  }
+  void AutoEnded() { AOS_LOG(INFO, "Auto ended.\n"); }
 
-class Reader : public ::frc971::input::ActionJoystickInput {};
+  void HandleTeleop(
+      const ::frc971::input::driver_station::Data &data) override {
+    (void)data;
+    superstructure_status_fetcher_.Fetch();
+    if (!superstructure_status_fetcher_.get()) {
+      AOS_LOG(ERROR, "Got no superstructure status message.\n");
+      return;
+    }
+    aos::Sender<superstructure::GoalStatic>::StaticBuilder
+        superstructure_goal_builder =
+            superstructure_goal_sender_.MakeStaticBuilder();
+    superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
+  }
+
+ private:
+  ::aos::Sender<GoalStatic> superstructure_goal_sender_;
+  ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  const y2025::Constants *robot_constants_;
+};
+
 }  // namespace y2025::input::joysticks
 
 int main(int argc, char **argv) {
@@ -55,7 +92,7 @@ int main(int argc, char **argv) {
 
   ::aos::ShmEventLoop event_loop(&config.message());
   (void)robot_constants;
-  //::y2025::input::joysticks::Reader reader(&event_loop, robot_constants);
+  ::y2025::input::joysticks::Reader reader(&event_loop, robot_constants);
 
   event_loop.Run();
 
