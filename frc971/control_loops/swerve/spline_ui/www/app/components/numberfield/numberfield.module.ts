@@ -2,20 +2,16 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
-import { UiModule } from './components/ui/ui.module';
-import { App } from './app';
-import { HttpClientModule } from '@angular/common/http';
+import { NumberField } from './numberfield';
 
 @NgModule({
-  declarations: [App],
+  declarations: [NumberField],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
-    HttpClientModule,
-    UiModule
   ],
-  exports: [App],
-  bootstrap: [App],
+  exports: [NumberField],
+  bootstrap: [NumberField],
 })
-export class AppModule { }
+export class NumberFieldModule { }

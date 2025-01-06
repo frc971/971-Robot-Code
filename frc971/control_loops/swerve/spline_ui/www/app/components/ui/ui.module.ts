@@ -2,20 +2,20 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
-import { UiModule } from './components/ui/ui.module';
-import { App } from './app';
-import { HttpClientModule } from '@angular/common/http';
+import { Ui } from './ui';
+import { GraphModule } from '../graph/graph.module';
+import { NumberFieldModule } from '../numberfield/numberfield.module';
 
 @NgModule({
-  declarations: [App],
+  declarations: [Ui],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
-    HttpClientModule,
-    UiModule
+    GraphModule,
+    NumberFieldModule
   ],
-  exports: [App],
-  bootstrap: [App],
+  exports: [Ui],
+  bootstrap: [Ui],
 })
-export class AppModule { }
+export class UiModule { }

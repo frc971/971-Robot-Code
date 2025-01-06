@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'spline-ui-app',
@@ -47,13 +47,13 @@ export class App {
   // copied from //frc971/control_loops/python/constants.py
   // returns the path to the spline jsons for the given year
   getPath(year: number): string {
-    if(year == 2020 || year == 2021) {
+    if (year == 2020 || year == 2021) {
       return "/y2020/actors/splines/";
     }
-    else if(year == 2022) {
+    else if (year == 2022) {
       return "/y2022/actors/splines/";
     }
-    else if(year == 2023 || year == 2024) {
+    else if (year == 2023 || year == 2024 || year == 2025) {
       return "/y" + year + "/autonomous/splines/";
     }
     else {

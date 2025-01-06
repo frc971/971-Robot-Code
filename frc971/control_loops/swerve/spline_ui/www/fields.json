@@ -1,0 +1,29 @@
+[
+    {
+        "name": "2025 Reefscape",
+        "year": 2025,
+        "imagePath": "2025.png",
+        "field_size": [
+            17.5482493332,
+            8.0518
+        ]
+    },
+    {
+        "name": "2024 Crescendo",
+        "year": 2024,
+        "imagePath": "2024.png",
+        "field_size": [
+            16.54175,
+            8.21055
+        ]
+    },
+    {
+        "name": "2023 Charged Up",
+        "year": 2023,
+        "imagePath": "2023.png",
+        "field_size": [
+            16.54175,
+            8.21055
+        ]
+    }
+]
