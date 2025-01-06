@@ -286,6 +286,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
             current_limits->drivetrain_stator_current_limit(),
             current_limits->drivetrain_supply_current_limit())};
 
+    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
+        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
+    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
+        constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
+
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants,

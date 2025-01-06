@@ -21,6 +21,10 @@ constexpr uint16_t kThirdRobotTeamNumber = 9971;
 struct Values {
   static const int kSuperstructureCANWriterPriority = 35;
 
+  static const int kDrivetrainWriterPriority = 35;
+  static const int kDrivetrainTxPriority = 36;
+  static const int kDrivetrainRxPriority = 36;
+
   struct PotAndAbsEncoderConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
