@@ -480,7 +480,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
           constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
       ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-          constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
+          constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
       ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
       can_sensor_reader_event_loop.set_name("CANSensorReader");
@@ -627,7 +627,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-        constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
+        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
