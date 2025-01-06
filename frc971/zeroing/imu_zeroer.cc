@@ -134,4 +134,19 @@ ImuZeroer::PopulateStatus(flatbuffers::FlatBufferBuilder *fbb) const {
   return builder.Finish();
 }
 
+void ImuZeroer::PopulateStatus(
+    control_loops::drivetrain::ImuZeroerStateStatic *status) const {
+  status->set_zeroed(Zeroed());
+  status->set_faulted(Faulted());
+  status->set_number_of_zeroes(num_zeroes_);
+
+  status->set_gyro_x_average(GyroOffset().x());
+  status->set_gyro_y_average(GyroOffset().y());
+  status->set_gyro_z_average(GyroOffset().z());
+
+  status->set_accel_x_average(accel_averager_.GetAverage()[0]);
+  status->set_accel_y_average(accel_averager_.GetAverage()[1]);
+  status->set_accel_z_average(accel_averager_.GetAverage()[2]);
+}
+
 }  // namespace frc971::zeroing
