@@ -7,6 +7,7 @@ cc_binary(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":parameters",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/time",
@@ -25,5 +26,14 @@ ts_project(
         "//aos/network/www:aos_plotter",
         "//aos/network/www:colors",
         "//aos/network/www:proxy",
+    ],
+)
+
+cc_library(
+    name = "parameters",
+    hdrs = ["parameters.h"],
+    deps = [
+        "//frc971/control_loops/swerve:simplified_dynamics",
+        "//y2024_swerve:constants",
     ],
 )

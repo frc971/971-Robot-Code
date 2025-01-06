@@ -1,4 +1,5 @@
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
 include "frc971/math/matrix.fbs";
 
 namespace frc971.control_loops.swerve;
@@ -29,6 +30,7 @@ table NaiveEstimatorStatus {
   omega:float (id: 5);
   // Estimated per-module drive velocities, in m/s.
   module_drive_velocities:[float] (id: 6);
+  x_hat: frc971.fbs.Matrix (id: 7);
 }
 
 // Debugging information for the linear swerve controllers.
@@ -80,6 +82,7 @@ table Status {
     naive_estimator:NaiveEstimatorStatus (id: 4);
     linear_controller:LinearControllerStatus (id: 5);
     velocity_ekf:VelocityEkfStatus (id: 6);
+    imu_zeroer:frc971.control_loops.drivetrain.ImuZeroerState (id: 7);
 }
 
 root_type Status;

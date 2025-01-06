@@ -16,10 +16,11 @@
             "name": "/swerve",
             "type": "frc971.control_loops.swerve.Position"
         },
+        { "name": "/swerve", "type": "frc971.sensors.GyroReading" },
         {
             "name": "/swerve",
             "type": "frc971.control_loops.swerve.Status",
-            "max_size": 4096
+            "max_size": 10000
         }
     ],
     "imports": [

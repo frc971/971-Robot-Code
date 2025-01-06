@@ -22,5 +22,14 @@
         "upper": inf
     },
     "loop": {% include 'y2024_swerve/control_loops/drivetrain/integral_rotation_plant.json' %}
+  },
+  "weights": {
+    "thetas_q": 1.0,
+    "omegas_q": 1e-4,
+    "vel_q": 50.0,
+    "theta_q": 100.0,
+    "omega_q": 7.0,
+    "steer_current_r": 1e-4,
+    "drive_current_r": 1e-3
   }
 }
