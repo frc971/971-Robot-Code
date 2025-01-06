@@ -1,0 +1,77 @@
+<html>
+
+<head>
+  <script src="field_main_bundle.min.js" defer></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div style="display: grid;
+  grid-template-columns: auto auto auto; gap: 5px;">
+    <div>
+      <div id="field"> </div>
+      <div id="legend"> </div>
+      <h3>Zeroing Faults:</h3>
+      <p id="zeroing_faults"> NA </p>
+    </div>
+    <div>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Robot State</th>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td id="x"> NA </td>
+        </tr>
+        <tr>
+          <td>Y</td>
+          <td id="y"> NA </td>
+        </tr>
+        <tr>
+          <td>Theta</td>
+          <td id="theta"> NA </td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Images</th>
+        </tr>
+        <tr>
+          <td> Images Accepted </td>
+          <td id="images_accepted"> NA </td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Superstructure States</th>
+        </tr>
+        <tr>
+          <td style="font-weight: bold;">Superstructure State</td>
+          <td id="superstructure_state" style="font-weight: bold;"> NA </td>
+        </tr>
+      </table>
+    </div>
+    <div>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;">Subsystems</th>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <th colspan="2" style="text-align: center;"> Drivetrain Encoder Positions </th>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div id="message_bridge_status">
+    <div>
+      <div>Node</div>
+      <div>Client</div>
+      <div>Server</div>
+    </div>
+  </div>
+  <div id="vision_readouts"> </div>
+</body>
+
+</html>

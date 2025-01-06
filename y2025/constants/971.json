@@ -1,0 +1,8 @@
+
+{
+  "cameras": [
+  ],
+  "robot": {
+  },
+  {% include 'y2025/constants/common.json' %}
+}
