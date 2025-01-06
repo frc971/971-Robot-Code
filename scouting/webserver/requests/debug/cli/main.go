@@ -65,11 +65,11 @@ func parseJson(fbsPath string, jsonPath string) []byte {
 	return binaryFb
 }
 
-func maybePerformRequest[T interface{}](fbName, fbsPath, requestJsonPath, address string, requester func(string, []byte) (*T, error)) {
+func maybePerformRequest[T interface{}](fbName, fbsPath, requestJsonPath, address string, requester func(string, []byte, string) (*T, error)) {
 	if requestJsonPath != "" {
 		log.Printf("Sending %s to %s", fbName, address)
 		binaryRequest := parseJson(fbsPath, requestJsonPath)
-		response, err := requester(address, binaryRequest)
+		response, err := requester(address, binaryRequest, "debug_cli")
 		if err != nil {
 			log.Fatalf("Failed %s: %v", fbName, err)
 		}

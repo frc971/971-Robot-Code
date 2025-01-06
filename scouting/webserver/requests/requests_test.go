@@ -167,7 +167,7 @@ func TestRequestAllMatches(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_all_matches.RequestAllMatchesT{}).Pack(builder))
 
-	response, err := debug.RequestAllMatches("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestAllMatches("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request all matches: ", err)
 	}
@@ -253,7 +253,7 @@ func TestRequest2024DataScouting(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_2024_data_scouting.Request2024DataScoutingT{}).Pack(builder))
 
-	response, err := debug.Request2024DataScouting("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.Request2024DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request all matches: ", err)
 	}
@@ -494,7 +494,7 @@ func TestSubmitNotes(t *testing.T) {
 		SetNumber:      1,
 	}).Pack(builder))
 
-	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit notes: ", err)
 	}
@@ -535,7 +535,7 @@ func TestRequestCurrentScouting(t *testing.T) {
 	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
 		TeamNumber: "971",
 	}).Pack(builder))
-	response, err := debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request current scouting: ", err)
 	}
@@ -553,11 +553,10 @@ func TestRequestCurrentScouting(t *testing.T) {
 		}
 	}
 
-	debug.Username = "george"
 	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
 		TeamNumber: "971",
 	}).Pack(builder))
-	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes(), "george")
 	if err != nil {
 		t.Fatal("Failed to request current scouting: ", err)
 	}
@@ -584,7 +583,7 @@ func TestRequestCurrentScouting(t *testing.T) {
 	builder.Finish((&request_current_scouting.RequestCurrentScoutingT{
 		TeamNumber: "971",
 	}).Pack(builder))
-	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes())
+	response, err = debug.RequestCurrentScouting("http://localhost:8080", builder.FinishedBytes(), "george")
 	if err != nil {
 		t.Fatal("Failed to request current scouting: ", err)
 	}
@@ -592,9 +591,6 @@ func TestRequestCurrentScouting(t *testing.T) {
 	expected = request_current_scouting_response.RequestCurrentScoutingResponseT{
 		CollectedBy: []*request_current_scouting_response.CollectedByT{},
 	}
-
-	// Reset username for other tests.
-	debug.Username = "debug_cli"
 }
 
 func TestRequestNotes(t *testing.T) {
@@ -625,7 +621,7 @@ func TestRequestNotes(t *testing.T) {
 	builder.Finish((&request_notes_for_team.RequestNotesForTeamT{
 		Team: "971A",
 	}).Pack(builder))
-	response, err := debug.RequestNotes("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestNotes("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit notes: ", err)
 	}
@@ -649,7 +645,7 @@ func TestSubmitPitImage(t *testing.T) {
 		ImageData: []byte{12, 43, 54, 34, 98},
 	}).Pack(builder))
 
-	_, err := debug.SubmitPitImage("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.SubmitPitImage("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit pit image: ", err)
 	}
@@ -693,7 +689,7 @@ func TestRequestPitImages(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_pit_images.RequestPitImagesT{"932"}).Pack(builder))
 
-	response, err := debug.RequestPitImages("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestPitImages("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request pit images: ", err)
 	}
@@ -744,7 +740,7 @@ func TestRequestAllPitImages(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_all_pit_images.RequestAllPitImagesT{}).Pack(builder))
 
-	response, err := debug.RequestAllPitImages("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestAllPitImages("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request pit images: ", err)
 	}
@@ -806,7 +802,7 @@ func TestRequestShiftSchedule(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_shift_schedule.RequestShiftScheduleT{}).Pack(builder))
 
-	response, err := debug.RequestShiftSchedule("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestShiftSchedule("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request shift schedule: ", err)
 	}
@@ -864,7 +860,7 @@ func TestSubmitShiftSchedule(t *testing.T) {
 		},
 	}).Pack(builder))
 
-	_, err := debug.SubmitShiftSchedule("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.SubmitShiftSchedule("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit shift schedule: ", err)
 	}
@@ -899,7 +895,7 @@ func TestSubmitDriverRanking(t *testing.T) {
 		Rank3:       "1236",
 	}).Pack(builder))
 
-	_, err := debug.SubmitDriverRanking("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.SubmitDriverRanking("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit driver ranking: ", err)
 	}
@@ -940,7 +936,7 @@ func TestRequestDriverRankings(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_all_driver_rankings.RequestAllDriverRankingsT{}).Pack(builder))
 
-	response, err := debug.RequestAllDriverRankings("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestAllDriverRankings("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request all driver rankings: ", err)
 	}
@@ -1016,7 +1012,7 @@ func TestRequestAllNotes(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_all_notes.RequestAllNotesT{}).Pack(builder))
 
-	response, err := debug.RequestAllNotes("http://localhost:8080", builder.FinishedBytes())
+	response, err := debug.RequestAllNotes("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to request all notes: ", err)
 	}
@@ -1103,7 +1099,7 @@ func TestAddingActions2024(t *testing.T) {
 		CompType: "Prescouting",
 	}).Pack(builder))
 
-	_, err := debug.Submit2024Actions("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.Submit2024Actions("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to submit actions: ", err)
 	}
@@ -1208,7 +1204,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 		TeamNumber:  "746",
 	}).Pack(builder))
 
-	_, err := debug.Delete2024DataScouting("http://localhost:8080", builder.FinishedBytes())
+	_, err := debug.Delete2024DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
 		t.Fatal("Failed to delete from data scouting 2024", err)
 	}
