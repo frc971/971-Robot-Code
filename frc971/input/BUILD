@@ -120,6 +120,12 @@ static_flatbuffer(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+static_flatbuffer(
+    name = "swerve_input_config_fbs",
+    srcs = ["swerve_input_config.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
 aos_config(
     name = "aos_config",
     src = "robot_state_config.json",

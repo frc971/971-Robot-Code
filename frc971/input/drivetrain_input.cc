@@ -140,15 +140,15 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
 }
 
 std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
-    ::aos::EventLoop *event_loop) {
+    ::aos::EventLoop *event_loop, const SwerveConfig swerve_config) {
   // Swerve Controller
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
   const JoystickAxis kVxAxis(2, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
-      new SwerveDrivetrainInputReader(event_loop, kVxAxis, kVyAxis,
-                                      kOmegaAxis));
+      new SwerveDrivetrainInputReader(event_loop, swerve_config, kVxAxis,
+                                      kVyAxis, kOmegaAxis));
   return result;
 }
 
@@ -156,17 +156,27 @@ SwerveDrivetrainInputReader::SwerveGoals
 SwerveDrivetrainInputReader::GetSwerveGoals(
     const ::frc971::input::driver_station::Data &data) {
   // xbox
-  constexpr double kMovementDeadband = 0.05;
-  constexpr double kRotationDeadband = 0.05;
+  constexpr double kMovementDeadband = 0.0;
+  constexpr double kRotationDeadband = 0.0;
+  constexpr double kVelScale = 12.0;
+  constexpr double kOmegaScale = 20.0;
 
-  const double omega =
-      -aos::Deadband(-data.GetAxis(omega_axis_), kRotationDeadband, 1.0);
+  const double omega = -kOmegaScale * aos::Deadband(-data.GetAxis(omega_axis_),
+                                                    kRotationDeadband, 1.0) +
+                       swerve_config_.omega_offset;
 
-  const double vx =
-      aos::Deadband(-data.GetAxis(vx_axis_), kMovementDeadband, 1.0);
+  const double raw_vx =
+      -data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
 
-  const double vy =
-      aos::Deadband(-data.GetAxis(vy_axis_), kMovementDeadband, 1.0);
+  const double raw_vy =
+      -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
+
+  const double speed = kVelScale * aos::Deadband(std::hypot(raw_vx, raw_vy),
+                                                 kMovementDeadband, 1.0);
+  const double theta = std::atan2(raw_vy, raw_vx);
+
+  const double vx = speed * std::cos(theta);
+  const double vy = speed * std::sin(theta);
 
   return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega};
 }

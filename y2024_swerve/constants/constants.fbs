@@ -3,6 +3,7 @@ include "frc971/control_loops/swerve/swerve_zeroing.fbs";
 include "frc971/vision/calibration.fbs";
 include "frc971/wpilib/swerve/swerve_constants.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/input/swerve_input_config.fbs";
 
 namespace y2024_swerve;
 
@@ -18,6 +19,7 @@ table Common {
 table RobotConstants {
     swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 0);
     cameras:[CameraConfiguration] (id: 1);
+    input_config: frc971.input.InputConfig (id: 2);
 }
 
 table Constants{

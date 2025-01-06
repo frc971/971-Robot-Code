@@ -1,0 +1,8 @@
+namespace frc971.input;
+
+table InputConfig {
+    use_redundant_joysticks: bool = false (id: 0);
+    vx_offset: double (id: 1);
+    vy_offset: double (id: 2);
+    omega_offset: double (id: 3);
+}

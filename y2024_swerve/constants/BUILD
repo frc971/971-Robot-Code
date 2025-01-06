@@ -57,6 +57,7 @@ static_flatbuffer(
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config_fbs",
         "//frc971/control_loops/swerve:swerve_zeroing_fbs",
+        "//frc971/input:swerve_input_config_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
         "//frc971/wpilib/swerve:swerve_constants_fbs",

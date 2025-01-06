@@ -44,7 +44,12 @@
       {
         "calibration": {% include 'y2024_swerve/constants/calib_files/calibration_orin1-9971-1_cam-24-11_2024-03-24_11-52-49.json' %}
       }
-    ]
-  },
-  {% include 'y2024_swerve/constants/common.json' %}
+    ],
+    "input_config": {
+        "use_redundant_joysticks": true,
+        "vx_offset": 0.31496063,
+        "vy_offset": 0.2519685,
+        "omega_offset": 0.0
+    }
+  },  {% include 'y2024_swerve/constants/common.json' %}
 }

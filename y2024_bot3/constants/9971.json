@@ -1,7 +1,35 @@
 {% from 'y2024_bot3/constants/common.jinja2' import arm_zero, front_left_zero, front_right_zero, back_left_zero, back_right_zero %}
 
 {
+  "cameras": [
+    {
+      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_imu-9971-0_cam-24-10_2024-02-24_16-44-05.json' %}
+    },
+    {
+      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_imu-9971-1_cam-24-12_2024-03-24_11-52-49.json' %}
+    },
+    {
+      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_orin1-9971-0_cam-24-09_2024-03-24_11-52-49.json' %}
+    },
+    {
+      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_orin1-9971-1_cam-24-11_2024-03-24_11-52-49.json' %}
+    }
+  ],
   "robot": {
+    "arm_constants": {
+      {% set _ = arm_zero.update(
+          {
+              "measured_absolute_position" : 0.17940018799940982
+          }
+      ) %}
+      "zeroing_constants": {{ arm_zero | tojson(indent=2)}},
+      "arm_potentiometer_offset": {{ 5.249596184591311 }},
+      "arm_positions": {
+        "intake": 1.5340627000688336,
+        "idle": 0.3750421233651341,
+        "amp": -0.47363107344435573
+      }
+    },
     "swerve_zeroing": {
       {% set _ = front_left_zero.update(
           {
@@ -28,34 +56,12 @@
       "back_left":  {{ back_left_zero | tojson(indent=2)}},
       "back_right":  {{ back_right_zero | tojson(indent=2)}}
     },
-    "arm_constants": {
-      {% set _ = arm_zero.update(
-          {
-              "measured_absolute_position" : 0.17940018799940982
-          }
-      ) %}
-      "zeroing_constants": {{ arm_zero | tojson(indent=2)}},
-      "arm_potentiometer_offset": {{ 5.249596184591311 }},
-      "arm_positions": {
-        "intake": 1.5340627000688336,
-        "idle": 0.3750421233651341,
-        "amp": -0.47363107344435573
-      }
+    "input_config": {
+      "use_redundant_joysticks": true,
+      "vx_offset": 0.31496063,
+      "vy_offset": 0.2519685,
+      "omega_offset": 0.0
     }
   },
-  "cameras": [
-    {
-      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_imu-9971-0_cam-24-10_2024-02-24_16-44-05.json' %}
-    },
-    {
-      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_imu-9971-1_cam-24-12_2024-03-24_11-52-49.json' %}
-    },
-    {
-      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_orin1-9971-0_cam-24-09_2024-03-24_11-52-49.json' %}
-    },
-    {
-      "calibration": {% include 'y2024_bot3/constants/calib_files/calibration_orin1-9971-1_cam-24-11_2024-03-24_11-52-49.json' %}
-    }
-  ],
   {% include 'y2024_bot3/constants/common.json' %}
 }
