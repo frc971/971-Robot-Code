@@ -122,7 +122,7 @@ function submitDataScouting(
   cy.get('#review_data li:contains("Penalties")').its('length').should('eq', 1);
 
   clickButton('Submit');
-  headerShouldBe(teamNumber + ' Success ');
+  headerShouldBe(teamNumber + ' End ');
 }
 function visit(path) {
   cy.visit(path, {
