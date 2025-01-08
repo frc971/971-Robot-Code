@@ -1,7 +1,7 @@
 namespace y2025.control_loops.superstructure;
 
 table Output {
-
+    elevator_voltage:double (id: 0);
 }
 
 root_type Output;

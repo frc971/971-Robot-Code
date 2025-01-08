@@ -11,6 +11,10 @@ table CANPosition {
     // The ctre::phoenix::StatusCode of the measurement
     // Should be OK = 0
     status:int (id: 1);
+
+    // CAN Positions of the two elevator falcons
+    elevator_one:frc971.control_loops.CANTalonFX (id: 2);
+    elevator_two:frc971.control_loops.CANTalonFX (id: 3);
 }
 
 root_type CANPosition;
