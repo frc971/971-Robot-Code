@@ -289,7 +289,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-        constants::Values::kDrivetrainWriterPriority, true, "Drivetrain Bus");
+        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
