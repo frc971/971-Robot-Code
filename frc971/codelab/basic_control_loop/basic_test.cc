@@ -92,7 +92,8 @@ class BasicControlLoopTest : public ::frc971::testing::ControlLoopTest {
  public:
   BasicControlLoopTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("frc971/codelab/aos_config.json"),
+            aos::configuration::ReadConfig(
+                "frc971/codelab/basic_control_loop/aos_config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
         goal_sender_(test_event_loop_->MakeSender<Goal>("/codelab")),

@@ -32,12 +32,13 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
   if (status != nullptr) {
     (void)status;
     // FIX HERE: Fill out the Status message! In order to fill the
-    // information in the message, use the add_<name of the field>() method
+    // information in the message, use the set_<name of the field>() method
     // on the builder, just like we do with the Output message above.
     // Look at the definition of Status in basic_status.fbs to find
     // the name of the field.
 
     // Ignore the return value of Send
+    (void)status->CheckOk(status->Send());
   }
 }
 
