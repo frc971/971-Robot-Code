@@ -9,6 +9,8 @@ table Status {
 
     // If true, we have aborted. This is the or of all subsystem estops.
     estopped:bool (id: 1);
+
+    elevator:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 }
 
 root_type Status;

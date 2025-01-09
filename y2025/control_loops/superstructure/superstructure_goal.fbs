@@ -2,7 +2,17 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2025.control_loops.superstructure;
 
+enum ElevatorGoal : ubyte {
+    NEUTRAL = 0,
+    INTAKE = 1,
+    SCORE_L1 = 2,
+    SCORE_L2 = 3,
+    SCORE_L3 = 4,
+    SCORE_L4 = 5,
+}
+
 table Goal {
+   elevator_goal:ElevatorGoal (id: 0);
 }
 
 root_type Goal;

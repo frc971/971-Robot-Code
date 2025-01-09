@@ -4,7 +4,8 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2025.control_loops.superstructure;
 
 table Position {
-
+    // Position of the elevator, 0 at lowest position, positive when up.
+    elevator:frc971.PotAndAbsolutePosition (id: 0);
 }
 
 root_type Position;
