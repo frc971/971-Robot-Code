@@ -38,44 +38,44 @@ class calibrate_multi_cameras_test(unittest.TestCase):
 
             print("gt:\n", gt, "\ncalc:\n", calc)
 
-            self.assertEqual(gt["node_name"], calc["node_name"])
+            self.assertEqual(gt['node_name'], calc['node_name'])
 
-            self.assertEqual(gt["team_number"], calc["team_number"])
+            self.assertEqual(gt['team_number'], calc['team_number'])
 
-            self.assertEqual(gt["camera_id"], calc["camera_id"])
+            self.assertEqual(gt['camera_id'], calc['camera_id'])
 
-            self.assertEqual(gt["camera_number"], calc["camera_number"])
+            self.assertEqual(gt['camera_number'], calc['camera_number'])
 
-            self.assertEqual(len(gt["intrinsics"]), len(calc["intrinsics"]))
+            self.assertEqual(len(gt['intrinsics']), len(calc['intrinsics']))
 
-            for gt_intrinsics, calc_intrinsics in zip(gt["intrinsics"],
-                                                      calc["intrinsics"]):
+            for gt_intrinsics, calc_intrinsics in zip(gt['intrinsics'],
+                                                      calc['intrinsics']):
                 self.assertTrue(
                     abs(gt_intrinsics - calc_intrinsics) < tolerance)
 
-            self.assertEqual(len(gt["dist_coeffs"]), len(calc["dist_coeffs"]))
+            self.assertEqual(len(gt['dist_coeffs']), len(calc['dist_coeffs']))
 
             for gt_dist_coeffs, calc_dist_coeffs in zip(
-                    gt["dist_coeffs"], calc["dist_coeffs"]):
+                    gt['dist_coeffs'], calc['dist_coeffs']):
                 self.assertTrue(
                     abs(gt_dist_coeffs - calc_dist_coeffs) < tolerance)
 
             self.assertEqual(
-                len(gt["fixed_extrinsics"]["data"]),
-                len(calc["fixed_extrinsics"]["data"]),
+                len(gt['fixed_extrinsics']['data']),
+                len(calc['fixed_extrinsics']['data']),
             )
 
             for gt_fixed_extrinsics, calc_fixed_extrinsics in zip(
-                    gt["fixed_extrinsics"]["data"],
-                    calc["fixed_extrinsics"]["data"]):
+                    gt['fixed_extrinsics']['data'],
+                    calc['fixed_extrinsics']['data']):
                 print(gt_fixed_extrinsics, calc_fixed_extrinsics)
                 self.assertTrue(
                     abs(gt_fixed_extrinsics -
                         calc_fixed_extrinsics) < tolerance)
         else:
             print(gt_file, calc_file)
-            with open(gt_file, "r") as f_gt:
-                with open(calc_file, "r") as f_calc:
+            with open(gt_file, 'r') as f_gt:
+                with open(calc_file, 'r') as f_calc:
                     while True:
                         line_gt = f_gt.readline()
                         line_calc = f_calc.readline()
@@ -87,13 +87,13 @@ class calibrate_multi_cameras_test(unittest.TestCase):
                         self.assertTrue(line_calc)
 
                         # timestamp field will be different, so ignore this line
-                        if "timestamp" in line_gt and "timestamp" in line_calc:
+                        if 'timestamp' in line_gt and 'timestamp' in line_calc:
                             # there is timestamp in both so we skip
                             continue
 
                         # no timestamp check
-                        self.assertTrue("timestamp" not in line_gt)
-                        self.assertTrue("timestamp" not in line_calc)
+                        self.assertTrue('timestamp' not in line_gt)
+                        self.assertTrue('timestamp' not in line_calc)
 
                         # Compare line and raise assert error if different
                         self.assertTrue(line_gt == line_calc)
@@ -112,25 +112,25 @@ class calibrate_multi_cameras_test(unittest.TestCase):
                 "--max_pose_error",
                 str(max_pose_error),
             ],
-            encoding="utf-8",
+            encoding='utf-8',
         )
 
         calibrate_result.check_returncode()
 
         # Check for the 3 pi's that get calibrated
-        for orin in [("imu", "0"), ("imu", "1"), ("orin1", "1"),
-                     ("orin1", "0")]:
+        for orin in [('imu', '0'), ('imu', '1'), ('orin1', '1'),
+                     ('orin1', '0')]:
             # multi camera calibration is is keeping the original position of IMU 0 instead of calculating its position, so no calc file exists for it
-            if orin == ("imu", "0"):
+            if orin == ('imu', '0'):
                 continue
 
             orin_filename = (
-                f"calibration_{orin[0]}-{self.args.team_number}-{orin[1]}_*.json"
+                f'calibration_{orin[0]}-{self.args.team_number}-{orin[1]}_*.json'
             )
 
             # Get the calculated calibration file
             calc_file = glob.glob(
-                os.path.join(os.getenv("TEST_TMPDIR", "/tmp/"),
+                os.path.join(os.getenv("TEST_TMPDIR", '/tmp/'),
                              orin_filename))[0]  # newest
 
             # Get the ground truth calibration file (from original calibration)
@@ -150,11 +150,11 @@ def main(argv: Sequence[Text]):
     parser.add_argument(
         "--calibrate_binary",
         required=False,
-        default="y2024/vision/calibrate_multi_cameras",
+        default='y2024/vision/calibrate_multi_cameras',
         help="Path to calibrate_multi_cameras binary",
     )
     parser.add_argument("--logfile", required=True, help="Path to logfile.")
-    parser.add_argument("--team_number", required=False, default="971")
+    parser.add_argument("--team_number", required=False, default='971')
     args = parser.parse_args(argv)
 
     while len(sys.argv) > 1:
@@ -166,5 +166,5 @@ def main(argv: Sequence[Text]):
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
