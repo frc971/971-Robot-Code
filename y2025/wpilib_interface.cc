@@ -39,6 +39,7 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
 #include "frc971/wpilib/swerve/swerve_module.h"
+#include "frc971/wpilib/swerve/swerve_util.h"
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2025/constants.h"
@@ -76,11 +77,9 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::ShmEventLoop *event_loop,
-               const Constants *robot_constants,
-               frc971::wpilib::swerve::SwerveModules modules)
+               const Constants *robot_constants)
       : ::frc971::wpilib::SensorReader(event_loop),
         robot_constants_(robot_constants),
-        modules_(modules),
         superstructure_position_sender_(
             event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
@@ -106,20 +105,18 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           superstructure_position_sender_.MakeStaticBuilder();
       builder.CheckOk(builder.Send());
     }
+
     {
       auto builder = drivetrain_position_sender_.MakeStaticBuilder();
       auto swerve_position_constants =
           robot_constants_->common()->swerve_positions_constants();
-      modules_.front_left->PopulatePosition(builder->add_front_left(),
-                                            swerve_position_constants);
-      modules_.front_right->PopulatePosition(builder->add_front_right(),
-                                             swerve_position_constants);
-      modules_.back_left->PopulatePosition(builder->add_back_left(),
-                                           swerve_position_constants);
-      modules_.back_right->PopulatePosition(builder->add_back_right(),
-                                            swerve_position_constants);
+
+      swerve_encoders_.PopulatePosition(builder.get(),
+                                        swerve_position_constants);
+
       builder.CheckOk(builder.Send());
     }
+
     {
       auto builder = gyro_sender_.MakeBuilder();
       ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
@@ -128,10 +125,38 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
+  void set_front_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    swerve_encoders_.set_front_left(std::move(encoder),
+                                    std::move(absolute_pwm));
+  }
+
+  void set_front_right_encoder(
+      std::unique_ptr<frc::Encoder> encoder,
+      std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    swerve_encoders_.set_front_right(std::move(encoder),
+                                     std::move(absolute_pwm));
+  }
+
+  void set_back_left_encoder(std::unique_ptr<frc::Encoder> encoder,
+                             std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    swerve_encoders_.set_back_left(std::move(encoder), std::move(absolute_pwm));
+  }
+
+  void set_back_right_encoder(std::unique_ptr<frc::Encoder> encoder,
+                              std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    swerve_encoders_.set_back_right(std::move(encoder),
+                                    std::move(absolute_pwm));
+  }
+
  private:
   const Constants *robot_constants_;
 
-  frc971::wpilib::swerve::SwerveModules modules_;
+  frc971::wpilib::swerve::SwerveEncoders swerve_encoders_;
   aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
@@ -206,10 +231,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
-    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants,
-                               modules);
+    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
     sensor_reader.set_pwm_trigger(false);
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
+    sensor_reader.set_front_left_encoder(
+        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_front_right_encoder(
+        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_back_left_encoder(make_encoder(2),
+                                        std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_back_right_encoder(
+        make_encoder(3), std::make_unique<frc::DigitalInput>(3));
 
     AddLoop(&sensor_reader_event_loop);
 

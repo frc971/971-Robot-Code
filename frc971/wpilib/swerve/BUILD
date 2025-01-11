@@ -29,9 +29,19 @@ cc_library(
         "swerve_module.h",
     ],
     deps = [
-        ":swerve_constants_fbs",
         "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:talonfx",
+    ],
+)
+
+cc_library(
+    name = "swerve_util",
+    hdrs = [
+        "swerve_util.h",
+    ],
+    deps = [
+        ":swerve_constants_fbs",
+        "//frc971/wpilib:encoder_and_potentiometer",
     ],
 )
 
