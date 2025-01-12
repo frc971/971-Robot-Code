@@ -7,6 +7,26 @@
     "drivetrain_stator_current_limit": 100,
     "drivetrain_supply_current_limit": 50
   },
-  "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}}
+  "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
+  "elevator": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 40.0
+    },
+    "range": {
+        // TODO: update these constants
+        "lower_hard": -0.4979327221131373,
+        "upper_hard": 1.557377933185559,
+        "lower": -0.4979327221131373,
+        "upper": 1.557377933185559
+    },
+    "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
+  }
 }
 

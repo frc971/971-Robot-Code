@@ -21,6 +21,7 @@ table Common {
   current_limits:CurrentLimits (id: 2);
   translation_module_ratio:double (id: 3);
   pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
+  elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 5);
 }
 
 table Constants {
