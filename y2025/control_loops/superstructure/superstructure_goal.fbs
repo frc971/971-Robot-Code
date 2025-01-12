@@ -11,8 +11,14 @@ enum ElevatorGoal : ubyte {
     SCORE_L4 = 5,
 }
 
+enum PivotGoal : ubyte {
+    NEUTRAL = 0,
+    SCORE = 1,
+}
+
 table Goal {
    elevator_goal:ElevatorGoal (id: 0);
+   pivot_goal:PivotGoal (id: 1);
 }
 
 root_type Goal;

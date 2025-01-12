@@ -11,6 +11,8 @@ table Status {
     estopped:bool (id: 1);
 
     elevator:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+
+    pivot:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
 }
 
 root_type Status;
