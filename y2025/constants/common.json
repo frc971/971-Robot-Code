@@ -4,13 +4,16 @@
     "absolute_encoder_scale": {{ 2.0 * 3.14}}
   },
   "current_limits": {
+    // TODO replace these dummy values for y2025 bot
     "drivetrain_stator_current_limit": 100,
     "drivetrain_supply_current_limit": 50,
     "elevator_stator_current_limit": 100,
-    "elevator_supply_current_limit": 50
+    "elevator_supply_current_limit": 50,
+    "pivot_stator_current_limit": 100,
+    "pivot_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
-  //TODO change constants for y2025 bot
+  // TODO change constants for y2025 bot
   "pivot": {
     "zeroing_voltage": 3.0,
     "operating_voltage": 12.0,

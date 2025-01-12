@@ -58,6 +58,8 @@ table CurrentLimits {
   drivetrain_supply_current_limit:double (id: 1);
   elevator_stator_current_limit:double (id: 2);
   elevator_supply_current_limit:double (id: 3);
+  pivot_stator_current_limit:double (id: 4);
+  pivot_supply_current_limit:double (id: 5);
 }
 
 root_type Constants;

@@ -13,6 +13,7 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/control_loops/drivetrain/rotation_plant.h"
 #include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
+#include "y2025/control_loops/superstructure/pivot/pivot_plant.h"
 
 namespace y2025::constants {
 
@@ -73,6 +74,28 @@ struct Values {
         subsystem_params;
     double potentiometer_offset;
   };
+
+  // TODO: get the correct values for all these constants
+
+  static constexpr double kPivotOutputRatio =
+      control_loops::superstructure::pivot::kOutputRatio;
+
+  static constexpr double kPivotPotRatio() { return (12.0 / 48.0); }
+
+  static constexpr double kPivotEncoderCountsPerRevolution() { return 4096.0; }
+
+  static constexpr double kPivotEncoderRatio() { return (1.0 / 4.0); }
+
+  static constexpr double kPivotPotRadiansPerVolt() {
+    return kPivotPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kMaxPivotEncoderPulsesPerSecond() {
+    return control_loops::superstructure::pivot::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::pivot::kOutputRatio /
+           kPivotEncoderRatio() * kPivotEncoderCountsPerRevolution();
+  }
 };
 
 // Creates and returns a Values instance for the constants.
