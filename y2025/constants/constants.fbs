@@ -20,6 +20,7 @@ table Common {
   swerve_positions_constants:frc971.wpilib.swerve.SwervePositionConstants (id: 1);
   current_limits:CurrentLimits (id: 2);
   translation_module_ratio:double (id: 3);
+  pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
 }
 
 table Constants {

@@ -12,9 +12,12 @@ table CANPosition {
     // Should be OK = 0
     status:int (id: 1);
 
-    // CAN Positions of the two elevator falcons
+    // CAN Positions of the two elevator krakens
     elevator_one:frc971.control_loops.CANTalonFX (id: 2);
     elevator_two:frc971.control_loops.CANTalonFX (id: 3);
+
+    // CAN Position of the pivot kraken
+    pivot:frc971.control_loops.CANTalonFX (id: 4);
 }
 
 root_type CANPosition;
