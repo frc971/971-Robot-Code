@@ -10,6 +10,9 @@
 // https://www.pjrc.com/teensy/datasheets.html
 // comments (especially on BB2) inform which pins are used
 
+// HID and CAN packets can be found here:
+// https://docs.google.com/spreadsheets/d/1JnJ0--BwiQWJ9FTQQb27fO30b_Dx7IDMHuBAAFcl3_o/edit?usp=sharing
+
 #include "motors/driver_station.h"
 
 #include <inttypes.h>
@@ -475,10 +478,10 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
     }
 
     measurements[board_config.board_id - 1].buttons = ReadButtons();
-    measurements[board_config.board_id - 1].abs0 = adc.analog0;
-    measurements[board_config.board_id - 1].abs1 = adc.analog1;
-    measurements[board_config.board_id - 1].abs2 = adc.analog2;
-    measurements[board_config.board_id - 1].abs3 = adc.analog3;
+    measurements[board_config.board_id - 1].adc0 = adc.analog0;
+    measurements[board_config.board_id - 1].adc1 = adc.analog1;
+    measurements[board_config.board_id - 1].adc2 = adc.analog2;
+    measurements[board_config.board_id - 1].adc3 = adc.analog3;
     measurements[board_config.board_id - 1].enc0 =
         ScaleEncoder(&encoder_data[0], tared_encoders[0]);
     measurements[board_config.board_id - 1].enc1 =
@@ -570,16 +573,28 @@ void DriverStation::SendJoystickData(teensy::HidFunction *joystick0,
 void DriverStation::ZeroMeasurements(MeasurementData *bb_measurements,
                                      uint32_t board) {
   bb_measurements[board].buttons = 0;
-  bb_measurements[board].abs0 = 0;
-  bb_measurements[board].abs1 = 0;
-  bb_measurements[board].abs2 = 0;
-  bb_measurements[board].abs3 = 0;
+  bb_measurements[board].adc0 = 0;
+  bb_measurements[board].adc1 = 0;
+  bb_measurements[board].adc2 = 0;
+  bb_measurements[board].adc3 = 0;
   bb_measurements[board].enc0 = 0;
   bb_measurements[board].enc1 = 0;
 }
 
 // clang-format off
-// CAN Packet Format
+// CAN Packet Format (Swerve)
+// 	      |                               Bit							                    |
+// Byte	  7	        6	        5	        4	        3	        2	        1	        0
+// 0	  BTN7	    BTN6	    BTN5	    BTN4	    BTN3	    BTN2	    BTN1	    BTN0
+// 1	  BTN15	    BTN14	    BTN13	    BTN12	    BTN11	    BTN10	    BTN9	    BTN8
+// 2	  ADC0:7	  ADC0:6	  ADC0:5	  ADC0:4	  BTN19	    BTN18	    BTN17	    BTN16
+// 3	  ADC0:15	  ADC0:14	  ADC0:13	  ADC0:12	  ADC0:11	  ADC0:10	  ADC0:9	  ADC0:8
+// 4	  ADC1:11	  ADC1:10	  ADC1:9	  ADC1:8	  ADC1:7	  ADC1:6	  ADC1:5	  ADC1:4
+// 5	  ADC2:7	  ADC2:6	  ADC2:5	  ADC2:4	  ADC1:15	  ADC1:14	  ADC1:13	  ADC1:12
+// 6	  ADC2:15	  ADC2:14	  ADC2:13	  ADC2:12	  ADC2:11	  ADC2:10	  ADC2:9	  ADC2:8
+// 7	  ADC3:15	  ADC3:14	  ADC3:13	  ADC3:12	  ADC3:11	  ADC3:10	  ADC3:9	  ADC3:8
+// 
+// CAN Packet Format (Pistol Grip)
 //       |                                Bit                                 |
 // Byte	  7 	      6 	     5 	        4       	3       	2        1    	  0
 // 0	  BTN7	    BTN6	   BTN5	      BTN4	    BTN3  	  BTN2  	  BTN1     BTN0
@@ -590,15 +605,19 @@ void DriverStation::ZeroMeasurements(MeasurementData *bb_measurements,
 // 5	  ENC1:11  	ENC1:10 	ENC1:9  	ENC1:8  	ENC1:7    ENC1:6  	ENC1:5   ENC1:4 
 // 6	  ABS2:7	  ABS2:6	  ABS2:5	  ABS2:4	  ABS2:3    ABS2:2	  ABS2:1   ABS2:0 
 // 7	  ABS3:7	  ABS3:6	  ABS3:5	  ABS3:4	  ABS3:3    ABS3:2  	ABS3:1   ABS3:0
+//
 // clang-format on
 int DriverStation::UpdateMeasurementsFromCAN(MeasurementData *bb_measurements,
                                              uint8_t *can_rx_data) {
   int bb_id = 0;
+  uint32_t is_swerve = 0;
   uint32_t buttons = 0;
   uint16_t enc0 = 0;
   uint16_t enc1 = 0;
-  uint16_t abs2 = 0;
-  uint16_t abs3 = 0;
+  uint16_t adc0 = 0;
+  uint16_t adc1 = 0;
+  uint16_t adc2 = 0;
+  uint16_t adc3 = 0;
 
   // Extract BB_id
   bb_id = (int)((can_rx_data[2] >> 2) & 0x03);
@@ -608,29 +627,57 @@ int DriverStation::UpdateMeasurementsFromCAN(MeasurementData *bb_measurements,
     return -1;
   }
 
+  // Extract is_swerve
+  is_swerve = (uint32_t)((can_rx_data[2] >> 1) & 0x01);
+
+  // Button common to both:
+
   buttons = (uint32_t)can_rx_data[0];
   buttons |= (uint32_t)can_rx_data[1] << 8;
   buttons |= ((uint32_t)can_rx_data[2] & 0x0F) << 16;
 
   bb_measurements[bb_id].buttons = buttons;
 
-  enc0 = (uint16_t)can_rx_data[3];
-  enc0 |= ((uint16_t)can_rx_data[4] & 0x0F) << 8;
+  if (bb_id == 2) {
+    board_config.is_swerve = is_swerve;
 
-  bb_measurements[bb_id].enc0 = enc0 << 4;
+    if (is_swerve) {
+      adc0 = ((uint16_t)can_rx_data[2] & 0xF0);
+      adc0 |= ((uint16_t)can_rx_data[3]) << 8;
 
-  enc1 = ((uint16_t)can_rx_data[4] & 0xF0) >> 4;
-  enc1 |= ((uint16_t)can_rx_data[5]) << 4;
+      bb_measurements[bb_id].adc0 = adc0;
 
-  bb_measurements[bb_id].enc1 = enc1 << 4;
+      adc1 = (uint16_t)can_rx_data[4];
+      adc1 |= ((uint16_t)can_rx_data[5] & 0x0F) << 8;
 
-  abs2 = ((uint16_t)can_rx_data[6]) << 8;
+      bb_measurements[bb_id].adc1 = adc1 << 4;
 
-  bb_measurements[bb_id].abs2 = abs2;
+      adc2 = ((uint16_t)can_rx_data[5] & 0xF0);
+      adc2 |= ((uint16_t)can_rx_data[6]) << 8;
 
-  abs3 = ((uint16_t)can_rx_data[7]) << 8;
+      bb_measurements[bb_id].adc2 = adc2;
 
-  bb_measurements[bb_id].abs3 = abs3;
+    } else {
+      enc0 = (uint16_t)can_rx_data[3];
+      enc0 |= ((uint16_t)can_rx_data[4] & 0x0F) << 8;
+
+      bb_measurements[bb_id].enc0 = enc0 << 4;
+
+      enc1 = ((uint16_t)can_rx_data[4] & 0xF0) >> 4;
+      enc1 |= ((uint16_t)can_rx_data[5]) << 4;
+
+      bb_measurements[bb_id].enc1 = enc1 << 4;
+
+      adc2 = ((uint16_t)can_rx_data[6]) << 8;
+
+      bb_measurements[bb_id].adc2 = adc2;
+    }
+    // ADC common to both:
+
+    adc3 = ((uint16_t)can_rx_data[7]) << 8;
+
+    bb_measurements[bb_id].adc3 = adc3;
+  }
 
   return bb_id;
 }
@@ -639,22 +686,43 @@ void DriverStation::PackMeasurementsToCAN(MeasurementData *bb_measurements,
                                           uint8_t *can_tx_data) {
   uint16_t encoder_measurements_0 = bb_measurements->enc0 >> 4;
   uint16_t encoder_measurements_1 = bb_measurements->enc1 >> 4;
+  uint16_t adc_measurements_0 = bb_measurements->adc0 >> 4;
+  uint16_t adc_measurements_1 = bb_measurements->adc1 >> 4;
+  uint16_t adc_measurements_2 = bb_measurements->adc2 >> 4;
+  uint16_t adc_measurements_3 = bb_measurements->adc3 >> 4;
 
-  // taking button data
+  // Button (Common to both)
   can_tx_data[2] = (uint8_t)((bb_measurements->buttons >> 16) & 0x0F);
   can_tx_data[1] = (uint8_t)((bb_measurements->buttons >> 8) & 0xFF);
   can_tx_data[0] = (uint8_t)(bb_measurements->buttons & 0xFF);
 
-  // taking encdoer data
-  can_tx_data[3] = (uint8_t)(encoder_measurements_0 & 0xFF);
-  can_tx_data[4] = (uint8_t)((encoder_measurements_0 >> 8) & 0x0F);
+  if (board_config.board_id == 3) {
+    if (board_config.is_swerve) {  // if Swerve and BB3
+      // Encoder
+      can_tx_data[3] = (uint8_t)(encoder_measurements_0 & 0xFF);
+      can_tx_data[4] = (uint8_t)((encoder_measurements_0 >> 8) & 0x0F);
 
-  can_tx_data[4] |= (uint8_t)((encoder_measurements_1 & 0x0F) << 4);
-  can_tx_data[5] = (uint8_t)((encoder_measurements_1 >> 4) & 0xFF);
+      can_tx_data[4] |= (uint8_t)((encoder_measurements_1 & 0x0F) << 4);
+      can_tx_data[5] = (uint8_t)((encoder_measurements_1 >> 4) & 0xFF);
 
-  // taking abs data
-  can_tx_data[6] = (uint8_t)(bb_measurements->abs2 >> 8);
-  can_tx_data[7] = (uint8_t)(bb_measurements->abs3 >> 8);
+      // ADC
+      can_tx_data[6] = (uint8_t)(bb_measurements->adc2 >> 8);
+      can_tx_data[7] = (uint8_t)(bb_measurements->adc3 >> 8);
+
+    } else {  // if not Swerve and BB3
+      // ADC
+      can_tx_data[2] |= (uint8_t)((adc_measurements_0 & 0x0F) << 4);
+      can_tx_data[3] = (uint8_t)((adc_measurements_0 >> 4) & 0xFF);
+
+      can_tx_data[4] = (uint8_t)(adc_measurements_1 & 0xFF);
+      can_tx_data[5] = (uint8_t)((adc_measurements_1 >> 8) & 0x0F);
+
+      can_tx_data[5] |= (uint8_t)((adc_measurements_2 & 0x0F) << 4);
+      can_tx_data[6] = (uint8_t)((adc_measurements_2 >> 4) & 0xFF);
+
+      can_tx_data[7] = (uint8_t)(adc_measurements_3 >> 4);
+    }
+  }
 }
 
 extern "C" {
@@ -673,7 +741,36 @@ void __stack_chk_fail(void) {
 }  // extern "C"
 
 // clang-format off
-
+// HID Packet Format(Swerve)
+// 		                           BB1/BB3 HID			                               BB2 HID		
+// 	HID Word	    JS0	            JS1	            JS2	            JS3	            JS4	            JS5
+// 0	AXIS0	      BB3:ADC0[15:8]  BB3:ADC1[15:8]	BB2:ADC0[15:8]	BB3:ADC0[15:8]	BB3:ADC1[15:8]	BB2:ADC0[15:8] (this one)
+// 1	AXIS1	      BB3:ADC2[15:8]  BB3:ADC3[15:8]	BB2:ADC1[15:8]	BB3:ADC2[15:8]	BB3:ADC3[15:8]	BB2:ADC1[15:8] (this one)
+// 2	AXIS2	      BB3:ADC2[7:0]	  0x7F	          BB2:ADC2[15:8]	BB3:ADC2[7:0]	  0x7F	          BB2:ADC2[15:8] (this one)
+// 3	AXIS3	      BB3:ADC0[7:0]	  BB3:ADC1[7:0]	  BB2:ADC3[15:8]	BB3:ADC0[7:0]	  BB3:ADC1[7:0]	  BB2:ADC3[15:8] (this one)
+// 4	AXIS4[0]	  BB1 _OK	        BB1 _OK	        BB1 _OK	        BB1 _OK	        BB1 _OK	        BB1 _OK
+// 4	AXIS4[1]	  BB2 _OK	        BB2 _OK	        BB2 _OK	        BB2 _OK	        BB2 _OK	        BB2 _OK
+// 4	AXIS4[2]	  BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK
+// 4	AXIS4[3:4]	0b01	          0b10	          0b11	          0b01	          0b10	          0b11
+// 4	AXIS4[5]	  0	              0	              0	              1	              1	              1
+// 4	AXIS[6:7]	  0b01	          0b01	          0b01	          0b01	          0b01	          0b01 (that one)
+// 5	B0	        BB3:B0	        BB1:B0	        BB2:B0	        BB3:B0 	        BB1:B0          BB2:B0
+// 5	B1	        BB3:B1	        BB1:B1	        BB2:B1	        BB3:B1 	        BB1:B1          BB2:B1
+// 5	B2	        BB3:B2	        BB1:B2	        BB2:B2	        BB3:B2 	        BB1:B2          BB2:B2
+// 5	B3	        BB3:B3	        BB1:B3	        BB2:B3	        BB3:B3 	        BB1:B3          BB2:B3
+// 5	B4	        BB3:B4	        BB1:B4	        BB2:B4	        BB3:B4 	        BB1:B4          BB2:B4
+// 5	B5	        BB3:B5	        BB1:B5	        BB2:B5	        BB3:B5 	        BB1:B5          BB2:B5
+// 5	B6	        BB3:B6	        BB1:B6	        BB2:B6	        BB3:B6 	        BB1:B6          BB2:B6
+// 5	B7	        BB3:B7	        BB1:B7	        BB2:B7	        BB3:B7 	        BB1:B7          BB2:B7
+// 6	B8	        BB3:B8	        BB1:B8	        BB2:B8	        BB3:B8 	        BB1:B8          BB2:B8
+// 6	B9	        BB3:B9	        BB1:B9	        BB2:B9	        BB3:B9 	        BB1:B9          BB2:B9
+// 6	B10	        BB3:B10	        BB1:B10	        BB2:B10	        BB3:B10	        BB1:B10         BB2:B10
+// 6	B11	        BB3:B11	        BB1:B11	        BB2:B11	        BB3:B11	        BB1:B11         BB2:B11
+// 6	B12	        BB3:B12	        BB1:B12	        BB2:B12	        BB3:B12	        BB1:B12         BB2:B12
+// 6	B[14:13]	  0b01	          0b10	          0b11	          0b01	          0b10	          0b11
+// 6	B15	        0	              0	              0	              1	              1	              1
+// 
+// HID Packet Format(Pistol Grip)
 //		                          BB1/BB3 HID			                                BB2 HID		
 //	  HID Word	  JS0	            JS1	            JS2	            JS3	            JS4	            JS5
 // 0	AXIS0	      BB3:ENC0[15:8]	BB3:ENC1[15:8]  BB2:ADC0        BB3:ENC0[15:8]	BB3:ENC1[15:8]  BB2:ADC0
@@ -685,7 +782,7 @@ void __stack_chk_fail(void) {
 // 4	AXIS4[2]	  BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK	        BB3_OK
 // 4	AXIS4[3:4]  0b01	          0b10	          0b11	          0b01	          0b10	          0b11
 // 4	AXIS4[5]	  0	              0	              0	              1	              1	              1
-// 4	AXIS4[6:7]  0	              0	              0	              0	              0	              0
+// 4	AXIS4[6:7]  0b00	          0b00	          0b00	          0b00	          0b00	          0b00
 // 5	B0	        BB3:B0	        BB1:B8	        BB2:B4	        BB3:B0	        BB1:B8	        BB2:B4
 // 5	B1	        BB3:B1	        BB1:B9	        BB2:B5	        BB3:B1	        BB1:B9	        BB2:B5
 // 5	B2	        BB3:B2	        BB1:B10	        BB2:B6	        BB3:B2	        BB1:B10	        BB2:B6
@@ -701,7 +798,7 @@ void __stack_chk_fail(void) {
 // 6	B12	        BB1:B7	        BB2:B3	        BB2:B16	        BB1:B7	        BB2:B3	        BB2:B16
 // 6	B[14:13]	  0b01	          0b10	          0b11	          0b01	          0b10	          0b11
 // 6	B15	        0	              0	              0	              1	              1	              1
-
+//
 // clang-format on
 void DriverStation::ComposeReport(char report[][kReportSize],
                                   MeasurementData *bb_measurements,
@@ -709,11 +806,48 @@ void DriverStation::ComposeReport(char report[][kReportSize],
                                   int can_2_board) {
   memset(report, 0, 3 * sizeof(*report));
 
-  report[0][0] = (char)(bb_measurements[2].enc0 >> 8 & 0xFF);
-  report[0][1] = (char)((0x7F) & 0xFF);
-  report[0][2] = (char)((0x7F) & 0xFF);
-  report[0][3] = (char)(bb_measurements[2].enc0 & 0xFF);
+  if (board_config.is_swerve) {  // if swerve
+    // JS0 Report
+    report[0][0] = (char)(bb_measurements[2].adc0 >> 8 & 0xFF);
+    report[0][1] = (char)(bb_measurements[2].adc2 >> 8 & 0xFF);
+    report[0][2] = (char)(bb_measurements[2].adc2 & 0xFF);
+    report[0][3] = (char)(bb_measurements[2].adc0 & 0xFF);
+
+    // JS1 Report
+    report[1][0] = (char)(bb_measurements[2].adc1 >> 8 & 0xFF);
+    report[1][1] = (char)(bb_measurements[2].adc3 >> 8 & 0xFF);
+    report[1][2] = (char)((0x7F) & 0xFF);
+    report[1][3] = (char)(bb_measurements[2].adc1 & 0xFF);
+  } else {  // if not swerve
+    // JS0 Report
+    report[0][0] = (char)(bb_measurements[2].enc0 >> 8 & 0xFF);
+    report[0][1] = (char)((0x7F) & 0xFF);
+    report[0][2] = (char)((0x7F) & 0xFF);
+    report[0][3] = (char)(bb_measurements[2].enc0 & 0xFF);
+
+    // JS1 Report
+    report[1][0] = (char)(((bb_measurements[2].enc1) >> 8) & 0xFF);
+    report[1][1] = (char)((0x7F) & 0xFF);
+    report[1][2] = (char)((0x7F) & 0xFF);
+    report[1][3] = (char)((bb_measurements[2].enc1) & 0xFF);
+  }
+
+  // Common to all controller types:
+
+  // JS2 Report
+  report[2][0] = (char)((bb_measurements[1].adc0 >> 8) & 0xFF);
+  report[2][1] = (char)((bb_measurements[1].adc1 >> 8) & 0xFF);
+  report[2][2] = (char)((bb_measurements[1].adc2 >> 8) & 0xFF);
+  report[2][3] = (char)((bb_measurements[1].adc3 >> 8) & 0xFF);
+
+  // Telling if it's swerve controller
+  for (int i = 0; i < 3; i++) {
+    report[i][4] = (char)(board_config.is_swerve << 6);
+  }
+
+  // JS0 report
   report[0][4] |= (char)(1 << (board_id - 1));
+
   if (can_1_board != -1) {
     report[0][4] |= (char)(1 << (can_1_board));
   }
@@ -721,16 +855,14 @@ void DriverStation::ComposeReport(char report[][kReportSize],
     report[0][4] |= (char)(1 << (can_2_board));
   }
   report[0][4] |= (char)(1 << 3);
-  report[0][5] = (char)(bb_measurements[2].buttons & 0x1F);  // BB1 BTN[7:0]
-  report[0][5] |= (char)((bb_measurements[0].buttons << 5) & 0xFF);
-  report[0][6] =
-      (char)((bb_measurements[0].buttons >> 3) & 0x1F);  // BB1 BTN[12:8]
-  report[0][6] |= (char)(1 << 5);                        // BB1 BTN[14:13]
 
-  report[1][0] = (char)(((bb_measurements[2].enc1) >> 8) & 0xFF);
-  report[1][1] = (char)((0x7F) & 0xFF);
-  report[1][2] = (char)((0x7F) & 0xFF);
-  report[1][3] = (char)((bb_measurements[2].enc1) & 0xFF);
+  report[0][5] = (char)(bb_measurements[2].buttons & 0xFF);  // BB3 BTN[7:0]
+
+  report[0][6] =
+      (char)((bb_measurements[2].buttons >> 8) & 0x1F);  // BB3 BTN[12:8]
+  report[0][6] |= (char)(1 << 5);
+
+  // JS1 report
   report[1][4] |= (char)(1 << (board_id - 1));
   if (can_1_board != -1) {
     report[1][4] |= (char)(1 << (can_1_board));
@@ -738,16 +870,16 @@ void DriverStation::ComposeReport(char report[][kReportSize],
   if (can_2_board != -1) {
     report[1][4] |= (char)(1 << (can_2_board));
   }
-  report[1][4] |= (char)(2 << 3);
-  report[1][5] =
-      (char)((bb_measurements[0].buttons >> 8) & 0xFF);        // BB1 BTN[16:13]
-  report[1][6] = (char)((bb_measurements[1].buttons) & 0x1F);  // BB2 BTN[3:0]
-  report[1][6] |= (char)(2 << 5);                              // BB2 BTN[14:13]
 
-  report[2][0] = (char)((bb_measurements[1].abs0 >> 8) & 0xFF);
-  report[2][1] = (char)((bb_measurements[1].abs1 >> 8) & 0xFF);
-  report[2][2] = (char)((bb_measurements[1].abs2 >> 8) & 0xFF);
-  report[2][3] = (char)((bb_measurements[1].abs3 >> 8) & 0xFF);
+  report[1][4] |= (char)(2 << 3);
+
+  report[1][5] = (char)(bb_measurements[0].buttons & 0xFF);  // BB1 BTN[7:0]
+
+  report[1][6] =
+      (char)((bb_measurements[0].buttons >> 8) & 0x1F);  // BB1 BTN[12:8]
+  report[1][6] |= (char)(2 << 5);
+
+  // JS2 report
   report[2][4] |= (char)(1 << (board_id - 1));
   if (can_1_board != -1) {
     report[2][4] |= (char)(1 << (can_1_board));
@@ -756,13 +888,14 @@ void DriverStation::ComposeReport(char report[][kReportSize],
     report[2][4] |= (char)(1 << (can_2_board));
   }
   report[2][4] |= (char)(3 << 3);
-  report[2][5] =
-      (char)((bb_measurements[1].buttons >> 5) & 0xFF);  // BB2 BTN[8:4]
-  report[2][6] =
-      (char)((bb_measurements[1].buttons >> 13) & 0x1F);  // BB2 BTN[16:9]
-  // report[2][5] = (char)(bb_measurements[2].buttons & 0x1F);  // BB3 BTN[4:0]
-  report[2][6] |= (char)(3 << 5);  // BB3 BTN[14:13]
 
+  report[2][5] = (char)(bb_measurements[1].buttons & 0xFF);  // BB2 BTN[7:0]
+
+  report[2][6] =
+      (char)((bb_measurements[1].buttons >> 8) & 0x1F);  // BB2 BTN[12:8]
+  report[2][6] |= (char)(3 << 5);
+
+  // BB2 HID descriptor
   if (board_id == 2) {
     report[0][4] |= (char)(1 << 5);
     report[1][4] |= (char)(1 << 5);
@@ -773,12 +906,15 @@ void DriverStation::ComposeReport(char report[][kReportSize],
     report[2][6] |= (char)(1 << 7);  // BB3 BTN[15]
   }
 
-  /*for ( int i = 0; i < 3; i++ ) {
+  /*
+  for ( int i = 0; i < 3; i++ ) {
    printf("Report %d: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X    ", i,
   report[i][0], report[i][1], report[i][2], report[i][3], report[i][4],
   report[i][5]);
   }
-  printf("\n\r\n\r");*/
+  printf("\n\r\n\r");
+  }
+  */
 }
 
 uint32_t DriverStation::ReadButtons() {
@@ -1156,6 +1292,10 @@ int DriverStation::Run() {
       PERIPHERAL_BITBAND(GPIOB_PDIR, 17) ^ 0x1;  // BTN18	PTB17
   uint32_t button19 =
       PERIPHERAL_BITBAND(GPIOB_PDIR, 16) ^ 0x1;  // BTN19	PTB16
+  // TODO(sindy): Remove this once we have new button boards. Temp fix for old
+  // driver station with broken pin 17
+  uint32_t button17 = PERIPHERAL_BITBAND(GPIOD_PDIR, 4) ^ 0x1;  // BTN17 PTD4
+  // PERIPHERAL_BITBAND(GPIOB_PDIR, 11) ^ 0x1;  // BTN16
 
   board_config.board_id = (button19 << 1) | button18;
 
@@ -1175,6 +1315,7 @@ int DriverStation::Run() {
     case 3:
       board_config.can_id0 = 2;
       board_config.can_id1 = 1;
+      board_config.is_swerve = button17;
       break;
 
     default:

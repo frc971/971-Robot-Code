@@ -74,16 +74,17 @@ typedef struct {
       processor_index;  // There are two processors, one for each driver station
   uint32_t can_id0;
   uint32_t can_id1;
+  bool is_swerve;
 } BoardConfig;
 
 typedef struct {
   uint32_t buttons;
+  uint16_t adc0;
+  uint16_t adc1;
+  uint16_t adc2;
+  uint16_t adc3;
   uint16_t enc0;
   uint16_t enc1;
-  uint16_t abs0;
-  uint16_t abs1;
-  uint16_t abs2;
-  uint16_t abs3;
 } MeasurementData;
 
 class DriverStation {
