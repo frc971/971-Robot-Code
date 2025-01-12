@@ -1,8 +1,18 @@
+{% from 'y2025/constants/common.jinja2' import elevator_zero %}
 
 {
   "cameras": [
   ],
   "robot": {
+    "elevator_constants": {
+      {% set _ = elevator_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ elevator_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
+    }
   },
   {% include 'y2025/constants/common.json' %}
 }

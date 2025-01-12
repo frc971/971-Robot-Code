@@ -11,7 +11,22 @@ table CameraConfiguration {
   calibration:frc971.vision.calibration.CameraCalibration (id: 0);
 }
 
+table ElevatorSetPoints {
+  neutral:double (id: 0);
+  intake:double (id: 1);
+  score_l1:double (id: 2);
+  score_l2:double (id: 3);
+  score_l3:double (id: 4);
+  score_l4:double (id: 5);
+}
+
+table PotAndAbsEncoderConstants {
+  zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
+  potentiometer_offset:double (id: 1);
+}
+
 table RobotConstants {
+  elevator_constants:PotAndAbsEncoderConstants (id: 0);
 }
 
 // Common table for constants unrelated to the robot
@@ -22,6 +37,7 @@ table Common {
   translation_module_ratio:double (id: 3);
   pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
   elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 5);
+  elevator_set_points:ElevatorSetPoints (id: 6);
 }
 
 table Constants {
@@ -33,6 +49,8 @@ table Constants {
 table CurrentLimits {
   drivetrain_stator_current_limit:double (id: 0);
   drivetrain_supply_current_limit:double (id: 1);
+  elevator_stator_current_limit:double (id: 2);
+  elevator_supply_current_limit:double (id: 3);
 }
 
 root_type Constants;

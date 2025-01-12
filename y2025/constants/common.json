@@ -5,7 +5,9 @@
   },
   "current_limits": {
     "drivetrain_stator_current_limit": 100,
-    "drivetrain_supply_current_limit": 50
+    "drivetrain_supply_current_limit": 50,
+    "elevator_stator_current_limit": 100,
+    "elevator_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
   "elevator": {
@@ -27,6 +29,15 @@
         "upper": 1.557377933185559
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
+  },
+  "elevator_set_points": {
+    // TODO: Update these set point constants
+    "neutral": 0,
+    "intake": 1,
+    "score_l1": 0.1,
+    "score_l2": 0.2,
+    "score_l3": 0.3,
+    "score_l4": 0.4
   }
 }
 

@@ -195,6 +195,7 @@ cc_library(
         "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2025/constants:constants_fbs",
         "//y2025/control_loops/drivetrain:rotation_plants",
+        "//y2025/control_loops/superstructure/elevator:elevator_plants",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",

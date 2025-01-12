@@ -12,6 +12,7 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2025/constants/constants_generated.h"
 #include "y2025/control_loops/drivetrain/rotation_plant.h"
+#include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
 
 namespace y2025::constants {
 
@@ -38,6 +39,40 @@ struct Values {
            constants::Values::kDrivetrainEncoderRatio() *
            kDrivetrainEncoderCountsPerRevolution();
   }
+
+  // TODO: get the correct values for all these constants
+
+  static constexpr double kElevatorOutputRatio =
+      control_loops::superstructure::elevator::kOutputRatio;
+
+  static constexpr double kElevatorPotRatio() { return (12.0 / 48.0); }
+
+  static constexpr double kElevatorPotMetersPerRevolution() {
+    return 22 * 0.25 * 0.0254;
+  }
+
+  static constexpr double kElevatorPotMetersPerVolt() {
+    return kElevatorPotRatio() * (5.0 /*turns*/ / 5.0 /*volts*/) *
+           kElevatorPotMetersPerRevolution();
+  }
+
+  static constexpr double kElevatorEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kElevatorEncoderRatio() { return (1.0 / 4.0); }
+
+  static constexpr double kMaxElevatorEncoderPulsesPerSecond() {
+    return control_loops::superstructure::elevator::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::elevator::kOutputRatio /
+           kElevatorEncoderRatio() * kElevatorEncoderCountsPerRevolution();
+  }
+  struct PotAndAbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
 };
 
 // Creates and returns a Values instance for the constants.
