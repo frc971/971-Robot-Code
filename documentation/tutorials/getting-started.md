@@ -66,7 +66,7 @@ To setup the buildserver you can follow these steps
     ```
     and if you aren't seeing any errors, it has been setup correctly. 
 5. Connecting to the build server
-    1. You can connect either through vscode ([instructions](documentation/tutorials/setup-ssh-vscode.md)) or manually via the terminal by conecting with `ssh frc971`
+    1. You can connect either through vscode ([instructions](setup-ssh-vscode.md)) or manually via the terminal by conecting with `ssh frc971`
 
 
 ### Locally
