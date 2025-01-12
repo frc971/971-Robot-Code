@@ -26,6 +26,10 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
@@ -37,7 +41,11 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
@@ -70,6 +78,10 @@ type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
 type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
 type RequestShiftScheduleResponseT = request_shift_schedule_response.RequestShiftScheduleResponseT
+type RequestAveragedDriverRankings2025 = request_averaged_driver_rankings_2025.RequestAveragedDriverRankings2025
+type RequestAveragedDriverRankings2025ResponseT = request_averaged_driver_rankings_2025_response.RequestAveragedDriverRankings2025ResponseT
+type RequestAveragedHumanRankings2025 = request_averaged_human_rankings_2025.RequestAveragedHumanRankings2025
+type RequestAveragedHumanRankings2025ResponseT = request_averaged_human_rankings_2025_response.RequestAveragedHumanRankings2025ResponseT
 type SubmitShiftSchedule = submit_shift_schedule.SubmitShiftSchedule
 type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftScheduleResponseT
 type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
@@ -77,6 +89,10 @@ type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverR
 type Action2024 = submit_2024_actions.Action
 type Submit2024Actions = submit_2024_actions.Submit2024Actions
 type Submit2024ActionsResponseT = submit_2024_actions_response.Submit2024ActionsResponseT
+type SubmitDriverRanking2025 = submit_driver_ranking_2025.SubmitDriverRanking2025
+type SubmitDriverRanking2025ResponseT = submit_driver_ranking_2025_response.SubmitDriverRanking2025ResponseT
+type SubmitHumanRanking2025 = submit_human_ranking_2025.SubmitHumanRanking2025
+type SubmitHumanRanking2025ResponseT = submit_human_ranking_2025_response.SubmitHumanRanking2025ResponseT
 type Delete2024DataScouting = delete_2024_data_scouting.Delete2024DataScouting
 type Delete2024DataScoutingResponseT = delete_2024_data_scouting_response.Delete2024DataScoutingResponseT
 
@@ -92,6 +108,8 @@ type Database interface {
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats2024() ([]db.Stats2024, error)
 	ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2024, error)
+	QueryDriverRanking2025(compCode string) ([]db.DriverRanking2025, error)
+	QueryHumanRanking2025(compCode string) ([]db.HumanRanking2025, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
@@ -100,6 +118,8 @@ type Database interface {
 	AddPitImage(db.PitImage) error
 	AddDriverRanking(db.DriverRankingData) error
 	AddAction(db.Action) error
+	AddDriverRanking2025(db.DriverRanking2025) error
+	AddHumanRanking2025(db.HumanRanking2025) error
 	DeleteFromStats2024(string, int32, int32, string) error
 	DeleteFromActions(string, int32, int32, string) error
 }
@@ -899,6 +919,74 @@ func (handler SubmitDriverRankingHandler) ServeHTTP(w http.ResponseWriter, req *
 	w.Write(builder.FinishedBytes())
 }
 
+type SubmitDriverRanking2025Handler struct {
+	db Database
+}
+
+func (handler SubmitDriverRanking2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "SubmitDriverRanking2025", submit_driver_ranking_2025.GetRootAsSubmitDriverRanking2025)
+	if !success {
+		return
+	}
+
+	err = handler.db.AddDriverRanking2025(db.DriverRanking2025{
+		CompCode:    string(request.CompCode()),
+		MatchNumber: request.MatchNumber(),
+		TeamNumber:  string(request.TeamNumber()),
+		Score:       request.Score(),
+	})
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert driver ranking: %v", err))
+		return
+	}
+
+	var response SubmitDriverRanking2025ResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type SubmitHumanRanking2025Handler struct {
+	db Database
+}
+
+func (handler SubmitHumanRanking2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "SubmitHumanRanking2025", submit_human_ranking_2025.GetRootAsSubmitHumanRanking2025)
+	if !success {
+		return
+	}
+
+	err = handler.db.AddHumanRanking2025(db.HumanRanking2025{
+		CompCode:    string(request.CompCode()),
+		MatchNumber: request.MatchNumber(),
+		TeamNumber:  string(request.TeamNumber()),
+		Score:       request.Score(),
+	})
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert driver ranking: %v", err))
+		return
+	}
+
+	var response SubmitHumanRanking2025ResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type requestAllNotesHandler struct {
 	db Database
 }
@@ -974,6 +1062,140 @@ func (handler requestAllDriverRankingsHandler) ServeHTTP(w http.ResponseWriter, 
 			Rank1:       ranking.Rank1,
 			Rank2:       ranking.Rank2,
 			Rank3:       ranking.Rank3,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type RankingIdentifier struct {
+	CompCode   string
+	TeamNumber string
+}
+
+type AveragedRankingData struct {
+	CompCode   string
+	TeamNumber string
+	Score      float32
+}
+
+type RequestAveragedHumanRankings2025Handler struct {
+	db Database
+}
+
+func (handler RequestAveragedHumanRankings2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "RequestAveragedHumanRankings2025", request_averaged_human_rankings_2025.GetRootAsRequestAveragedHumanRankings2025)
+	if !success {
+		return
+	}
+
+	rankings, err := handler.db.QueryHumanRanking2025(string(request.CompCode()))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
+		return
+	}
+
+	rankingSums := make(map[RankingIdentifier]db.HumanRanking2025)
+	currNumOfRankings := make(map[RankingIdentifier]float32)
+
+	var response RequestAveragedHumanRankings2025ResponseT
+	for _, ranking := range rankings {
+		identifier := RankingIdentifier{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber)}
+		sum, ok := rankingSums[identifier]
+		if ok {
+			sum.Score += ranking.Score
+			rankingSums[identifier] = sum
+		} else {
+			sum = db.HumanRanking2025{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber), Score: 0}
+			sum.Score = ranking.Score
+			rankingSums[identifier] = sum
+		}
+
+		_, ok2 := currNumOfRankings[identifier]
+		if ok2 {
+			currNumOfRankings[identifier] += float32(1)
+		} else {
+			currNumOfRankings[identifier] = float32(1)
+		}
+	}
+
+	for _, ranking := range rankingSums {
+		identifier := RankingIdentifier{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber)}
+		score := float32(ranking.Score) / currNumOfRankings[identifier]
+		response.Rankings2025List = append(response.Rankings2025List, &request_averaged_human_rankings_2025_response.HumanRanking2025T{
+			CompCode:   ranking.CompCode,
+			TeamNumber: ranking.TeamNumber,
+			Score:      score,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type RequestAveragedDriverRankings2025Handler struct {
+	db Database
+}
+
+func (handler RequestAveragedDriverRankings2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "RequestAveragedDriverRankings2025", request_averaged_driver_rankings_2025.GetRootAsRequestAveragedDriverRankings2025)
+	if !success {
+		return
+	}
+
+	rankings, err := handler.db.QueryDriverRanking2025(string(request.CompCode()))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
+		return
+	}
+
+	rankingSums := make(map[RankingIdentifier]db.DriverRanking2025)
+	currNumOfRankings := make(map[RankingIdentifier]float32)
+
+	var response RequestAveragedDriverRankings2025ResponseT
+	for _, ranking := range rankings {
+		identifier := RankingIdentifier{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber)}
+		sum, ok := rankingSums[identifier]
+		if ok {
+			sum.Score += ranking.Score
+			rankingSums[identifier] = sum
+		} else {
+			sum = db.DriverRanking2025{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber), Score: 0}
+			sum.Score = ranking.Score
+			rankingSums[identifier] = sum
+		}
+
+		_, ok2 := currNumOfRankings[identifier]
+		if ok2 {
+			currNumOfRankings[identifier] += float32(1)
+		} else {
+			currNumOfRankings[identifier] = float32(1)
+		}
+	}
+
+	for _, ranking := range rankingSums {
+		identifier := RankingIdentifier{CompCode: string(ranking.CompCode), TeamNumber: string(ranking.TeamNumber)}
+		score := float32(ranking.Score) / currNumOfRankings[identifier]
+		response.Rankings2025List = append(response.Rankings2025List, &request_averaged_driver_rankings_2025_response.DriverRanking2025T{
+			CompCode:   ranking.CompCode,
+			TeamNumber: ranking.TeamNumber,
+			Score:      score,
 		})
 	}
 
@@ -1110,6 +1332,8 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
+	scoutingServer.Handle("/requests/request/averaged_driver_rankings_2025", RequestAveragedDriverRankings2025Handler{db})
+	scoutingServer.Handle("/requests/request/averaged_human_rankings_2025", RequestAveragedHumanRankings2025Handler{db})
 	scoutingServer.Handle("/requests/request/2024_data_scouting", request2024DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
@@ -1121,5 +1345,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_2024_actions", submit2024ActionsHandler{db})
+	scoutingServer.Handle("/requests/submit/submit_driver_ranking_2025", SubmitDriverRanking2025Handler{db})
+	scoutingServer.Handle("/requests/submit/submit_human_ranking_2025", SubmitHumanRanking2025Handler{db})
 	scoutingServer.Handle("/requests/delete/delete_2024_data_scouting", Delete2024DataScoutingHandler{db})
 }

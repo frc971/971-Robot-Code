@@ -1045,6 +1045,66 @@ func TestDriverRanking(t *testing.T) {
 	}
 }
 
+func TestDriverRanking2025(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	expected := []DriverRanking2025{
+		{ID: 1, CompCode: "anc2024", MatchNumber: 12, TeamNumber: "1234", Score: 1},
+		{ID: 3, CompCode: "anc2024", MatchNumber: 12, TeamNumber: "832", Score: 3},
+	}
+
+	err := fixture.db.AddDriverRanking2025(
+		DriverRanking2025{CompCode: "anc2024", MatchNumber: 12, TeamNumber: "1234", Score: 1},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+	err = fixture.db.AddDriverRanking2025(
+		DriverRanking2025{CompCode: "anc2025", MatchNumber: 12, TeamNumber: "94", Score: 4},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+	err = fixture.db.AddDriverRanking2025(
+		DriverRanking2025{CompCode: "anc2024", MatchNumber: 12, TeamNumber: "832", Score: 3},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+
+	actual, err := fixture.db.QueryDriverRanking2025("anc2024")
+	check(t, err, "Failed to get Driver Ranking")
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+}
+
+func TestHumanRanking2025(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	expected := []HumanRanking2025{
+		{ID: 1, CompCode: "fol2024", MatchNumber: 9, TeamNumber: "22", Score: 1},
+		{ID: 2, CompCode: "fol2024", MatchNumber: 9, TeamNumber: "1234", Score: 2},
+	}
+
+	err := fixture.db.AddHumanRanking2025(
+		HumanRanking2025{CompCode: "fol2024", MatchNumber: 9, TeamNumber: "22", Score: 1},
+	)
+	check(t, err, "Failed to add Human Ranking")
+	err = fixture.db.AddHumanRanking2025(
+		HumanRanking2025{CompCode: "fol2024", MatchNumber: 9, TeamNumber: "1234", Score: 2},
+	)
+	check(t, err, "Failed to add Human Ranking")
+	err = fixture.db.AddHumanRanking2025(
+		HumanRanking2025{CompCode: "fol2025", MatchNumber: 9, TeamNumber: "93", Score: 3},
+	)
+	check(t, err, "Failed to add Human Ranking")
+
+	actual, err := fixture.db.QueryHumanRanking2025("fol2024")
+	check(t, err, "Failed to get Human Ranking")
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+}
+
 func TestParsedDriverRanking(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
