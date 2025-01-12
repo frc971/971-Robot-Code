@@ -1,5 +1,5 @@
-#ifndef y2025_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
-#define y2025_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
+#ifndef Y2025_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
+#define Y2025_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
 #include "aos/events/event_loop.h"
 #include "aos/json_to_flatbuffer.h"
@@ -20,8 +20,15 @@ namespace y2025::control_loops::superstructure {
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
+
+  const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
 
  protected:
   virtual void RunIteration(const Goal *goal, const Position *position,
@@ -32,6 +39,8 @@ class Superstructure
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const Constants *robot_constants_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+
+  PotAndAbsoluteEncoderSubsystem elevator_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 

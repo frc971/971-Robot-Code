@@ -12,6 +12,7 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/absolute_encoder.h"
 #include "y2025/constants/simulated_constants_sender.h"
+#include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2025/control_loops/superstructure/superstructure.h"
 #include "y2025/control_loops/superstructure/superstructure_can_position_generated.h"
 
@@ -29,6 +30,13 @@ using ::frc971::control_loops::
     CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+typedef Superstructure::PotAndAbsoluteEncoderSubsystem
+    PotAndAbsoluteEncoderSubsystem;
+using PotAndAbsoluteEncoderSimulator =
+    frc971::control_loops::SubsystemSimulator<
+        frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
+        PotAndAbsoluteEncoderSubsystem::State,
+        constants::Values::PotAndAbsEncoderConstants>;
 
 class SuperstructureSimulation {
  public:
@@ -44,9 +52,29 @@ class SuperstructureSimulation {
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<Output>("/superstructure")) {
-    (void)dt_;
-    (void)simulated_robot_constants;
+            event_loop_->MakeFetcher<Output>("/superstructure")),
+        elevator_(new CappedTestPlant(elevator::MakeElevatorPlant()),
+                  PositionSensorSimulator(simulated_robot_constants->robot()
+                                              ->elevator_constants()
+                                              ->zeroing_constants()
+                                              ->one_revolution_distance()),
+                  {.subsystem_params =
+                       {simulated_robot_constants->common()->elevator(),
+                        simulated_robot_constants->robot()
+                            ->elevator_constants()
+                            ->zeroing_constants()},
+                   .potentiometer_offset = simulated_robot_constants->robot()
+                                               ->elevator_constants()
+                                               ->potentiometer_offset()},
+                  frc971::constants::Range::FromFlatbuffer(
+                      simulated_robot_constants->common()->elevator()->range()),
+                  simulated_robot_constants->robot()
+                      ->elevator_constants()
+                      ->zeroing_constants()
+                      ->measured_absolute_position(),
+                  dt_)
+
+  {
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
@@ -65,7 +93,14 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
+    frc971::PotAndAbsolutePosition::Builder elevator_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> elevator_offset =
+        elevator_.encoder()->GetSensorValues(&elevator_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
+
+    position_builder.add_elevator(elevator_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
@@ -80,6 +115,8 @@ class SuperstructureSimulation {
   ::aos::Sender<CANPosition> superstructure_can_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
+
+  PotAndAbsoluteEncoderSimulator elevator_;
 
   bool first_ = true;
 };
@@ -128,9 +165,14 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   void VerifyNearGoal() {
+    constexpr double kThreshold = 0.001;
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
+
+    EXPECT_NEAR(
+        simulated_robot_constants_->common()->elevator_set_points()->neutral(),
+        superstructure_status_fetcher_->elevator()->position(), kThreshold);
 
     ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 
@@ -203,6 +245,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+
   RunFor(chrono::seconds(10));
 
   VerifyNearGoal();

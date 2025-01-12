@@ -97,6 +97,7 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:control_loop",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/zeroing:absolute_encoder",
         "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2025:constants",
@@ -142,6 +143,7 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
+        "//y2025/control_loops/superstructure/elevator:elevator_plants",
     ],
 )
 

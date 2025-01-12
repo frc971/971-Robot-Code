@@ -26,25 +26,76 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       constants_fetcher_(event_loop),
       robot_constants_(&constants_fetcher_.constants()),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      elevator_(robot_constants_->common()->elevator(),
+                robot_constants_->robot()
+                    ->elevator_constants()
+                    ->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
 void Superstructure::RunIteration(const Goal *goal, const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
-  (void)goal;
-  (void)position;
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
+    elevator_.Reset();
   }
-
   OutputT output_struct;
 
   if (joystick_state_fetcher_.Fetch() &&
       joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
+  aos::fbs::FixedStackAllocator<aos::fbs::Builder<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
+      elevator_goal_buffer;
+
+  aos::fbs::Builder<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic>
+      elevator_goal_builder(&elevator_goal_buffer);
+
+  double elevator_position =
+      robot_constants_->common()->elevator_set_points()->neutral();
+
+  if (goal != nullptr) {
+    switch (goal->elevator_goal()) {
+      case ElevatorGoal::NEUTRAL:
+        break;
+      case ElevatorGoal::INTAKE:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->intake();
+        break;
+      case ElevatorGoal::SCORE_L1:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->score_l1();
+        break;
+      case ElevatorGoal::SCORE_L2:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->score_l2();
+        break;
+      case ElevatorGoal::SCORE_L3:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->score_l3();
+        break;
+      case ElevatorGoal::SCORE_L4:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->score_l4();
+        break;
+    }
+  }
+
+  PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+      elevator_goal_builder.get(), elevator_position);
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *elevator_goal = &elevator_goal_builder->AsFlatbuffer();
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      elevator_status_offset = elevator_.Iterate(
+          elevator_goal, position->elevator(),
+          output != nullptr ? &(output_struct.elevator_voltage) : nullptr,
+          status->fbb());
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
@@ -52,12 +103,12 @@ void Superstructure::RunIteration(const Goal *goal, const Position *position,
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = true;
-  const bool estopped = false;
+  const bool zeroed = elevator_.zeroed();
+  const bool estopped = elevator_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
-
+  status_builder.add_elevator(elevator_status_offset);
   (void)status->Send(status_builder.Finish());
 }
 }  // namespace y2025::control_loops::superstructure
