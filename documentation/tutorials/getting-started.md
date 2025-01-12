@@ -50,7 +50,7 @@ To setup the buildserver you can follow these steps
 4. Setting up an SSH aliases
     1. This makes it easier to access the buildserver with IDEs like vscode.
     2. **Note:** Similar to earlier, Powershell is required for this step on windows.
-        1. You need to place these contents into `~/.ssh/aliases`
+        1. You need to place these contents into `~/.ssh/config`
         ```bash
         Host frc971
           Port 2222
