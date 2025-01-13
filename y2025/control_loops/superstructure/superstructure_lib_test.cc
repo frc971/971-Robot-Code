@@ -81,6 +81,10 @@ class SuperstructureSimulation {
           if (!first_) {
             EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
             EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
+
+            elevator_.Simulate(
+                superstructure_output_fetcher_->elevator_voltage(),
+                superstructure_status_fetcher_->elevator());
           }
           first_ = false;
           SendPositionMessage();
@@ -169,10 +173,42 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
+    double elevator_expected_position =
+        simulated_robot_constants_->common()->elevator_set_points()->neutral();
 
-    EXPECT_NEAR(
-        simulated_robot_constants_->common()->elevator_set_points()->neutral(),
-        superstructure_status_fetcher_->elevator()->position(), kThreshold);
+    switch (superstructure_goal_fetcher_->elevator_goal()) {
+      case ElevatorGoal::NEUTRAL:
+        break;
+      case ElevatorGoal::INTAKE:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->intake();
+        break;
+      case ElevatorGoal::SCORE_L1:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->score_l1();
+        break;
+      case ElevatorGoal::SCORE_L2:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->score_l2();
+        break;
+      case ElevatorGoal::SCORE_L3:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->score_l3();
+        break;
+      case ElevatorGoal::SCORE_L4:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->score_l4();
+        break;
+    }
+
+    EXPECT_NEAR(elevator_expected_position,
+                superstructure_status_fetcher_->elevator()->position(),
+                kThreshold);
 
     ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 
@@ -246,7 +282,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(10));
+  RunFor(chrono::seconds(1));
 
   VerifyNearGoal();
 }
@@ -262,6 +298,72 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests that the elevator is able to reach all set points
+TEST_F(SuperstructureTest, PositionTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L1);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L2);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L3);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L4);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
 }
 
 }  // namespace y2025::control_loops::superstructure::testing
