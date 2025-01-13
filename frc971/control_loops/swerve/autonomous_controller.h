@@ -29,7 +29,7 @@ class AutonomousController {
   // running trajectory
   std::optional<size_t> trajectory_index_;
 
-  aos::FlatbufferDetachedBuffer<frc971::control_loops::swerve::SwerveTrajectory>
+  aos::FlatbufferVector<frc971::control_loops::swerve::SwerveTrajectory>
       trajectory_;
 
   aos::Sender<GoalStatic> swerve_goal_sender_;

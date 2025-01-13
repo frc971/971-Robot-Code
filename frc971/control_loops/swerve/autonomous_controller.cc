@@ -1,5 +1,6 @@
 #include "autonomous_controller.h"
 
+#include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/swerve/simplified_dynamics.h"
 #include "frc971/control_loops/swerve/swerve_trajectory_static.h"
 #include "frc971/math/flatbuffers_matrix.h"
@@ -22,7 +23,7 @@ AutonomousController::AutonomousController(
     const std::unordered_map<std::string_view, std::function<void()>>
         &callbacks)
     : trajectory_index_(std::nullopt),
-      trajectory_(aos::JsonFileToFlatbuffer<
+      trajectory_(aos::FileToFlatbuffer<
                   frc971::control_loops::swerve::SwerveTrajectory>(
           trajectory_path)),
       swerve_goal_sender_(

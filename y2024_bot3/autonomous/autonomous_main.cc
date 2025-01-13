@@ -25,7 +25,7 @@ class AutoGoalSender {
 
     autonomous_controller_ =
         std::make_unique<frc971::control_loops::swerve::AutonomousController>(
-            event_loop, "trajectory/trajectory.json", callbacks);
+            event_loop, "trajectory/trajectory.bfbs", callbacks);
   }
 
   void set_goals(PivotGoal pivot_goal, IntakeGoal intake_goal) {

@@ -1,5 +1,3 @@
-load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
-
 package(default_visibility = ["//y2024_bot3:__subpackages__"])
 
 filegroup(
@@ -33,21 +31,27 @@ genrule(
     ],
 )
 
-filegroup(
-    name = "trajectory_jsons",
+genrule(
+    name = "precompile_trajectory_flatbuffer",
     srcs = [
         "trajectory.json",
     ],
+    outs = [
+        "trajectory.bfbs",
+    ],
+    cmd = "$(location //frc971/control_loops/swerve:gen_trajectory_flatbuffer) $(SRCS) $(OUTS)",
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    tools = [
+        "//frc971/control_loops/swerve:gen_trajectory_flatbuffer",
+    ],
+    visibility = ["//visibility:public"],
 )
 
-aos_downloader_dir(
-    name = "trajectory",
+filegroup(
+    name = "trajectory_bfbs",
     srcs = [
-        ":trajectory_jsons",
+        "trajectory.bfbs",
     ],
-    dir = "trajectory",
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
 )
 
 cc_binary(

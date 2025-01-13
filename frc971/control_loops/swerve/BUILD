@@ -595,3 +595,19 @@ cc_library(
         "//frc971/math:flatbuffers_matrix",
     ],
 )
+
+cc_binary(
+    name = "gen_trajectory_flatbuffer",
+    srcs = [
+        "gen_trajectory_flatbuffer.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":swerve_trajectory_fbs",
+        "//aos:init",
+        "//aos/events:event_loop",
+        "//aos/logging",
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
