@@ -218,6 +218,7 @@ cc_binary(
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
+        "//aos/util:wrapping_counter",
         "//frc971:can_configuration_fbs",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:control_loop",
@@ -228,10 +229,12 @@ cc_binary(
         "//frc971/input:robot_state_fbs",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:ADIS16448",
+        "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:can_drivetrain_writer",
         "//frc971/wpilib:can_sensor_reader",
         "//frc971/wpilib:dma",
         "//frc971/wpilib:drivetrain_writer",
+        "//frc971/wpilib:encoder_and_potentiometer",
         "//frc971/wpilib:generic_can_writer",
         "//frc971/wpilib:joystick_sender",
         "//frc971/wpilib:logging_fbs",
@@ -248,6 +251,7 @@ cc_binary(
         "//y2025/control_loops/superstructure:superstructure_can_position_fbs",
         "//y2025/control_loops/superstructure:superstructure_output_fbs",
         "//y2025/control_loops/superstructure:superstructure_position_fbs",
+        "//y2025/control_loops/superstructure/elevator:elevator_plants",
     ],
 )
 

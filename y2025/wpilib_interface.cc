@@ -12,6 +12,7 @@
 
 #include "absl/flags/flag.h"
 
+#include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/ahal/TalonFX.h"
 #undef ERROR
@@ -26,14 +27,20 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
+#include "aos/util/wrapping_counter.h"
 #include "frc971/can_configuration_generated.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_static.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
+#include "frc971/wpilib/buffered_pcm.h"
+#include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/dma.h"
+#include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/generic_can_writer.h"
 #include "frc971/wpilib/joystick_sender.h"
+#include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
@@ -68,10 +75,17 @@ namespace {
 
 // TODO: Replace these values once robot is built
 constexpr double kMaxFastEncoderPulsesPerSecond =
-    std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond()});
+    std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+              Values::kMaxElevatorEncoderPulsesPerSecond()});
 
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
+
+double elevator_pot_translate(double voltage) {
+  return voltage * Values::kElevatorPotMetersPerVolt();
+}
+
+}  // namespace
 
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
@@ -92,7 +106,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
   };
-  void Start() override { AddToDMA(&imu_yaw_rate_reader_); }
+
+  void Start() override {
+    AddToDMA(&imu_yaw_rate_reader_);
+    AddToDMA(&elevator_sensors_.reader());
+  }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
     imu_yaw_rate_input_ = ::std::move(sensor);
@@ -103,6 +121,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     {
       aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
           superstructure_position_sender_.MakeStaticBuilder();
+      CopyPosition(elevator_sensors_, builder->add_elevator(),
+                   Values::kElevatorEncoderCountsPerRevolution(),
+                   Values::kElevatorPotRatio(), elevator_pot_translate, true,
+                   robot_constants_->robot()
+                       ->elevator_constants()
+                       ->potentiometer_offset());
+
       builder.CheckOk(builder.Send());
     }
 
@@ -121,6 +146,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       auto builder = gyro_sender_.MakeBuilder();
       ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
           builder.MakeBuilder<::frc971::sensors::GyroReading>();
+
       builder.CheckOk(builder.Send(gyro_reading_builder.Finish()));
     }
   }
@@ -153,6 +179,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                                     std::move(absolute_pwm));
   }
 
+  void set_elevator(::std::unique_ptr<frc::Encoder> encoder,
+                    ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
+                    ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    fast_encoder_filter_.Add(encoder.get());
+    elevator_sensors_.set_encoder(::std::move(encoder));
+    elevator_sensors_.set_absolute_pwm(::std::move(absolute_pwm));
+    elevator_sensors_.set_potentiometer(::std::move(potentiometer));
+  }
+
  private:
   const Constants *robot_constants_;
 
@@ -163,6 +198,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
+
+  frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer elevator_sensors_;
 
   aos::Sender<frc971::control_loops::swerve::PositionStatic>
       drivetrain_position_sender_;
@@ -242,6 +279,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                         std::make_unique<frc::DigitalInput>(2));
     sensor_reader.set_back_right_encoder(
         make_encoder(3), std::make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_elevator(make_encoder(4),
+                               make_unique<frc::DigitalInput>(4),
+                               make_unique<frc::AnalogInput>(4));
+    // todo set the numbers
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -276,20 +317,44 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::vector<std::shared_ptr<TalonFX>> talons;
     modules.PopulateFalconsVector(&talons);
 
+    std::shared_ptr<TalonFX> elevator_one = std::make_shared<TalonFX>(
+        9, true, "Drivetrain Bus", &signals_registry,
+        current_limits->elevator_stator_current_limit(),
+        current_limits->elevator_supply_current_limit());
+    std::shared_ptr<TalonFX> elevator_two = std::make_shared<TalonFX>(
+        10, true, "Drivetrain Bus", &signals_registry,
+        current_limits->elevator_stator_current_limit(),
+        current_limits->elevator_supply_current_limit());
+
+    talons.push_back(elevator_one);
+    talons.push_back(elevator_two);
+
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(signals_registry), talons,
-        [&superstructure_can_position_sender, &talons, &can_position_sender,
-         &modules, &robot_constants](ctre::phoenix::StatusCode status) {
+        [&elevator_one, &elevator_two, &superstructure_can_position_sender,
+         &talons, &can_position_sender, &modules,
+         &robot_constants](ctre::phoenix::StatusCode status) {
           for (auto talon : talons) {
             talon->RefreshNontimesyncedSignals();
           }
+
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_can_builder =
                   superstructure_can_position_sender.MakeStaticBuilder();
+
+          elevator_one->SerializePosition(
+              superstructure_can_builder->add_elevator_one(),
+              constants::Values::kElevatorOutputRatio);
+          elevator_two->SerializePosition(
+              superstructure_can_builder->add_elevator_two(),
+              constants::Values::kElevatorOutputRatio);
+
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
+
           aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
               StaticBuilder builder = can_position_sender.MakeStaticBuilder();
+
           const frc971::wpilib::swerve::SwerveModule::ModuleGearRatios
               gear_ratios{
                   .rotation = constants::Values::kRotationModuleRatio,
@@ -303,6 +368,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                                  gear_ratios);
           modules.back_right->PopulateCanPosition(builder->add_back_right(),
                                                   gear_ratios);
+
           builder.CheckOk(builder.Send());
         },
         frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
@@ -320,9 +386,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
             [](const control_loops::superstructure::Output &output,
                const std::map<std::string_view, std::shared_ptr<TalonFX>>
                    &talonfx_map) {
-              (void)output;
-              (void)talonfx_map;
+              talonfx_map.find("elevator_one")
+                  ->second->WriteVoltage(output.elevator_voltage());
+              talonfx_map.find("elevator_two")
+                  ->second->WriteVoltage(output.elevator_voltage());
             });
+
+    can_superstructure_writer.add_talonfx("elevator_one", elevator_one);
+    can_superstructure_writer.add_talonfx("elevator_two", elevator_two);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_superstructure_writer](
@@ -336,6 +407,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace
 }  // namespace y2025::wpilib
+
 AOS_ROBOT_CLASS(::y2025::wpilib::WPILibRobot);
