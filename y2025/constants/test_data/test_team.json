@@ -1,5 +1,7 @@
 {% from 'y2025/constants/common.jinja2' import elevator_zero %}
 
+{% from 'y2025/constants/common.jinja2' import pivot_zero %}
+
 {
   "cameras": [
   ],
@@ -12,6 +14,16 @@
       ) %}
       "zeroing_constants": {{ elevator_zero | tojson(indent=2)}},
       "potentiometer_offset": 0.0
+    },
+    //TODO change pivot constants for y2025 bot
+    "pivot_constants": {
+      {% set _ = pivot_zero.update(
+          {
+              "measured_absolute_position" : 0.17940018799940982
+          }
+      ) %}
+      "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
+      "potentiometer_offset": {{ 5.249596184591311 }}
     }
   },
   {% include 'y2025/constants/common.json' %}

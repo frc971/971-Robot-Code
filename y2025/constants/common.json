@@ -10,6 +10,31 @@
     "elevator_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
+  //TODO change constants for y2025 bot
+  "pivot": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 40.0
+    },
+    "range": {
+        "lower_hard": -0.4979327221131373,
+        "upper_hard": 1.557377933185559,
+        "lower": -0.4979327221131373,
+        "upper": 1.557377933185559
+    },
+    "loop": {% include 'y2025/control_loops/superstructure/pivot/integral_pivot_plant.json' %}
+  },
+  "pivot_set_points": {
+    // TODO: Update these set point constants
+    "neutral": 0,
+    "score": 1
+  },
   "elevator": {
     "zeroing_voltage": 3.0,
     "operating_voltage": 12.0,

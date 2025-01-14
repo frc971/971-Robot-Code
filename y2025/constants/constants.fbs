@@ -25,8 +25,14 @@ table PotAndAbsEncoderConstants {
   potentiometer_offset:double (id: 1);
 }
 
+table PivotSetPoints {
+  neutral:double (id: 0);
+  score:double (id: 1);
+}
+
 table RobotConstants {
   elevator_constants:PotAndAbsEncoderConstants (id: 0);
+  pivot_constants:PotAndAbsEncoderConstants (id: 1);
 }
 
 // Common table for constants unrelated to the robot
@@ -38,6 +44,7 @@ table Common {
   pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
   elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 5);
   elevator_set_points:ElevatorSetPoints (id: 6);
+  pivot_set_points:PivotSetPoints (id: 7);
 }
 
 table Constants {

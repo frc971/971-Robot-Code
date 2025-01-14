@@ -1,6 +1,19 @@
 {% set pi = 3.14159265358979323846 %}
-
 {%set zeroing_sample_size = 200 %}
+{# Pivot #}
+{# TODO - Add actual pivot encoder ratio here #}
+{% set pivot_encoder_ratio = (12.0 / 48.0) %}
+{%
+set pivot_zero = {
+    "average_filter_size": zeroing_sample_size,
+    "one_revolution_distance": pi * 2.0 * pivot_encoder_ratio,
+    "zeroing_threshold": 0.0005,
+    "moving_buffer_size": 20,
+    "allowable_encoder_error": 0.9
+}
+%}
+
+# TODO change constants for y2025 bot
 
 {# Elevator #}
 {# TODO - Add actual elevator encoder ratio here #}
