@@ -144,6 +144,7 @@ cc_test(
         "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
         "//y2025/control_loops/superstructure/elevator:elevator_plants",
+        "//y2025/control_loops/superstructure/pivot:pivot_plants",
     ],
 )
 

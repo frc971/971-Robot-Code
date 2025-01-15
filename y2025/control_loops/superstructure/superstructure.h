@@ -29,6 +29,7 @@ class Superstructure
                           const ::std::string &name = "/superstructure");
 
   const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
+  const PotAndAbsoluteEncoderSubsystem &pivot() const { return pivot_; }
 
  protected:
   virtual void RunIteration(const Goal *goal, const Position *position,
@@ -39,8 +40,8 @@ class Superstructure
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const Constants *robot_constants_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
-
   PotAndAbsoluteEncoderSubsystem elevator_;
+  PotAndAbsoluteEncoderSubsystem pivot_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
