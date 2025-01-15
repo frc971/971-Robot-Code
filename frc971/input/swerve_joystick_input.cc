@@ -19,8 +19,11 @@ void SwerveJoystickInput::RunIteration(
 
 void SwerveJoystickInput::DoRunIteration(
     const ::frc971::input::driver_station::Data &data) {
-  drivetrain_input_reader_->HandleDrivetrain(data);
-  HandleTeleop(data);
+  if (!data.GetControlBit(
+          frc971::input::driver_station::ControlBit::kAutonomous)) {
+    drivetrain_input_reader_->HandleDrivetrain(data);
+    HandleTeleop(data);
+  }
   action_queue_.Tick();
   was_running_ = action_queue_.Running();
 }

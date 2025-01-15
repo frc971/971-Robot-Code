@@ -5,6 +5,7 @@ include "frc971/zeroing/constants.fbs";
 include "frc971/wpilib/swerve/swerve_constants.fbs";
 include "frc971/control_loops/swerve/swerve_zeroing.fbs";
 include "frc971/math/matrix.fbs";
+include "frc971/input/swerve_input_config.fbs";
 
 namespace y2024_bot3;
 
@@ -27,6 +28,7 @@ table PotAndAbsEncoderConstants {
 table RobotConstants {
   arm_constants:PotAndAbsEncoderConstants (id: 0);
   swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 1);
+  input_config: frc971.input.InputConfig (id: 2);
 }
 
 table IntakeVoltages {

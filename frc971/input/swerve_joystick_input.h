@@ -15,7 +15,13 @@ namespace frc971::input {
 class SwerveJoystickInput : public ::frc971::input::JoystickInput {
  public:
   // Configuration parameters that don't really belong in the DrivetrainConfig.
+
   struct InputConfig {
+    // Offsets for zeroing the X and Y offset on the controller.
+    double vx_offset;
+    double vy_offset;
+    double omega_offset;
+
     // Use button 14 and 15 to encode the id of the joystick and remap the
     // joysticks so that their ids are independent of their order on the
     // driverstation.
@@ -25,7 +31,12 @@ class SwerveJoystickInput : public ::frc971::input::JoystickInput {
                       const InputConfig &input_config)
       : ::frc971::input::JoystickInput(event_loop),
         input_config_(input_config),
-        drivetrain_input_reader_(SwerveDrivetrainInputReader::Make(event_loop)),
+        drivetrain_input_reader_(SwerveDrivetrainInputReader::Make(
+            event_loop,
+            SwerveDrivetrainInputReader::SwerveConfig{
+                .vx_offset = input_config.vx_offset,
+                .vy_offset = input_config.vy_offset,
+                .omega_offset = input_config.omega_offset})),
         goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
             "/drivetrain")) {}
 

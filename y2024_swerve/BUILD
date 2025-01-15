@@ -286,5 +286,6 @@ cc_binary(
         "//frc971/input:redundant_joystick_data",
         "//frc971/input:swerve_joystick_input",
         "//y2024/control_loops/drivetrain:drivetrain_base",
+        "//y2024_swerve/constants:constants_fbs",
     ],
 )

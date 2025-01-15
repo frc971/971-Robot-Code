@@ -158,22 +158,19 @@ class DrivetrainInputReader {
 };
 
 class SwerveDrivetrainInputReader {
-  SwerveDrivetrainInputReader(::aos::EventLoop *event_loop,
-                              driver_station::JoystickAxis vx_axis,
-                              driver_station::JoystickAxis vy_axis,
-                              driver_station::JoystickAxis omega_axis)
-      : vx_axis_(vx_axis),
-        vy_axis_(vy_axis),
-        omega_axis_(omega_axis),
-        goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
-            "/drivetrain")) {}
-
  public:
   virtual ~SwerveDrivetrainInputReader() = default;
 
+  struct SwerveConfig {
+    // These values are used for zeroing the x and y part of the controller.
+    double vx_offset;
+    double vy_offset;
+    double omega_offset;
+  };
+
   // Constructs the appropriate DrivetrainInputReader.
   static std::unique_ptr<SwerveDrivetrainInputReader> Make(
-      ::aos::EventLoop *event_loop);
+      ::aos::EventLoop *event_loop, const SwerveConfig swerve_config);
 
   // Processes new joystick data and publishes drivetrain goal messages.
   void HandleDrivetrain(const ::frc971::input::driver_station::Data &data);
@@ -198,6 +195,17 @@ class SwerveDrivetrainInputReader {
   };
 
  private:
+  SwerveDrivetrainInputReader(::aos::EventLoop *event_loop,
+                              const SwerveConfig swerve_config,
+                              driver_station::JoystickAxis vx_axis,
+                              driver_station::JoystickAxis vy_axis,
+                              driver_station::JoystickAxis omega_axis)
+      : vx_axis_(vx_axis),
+        vy_axis_(vy_axis),
+        omega_axis_(omega_axis),
+        goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
+            "/drivetrain")),
+        swerve_config_(swerve_config) {}
   // Computes the steering and throttle from the provided driverstation data.
   SwerveGoals GetSwerveGoals(const ::frc971::input::driver_station::Data &data);
 
@@ -206,6 +214,8 @@ class SwerveDrivetrainInputReader {
   // The scale for the joysticks for closed loop mode converting
   // joysticks to meters displacement on the two wheels.
   double wheel_multiplier_ = 0.5;
+
+  const SwerveConfig swerve_config_;
 };
 
 // Implements DrivetrainInputReader for the original steering wheel.
