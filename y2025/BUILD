@@ -253,6 +253,7 @@ cc_binary(
         "//y2025/control_loops/superstructure:superstructure_output_fbs",
         "//y2025/control_loops/superstructure:superstructure_position_fbs",
         "//y2025/control_loops/superstructure/elevator:elevator_plants",
+        "//y2025/control_loops/superstructure/pivot:pivot_plants",
     ],
 )
 
