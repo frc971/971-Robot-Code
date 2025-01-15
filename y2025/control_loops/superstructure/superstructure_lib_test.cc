@@ -11,10 +11,14 @@
 #include "frc971/control_loops/subsystem_simulator.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/absolute_encoder.h"
+#include "y2025/constants.h"
+#include "y2025/constants/constants_generated.h"
 #include "y2025/constants/simulated_constants_sender.h"
 #include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
+#include "y2025/control_loops/superstructure/pivot/pivot_plant.h"
 #include "y2025/control_loops/superstructure/superstructure.h"
 #include "y2025/control_loops/superstructure/superstructure_can_position_generated.h"
+#include "y2025/control_loops/superstructure/superstructure_position_generated.h"
 
 ABSL_FLAG(std::string, output_folder, "",
           "If set, logs all channels to the provided logfile.");
@@ -37,6 +41,9 @@ using PotAndAbsoluteEncoderSimulator =
         frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
         PotAndAbsoluteEncoderSubsystem::State,
         constants::Values::PotAndAbsEncoderConstants>;
+
+typedef Superstructure::PotAndAbsoluteEncoderSubsystem
+    PotAndAbsoluteEncoderSubsystem;
 
 class SuperstructureSimulation {
  public:
@@ -72,19 +79,38 @@ class SuperstructureSimulation {
                       ->elevator_constants()
                       ->zeroing_constants()
                       ->measured_absolute_position(),
-                  dt_)
-
-  {
+                  dt_),
+        pivot_(
+            new CappedTestPlant(pivot::MakepivotPlant()),
+            PositionSensorSimulator(simulated_robot_constants->robot()
+                                        ->pivot_constants()
+                                        ->zeroing_constants()
+                                        ->one_revolution_distance()),
+            {.subsystem_params = {simulated_robot_constants->common()->pivot(),
+                                  simulated_robot_constants->robot()
+                                      ->pivot_constants()
+                                      ->zeroing_constants()},
+             .potentiometer_offset = simulated_robot_constants->robot()
+                                         ->pivot_constants()
+                                         ->potentiometer_offset()},
+            frc971::constants::Range::FromFlatbuffer(
+                simulated_robot_constants->common()->pivot()->range()),
+            simulated_robot_constants->robot()
+                ->pivot_constants()
+                ->zeroing_constants()
+                ->measured_absolute_position(),
+            dt_) {
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
           if (!first_) {
             EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
             EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
-
             elevator_.Simulate(
                 superstructure_output_fetcher_->elevator_voltage(),
                 superstructure_status_fetcher_->elevator());
+            pivot_.Simulate(superstructure_output_fetcher_->pivot_voltage(),
+                            superstructure_status_fetcher_->pivot());
           }
           first_ = false;
           SendPositionMessage();
@@ -102,7 +128,13 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> elevator_offset =
         elevator_.encoder()->GetSensorValues(&elevator_builder);
 
+    frc971::PotAndAbsolutePosition::Builder pivot_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> pivot_offset =
+        pivot_.encoder()->GetSensorValues(&pivot_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
+    position_builder.add_pivot(pivot_offset);
 
     position_builder.add_elevator(elevator_offset);
 
@@ -121,6 +153,7 @@ class SuperstructureSimulation {
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   PotAndAbsoluteEncoderSimulator elevator_;
+  PotAndAbsoluteEncoderSimulator pivot_;
 
   bool first_ = true;
 };
@@ -169,7 +202,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   void VerifyNearGoal() {
-    constexpr double kThreshold = 0.001;
+    constexpr double kEpsPivot = 0.001;
+    constexpr double kEpsElevator = 0.001;
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
@@ -208,7 +242,17 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     EXPECT_NEAR(elevator_expected_position,
                 superstructure_status_fetcher_->elevator()->position(),
-                kThreshold);
+                kEpsElevator);
+
+    auto pivot_positions =
+        simulated_robot_constants_->common()->pivot_set_points();
+    double pivot_set_point = pivot_positions->neutral();
+    if (superstructure_goal_fetcher_->pivot_goal() == PivotGoal::SCORE) {
+      pivot_set_point = pivot_positions->score();
+    }
+
+    EXPECT_NEAR(pivot_set_point,
+                superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
 
     ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 
@@ -300,8 +344,7 @@ TEST_F(SuperstructureTest, DisableTest) {
   CheckIfZeroed();
 }
 
-// Tests that the elevator is able to reach all set points
-TEST_F(SuperstructureTest, PositionTest) {
+TEST_F(SuperstructureTest, ElevatorPositionTest) {
   SetEnabled(true);
   WaitUntilZeroed();
 
@@ -362,6 +405,34 @@ TEST_F(SuperstructureTest, PositionTest) {
   }
 
   RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+}
+
+TEST_F(SuperstructureTest, PivotPositionTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::NEUTRAL);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 }

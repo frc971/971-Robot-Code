@@ -27,14 +27,17 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       robot_constants_(&constants_fetcher_.constants()),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      elevator_(robot_constants_->common()->elevator(),
-                robot_constants_->robot()
-                    ->elevator_constants()
-                    ->zeroing_constants()) {
+      elevator_(
+          robot_constants_->common()->elevator(),
+          robot_constants_->robot()->elevator_constants()->zeroing_constants()),
+      pivot_(
+          robot_constants_->common()->pivot(),
+          robot_constants_->robot()->pivot_constants()->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
-void Superstructure::RunIteration(const Goal *goal, const Position *position,
+void Superstructure::RunIteration(const Goal *unsafe_goal,
+                                  const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
   if (WasReset()) {
@@ -59,8 +62,8 @@ void Superstructure::RunIteration(const Goal *goal, const Position *position,
   double elevator_position =
       robot_constants_->common()->elevator_set_points()->neutral();
 
-  if (goal != nullptr) {
-    switch (goal->elevator_goal()) {
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->elevator_goal()) {
       case ElevatorGoal::NEUTRAL:
         break;
       case ElevatorGoal::INTAKE:
@@ -97,6 +100,33 @@ void Superstructure::RunIteration(const Goal *goal, const Position *position,
           output != nullptr ? &(output_struct.elevator_voltage) : nullptr,
           status->fbb());
 
+  aos::fbs::FixedStackAllocator<aos::fbs::Builder<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
+      pivot_goal_buffer;
+
+  aos::fbs::Builder<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic>
+      pivot_goal_builder(&pivot_goal_buffer);
+
+  double pivot_position =
+      robot_constants_->common()->pivot_set_points()->neutral();
+
+  if (unsafe_goal != nullptr && unsafe_goal->pivot_goal() == PivotGoal::SCORE) {
+    pivot_position = robot_constants_->common()->pivot_set_points()->score();
+  }
+  PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(pivot_goal_builder.get(),
+                                                      pivot_position);
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *pivot_goal = &pivot_goal_builder->AsFlatbuffer();
+
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      pivot_status_offset = pivot_.Iterate(
+          pivot_goal, position->pivot(),
+          output != nullptr ? &(output_struct.pivot_voltage) : nullptr,
+          status->fbb());
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
@@ -109,6 +139,8 @@ void Superstructure::RunIteration(const Goal *goal, const Position *position,
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
   status_builder.add_elevator(elevator_status_offset);
+  status_builder.add_pivot(pivot_status_offset);
+
   (void)status->Send(status_builder.Finish());
 }
 }  // namespace y2025::control_loops::superstructure

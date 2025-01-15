@@ -27,9 +27,9 @@
     },
     "range": {
         "lower_hard": -0.4979327221131373,
-        "upper_hard": 1.557377933185559,
+        "upper_hard": 2,
         "lower": -0.4979327221131373,
-        "upper": 1.557377933185559
+        "upper": 2
     },
     "loop": {% include 'y2025/control_loops/superstructure/pivot/integral_pivot_plant.json' %}
   },
