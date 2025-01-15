@@ -308,3 +308,23 @@ py_binary(
         "@pip//python_gflags",
     ],
 )
+
+py_library(
+    name = "swerve_trajectory_optimizer",
+    srcs = ["swerve_trajectory_optimizer.py"],
+    deps = [
+        "//frc971/control_loops/python:controls",
+        "//frc971/control_loops/swerve:dynamics",
+        "@pip//casadi",
+        "@pip//scipy",
+    ],
+)
+
+py_test(
+    name = "swerve_trajectory_optimizer_test",
+    srcs = ["swerve_trajectory_optimizer_test.py"],
+    deps = [
+        ":python_init",
+        ":swerve_trajectory_optimizer",
+    ],
+)

@@ -588,6 +588,10 @@ class SwerveSimulation {
     result_py->emplace_back(
         absl::Substitute("ROBOT_WIDTH = $0", ccode(*robot_width_)));
     result_py->emplace_back(absl::Substitute("CASTER = $0", ccode(*caster_)));
+    result_py->emplace_back(absl::Substitute("ROBOT_MASS = $0", ccode(*m_)));
+    result_py->emplace_back(absl::Substitute("ROBOT_MOI = $0", ccode(*J_)));
+    result_py->emplace_back(
+        absl::Substitute("CORNERING_TIRE_STIFFNESS = $0", ccode(*Cy_)));
     result_py->emplace_back("STATE_THETAS0 = 0");
     result_py->emplace_back("STATE_THETAD0 = 1");
     result_py->emplace_back("STATE_OMEGAS0 = 2");
@@ -897,6 +901,52 @@ class SwerveSimulation {
         },
         &result_py);
 
+    // manually write these functions because they are for specific use-cases
+    // and don't need the whole swerve state
+    result_py.emplace_back("");
+    result_py.emplace_back(
+        "#Returns the current to the driving motor for a desired driving "
+        "force");
+    result_py.emplace_back("def driving_current_from_force(force):");
+    result_py.emplace_back(absl::Substitute("    return force*$0",
+                                            ccode(*div(mul(rw_, Gd_), Ktd_))));
+    result_py.emplace_back("");
+    result_py.emplace_back(
+        "#Returns the current to the steering motor given some inputs");
+    result_py.emplace_back(
+        "def steering_current(angular_acceleration, driving_force):");
+    auto GsKt = div(Gs_, Kts_);
+    auto p1 = mul(GsKt, add(Js_, div(Jsm_, mul(Gs_, Gs_))));
+    auto p2 =
+        mul(mul(GsKt,
+                add(wb_, mul(add(rs_, rp_), sub(integer(1), div(rb1_, rp_))))),
+            div(rw_, rb2_));
+    result_py.emplace_back(
+        absl::Substitute("    return $0*angular_acceleration+$1*driving_force",
+                         ccode(*p1), ccode(*p2)));
+    result_py.emplace_back("");
+    result_py.emplace_back("#Returns the ith module position directly");
+    result_py.emplace_back("def mounting_location_static(i):");
+    for (int i = 0; i < 4; i++) {
+      result_py.emplace_back(absl::Substitute("   if i == $0:", i));
+      result_py.emplace_back(
+          absl::Substitute("       return casadi.DM([$0, $1])",
+                           ccode(*modules_[i].mounting_location.get(0, 0)),
+                           ccode(*modules_[i].mounting_location.get(1, 0))));
+    }
+    result_py.emplace_back("");
+    result_py.emplace_back("#Returns the speed of the driving motor");
+    result_py.emplace_back("def drive_motor_vel(mod_vel, steering_vel):");
+    auto divconst = mul(mul(mul(Gd1_, Gd2_), Gd3_), rp_);
+    result_py.emplace_back(
+        absl::Substitute("   return $0*steering_vel - $1*mod_vel",
+                         ccode(*div(mul(Gd3_, rs_), divconst)),
+                         ccode(*div(div(rp_, rw_), divconst))));
+    result_py.emplace_back("");
+    result_py.emplace_back("#Returns the speed of the steering motor");
+    result_py.emplace_back("def steer_motor_vel(steering_vel):");
+    result_py.emplace_back(absl::Substitute("   return steering_vel*$0",
+                                            ccode(*(div(integer(1), Gs_)))));
     aos::util::WriteStringToFileOrDie(py_path, absl::StrJoin(result_py, "\n"));
   }
 
