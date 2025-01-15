@@ -23,6 +23,12 @@
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
       "potentiometer_offset": {{ 5.249596184591311 }}
+    },
+    "input_config": {
+      "use_redundant_joysticks": true,
+      "vx_offset": 0.31496063,
+      "vy_offset": 0.2519685,
+      "omega_offset": 0.0
     }
   },
   {% include 'y2025/constants/common.json' %}
