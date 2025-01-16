@@ -2,6 +2,12 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2025.control_loops.superstructure;
 
+enum EndEffectorGoal : ubyte {
+  NEUTRAL = 0,
+  INTAKE = 1,
+  SPIT = 2,
+}
+
 enum ElevatorGoal : ubyte {
     NEUTRAL = 0,
     INTAKE = 1,
@@ -19,6 +25,7 @@ enum PivotGoal : ubyte {
 table Goal {
    elevator_goal:ElevatorGoal (id: 0);
    pivot_goal:PivotGoal (id: 1);
+   end_effector_goal:EndEffectorGoal (id: 2);
 }
 
 root_type Goal;

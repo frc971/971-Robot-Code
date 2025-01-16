@@ -9,6 +9,9 @@ table Position {
 
     // Position of the pivot (rotational), 0 is horizontal, positive is up
     pivot:frc971.PotAndAbsolutePosition (id: 1);
+
+    // If this is true, the end effector beam break is triggered.
+    end_effector_beam_break:bool (id: 2);
 }
 
 root_type Position;

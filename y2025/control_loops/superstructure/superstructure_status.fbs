@@ -3,6 +3,12 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2025.control_loops.superstructure;
 
+enum EndEffectorStatus : ubyte {
+  NEUTRAL = 0,
+  INTAKING = 1,
+  SPITTING = 2,
+}
+
 table Status {
     // All subsystems know their location.
     zeroed:bool (id: 0);
@@ -13,6 +19,8 @@ table Status {
     elevator:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 
     pivot:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
+
+    end_effector_state:EndEffectorStatus (id: 4);
 }
 
 root_type Status;

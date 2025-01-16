@@ -18,6 +18,9 @@ table CANPosition {
 
     // CAN Position of the pivot kraken
     pivot:frc971.control_loops.CANTalonFX (id: 4);
+
+    // CAN Position of the end effector kraken
+    end_effector:frc971.control_loops.CANTalonFX (id: 5);
 }
 
 root_type CANPosition;
