@@ -1,0 +1,18 @@
+<div style="height: 400px; width: 100%; position: relative;">
+  <canvas height="400px" style="border: #4D4D4D solid 2px; position: absolute;" #graphcanvas>Canvas is not enabled on your browser</canvas>
+  <div #divtosize style="border: #4D4D4D solid 2px; width: 100%; height: 404px; display: flex; align-items: center; background-color: white; position: absolute; z-index: 10;" *ngIf="!data">
+    <span style="font-size: xx-large; width: 100%; text-align: center;">
+      No Optimized Path
+    </span>
+  </div>
+  <div style="border:#4D4D4D solid 2px; border-radius: 5px; background-color: #FFFFFF80; z-index: 15; display: none; position: absolute; padding: 4px; pointer-events: none; width:300px"  #infodiv>
+    <span *ngFor="let info of hoverInfo">
+      <svg width="20" height="20">
+        <circle [attr.fill]="info.color" cx="10" cy="10" r="7" />
+      </svg>
+      {{info.text}}<sup *ngIf="info.superscript">{{info.superscript}}</sup>
+      <br>
+    </span>
+    <span *ngIf="outOfDate">(SOLVED PATH OUT OF DATE)</span>
+  </div>
+</div>

@@ -2,20 +2,16 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
-import { UiModule } from './components/ui/ui.module';
-import { App } from './app';
-import { HttpClientModule } from '@angular/common/http';
+import { Graph } from './graph';
 
 @NgModule({
-  declarations: [App],
+  declarations: [Graph],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
-    HttpClientModule,
-    UiModule
   ],
-  exports: [App],
-  bootstrap: [App],
+  exports: [Graph],
+  bootstrap: [Graph],
 })
-export class AppModule { }
+export class GraphModule { }

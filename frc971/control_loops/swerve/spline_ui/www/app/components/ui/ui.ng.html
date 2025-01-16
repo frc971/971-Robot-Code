@@ -1,0 +1,80 @@
+<div style="padding: 4px 10px 10px 4px; width: 100%;">
+    <div style="display: flex; width: 100%;">
+        <div>
+            <canvas width="1200px" height="550px" style="border: #4D4D4D solid 2px;" #canvas>Canvas is not enabled on your browser</canvas>
+            <!--Play bar-->
+            <div style="display: flex;">
+                <div style="border-radius: 10px; background-color: white; border: #9D9D9D solid 2px; padding: 4px 10px 4px 10px; width: 100%; display: flex; margin-bottom: 4px;">
+                    <svg width="20px" height="20px" style="margin-right: 5px" (click)="togglePlay()">
+                        <rect x="0" y="0" width="7" height="20" fill="#BB80FF" *ngIf="playing"/>
+                        <rect x="13" y="0" width="7" height="20" fill="#BB80FF" *ngIf="playing"/>
+                        <polygon points="0,0 0,20 20,10" fill="#BB80FF" *ngIf="!playing"/>
+                    </svg>
+                    <svg height="20px" style="flex-grow: 1;"#playbar>
+                        <rect x="0" y="5" width="100%" height="10" rx="5" ry="5" fill="#9955FF" />
+                        <circle (mousedown)="draggingCircle=true; playing=false" cx="10" cy="10" r="10" fill="#BB80FF" #playbarcircle/>
+                    </svg>
+                    <div style="display: flex; height: 20px; align-items: center; padding-left: 4px;">
+                        <span style="font-family: monospace; font-size: small; height: min-content;" class="noselect">
+                            {{getTimeSignature()}}
+                        </span>
+                    </div>
+                </div>
+                <div (click)="nextPlaySpeed()" class="noselect" style="border-radius: 10px; background-color: white; border: #9D9D9D solid 2px; width: 65px; font-family: monospace; margin-bottom: 4px; margin-left: 4px; padding-left: 4px; padding-right: 4px;">
+                    {{playspeed.toFixed(2)}}X
+                </div>
+            </div>
+        </div>
+        <div style="margin: 5px; display: flex; flex-direction: column; flex-grow: 1;">
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="addG1Spline()">{{mode=="add G1 spline" ? "Cancel add spline" : "Add spline"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="addG0Spline()" [disabled]="splines.length==0">{{mode=="add G0 spline" ? "Cancel add stop point spline" : "Add stop point spline"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editSectionConstraints()" [disabled]="splines.length==0">{{mode=="edit section constraints" ? "Stop editing section constraints" : "Edit section constraints"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearSectionConstraints()">Clear section constraints</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editRotPoints()" [disabled]="splines.length==0">{{mode=="edit rotation breakpoints" ? "Stop editing rotation breakpoints" : "Edit rotation breakpoints"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearRotPoints()">Clear rotation breakpoints</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editActions()" [disabled]="splines.length==0">{{mode=="edit actions" ? "Stop editing actions" : "Edit actions"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearActions()">Clear actions</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clear()">Clear everything</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="sendPath();" [disabled]="splines.length==0 || loading">{{loading ? "Loading..." : "Solve for speeds"}}</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="downloadPath();" [disabled]="splines.length==0">Save path</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="flip();" [disabled]="splines.length == 0">Flip</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="openFileDialog();">Load path</button>
+            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="showDisplaySettings = !showDisplaySettings" style="position: relative;">
+                Display Settings
+                <svg width="10" height="10">
+                    <polygon points = "0,5 10,5 5,10" fill="black" *ngIf="!showDisplaySettings"/>
+                    <polygon points = "0,5 10,5 5,0" fill="black" *ngIf="showDisplaySettings"/>
+                </svg>
+                <div class="nicebutton" [style]='"position: absolute; z-index: 20; display: flex; flex-direction: column;" + (showDisplaySettings ? "" : " visibility: hidden;")' (click)="$event.stopImmediatePropagation()">
+                    <button style="text-align: left; padding: 2px; border-radius: 4px; margin: 4px; background-color: transparent; border: none;" (click)="toggleForceCheckbox()">
+                        <input autocomplete="off" type="checkbox" #displayForces/>
+                        <label for="displayForces">Display module forces</label>
+                    </button>
+                    <button style="text-align: left; padding: 2px; border-radius: 4px; margin: 4px; background-color: transparent; border: none;" (click)="toggleVelocityCheckbox()">
+                        <input autocomplete="off" type="checkbox" #displayVelocities checked/>
+                        <label for="displayVelocities">Display module velocities</label>
+                    </button>
+                    <div style="width: 100%;">
+                        Selected field:
+                        <select (change)="handlefieldchange($event)" [value]="field?field.year:2024">
+                            <option *ngFor="let n_field of fields" [value]="n_field.year">
+                                {{n_field.name}}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </button>
+        </div>
+        <div style="margin: 5px; width: 350px; border: #4D4D4D solid 2px; background-color: white;">
+            <div *ngFor="let item of selectedContext.parameter_list" style="display: flex; margin:2px; align-items: center; border: solid 2px lightgray; border-radius: 4px; padding: 4px">
+                <div style="width: 100px">{{item.name}}</div><numberfield [upperlimit]="item.max" [lowerlimit]="item.min" [placeholder]="item.placeholder" [allow_null]="item.allow_null" [default]="item.default" [step]="item.step" (onChangeNumber)="item.onchange($event)"/>
+            </div>
+            <div *ngFor="let item of selectedContext.string_parameter_list" style="display: flex; margin:2px; align-items: center; border: solid 2px lightgray; border-radius: 4px; padding: 4px">
+                <div style="width: 100px">{{item.name}}</div><input (change)="item.onchange($event)" style="flex-grow:1;" [value]="item.default" (focusin)="keybindsenabled = false" (focusout)="keybindsenabled = true"/>
+            </div>
+            
+            <button *ngFor="let item of selectedContext.button_list" class="nicebutton" style="width: auto" (click)="item.action($event)">{{item.name}}</button>
+        </div>
+    </div>
+    <data-graph [data]="optidata" [positionT]="playBarT" [hoverT]="hoverT" [outOfDate]="pathOutOfDate" (onHover)="updateHoverT($event)"/>
+</div>
