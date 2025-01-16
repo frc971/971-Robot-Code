@@ -80,9 +80,20 @@ These steps assume you are on the most up to date debian linux, however they can
 3. Installing bazel
     1. Follow the steps [here](https://bazel.build/install/ubuntu)
 
-## Running the Code
+## Downloading the code
 
-To run the code you'll need to download the repository from [gerrit](https://software.frc971.org/gerrit/admin/repos/971-Robot-Code), make sure to select ssh and not http. Click on SSH, and clone with commit message hook. Copy the command, and run it locally on terminal.
+1. Within your preferred build environment (buildserver or local--see the previous step), generate an SSH Key to use with gerrit 
+    ```bash
+    ssh-keygen -t ed25519 -f ~/.ssh/id_971_ed25519
+    chmod 600 ~/.ssh/id_971_ed25519
+    ```
+    1. Note that if you are using the build server, this is a separate step from what you did above, because this time the key is generated on the build server, whereas in the step above you generated a key on your local machine.
+2. Log into Gerrit and click on the Settings Gear in the upper right corner, then under "SSH Keys", paste your public key into the New SSH Key text box, then click "ADD NEW SSH KEY"
+    1. You will need to run `cat ~/.ssh/id_971_ed25519.pub` for the key used in the form. This is your public key, you may share this, however `~/.ssh/id_971_ed25519` is a private key. Never share your private key.
+3. Download the repository from [gerrit](https://software.frc971.org/gerrit/admin/repos/971-Robot-Code)
+    1. **Make sure to select the "ssh" tab** and not http
+    2. Copy the "Clone with commit-msg hook" command
+    3. Paste and run the copied command locally on terminal.
 To learn more about git, open a terminal and run `man git`, or see [git(1)](https://manpages.debian.org/buster/git-man/git.1.en.html) (especially the NOTES section).
 
 Once the repositoy is selected you'll want to make sure to configure your name, email on git. This is required to ensure you're following the [contributing guidelines above](#contributing). You can do this by running these following commands:
@@ -91,6 +102,9 @@ cd 971-Robot-Code
 git config user.email "<YOUR_EMAIL_HERE>"
 git config user.name "<YOUR_NAME>"
 ```
+
+## Building and running the code
+
 We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive docs](https://docs.bazel.build/versions/master/build-ref.html), including a nice [build encyclopedia reference](https://docs.bazel.build/versions/master/be/overview.html), and does a great job with fast, correct incremental rebuilds.
 
 ### Bazel commands for building, testing, and deploying the code
