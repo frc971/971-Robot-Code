@@ -50,6 +50,32 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
+
+  double end_effector_voltage = 0.0;
+  EndEffectorStatus end_effector_status = EndEffectorStatus::NEUTRAL;
+
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->end_effector_goal()) {
+      case EndEffectorGoal::NEUTRAL:
+        break;
+      case EndEffectorGoal::INTAKE:
+        // If the beambreak is not being activated then we intake
+        if (!position->end_effector_beam_break()) {
+          end_effector_status = EndEffectorStatus::INTAKING;
+          end_effector_voltage =
+              robot_constants_->common()->end_effector_voltages()->intake();
+        }
+        break;
+      case EndEffectorGoal::SPIT:
+        end_effector_status = EndEffectorStatus::SPITTING;
+        end_effector_voltage =
+            robot_constants_->common()->end_effector_voltages()->spit();
+        break;
+    }
+  }
+
+  output_struct.end_effector_voltage = end_effector_voltage;
+
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::
           StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
@@ -140,6 +166,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(estopped);
   status_builder.add_elevator(elevator_status_offset);
   status_builder.add_pivot(pivot_status_offset);
+  status_builder.add_end_effector_state(end_effector_status);
 
   (void)status->Send(status_builder.Finish());
 }
