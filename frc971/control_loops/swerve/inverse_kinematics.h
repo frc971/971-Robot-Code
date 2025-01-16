@@ -59,12 +59,14 @@ class InverseKinematics {
     const Scalar nominal_module_theta = atan2(module_vel_y, module_vel_x);
     // If the current module theta is more than 90 deg from the desired theta,
     // flip the desired theta by 180 deg.
+    Scalar desired_theta;
     if (std::abs(aos::math::DiffAngle(nominal_module_theta, *module_theta)) >
         M_PI_2) {
-      *module_theta = aos::math::NormalizeAngle(nominal_module_theta + M_PI);
+      desired_theta = aos::math::NormalizeAngle(nominal_module_theta + M_PI);
     } else {
-      *module_theta = nominal_module_theta;
+      desired_theta = nominal_module_theta;
     }
+    *module_theta += aos::math::NormalizeAngle(desired_theta - *module_theta);
     const Scalar module_accel_x = (stheta * vx + ctheta * vy) * omega;
     const Scalar module_accel_y = (-ctheta * vx + stheta * vy) * omega;
     const Scalar module_vel_norm_squared =

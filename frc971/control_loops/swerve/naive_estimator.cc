@@ -115,6 +115,7 @@ void NaiveEstimator::PopulateStatus(NaiveEstimatorStatusStatic *fbs) const {
   fbs->set_yaw(state_(States::kTheta));
   fbs->set_vx(state_(States::kVx));
   fbs->set_vy(state_(States::kVy));
+  CHECK(FromEigen(state_.template cast<double>(), fbs->add_x_hat()));
   CHECK(fbs->add_module_drive_velocities()->FromIterator(velocities_.begin(),
                                                          velocities_.end()));
 }

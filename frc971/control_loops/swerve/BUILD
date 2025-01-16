@@ -30,7 +30,10 @@ static_flatbuffer(
 static_flatbuffer(
     name = "swerve_drivetrain_status_fbs",
     srcs = ["swerve_drivetrain_status.fbs"],
-    deps = ["//frc971/control_loops:profiled_subsystem_fbs"],
+    deps = [
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
 )
 
 static_flatbuffer(
@@ -71,15 +74,23 @@ cc_library(
     hdrs = ["swerve_control_loops.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":inverse_kinematics",
+        ":linear_velocity_controller",
+        ":naive_estimator",
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_goal_fbs",
         ":swerve_drivetrain_output_fbs",
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_status_fbs",
         ":swerve_zeroing_fbs",
+        ":velocity_ekf",
+        "//aos:math",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/queues:gyro_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
         "//frc971/zeroing:continuous_absolute_encoder",
+        "//frc971/zeroing:imu_zeroer",
     ],
 )
 
