@@ -37,6 +37,11 @@ table RobotConstants {
   input_config: frc971.input.InputConfig (id: 2);
 }
 
+table EndEffectorVoltages {
+  spit:double (id: 0);
+  intake:double (id: 1);
+}
+
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
@@ -47,6 +52,7 @@ table Common {
   elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 5);
   elevator_set_points:ElevatorSetPoints (id: 6);
   pivot_set_points:PivotSetPoints (id: 7);
+  end_effector_voltages:EndEffectorVoltages (id: 8);
 }
 
 table Constants {
@@ -62,6 +68,8 @@ table CurrentLimits {
   elevator_supply_current_limit:double (id: 3);
   pivot_stator_current_limit:double (id: 4);
   pivot_supply_current_limit:double (id: 5);
+  end_effector_stator_current_limit:double (id: 6);
+  end_effector_supply_current_limit:double (id: 7);
 }
 
 root_type Constants;
