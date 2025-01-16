@@ -10,7 +10,9 @@
     "elevator_stator_current_limit": 100,
     "elevator_supply_current_limit": 50,
     "pivot_stator_current_limit": 100,
-    "pivot_supply_current_limit": 50
+    "pivot_supply_current_limit": 50,
+    "end_effector_stator_current_limit": 100,
+    "end_effector_supply_current_limit": 20
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
   // TODO change constants for y2025 bot
@@ -66,6 +68,11 @@
     "score_l2": 0.2,
     "score_l3": 0.3,
     "score_l4": 0.4
+  },
+  //TODO: Update these voltages
+  "end_effector_voltages": {
+    "spit": -1.0,
+    "intake": 1.0
   }
 }
 
