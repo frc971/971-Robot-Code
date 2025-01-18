@@ -16,7 +16,6 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/background_task"
 	"github.com/frc971/971-Robot-Code/scouting/db"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/match_list"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
@@ -152,13 +151,6 @@ func main() {
 		rankings.GetRankings(database, 0, "", *blueAllianceConfigPtr)
 	})
 
-	driverRankingParser := background_task.New(10 * time.Minute)
-	driverRankingParser.Start(func() {
-		// Specify "" as the script path here so that the default is
-		// used.
-		driver_ranking.GenerateFullDriverRanking(database, "")
-	})
-
 	// Block until the user hits Ctrl-C.
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT)
@@ -169,7 +161,6 @@ func main() {
 	fmt.Println("Shutting down.")
 	scoutingServer.Stop()
 	rankingsScraper.Stop()
-	driverRankingParser.Stop()
 	matchListScraper.Stop()
 	fmt.Println("Successfully shut down.")
 }
