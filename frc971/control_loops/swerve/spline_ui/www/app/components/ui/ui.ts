@@ -279,7 +279,9 @@ export class Ui implements AfterViewInit {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
     this.ctx.restore()
     if (this.field.imageElement) {
-      this.ctx.drawImage(this.field.imageElement, 0, 0, this.canvas.width, this.field.imageElement.height * this.canvas.width / this.field.imageElement.width)
+      let w = this.canvas.width;
+      let h = this.field.imageElement.height * this.canvas.width / this.field.imageElement.width;
+      this.ctx.drawImage(this.field.imageElement, -w / 2, -h / 2, w, h)
     }
     let splineColorIndex = -1
     for (let spline of this.splines) {
@@ -586,6 +588,9 @@ export class Ui implements AfterViewInit {
       if (this.fields.length > 0) {
         this.fields[0].imageElement.addEventListener("load", () => {
           this.field = this.fields[0]
+          let w = this.canvas.width
+          let h = this.field.imageElement.height * this.canvas.width / this.field.imageElement.width
+          this.ctx.translate(w/2, h/2)
           this.updateCanvas()
         })
       }
@@ -1041,7 +1046,8 @@ export class Ui implements AfterViewInit {
         let prevSpline: Spline = null
         for (let spline of path.splines) {
           let s: Spline = {
-            control_points: spline.map(e => e.map((v, i) => i == 2 ? v : this.field_to_pixels(v))),
+            //negate y to fix coordinate system issues
+            control_points: spline.map(e => [this.field_to_pixels(e[0]), -this.field_to_pixels(e[1])]),
             curve_points: [],
             prev_spline_link: prevSpline ? "G1" : lastSpline ? "G0" : null,
             prev_spline: prevSpline ? prevSpline : lastSpline
@@ -1070,7 +1076,8 @@ export class Ui implements AfterViewInit {
         }
         //add rotbreakpoints
         let newrbps = path.rot_breakpoints
-        newrbps = newrbps.map(e => [(e[0] * path.splines.length + currSplineIndex) / splineCount, e[1]])
+        //negate theta to fix coordinate system issues
+        newrbps = newrbps.map(e => [(e[0] * path.splines.length + currSplineIndex) / splineCount, -e[1]])
         this.rotbreakpoints.push(...newrbps)
         //add to static rotbreakpoints
         this.staticrotbreakpoints.push(currSplineIndex / splineCount)
@@ -1135,6 +1142,7 @@ export class Ui implements AfterViewInit {
       console.log(this.stopPoints)
 
       this.updateCanvas()
+      this.selectedContext = new GlobalContext(this.globalConstraints, this)
     }
   }
 
@@ -1160,10 +1168,12 @@ export class Ui implements AfterViewInit {
       startDelay: this.stopPoints[0].delay, /*(BREAKPOINT)*/
     }
     for (let i = 0; i < this.splines.length; i++) {
-      curPath.splines.push(this.splines[i].control_points.map(e => [this.pixels_to_field(e[0]), this.pixels_to_field(e[1])]) as SplineControl)
+      //negate y to fix coordinate system
+      curPath.splines.push(this.splines[i].control_points.map(e => [this.pixels_to_field(e[0]), -this.pixels_to_field(e[1])]) as SplineControl)
       let stlow = i / this.splines.length
       let sthigh = (i + 1) / this.splines.length
-      curPath.rot_breakpoints.push(...this.rotbreakpoints.filter(e => stlow < e[0] && e[0] <= sthigh))
+      //negate theta to fix coordinate system
+      curPath.rot_breakpoints.push(...this.rotbreakpoints.filter(e => stlow < e[0] && e[0] <= sthigh).map(e => [e[0], -e[1]] as [number, number]))
       curPath.constraints.push(...this.constraints.filter(e =>
         e.selection[0] < sthigh && e.selection[1] > stlow
         && !curPath.constraints.includes(e)
@@ -1268,8 +1278,8 @@ export class Ui implements AfterViewInit {
         }
 
         //replace the position zeroes with the next value
-        optidata.positions[optidata.positions.length - 1] = opti.positions[0].map((v, i) => i == 2 ? v : this.field_to_pixels(v))
-        optidata.positions[optidata.positions.length - 2] = opti.positions[0].map((v, i) => i == 2 ? v : this.field_to_pixels(v))
+        optidata.positions[optidata.positions.length - 1] = opti.positions[0].map((v, i) => i == 2 ? -v : this.field_to_pixels((1 - i * 2) * v))
+        optidata.positions[optidata.positions.length - 2] = opti.positions[0].map((v, i) => i == 2 ? -v : this.field_to_pixels((1 - i * 2) * v))
         console.log(opti)
 
         //replace the initial time with the previous time, if possible
@@ -1282,7 +1292,7 @@ export class Ui implements AfterViewInit {
         optidata.voltages.push(...opti.voltages)
         optidata.accelerations.push(...opti.accelerations)
         optidata.velocities.push(...opti.velocities)
-        optidata.positions.push(...opti.positions.map(e => e.map((v, i) => i == 2 ? v : this.field_to_pixels(v))))
+        optidata.positions.push(...opti.positions.map(e => e.map((v, i) => i == 2 ? -v : this.field_to_pixels((1 - i * 2) * v))))
         optidata.times.push(...opti.times.map(e => e + lastTime))
         optidata.module_forces.push(...opti.module_forces)
         optidata.lat_forces.push(...opti.lat_forces)

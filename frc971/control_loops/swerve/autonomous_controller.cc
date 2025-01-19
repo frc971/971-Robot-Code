@@ -139,8 +139,8 @@ void AutonomousController::Iterate() {
   double kThreshold = 0.005;
 
   double x_error = x - trajectory_point->position()->x();
-  double y_error = y - (-trajectory_point->position()->y());
-  double theta_error = theta - (-trajectory_point->position()->theta());
+  double y_error = y - trajectory_point->position()->y();
+  double theta_error = theta - trajectory_point->position()->theta();
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
@@ -158,9 +158,9 @@ void AutonomousController::Iterate() {
 
   double goal_vx = trajectory_point->velocity()->x() -
                    absl::GetFlag(FLAGS_kPositionGain) * x_error;
-  double goal_vy = -trajectory_point->velocity()->y() -
+  double goal_vy = trajectory_point->velocity()->y() -
                    absl::GetFlag(FLAGS_kPositionGain) * y_error;
-  double goal_omega = -trajectory_point->velocity()->theta() -
+  double goal_omega = trajectory_point->velocity()->theta() -
                       absl::GetFlag(FLAGS_kRotationGain) * theta_error;
 
   auto joystick_goal = builder->add_joystick_goal();

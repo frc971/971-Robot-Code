@@ -30,8 +30,8 @@ NaiveEstimator::State NaiveEstimator::Update(
   autonomous_init_fetcher_.Fetch();
   if (!autonomous_initialized_ && autonomous_init_fetcher_.get() != nullptr) {
     state_(States::kX) = autonomous_init_fetcher_->x();
-    state_(States::kY) = -autonomous_init_fetcher_->y();
-    state_(States::kTheta) = -autonomous_init_fetcher_->theta();
+    state_(States::kY) = autonomous_init_fetcher_->y();
+    state_(States::kTheta) = autonomous_init_fetcher_->theta();
 
     autonomous_initialized_ = true;
   }
