@@ -27,7 +27,7 @@ ABSL_FLAG(
     "1.0.");
 ABSL_FLAG(double, min_decision_margin, 50.0,
           "Minimum decision margin (confidence) for an apriltag detection");
-ABSL_FLAG(int32_t, pixel_border, 150,
+ABSL_FLAG(int32_t, pixel_border, 25,
           "Size of image border within which to reject detected corners");
 ABSL_FLAG(uint64_t, pose_estimation_iterations, 50,
           "Number of iterations for apriltag pose estimation.");
