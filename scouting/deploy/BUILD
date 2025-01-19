@@ -33,9 +33,6 @@ pkg_deb(
     name = "frc971-scouting-server",
     architecture = "amd64",
     data = ":deploy_tar",
-    depends = [
-        "frc971-scouting-julia",
-    ],
     description = "The FRC971 scouting web server.",
     # TODO(phil): What's a good email address for this?
     maintainer = "frc971@frc971.org",
@@ -60,5 +57,4 @@ py_binary(
     data = [
         ":frc971-scouting-server",
     ],
-    visibility = ["//scouting/DriverRank:__pkg__"],
 )
