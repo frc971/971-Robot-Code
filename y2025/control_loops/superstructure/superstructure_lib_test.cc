@@ -138,8 +138,14 @@ class SuperstructureSimulation {
 
     position_builder.add_elevator(elevator_offset);
 
+    position_builder.add_end_effector_beam_break(end_effector_beam_break_);
+
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
+  }
+
+  void set_end_effector_beam_break(bool triggered) {
+    end_effector_beam_break_ = triggered;
   }
 
  private:
@@ -154,6 +160,8 @@ class SuperstructureSimulation {
 
   PotAndAbsoluteEncoderSimulator elevator_;
   PotAndAbsoluteEncoderSimulator pivot_;
+
+  bool end_effector_beam_break_ = false;
 
   bool first_ = true;
 };
@@ -207,6 +215,34 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
+    superstructure_position_fetcher_.Fetch();
+
+    double expected_end_effector_voltage = 0.0;
+    EndEffectorStatus expected_end_effector_status = EndEffectorStatus::NEUTRAL;
+    switch (superstructure_goal_fetcher_->end_effector_goal()) {
+      case EndEffectorGoal::NEUTRAL:
+        break;
+      case EndEffectorGoal::INTAKE:
+        if (!superstructure_position_fetcher_->end_effector_beam_break()) {
+          expected_end_effector_status = EndEffectorStatus::INTAKING;
+          expected_end_effector_voltage = simulated_robot_constants_->common()
+                                              ->end_effector_voltages()
+                                              ->intake();
+        }
+        break;
+      case EndEffectorGoal::SPIT:
+        expected_end_effector_status = EndEffectorStatus::SPITTING;
+        expected_end_effector_voltage = simulated_robot_constants_->common()
+                                            ->end_effector_voltages()
+                                            ->spit();
+        break;
+    }
+
+    EXPECT_EQ(superstructure_output_fetcher_->end_effector_voltage(),
+              expected_end_effector_voltage);
+    EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+              expected_end_effector_status);
+
     double elevator_expected_position =
         simulated_robot_constants_->common()->elevator_set_points()->neutral();
 
@@ -433,6 +469,52 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
   }
 
   RunFor(chrono::seconds(10));
+
+  VerifyNearGoal();
+}
+
+TEST_F(SuperstructureTest, EndEffectorTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_end_effector_goal(EndEffectorGoal::NEUTRAL);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_end_effector_goal(EndEffectorGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  superstructure_plant_.set_end_effector_beam_break(true);
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_end_effector_goal(EndEffectorGoal::SPIT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
 
   VerifyNearGoal();
 }
