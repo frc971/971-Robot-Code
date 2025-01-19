@@ -112,8 +112,19 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double pivot_position =
       robot_constants_->common()->pivot_set_points()->neutral();
 
-  if (unsafe_goal != nullptr && unsafe_goal->pivot_goal() == PivotGoal::SCORE) {
-    pivot_position = robot_constants_->common()->pivot_set_points()->score();
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->pivot_goal()) {
+      case PivotGoal::NEUTRAL:
+        break;
+      case PivotGoal::SCORE:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->score();
+        break;
+      case PivotGoal::INTAKE:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->intake();
+        break;
+    }
   }
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(pivot_goal_builder.get(),
                                                       pivot_position);
