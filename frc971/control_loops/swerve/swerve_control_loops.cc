@@ -98,7 +98,8 @@ void SwerveControlLoops::RunIteration(
         now, position, can_position_fetcher_.get(), gyro_rate.value(),
         zeroed_accel->x(), zeroed_accel->y());
     if (!ekf_initialized_) {
-      velocity_ekf_.Initialize(now, current_state.value());
+      velocity_ekf_.Initialize(
+          now, current_state.value().head(States::kNumVelocityStates));
       ekf_initialized_ = true;
     }
     velocity_ekf_.Update(
@@ -143,11 +144,12 @@ void SwerveControlLoops::RunIteration(
     CHECK_NE(goal->has_linear_velocity_goal(), goal->has_joystick_goal());
     if (goal->has_linear_velocity_goal()) {
       NaiveEstimator::State goal_state =
-          ToEigenOrDie<NaiveEstimator::States::kNumVelocityStates, 1>(
+          ToEigenOrDie<NaiveEstimator::States::kNumPositionStates, 1>(
               *goal->linear_velocity_goal()->state())
               .cast<Scalar>();
       controller_result = velocity_controller_.RunRawController(
-          current_state.value(), goal_state,
+          current_state.value().head(States::kNumVelocityStates),
+          goal_state.head(States::kNumVelocityStates),
           ToEigenOrDie<8, 1>(*goal->linear_velocity_goal()->input())
               .cast<Scalar>());
     } else if (goal->has_joystick_goal()) {
@@ -184,7 +186,9 @@ void SwerveControlLoops::RunIteration(
       }
 
       controller_result = velocity_controller_.RunRawController(
-          current_state.value(), inverse_kinematics_.Solve(kinematics_state),
+          current_state.value().head(States::kNumVelocityStates),
+          inverse_kinematics_.Solve(
+              kinematics_state.head(States::kNumVelocityStates)),
           Eigen::Matrix<Scalar, 8, 1>::Zero());
     } else {
       LOG(FATAL) << "Unreachable";

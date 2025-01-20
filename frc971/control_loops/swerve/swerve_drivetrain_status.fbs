@@ -21,16 +21,18 @@ table NaiveEstimatorStatus {
   // Zeroing state of each swerve module.
   estimator_states:[frc971.AbsoluteEncoderEstimatorState] (id: 0, static_length: 4);
   // Internal state of the estimator; see naive_estimator.h.
-  velocity_state:frc971.fbs.Matrix (id: 1);
-  // Exposed robot heading & velocities (these are components of velocity_state
+  position_state:frc971.fbs.Matrix (id: 1);
+  // Exposed robot position & velocities (these are components of position_state
   // which are exposed for human readability).
-  yaw:float (id: 2);
-  vx:float (id: 3);
-  vy:float (id: 4);
-  omega:float (id: 5);
+  x:float (id: 2);
+  y: float (id: 3);
+  yaw:float (id: 4);
+  vx:float (id: 5);
+  vy:float (id: 6);
+  omega:float (id: 7);
   // Estimated per-module drive velocities, in m/s.
-  module_drive_velocities:[float] (id: 6);
-  x_hat: frc971.fbs.Matrix (id: 7);
+  module_drive_velocities:[float] (id: 8);
+  x_hat: frc971.fbs.Matrix (id: 9);
 }
 
 // Debugging information for the linear swerve controllers.
