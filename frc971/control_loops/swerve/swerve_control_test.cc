@@ -43,16 +43,18 @@ MakeSwerveParameters() {
   constexpr Scalar kSideLength = 0.635;
   return {.mass = 35,
           .moment_of_inertia = 2.63,
-          .modules = {
-              // front left
-              make_module({kSideLength / 2.0, kSideLength / 2.0}),
-              // front right
-              make_module({kSideLength / 2.0, -kSideLength / 2.0}),
-              // back left
-              make_module({-kSideLength / 2.0, kSideLength / 2.0}),
-              // back right
-              make_module({-kSideLength / 2.0, -kSideLength / 2.0}),
-          }};
+          .modules =
+              {
+                  // front left
+                  make_module({kSideLength / 2.0, kSideLength / 2.0}),
+                  // front right
+                  make_module({kSideLength / 2.0, -kSideLength / 2.0}),
+                  // back left
+                  make_module({-kSideLength / 2.0, kSideLength / 2.0}),
+                  // back right
+                  make_module({-kSideLength / 2.0, -kSideLength / 2.0}),
+              },
+          .accel_weight = 0.0};
 }
 }  // namespace
 

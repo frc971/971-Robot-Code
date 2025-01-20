@@ -86,13 +86,17 @@ void SwerveControlLoops::RunIteration(
   }
 
   std::optional<Eigen::Vector3d> zeroed_gyro = imu_zeroer_.ZeroedGyro();
+  std::optional<Eigen::Vector3d> zeroed_accel = imu_zeroer_.ZeroedAccel();
+
   if (zeroed_gyro.has_value()) {
     gyro_rate = zeroed_gyro.value().z();
   }
 
-  if (gyro_rate.has_value() && can_position_fetcher_.get() != nullptr) {
+  if (gyro_rate.has_value() && zeroed_accel.has_value() &&
+      can_position_fetcher_.get() != nullptr) {
     current_state = naive_estimator_.Update(
-        now, position, can_position_fetcher_.get(), gyro_rate.value());
+        now, position, can_position_fetcher_.get(), gyro_rate.value(),
+        zeroed_accel->x(), zeroed_accel->y());
     if (!ekf_initialized_) {
       velocity_ekf_.Initialize(now, current_state.value());
       ekf_initialized_ = true;

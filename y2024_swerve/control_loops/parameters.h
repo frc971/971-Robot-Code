@@ -18,9 +18,11 @@ MakeSwerveParameters() {
   };
 
   constexpr Scalar kSideLength = 0.635;
-  return {.mass = 60,
-          .moment_of_inertia = 2,
-          .modules = {
+  return {
+      .mass = 60,
+      .moment_of_inertia = 2,
+      .modules =
+          {
               // front left
               make_module({kSideLength / 2.0, kSideLength / 2.0}),
               // front right
@@ -29,6 +31,8 @@ MakeSwerveParameters() {
               make_module({-kSideLength / 2.0, kSideLength / 2.0}),
               // back right
               make_module({-kSideLength / 2.0, -kSideLength / 2.0}),
-          }};
+          },
+      .accel_weight = 0.0,
+  };
 }
 }  // namespace y2024_swerve::control_loops

@@ -67,6 +67,10 @@ class SimplifiedDynamics {
     // currently, and it should not be counted on that other pieces of code will
     // be able to support non-4-module swerves.
     std::vector<ModuleParams> modules;
+    // How much to trust the accelerometer-based velocity versus the
+    // encoder-based velocity for robot velocity estimation, from 0 (no
+    // accelerometer) to 1 (only accelerometer).
+    Scalar accel_weight;
   };
   enum States {
     // Thetas* and Omegas* are the yaw and yaw rate of the indicated modules.

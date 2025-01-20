@@ -5,7 +5,7 @@
 
 namespace frc971::control_loops::swerve {
 NaiveEstimator::NaiveEstimator(const SwerveZeroing *zeroing_params,
-                               const Parameters &)
+                               const Parameters &params)
     : zeroing_{zeroing::ContinuousAbsoluteEncoderZeroingEstimator{
                    aos::UnpackFlatbuffer(zeroing_params->front_left())},
                zeroing::ContinuousAbsoluteEncoderZeroingEstimator{
@@ -14,14 +14,18 @@ NaiveEstimator::NaiveEstimator(const SwerveZeroing *zeroing_params,
                    aos::UnpackFlatbuffer(zeroing_params->back_left())},
                zeroing::ContinuousAbsoluteEncoderZeroingEstimator{
                    aos::UnpackFlatbuffer(zeroing_params->back_right())}},
-      state_(State::Zero()) {
+      state_(State::Zero()),
+      params_(params) {
   velocities_.fill(0);
   last_drive_positions_.fill(0);
 }
 
 NaiveEstimator::State NaiveEstimator::Update(
     aos::monotonic_clock::time_point now, const Position *position,
-    const CanPosition *can_position, Scalar yaw_rate) {
+    const CanPosition *can_position, Scalar yaw_rate, Scalar accel_x,
+    Scalar accel_y) {
+  Eigen::Vector2d last_velocity{state_(States::kVx), state_(States::kVy)};
+
   bool first_iteration = false;
   // TODO(james): Standardize more things on  just using arrays of modules
   // rather than named modules....
@@ -94,10 +98,18 @@ NaiveEstimator::State NaiveEstimator::Update(
   }
   accumulated_velocity /= 4.0;
 
+  Eigen::Vector2d accel_based_velocity =
+      last_velocity + dt * Eigen::Vector2d{accel_x, accel_y};
+  // Take a weighted average for velocity between accelerometer and
+  // encoder-based measurements.
+  Eigen::Vector2d averaged_velocity =
+      (1.0 - params_.accel_weight) * accumulated_velocity +
+      params_.accel_weight * accel_based_velocity;
+
   state_(States::kOmega) = yaw_rate;
   state_(States::kTheta) += yaw_rate * dt;
-  state_(States::kVx) = accumulated_velocity.x();
-  state_(States::kVy) = accumulated_velocity.y();
+  state_(States::kVx) = averaged_velocity.x();
+  state_(States::kVy) = averaged_velocity.y();
   last_update_ = now;
   last_drive_update_ = drive_now;
   last_drive_positions_ = drive_positions;

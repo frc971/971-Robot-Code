@@ -31,7 +31,8 @@ class NaiveEstimator {
 
   // Provides an estimate of the current state of the system.
   State Update(aos::monotonic_clock::time_point now, const Position *position,
-               const CanPosition *can_position, Scalar yaw_rate);
+               const CanPosition *can_position, Scalar yaw_rate, Scalar accel_x,
+               Scalar accel_y);
 
   void PopulateStatus(NaiveEstimatorStatusStatic *fbs) const;
 

@@ -59,12 +59,14 @@ LinearVelocityController::DynamicsParameters
 LinearVelocityController::MakeDynamicsParameters() {
   return {.mass = 60,
           .moment_of_inertia = 2,
-          .modules = {
-              MakeModule({1.0, 1.0}),
-              MakeModule({-1.0, 1.0}),
-              MakeModule({-1.0, -1.0}),
-              MakeModule({1.0, -1.0}),
-          }};
+          .modules =
+              {
+                  MakeModule({1.0, 1.0}),
+                  MakeModule({-1.0, 1.0}),
+                  MakeModule({-1.0, -1.0}),
+                  MakeModule({1.0, -1.0}),
+              },
+          .accel_weight = 0.0};
 }
 
 LinearVelocityController::LinearVelocityController(

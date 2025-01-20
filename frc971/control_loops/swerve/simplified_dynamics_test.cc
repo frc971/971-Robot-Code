@@ -33,12 +33,14 @@ class SimplifiedDynamicsTest : public ::testing::Test {
   static Parameters MakeParams(bool wheel_alignment) {
     return {.mass = 60,
             .moment_of_inertia = 2,
-            .modules = {
-                MakeModule({1.0, 1.0}, wheel_alignment),
-                MakeModule({-1.0, 1.0}, wheel_alignment),
-                MakeModule({-1.0, -1.0}, wheel_alignment),
-                MakeModule({1.0, -1.0}, wheel_alignment),
-            }};
+            .modules =
+                {
+                    MakeModule({1.0, 1.0}, wheel_alignment),
+                    MakeModule({-1.0, 1.0}, wheel_alignment),
+                    MakeModule({-1.0, -1.0}, wheel_alignment),
+                    MakeModule({1.0, -1.0}, wheel_alignment),
+                },
+            .accel_weight = 0.0};
   }
   SimplifiedDynamicsTest() : dynamics_(MakeParams(false)) {}
 

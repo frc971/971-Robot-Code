@@ -23,12 +23,14 @@ class InverseKinematicsTest : public ::testing::Test {
   static Parameters MakeParams() {
     return {.mass = 1.0,
             .moment_of_inertia = 1.0,
-            .modules = {
-                MakeModule({1.0, 1.0}),
-                MakeModule({-1.0, 1.0}),
-                MakeModule({-1.0, -1.0}),
-                MakeModule({1.0, -1.0}),
-            }};
+            .modules =
+                {
+                    MakeModule({1.0, 1.0}),
+                    MakeModule({-1.0, 1.0}),
+                    MakeModule({-1.0, -1.0}),
+                    MakeModule({1.0, -1.0}),
+                },
+            .accel_weight = 0.0};
   }
 
   InverseKinematicsTest() : inverse_kinematics_(MakeParams()) {}
