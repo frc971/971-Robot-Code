@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 
   ::aos::ShmEventLoop event_loop(&config.message());
 
-  frc971::can_logger::CanLogger cana_logger(&event_loop, "/can/cana", "cana");
+  frc971::can_logger::CanLogger cana_logger(&event_loop, "/imu/can", "cana");
 
   event_loop.Run();
 

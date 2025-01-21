@@ -362,7 +362,6 @@
       "name": "imu_can_logger",
       "executable_name": "can_logger",
       "args": [
-        "--interface_name=cana",
         "--priority=59",
         "--affinity=5"
       ],
@@ -529,8 +528,7 @@
     {
         "name": "swerve_control_loops",
         "args": [
-          "--nodie_on_malloc",
-          "-v=1"
+            "--nodie_on_malloc"
         ],
         "nodes": [
             "imu"

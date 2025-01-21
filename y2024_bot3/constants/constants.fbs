@@ -48,11 +48,11 @@ table CurrentLimits {
 table VelocityControllerWeights {
   thetas_q: double (id: 0);
   omegas_q: double (id: 1);
-  is_r: double (id: 2);
-  is_t: double (id: 3);
-  vel_q: double (id: 4);
-  omega_q: double (id: 5);
-  theta_q: double (id: 6);
+  vel_q: double (id: 2);
+  omega_q: double (id: 3);
+  theta_q: double (id: 4);
+  steer_current_r: double (id: 5);
+  drive_current_r: double (id: 6);
 }
 
 // Common table for constants unrelated to the robot

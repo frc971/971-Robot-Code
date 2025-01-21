@@ -58,8 +58,8 @@
     },
     "input_config": {
       "use_redundant_joysticks": true,
-      "vx_offset": 0.31496063,
-      "vy_offset": 0.2519685,
+      "vx_offset": 0.0,
+      "vy_offset": 0.0,
       "omega_offset": 0.0
     }
   },

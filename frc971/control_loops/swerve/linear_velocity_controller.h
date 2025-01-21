@@ -31,7 +31,7 @@ class LinearVelocityController {
   using VirtualDynamics = Dynamics::VirtualVelocityDynamics;
 
   // TODO(james): STop hard-coding dt.
-  static constexpr std::chrono::milliseconds kDt{5};
+  static constexpr std::chrono::milliseconds kDt{10};
 
   // Represents the goal states that we will typically control to.
   struct Goal {
