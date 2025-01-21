@@ -257,31 +257,31 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     const CurrentLimits *current_limits =
         robot_constants->common()->current_limits();
-    std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
+    std::vector<ctre::phoenix6::BaseStatusSignal *> canivore_signals_registry;
 
     frc971::wpilib::swerve::SwerveModules modules{
         .front_left = std::make_shared<SwerveModule>(
             frc971::wpilib::TalonFXParams{6, true},
             frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
-            &signals_registry,
+            &canivore_signals_registry,
             current_limits->drivetrain_stator_current_limit(),
             current_limits->drivetrain_supply_current_limit()),
         .front_right = std::make_shared<SwerveModule>(
             frc971::wpilib::TalonFXParams{3, true},
             frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
-            &signals_registry,
+            &canivore_signals_registry,
             current_limits->drivetrain_stator_current_limit(),
             current_limits->drivetrain_supply_current_limit()),
         .back_left = std::make_shared<SwerveModule>(
             frc971::wpilib::TalonFXParams{7, true},
             frc971::wpilib::TalonFXParams{8, false}, "Drivetrain Bus",
-            &signals_registry,
+            &canivore_signals_registry,
             current_limits->drivetrain_stator_current_limit(),
             current_limits->drivetrain_supply_current_limit()),
         .back_right = std::make_shared<SwerveModule>(
             frc971::wpilib::TalonFXParams{2, true},
             frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
-            &signals_registry,
+            &canivore_signals_registry,
             current_limits->drivetrain_stator_current_limit(),
             current_limits->drivetrain_supply_current_limit())};
 
@@ -314,7 +314,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       c_Phoenix_Diagnostics_Dispose();
     }
 
-    std::vector<ctre::phoenix6::BaseStatusSignal *> canivore_signal_registry;
     std::vector<ctre::phoenix6::BaseStatusSignal *> rio_signal_registry;
 
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
@@ -335,52 +334,39 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 .MakeSender<frc971::control_loops::swerve::CanPositionStatic>(
                     "/roborio/drivetrain");
 
-    std::vector<std::shared_ptr<TalonFX>> talons;
-    modules.PopulateFalconsVector(&talons);
+    std::vector<std::shared_ptr<TalonFX>> canivore_talons;
+    std::vector<std::shared_ptr<TalonFX>> rio_talons;
+    modules.PopulateFalconsVector(&canivore_talons);
 
     std::shared_ptr<TalonFX> elevator_one = std::make_shared<TalonFX>(
-        9, true, "Drivetrain Bus", &signals_registry,
+        9, true, "rio", &rio_signal_registry,
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
     std::shared_ptr<TalonFX> elevator_two = std::make_shared<TalonFX>(
-        10, true, "Drivetrain Bus", &signals_registry,
+        10, true, "rio", &rio_signal_registry,
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
 
-    talons.push_back(elevator_one);
-    talons.push_back(elevator_two);
+    rio_talons.push_back(elevator_one);
+    rio_talons.push_back(elevator_two);
 
     std::shared_ptr<TalonFX> pivot =
-        std::make_shared<TalonFX>(9, true, "Drivetrain Bus", &signals_registry,
+        std::make_shared<TalonFX>(9, true, "rio", &rio_signal_registry,
                                   current_limits->pivot_stator_current_limit(),
                                   current_limits->pivot_supply_current_limit());
 
-    talons.push_back(pivot);
+    rio_talons.push_back(pivot);
 
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
-        &can_sensor_reader_event_loop, std::move(signals_registry), talons,
-        [&elevator_one, &elevator_two, &pivot,
-         &superstructure_can_position_sender, &talons, &can_position_sender,
-         &modules, &robot_constants](ctre::phoenix::StatusCode status) {
-          for (auto talon : talons) {
+        &can_sensor_reader_event_loop, std::move(canivore_signals_registry),
+        canivore_talons,
+        [&superstructure_can_position_sender, &canivore_talons,
+         &can_position_sender, &modules,
+         &robot_constants](ctre::phoenix::StatusCode status) {
+          (void)status;
+          for (auto talon : canivore_talons) {
             talon->RefreshNontimesyncedSignals();
           }
-
-          aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
-              StaticBuilder superstructure_can_builder =
-                  superstructure_can_position_sender.MakeStaticBuilder();
-
-          elevator_one->SerializePosition(
-              superstructure_can_builder->add_elevator_one(),
-              constants::Values::kElevatorOutputRatio);
-          elevator_two->SerializePosition(
-              superstructure_can_builder->add_elevator_two(),
-              constants::Values::kElevatorOutputRatio);
-          pivot->SerializePosition(superstructure_can_builder->add_pivot(),
-                                   constants::Values::kPivotOutputRatio);
-
-          superstructure_can_builder->set_status(static_cast<int>(status));
-          superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
 
           aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
               StaticBuilder builder = can_position_sender.MakeStaticBuilder();
@@ -400,6 +386,37 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                                   gear_ratios);
 
           builder.CheckOk(builder.Send());
+        },
+        frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
+
+    aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>
+        superstructure_rio_position_sender =
+            rio_sensor_reader_event_loop.MakeSender<
+                y2025::control_loops::superstructure::CANPositionStatic>(
+                "/superstructure/rio");
+
+    frc971::wpilib::CANSensorReader rio_can_sensor_reader(
+        &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
+        rio_talons,
+        [&elevator_one, &elevator_two, &pivot,
+         &superstructure_rio_position_sender,
+         &robot_constants](ctre::phoenix::StatusCode status) {
+          aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
+              StaticBuilder superstructure_rio_builder =
+                  superstructure_rio_position_sender.MakeStaticBuilder();
+          elevator_one->SerializePosition(
+              superstructure_rio_builder->add_elevator_one(),
+              constants::Values::kElevatorOutputRatio);
+          elevator_two->SerializePosition(
+              superstructure_rio_builder->add_elevator_two(),
+              constants::Values::kElevatorOutputRatio);
+          pivot->SerializePosition(superstructure_rio_builder->add_pivot(),
+                                   constants::Values::kPivotOutputRatio);
+          superstructure_rio_builder->set_status(static_cast<int>(status));
+          superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
+
+          superstructure_rio_builder->set_status(static_cast<int>(status));
+          superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
         },
         frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
 
