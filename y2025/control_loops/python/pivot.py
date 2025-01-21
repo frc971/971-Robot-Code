@@ -15,12 +15,11 @@ try:
 except gflags.DuplicateFlagError:
     pass
 gflags.DEFINE_bool('hybrid', False, 'If true, make it hybrid.')
-#TODO replace constants for y2025 bot
 kpivot = angular_system.AngularSystemParams(
     name='pivot',
     motor=control_loop.KrakenFOC(),
-    G=(14. / 50.) * (24. / 64.) * (24. / 64.) * (12. / 48.),
-    J=0.2,
+    G=(14.0 / 54.0) * (28.0 / 70.0) * (10.0 / 110.0),
+    J=0.04193,
     q_pos=0.20,
     q_vel=0.05,
     kalman_q_pos=0.12,
@@ -28,8 +27,7 @@ kpivot = angular_system.AngularSystemParams(
     kalman_q_voltage=1.0,
     kalman_r_position=0.05,
     # radius is distance between pivot point and center of mass
-    radius=0.0254 * ((5.955 - 3.099)**2 + (0.0 - 0.047)**2 +
-                     (8.005 - 29.587)**2)**0.5,
+    radius=0.0254 * 3,
     dt=0.005,
 )
 
