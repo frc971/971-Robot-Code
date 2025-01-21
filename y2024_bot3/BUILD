@@ -14,6 +14,7 @@ robot_downloader(
         "//y2024_bot3/constants:constants_sender",
         "//aos/events:aos_timing_report_streamer",
         "//aos/events/logging:logger_main",
+        "//y2024_bot3/autonomous:binaries",
         "//aos/starter:irq_affinity",
         ":joystick_reader",
         ":wpilib_interface",
@@ -25,6 +26,7 @@ robot_downloader(
     data = [
         ":aos_config",
         "//aos/starter:roborio_irq_config.json",
+        "//y2024_bot3/autonomous:trajectory_bfbs",
         "//y2024_bot3/constants:constants.json",
         "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix6_tools_athena//:shared_libraries",

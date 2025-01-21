@@ -310,6 +310,17 @@
       ]
     },
     {
+      "name": "autonomous_main",
+      "executable_name": "autonomous_main",
+      "args": [
+        "--nodie_on_malloc"
+      ],
+      "autostart": true,
+      "nodes": [
+        "roborio"
+      ]
+    },
+    {
       "name": "roborio_web_proxy",
       "executable_name": "web_proxy_main",
       "args": [

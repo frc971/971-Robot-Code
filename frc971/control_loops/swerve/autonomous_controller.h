@@ -1,0 +1,55 @@
+#ifndef FRC971_CONTROL_LOOPS_SWERVE
+#define FRC971_CONTROL_LOOPS_SWERVE
+
+#include "aos/events/event_loop.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_goal_static.h"
+#include "frc971/control_loops/swerve/swerve_drivetrain_status_generated.h"
+#include "frc971/control_loops/swerve/swerve_trajectory_static.h"
+#include "frc971/input/joystick_state_generated.h"
+
+ABSL_DECLARE_FLAG(double, kVxProportionalGain);
+ABSL_DECLARE_FLAG(double, kVyProportionalGain);
+ABSL_DECLARE_FLAG(double, kOmegaProportionalGain);
+ABSL_DECLARE_FLAG(bool, kUseEkfState);
+
+namespace frc971::control_loops::swerve {
+
+class AutonomousController {
+ public:
+  AutonomousController(
+      aos::EventLoop *event_loop, std::string_view trajectory_path,
+      const std::unordered_map<std::string_view, std::function<void()>>
+          &callbacks);
+  void Iterate();
+
+  bool Completed();
+
+ private:
+  // nullopt when we aren't running, when we're running its the index of the
+  // running trajectory
+  std::optional<size_t> trajectory_index_;
+
+  aos::FlatbufferVector<frc971::control_loops::swerve::SwerveTrajectory>
+      trajectory_;
+
+  aos::Sender<GoalStatic> swerve_goal_sender_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Fetcher<frc971::control_loops::swerve::Status>
+      swerve_drivetrain_status_fetcher_;
+
+  struct Action {
+    bool completed;
+    double time;
+    std::shared_ptr<std::function<void()>> callback;
+  };
+
+  std::vector<Action> actions_;
+
+  bool completed_;
+
+  aos::EventLoop *event_loop_;
+};
+
+}  // namespace frc971::control_loops::swerve
+
+#endif  // FRC971_CONTROL_LOOPS_SWERVE
