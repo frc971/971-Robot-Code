@@ -86,7 +86,7 @@ double elevator_pot_translate(double voltage) {
   return voltage * Values::kElevatorPotMetersPerVolt();
 }
 double pivot_pot_translate(double voltage) {
-  return voltage * Values::kPivotPotRadiansPerVolt();
+  return -voltage * Values::kPivotPotRadiansPerVolt();
 }
 
 }  // namespace
@@ -128,15 +128,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           superstructure_position_sender_.MakeStaticBuilder();
       CopyPosition(elevator_sensors_, builder->add_elevator(),
                    Values::kElevatorEncoderCountsPerRevolution(),
-                   Values::kElevatorPotRatio(), elevator_pot_translate, true,
+                   Values::kElevatorEncoderMetersPerRadian(),
+                   elevator_pot_translate, false,
                    robot_constants_->robot()
                        ->elevator_constants()
                        ->potentiometer_offset());
 
       CopyPosition(
           pivot_sensors_, builder->add_pivot(),
-          Values::kPivotEncoderCountsPerRevolution(), Values::kPivotPotRatio(),
-          pivot_pot_translate, true,
+          Values::kPivotEncoderCountsPerRevolution(),
+          Values::kPivotEncoderRatio(), pivot_pot_translate, false,
           robot_constants_->robot()->pivot_constants()->potentiometer_offset());
       builder.CheckOk(builder.Send());
     }
@@ -259,50 +260,24 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         robot_constants->common()->current_limits();
     std::vector<ctre::phoenix6::BaseStatusSignal *> canivore_signals_registry;
 
-    frc971::wpilib::swerve::SwerveModules modules{
-        .front_left = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{6, true},
-            frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
-            &canivore_signals_registry,
-            current_limits->drivetrain_stator_current_limit(),
-            current_limits->drivetrain_supply_current_limit()),
-        .front_right = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{3, true},
-            frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
-            &canivore_signals_registry,
-            current_limits->drivetrain_stator_current_limit(),
-            current_limits->drivetrain_supply_current_limit()),
-        .back_left = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{7, true},
-            frc971::wpilib::TalonFXParams{8, false}, "Drivetrain Bus",
-            &canivore_signals_registry,
-            current_limits->drivetrain_stator_current_limit(),
-            current_limits->drivetrain_supply_current_limit()),
-        .back_right = std::make_shared<SwerveModule>(
-            frc971::wpilib::TalonFXParams{2, true},
-            frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
-            &canivore_signals_registry,
-            current_limits->drivetrain_stator_current_limit(),
-            current_limits->drivetrain_supply_current_limit())};
-
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
     sensor_reader.set_pwm_trigger(false);
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
     sensor_reader.set_front_left_encoder(
-        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
+        make_encoder(4), std::make_unique<frc::DigitalInput>(4));
     sensor_reader.set_front_right_encoder(
-        make_encoder(1), std::make_unique<frc::DigitalInput>(1));
+        make_encoder(5), std::make_unique<frc::DigitalInput>(5));
     sensor_reader.set_back_left_encoder(make_encoder(2),
                                         std::make_unique<frc::DigitalInput>(2));
     sensor_reader.set_back_right_encoder(
         make_encoder(3), std::make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_elevator(make_encoder(4),
-                               make_unique<frc::DigitalInput>(4),
-                               make_unique<frc::AnalogInput>(4));
-    sensor_reader.set_pivot(make_encoder(4), make_unique<frc::DigitalInput>(4),
-                            make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_elevator(make_encoder(0),
+                               make_unique<frc::DigitalInput>(0),
+                               make_unique<frc::AnalogInput>(0));
+    sensor_reader.set_pivot(make_encoder(1), make_unique<frc::DigitalInput>(1),
+                            make_unique<frc::AnalogInput>(1));
     // Todo: Set the roborio ports
 
     AddLoop(&sensor_reader_event_loop);
@@ -328,64 +303,53 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 y2025::control_loops::superstructure::CANPositionStatic>(
                 "/superstructure/canivore");
 
-    aos::Sender<frc971::control_loops::swerve::CanPositionStatic>
-        can_position_sender =
-            can_sensor_reader_event_loop
-                .MakeSender<frc971::control_loops::swerve::CanPositionStatic>(
-                    "/roborio/drivetrain");
-
     std::vector<std::shared_ptr<TalonFX>> canivore_talons;
     std::vector<std::shared_ptr<TalonFX>> rio_talons;
-    modules.PopulateFalconsVector(&canivore_talons);
 
     std::shared_ptr<TalonFX> elevator_one = std::make_shared<TalonFX>(
-        9, true, "rio", &rio_signal_registry,
+        5, false, "Drivetrain Bus", &canivore_signals_registry,
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
     std::shared_ptr<TalonFX> elevator_two = std::make_shared<TalonFX>(
-        10, true, "rio", &rio_signal_registry,
+        9, false, "Drivetrain Bus", &canivore_signals_registry,
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
 
-    rio_talons.push_back(elevator_one);
-    rio_talons.push_back(elevator_two);
+    canivore_talons.push_back(elevator_one);
+    canivore_talons.push_back(elevator_two);
 
     std::shared_ptr<TalonFX> pivot =
-        std::make_shared<TalonFX>(9, true, "rio", &rio_signal_registry,
+        std::make_shared<TalonFX>(1, true, "rio", &rio_signal_registry,
                                   current_limits->pivot_stator_current_limit(),
                                   current_limits->pivot_supply_current_limit());
 
     rio_talons.push_back(pivot);
+    aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>
+        superstructure_canivore_position_sender =
+            rio_sensor_reader_event_loop.MakeSender<
+                y2025::control_loops::superstructure::CANPositionStatic>(
+                "/superstructure/canivore");
 
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(canivore_signals_registry),
         canivore_talons,
         [&superstructure_can_position_sender, &canivore_talons,
-         &can_position_sender, &modules,
-         &robot_constants](ctre::phoenix::StatusCode status) {
-          (void)status;
-          for (auto talon : canivore_talons) {
-            talon->RefreshNontimesyncedSignals();
-          }
+         &robot_constants, &elevator_one, &elevator_two,
+         &superstructure_canivore_position_sender](
+            ctre::phoenix::StatusCode status) {
+          aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
+              StaticBuilder superstructure_canivore_builder =
+                  superstructure_canivore_position_sender.MakeStaticBuilder();
 
-          aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
-              StaticBuilder builder = can_position_sender.MakeStaticBuilder();
-
-          const frc971::wpilib::swerve::SwerveModule::ModuleGearRatios
-              gear_ratios{
-                  .rotation = constants::Values::kRotationModuleRatio,
-                  .translation =
-                      robot_constants->common()->translation_module_ratio()};
-          modules.front_left->PopulateCanPosition(builder->add_front_left(),
-                                                  gear_ratios);
-          modules.front_right->PopulateCanPosition(builder->add_front_right(),
-                                                   gear_ratios);
-          modules.back_left->PopulateCanPosition(builder->add_back_left(),
-                                                 gear_ratios);
-          modules.back_right->PopulateCanPosition(builder->add_back_right(),
-                                                  gear_ratios);
-
-          builder.CheckOk(builder.Send());
+          elevator_one->SerializePosition(
+              superstructure_canivore_builder->add_elevator_one(),
+              constants::Values::kElevatorOutputRatio);
+          elevator_two->SerializePosition(
+              superstructure_canivore_builder->add_elevator_two(),
+              constants::Values::kElevatorOutputRatio);
+          superstructure_canivore_builder->set_status(static_cast<int>(status));
+          superstructure_canivore_builder.CheckOk(
+              superstructure_canivore_builder.Send());
         },
         frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
 
@@ -404,17 +368,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_rio_builder =
                   superstructure_rio_position_sender.MakeStaticBuilder();
-          elevator_one->SerializePosition(
-              superstructure_rio_builder->add_elevator_one(),
-              constants::Values::kElevatorOutputRatio);
-          elevator_two->SerializePosition(
-              superstructure_rio_builder->add_elevator_two(),
-              constants::Values::kElevatorOutputRatio);
+
           pivot->SerializePosition(superstructure_rio_builder->add_pivot(),
                                    constants::Values::kPivotOutputRatio);
-          superstructure_rio_builder->set_status(static_cast<int>(status));
-          superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
-
           superstructure_rio_builder->set_status(static_cast<int>(status));
           superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
         },
