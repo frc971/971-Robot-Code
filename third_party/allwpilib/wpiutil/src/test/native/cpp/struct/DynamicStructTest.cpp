@@ -6,6 +6,11 @@
 
 #include <stdint.h>
 
+#include <cstring>
+#include <limits>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 using namespace wpi;
@@ -40,16 +45,36 @@ TEST_F(DynamicStructTest, DelayedValid) {
   auto desc = db.Add("test", "foo a", &err);
   ASSERT_TRUE(desc);
   ASSERT_FALSE(desc->IsValid());
-  auto desc2 = db.Add("test2", "foo a[2]", &err);
+  auto desc2 = db.Add("test2", "foo a;foo b;", &err);
   ASSERT_TRUE(desc2);
   ASSERT_FALSE(desc2->IsValid());
-  auto desc3 = db.Add("foo", "int32 a", &err);
+  auto desc3 = db.Add("test3", "foo a[2]", &err);
   ASSERT_TRUE(desc3);
-  ASSERT_TRUE(desc3->IsValid());
+  ASSERT_FALSE(desc3->IsValid());
+  auto desc4 = db.Add("foo", "int32 a", &err);
+  ASSERT_TRUE(desc4);
+  ASSERT_TRUE(desc4->IsValid());
   ASSERT_TRUE(desc->IsValid());
   ASSERT_EQ(desc->GetSize(), 4u);
   ASSERT_TRUE(desc2->IsValid());
   ASSERT_EQ(desc2->GetSize(), 8u);
+  ASSERT_TRUE(desc3->IsValid());
+  ASSERT_EQ(desc3->GetSize(), 8u);
+}
+
+TEST_F(DynamicStructTest, ReuseNestedStructDelayed) {
+  auto desc2 = db.Add("test2", "test a;test b;", &err);
+  auto desc = db.Add("test", "int32 a; uint16 b; int16 c;", &err);
+  ASSERT_TRUE(desc);
+  ASSERT_TRUE(desc->IsValid());
+  ASSERT_TRUE(desc2);
+  ASSERT_TRUE(desc2->IsValid());
+  ASSERT_EQ(desc2->GetSize(), 16u);
+  auto fields = desc2->GetFields();
+  ASSERT_EQ(fields[0].GetOffset(), 0u);
+  ASSERT_EQ(fields[0].GetName(), "a");
+  ASSERT_EQ(fields[1].GetOffset(), 8u);
+  ASSERT_EQ(fields[1].GetName(), "b");
 }
 
 TEST_F(DynamicStructTest, InvalidBitfield) {
@@ -269,6 +294,179 @@ TEST_F(DynamicStructTest, DuplicateFieldName) {
   ASSERT_EQ(err, "duplicate field a");
 }
 
+TEST_F(DynamicStructTest, StringAllZeros) {
+  auto desc = db.Add("test", "char a[32]", &err);
+  uint8_t data[32];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_EQ(dynamic.GetStringField(field), "");
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip) {
+  auto desc = db.Add("test", "char a[32]", &err);
+  uint8_t data[32];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_TRUE(dynamic.SetStringField(field, "abc"));
+  EXPECT_EQ(dynamic.GetStringField(field), "abc");
+}
+
+TEST_F(DynamicStructTest, StringRoundTripEmbeddedNull) {
+  auto desc = db.Add("test", "char a[32]", &err);
+  uint8_t data[32];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  std::string check{"ab\0c", 4};
+  ASSERT_EQ(check.size(), 4u);
+  EXPECT_TRUE(dynamic.SetStringField(field, check));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, check);
+  EXPECT_EQ(4u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTripTooLong) {
+  auto desc = db.Add("test", "char a[2]", &err);
+  uint8_t data[2];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, "abc"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "ab");
+  EXPECT_EQ(2u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTripPartial2ByteUtf8) {
+  auto desc = db.Add("test", "char a[2]", &err);
+  uint8_t data[2];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, "a\u0234"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip2ByteUtf8) {
+  auto desc = db.Add("test", "char a[3]", &err);
+  uint8_t data[3];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_TRUE(dynamic.SetStringField(field, "a\u0234"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a\u0234");
+  EXPECT_EQ(3u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip3ByteUtf8) {
+  auto desc = db.Add("test", "char a[4]", &err);
+  uint8_t data[4];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_TRUE(dynamic.SetStringField(field, "a\u1234"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a\u1234");
+  EXPECT_EQ(4u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip3ByteUtf8PartialFirstByte) {
+  auto desc = db.Add("test", "char a[2]", &err);
+  uint8_t data[2];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, "a\u1234"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip3ByteUtf8PartialSecondByte) {
+  auto desc = db.Add("test", "char a[3]", &err);
+  uint8_t data[3];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, "a\u1234"));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
+// MSVC and GCC do surrogate pairs differently.
+// Manually construct the 4 byte string
+static constexpr char buffer[] = {
+    static_cast<char>(0x61), static_cast<char>(0xf0), static_cast<char>(0x9f),
+    static_cast<char>(0x90), static_cast<char>(0x80), static_cast<char>(0x00)};
+static constexpr std::string_view fourByteUtf8String{buffer};
+
+TEST_F(DynamicStructTest, StringRoundTrip4ByteUtf8) {
+  auto desc = db.Add("test", "char a[5]", &err);
+  uint8_t data[5];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_TRUE(dynamic.SetStringField(field, fourByteUtf8String));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, fourByteUtf8String);
+  EXPECT_EQ(5u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip4ByteUtf8PartialFirstByte) {
+  auto desc = db.Add("test", "char a[2]", &err);
+  uint8_t data[2];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, fourByteUtf8String));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip4ByteUtf8PartialSecondByte) {
+  auto desc = db.Add("test", "char a[3]", &err);
+  uint8_t data[3];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, fourByteUtf8String));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
+TEST_F(DynamicStructTest, StringRoundTrip4ByteUtf8PartialThirdByte) {
+  auto desc = db.Add("test", "char a[4]", &err);
+  uint8_t data[4];
+  std::memset(data, 0, sizeof(data));
+  ASSERT_EQ(desc->GetSize(), sizeof(data) / sizeof(data[0]));
+  wpi::MutableDynamicStruct dynamic{desc, data};
+  auto field = desc->FindFieldByName("a");
+  EXPECT_FALSE(dynamic.SetStringField(field, fourByteUtf8String));
+  auto get = dynamic.GetStringField(field);
+  EXPECT_EQ(get, "a");
+  EXPECT_EQ(1u, get.size());
+}
+
 struct SimpleTestParam {
   const char* schema;
   size_t size;
@@ -277,6 +475,8 @@ struct SimpleTestParam {
   bool isUint;
   unsigned int bitWidth;
   uint64_t bitMask;
+  uint64_t minVal;
+  uint64_t maxVal;
 };
 
 std::ostream& operator<<(std::ostream& os, const SimpleTestParam& param) {
@@ -336,22 +536,94 @@ TEST_P(DynamicSimpleStructTest, Array) {
   }
 }
 
+static int64_t SignExtend(uint64_t value, size_t size) {
+  switch (size) {
+    case 1:
+      return static_cast<int8_t>(value);
+    case 2:
+      return static_cast<int16_t>(value);
+    case 4:
+      return static_cast<int32_t>(value);
+    default:
+      return value;
+  }
+}
+
+TEST_P(DynamicSimpleStructTest, IntRoundTrip) {
+  if (GetParam().type == StructFieldType::kStruct) {
+    return;
+  }
+  auto desc = db.Add("test", GetParam().schema, &err);
+  ASSERT_TRUE(desc);
+  ASSERT_TRUE(desc->IsValid());
+  std::vector<uint8_t> dest(desc->GetSize());
+  auto field = desc->FindFieldByName("a");
+  ASSERT_TRUE(field);
+  wpi::MutableDynamicStruct dynamic(desc, dest);
+  if (GetParam().isInt) {
+    {
+      int64_t value = SignExtend(GetParam().minVal, field->GetSize());
+      dynamic.SetIntField(field, value);
+      EXPECT_EQ(dynamic.GetIntField(field), value);
+    }
+    {
+      int64_t value = SignExtend(GetParam().maxVal, field->GetSize());
+      dynamic.SetIntField(field, value);
+      EXPECT_EQ(dynamic.GetIntField(field), value);
+    }
+  } else if (GetParam().isUint) {
+    {
+      uint64_t value = GetParam().minVal;
+      dynamic.SetUintField(field, value);
+      EXPECT_EQ(dynamic.GetUintField(field), value);
+    }
+    {
+      uint64_t value = GetParam().maxVal;
+      dynamic.SetUintField(field, value);
+      EXPECT_EQ(dynamic.GetUintField(field), value);
+    }
+  } else if (GetParam().type == StructFieldType::kBool) {
+    dynamic.SetBoolField(field, false);
+    EXPECT_FALSE(dynamic.GetBoolField(field));
+    dynamic.SetBoolField(field, true);
+    EXPECT_TRUE(dynamic.GetBoolField(field));
+  }
+}
+
 static SimpleTestParam simpleTests[] = {
-    {"bool a", 1, StructFieldType::kBool, false, false, 8, UINT8_MAX},
-    {"char a", 1, StructFieldType::kChar, false, false, 8, UINT8_MAX},
-    {"int8 a", 1, StructFieldType::kInt8, true, false, 8, UINT8_MAX},
-    {"int16 a", 2, StructFieldType::kInt16, true, false, 16, UINT16_MAX},
-    {"int32 a", 4, StructFieldType::kInt32, true, false, 32, UINT32_MAX},
-    {"int64 a", 8, StructFieldType::kInt64, true, false, 64, UINT64_MAX},
-    {"uint8 a", 1, StructFieldType::kUint8, false, true, 8, UINT8_MAX},
-    {"uint16 a", 2, StructFieldType::kUint16, false, true, 16, UINT16_MAX},
-    {"uint32 a", 4, StructFieldType::kUint32, false, true, 32, UINT32_MAX},
-    {"uint64 a", 8, StructFieldType::kUint64, false, true, 64, UINT64_MAX},
-    {"float a", 4, StructFieldType::kFloat, false, false, 32, UINT32_MAX},
-    {"float32 a", 4, StructFieldType::kFloat, false, false, 32, UINT32_MAX},
-    {"double a", 8, StructFieldType::kDouble, false, false, 64, UINT64_MAX},
-    {"float64 a", 8, StructFieldType::kDouble, false, false, 64, UINT64_MAX},
-    {"foo a", 0, StructFieldType::kStruct, false, false, 0, 0},
+    {"bool a", 1, StructFieldType::kBool, false, false, 8, UINT8_MAX, 0, 0},
+    {"char a", 1, StructFieldType::kChar, false, false, 8, UINT8_MAX, 0, 0},
+    {"int8 a", 1, StructFieldType::kInt8, true, false, 8, UINT8_MAX,
+     static_cast<uint64_t>(std::numeric_limits<int8_t>::min()),
+     std::numeric_limits<int8_t>::max()},
+    {"int16 a", 2, StructFieldType::kInt16, true, false, 16, UINT16_MAX,
+     static_cast<uint64_t>(std::numeric_limits<int16_t>::min()),
+     std::numeric_limits<int16_t>::max()},
+    {"int32 a", 4, StructFieldType::kInt32, true, false, 32, UINT32_MAX,
+     static_cast<uint64_t>(std::numeric_limits<int32_t>::min()),
+     std::numeric_limits<int32_t>::max()},
+    {"int64 a", 8, StructFieldType::kInt64, true, false, 64, UINT64_MAX,
+     static_cast<uint64_t>(std::numeric_limits<int64_t>::min()),
+     std::numeric_limits<int64_t>::max()},
+    {"uint8 a", 1, StructFieldType::kUint8, false, true, 8, UINT8_MAX,
+     std::numeric_limits<uint8_t>::min(), std::numeric_limits<uint8_t>::max()},
+    {"uint16 a", 2, StructFieldType::kUint16, false, true, 16, UINT16_MAX,
+     std::numeric_limits<uint16_t>::min(),
+     std::numeric_limits<uint16_t>::max()},
+    {"uint32 a", 4, StructFieldType::kUint32, false, true, 32, UINT32_MAX,
+     std::numeric_limits<uint32_t>::min(),
+     std::numeric_limits<uint32_t>::max()},
+    {"uint64 a", 8, StructFieldType::kUint64, false, true, 64, UINT64_MAX,
+     std::numeric_limits<uint64_t>::min(),
+     std::numeric_limits<uint64_t>::max()},
+    {"float a", 4, StructFieldType::kFloat, false, false, 32, UINT32_MAX, 0, 0},
+    {"float32 a", 4, StructFieldType::kFloat, false, false, 32, UINT32_MAX, 0,
+     0},
+    {"double a", 8, StructFieldType::kDouble, false, false, 64, UINT64_MAX, 0,
+     0},
+    {"float64 a", 8, StructFieldType::kDouble, false, false, 64, UINT64_MAX, 0,
+     0},
+    {"foo a", 0, StructFieldType::kStruct, false, false, 0, 0, 0, 0},
 };
 
 INSTANTIATE_TEST_SUITE_P(DynamicSimpleStructTests, DynamicSimpleStructTest,

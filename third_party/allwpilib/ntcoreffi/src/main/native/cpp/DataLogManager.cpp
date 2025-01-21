@@ -7,15 +7,18 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+#include <string>
+#include <vector>
 
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <networktables/NetworkTableInstance.h>
-#include <wpi/DataLog.h>
+#include <wpi/DataLogBackgroundWriter.h>
+#include <wpi/FileLogger.h>
 #include <wpi/SafeThread.h>
 #include <wpi/StringExtras.h>
 #include <wpi/fs.h>
-#include <wpi/timestamp.h>
+#include <wpi/print.h>
 
 #ifdef __FRC_ROBORIO__
 #include <FRC_NetworkCommunication/FRCComm.h>
@@ -189,13 +192,17 @@ struct Thread final : public wpi::SafeThread {
 
   void StartNTLog();
   void StopNTLog();
+  void StartConsoleLog();
+  void StopConsoleLog();
 
   std::string m_logDir;
   bool m_filenameOverride;
-  wpi::log::DataLog m_log;
+  wpi::log::DataLogBackgroundWriter m_log;
   bool m_ntLoggerEnabled = false;
   NT_DataLogger m_ntEntryLogger = 0;
   NT_ConnectionDataLogger m_ntConnLogger = 0;
+  bool m_consoleLoggerEnabled = false;
+  wpi::FileLogger m_consoleLogger;
   wpi::log::StringLogEntry m_messageLog;
 };
 
@@ -310,7 +317,7 @@ void Thread::Main() {
             break;
           }
         } else {
-          fmt::print(stderr, "DataLogManager: could not delete {}\n",
+          wpi::print(stderr, "DataLogManager: could not delete {}\n",
                      entry.path().string());
         }
       }
@@ -450,6 +457,20 @@ void Thread::StopNTLog() {
   }
 }
 
+void Thread::StartConsoleLog() {
+  if (!m_consoleLoggerEnabled) {
+    m_consoleLoggerEnabled = true;
+    m_consoleLogger = {"/home/lvuser/FRC_UserProgram.log", m_log, "output"};
+  }
+}
+
+void Thread::StopConsoleLog() {
+  if (m_consoleLoggerEnabled) {
+    m_consoleLoggerEnabled = false;
+    m_consoleLogger = {};
+  }
+}
+
 Instance::Instance(std::string_view dir, std::string_view filename,
                    double period) {
   // Delete all previously existing FRC_TBD_*.wpilog files. These only exist
@@ -461,7 +482,7 @@ Instance::Instance(std::string_view dir, std::string_view filename,
     if (wpi::starts_with(entry.path().stem().string(), "FRC_TBD_") &&
         entry.path().extension() == ".wpilog") {
       if (!fs::remove(entry, ec)) {
-        fmt::print(stderr, "DataLogManager: could not delete {}\n",
+        wpi::print(stderr, "DataLogManager: could not delete {}\n",
                    entry.path().string());
       }
     }
@@ -493,7 +514,7 @@ void DataLogManager::Stop() {
 
 void DataLogManager::Log(std::string_view message) {
   GetInstance().owner.GetThread()->m_messageLog.Append(message);
-  fmt::print("{}\n", message);
+  wpi::print("{}\n", message);
 }
 
 wpi::log::DataLog& DataLogManager::GetLog() {
@@ -514,34 +535,52 @@ void DataLogManager::LogNetworkTables(bool enabled) {
   }
 }
 
+void DataLogManager::LogConsoleOutput(bool enabled) {
+  if (auto thr = GetInstance().owner.GetThread()) {
+    if (enabled) {
+      thr->StartConsoleLog();
+    } else if (!enabled) {
+      thr->StopConsoleLog();
+    }
+  }
+}
+
 void DataLogManager::SignalNewDSDataOccur() {
   wpi::SetSignalObject(DriverStation::gNewDataEvent);
 }
 
 extern "C" {
 
-void DLM_Start(const char* dir, const char* filename, double period) {
-  DataLogManager::Start(dir, filename, period);
+void DLM_Start(const struct WPI_String* dir, const struct WPI_String* filename,
+               double period) {
+  DataLogManager::Start(wpi::to_string_view(dir), wpi::to_string_view(filename),
+                        period);
 }
 
 void DLM_Stop(void) {
   DataLogManager::Stop();
 }
 
-void DLM_Log(const char* message) {
-  DataLogManager::Log(message);
+void DLM_Log(const struct WPI_String* message) {
+  DataLogManager::Log(wpi::to_string_view(message));
 }
 
 WPI_DataLog* DLM_GetLog(void) {
   return reinterpret_cast<WPI_DataLog*>(&DataLogManager::GetLog());
 }
 
-const char* DLM_GetLogDir(void) {
-  return DataLogManager::GetLogDir().data();
+void DLM_GetLogDir(struct WPI_String* value) {
+  auto logDir = DataLogManager::GetLogDir();
+  char* write = WPI_AllocateString(value, logDir.size());
+  std::memcpy(write, logDir.data(), logDir.size());
 }
 
 void DLM_LogNetworkTables(int enabled) {
   DataLogManager::LogNetworkTables(enabled);
+}
+
+void DLM_LogConsoleOutput(int enabled) {
+  DataLogManager::LogConsoleOutput(enabled);
 }
 
 void DLM_SignalNewDSDataOccur(void) {

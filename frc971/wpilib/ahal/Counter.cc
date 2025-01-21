@@ -86,7 +86,7 @@ Counter::~Counter() {
   SetUpdateWhenEmpty(true);
 
   int32_t status = 0;
-  HAL_FreeCounter(m_counter, &status);
+  HAL_FreeCounter(m_counter);
   wpi_setHALError(status);
   HAL_CHECK_STATUS(status);
 }

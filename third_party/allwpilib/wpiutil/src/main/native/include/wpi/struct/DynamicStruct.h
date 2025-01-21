@@ -7,14 +7,13 @@
 #include <stdint.h>
 
 #include <cassert>
-#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "wpi/MathExtras.h"
 #include "wpi/StringMap.h"
 #include "wpi/bit.h"
 
@@ -236,7 +235,8 @@ class StructFieldDescriptor {
    * @return true if bitfield
    */
   bool IsBitField() const {
-    return m_bitShift != 0 || m_bitWidth != (m_size * 8);
+    return (m_bitShift != 0 || m_bitWidth != (m_size * 8)) &&
+           m_struct == nullptr;
   }
 
  private:
@@ -357,7 +357,7 @@ class StructDescriptorDatabase {
   const StructDescriptor* Find(std::string_view name) const;
 
  private:
-  StringMap<std::unique_ptr<StructDescriptor>> m_structs;
+  StringMap<StructDescriptor> m_structs;
 };
 
 /**
@@ -423,7 +423,17 @@ class DynamicStruct {
   int64_t GetIntField(const StructFieldDescriptor* field,
                       size_t arrIndex = 0) const {
     assert(field->IsInt());
-    return GetFieldImpl(field, arrIndex);
+    uint64_t raw = GetFieldImpl(field, arrIndex);
+    switch (field->m_size) {
+      case 1:
+        return static_cast<int8_t>(raw);
+      case 2:
+        return static_cast<int16_t>(raw);
+      case 4:
+        return static_cast<int32_t>(raw);
+      default:
+        return raw;
+    }
   }
 
   /**
@@ -472,13 +482,7 @@ class DynamicStruct {
    * @param field field descriptor
    * @return field value
    */
-  std::string_view GetStringField(const StructFieldDescriptor* field) const {
-    assert(field->m_type == StructFieldType::kChar);
-    assert(field->m_parent == m_desc);
-    assert(m_desc->IsValid());
-    return {reinterpret_cast<const char*>(&m_data[field->m_offset]),
-            field->m_arraySize};
-  }
+  std::string_view GetStringField(const StructFieldDescriptor* field) const;
 
   /**
    * Gets the value of a struct field.
@@ -610,8 +614,9 @@ class MutableDynamicStruct : public DynamicStruct {
    *
    * @param field field descriptor
    * @param value field value
+   * @return true if the full value fit in the struct, false if truncated
    */
-  void SetStringField(const StructFieldDescriptor* field,
+  bool SetStringField(const StructFieldDescriptor* field,
                       std::string_view value);
 
   /**

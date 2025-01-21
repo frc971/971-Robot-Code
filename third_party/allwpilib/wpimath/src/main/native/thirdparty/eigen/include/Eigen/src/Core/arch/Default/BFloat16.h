@@ -139,8 +139,11 @@ struct numeric_limits_bfloat16_impl {
   static EIGEN_CONSTEXPR const bool has_infinity = true;
   static EIGEN_CONSTEXPR const bool has_quiet_NaN = true;
   static EIGEN_CONSTEXPR const bool has_signaling_NaN = true;
+  EIGEN_DIAGNOSTICS(push)
+  EIGEN_DISABLE_DEPRECATED_WARNING
   static EIGEN_CONSTEXPR const std::float_denorm_style has_denorm = std::denorm_present;
   static EIGEN_CONSTEXPR const bool has_denorm_loss = false;
+  EIGEN_DIAGNOSTICS(pop)
   static EIGEN_CONSTEXPR const std::float_round_style round_style = std::numeric_limits<float>::round_style;
   static EIGEN_CONSTEXPR const bool is_iec559 = true;
   // The C++ standard defines this as "true if the set of values representable
@@ -187,10 +190,13 @@ template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::has_quiet_NaN;
 template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::has_signaling_NaN;
+EIGEN_DIAGNOSTICS(push)
+EIGEN_DISABLE_DEPRECATED_WARNING
 template <typename T>
 EIGEN_CONSTEXPR const std::float_denorm_style numeric_limits_bfloat16_impl<T>::has_denorm;
 template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::has_denorm_loss;
+EIGEN_DIAGNOSTICS(pop)
 template <typename T>
 EIGEN_CONSTEXPR const std::float_round_style numeric_limits_bfloat16_impl<T>::round_style;
 template <typename T>
@@ -607,6 +613,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 abs(const bfloat16& a) {
   return numext::bit_cast<bfloat16>(x);
 }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 exp(const bfloat16& a) { return bfloat16(::expf(float(a))); }
+EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 exp2(const bfloat16& a) { return bfloat16(::exp2f(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 expm1(const bfloat16& a) { return bfloat16(numext::expm1(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log(const bfloat16& a) { return bfloat16(::logf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log1p(const bfloat16& a) { return bfloat16(numext::log1p(float(a))); }
@@ -637,6 +644,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 floor(const bfloat16& a) { return
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 ceil(const bfloat16& a) { return bfloat16(::ceilf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 rint(const bfloat16& a) { return bfloat16(::rintf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 round(const bfloat16& a) { return bfloat16(::roundf(float(a))); }
+EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 trunc(const bfloat16& a) { return bfloat16(::truncf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 fmod(const bfloat16& a, const bfloat16& b) {
   return bfloat16(::fmodf(float(a), float(b)));
 }
@@ -677,16 +685,22 @@ EIGEN_ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const bfloat16& v
 namespace internal {
 
 template <>
-struct random_default_impl<bfloat16, false, false> {
-  static inline bfloat16 run(const bfloat16& x, const bfloat16& y) {
-    return x + (y - x) * bfloat16(float(std::rand()) / float(RAND_MAX));
-  }
-  static inline bfloat16 run() { return run(bfloat16(-1.f), bfloat16(1.f)); }
+struct is_arithmetic<bfloat16> {
+  enum { value = true };
 };
 
 template <>
-struct is_arithmetic<bfloat16> {
-  enum { value = true };
+struct random_impl<bfloat16> {
+  enum : int { MantissaBits = 7 };
+  using Impl = random_impl<float>;
+  static EIGEN_DEVICE_FUNC inline bfloat16 run(const bfloat16& x, const bfloat16& y) {
+    float result = Impl::run(x, y, MantissaBits);
+    return bfloat16(result);
+  }
+  static EIGEN_DEVICE_FUNC inline bfloat16 run() {
+    float result = Impl::run(MantissaBits);
+    return bfloat16(result);
+  }
 };
 
 }  // namespace internal
@@ -747,6 +761,31 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Eigen::bfloat16 bit_cast<Eigen::bfloat16, 
 template <>
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC uint16_t bit_cast<uint16_t, Eigen::bfloat16>(const Eigen::bfloat16& src) {
   return Eigen::bfloat16_impl::raw_bfloat16_as_uint16(src);
+}
+
+EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 nextafter(const bfloat16& from, const bfloat16& to) {
+  if (numext::isnan EIGEN_NOT_A_MACRO(from)) {
+    return from;
+  }
+  if (numext::isnan EIGEN_NOT_A_MACRO(to)) {
+    return to;
+  }
+  if (from == to) {
+    return to;
+  }
+  uint16_t from_bits = numext::bit_cast<uint16_t>(from);
+  bool from_sign = from_bits >> 15;
+  // Whether we are adjusting toward the infinity with the same sign as from.
+  bool toward_inf = (to > from) == !from_sign;
+  if (toward_inf) {
+    ++from_bits;
+  } else if ((from_bits & 0x7fff) == 0) {
+    // Adjusting away from inf, but from is zero, so just toggle the sign.
+    from_bits ^= 0x8000;
+  } else {
+    --from_bits;
+  }
+  return numext::bit_cast<bfloat16>(from_bits);
 }
 
 }  // namespace numext

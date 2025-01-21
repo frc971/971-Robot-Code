@@ -9,6 +9,7 @@
 #include <memory>
 #include <span>
 
+#include <hal/SPI.h>
 #include <hal/SPITypes.h>
 #include <units/time.h>
 
@@ -62,10 +63,10 @@ class SPI {
    */
   explicit SPI(Port port);
 
-  virtual ~SPI();
-
   SPI(SPI&&) = default;
   SPI& operator=(SPI&&) = default;
+
+  ~SPI();
 
   /**
    * Returns the SPI port.
@@ -116,7 +117,7 @@ class SPI {
    * If not running in output only mode, also saves the data received
    * on the CIPO input during the transfer into the receive FIFO.
    */
-  virtual int Write(uint8_t* data, int size);
+  int Write(uint8_t* data, int size);
 
   /**
    * Read a word from the receive FIFO.
@@ -133,7 +134,7 @@ class SPI {
    * @param dataReceived Buffer to receive data from the device
    * @param size         The length of the transaction, in bytes
    */
-  virtual int Read(bool initiate, uint8_t* dataReceived, int size);
+  int Read(bool initiate, uint8_t* dataReceived, int size);
 
   /**
    * Perform a simultaneous read/write transaction with the device
@@ -142,7 +143,7 @@ class SPI {
    * @param dataReceived Buffer to receive data from the device
    * @param size         The length of the transaction, in bytes
    */
-  virtual int Transaction(uint8_t* dataToSend, uint8_t* dataReceived, int size);
+  int Transaction(uint8_t* dataToSend, uint8_t* dataReceived, int size);
 
   /**
    * Initialize automatic SPI transfer engine.
@@ -162,10 +163,10 @@ class SPI {
   /**
    * Set the data to be transmitted by the engine.
    *
-   * Up to 23 bytes are configurable, and may be followed by up to 127 zero
+   * Up to 16 bytes are configurable, and may be followed by up to 127 zero
    * bytes.
    *
-   * @param dataToSend data to send (maximum 23 bytes)
+   * @param dataToSend data to send (maximum 16 bytes)
    * @param zeroSize number of zeros to send after the data
    */
   void SetAutoTransmitData(std::span<const uint8_t> dataToSend, int zeroSize);
@@ -356,7 +357,7 @@ class SPI {
   double GetAccumulatorIntegratedAverage() const;
 
  protected:
-  hal::SPIPort m_port;
+  hal::Handle<HAL_SPIPort, HAL_CloseSPI, HAL_SPI_kInvalid> m_port;
   HAL_SPIMode m_mode = HAL_SPIMode::HAL_SPI_kMode0;
 
  private:

@@ -8,6 +8,7 @@
 
 #include "hal/Accelerometer.h"
 #include "hal/AnalogAccumulator.h"
+//#include "hal/AnalogGyro.h" // purposefully removed, see _excluded_devices in third_party/allwpilib/BUILD
 #include "hal/AnalogInput.h"
 #include "hal/AnalogOutput.h"
 #include "hal/AnalogTrigger.h"
@@ -32,6 +33,7 @@
 #include "hal/Power.h"
 #include "hal/Relay.h"
 #include "hal/SPI.h"
+//#include "hal/SerialPort.h" // purposefully removed, see _excluded_devices in third_party/allwpilib/BUILD
 #include "hal/SimDevice.h"
 #include "hal/Threads.h"
 #include "hal/Types.h"

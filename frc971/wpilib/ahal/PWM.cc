@@ -70,7 +70,7 @@ PWM::~PWM() {
   HAL_SetPWMDisabled(m_handle, &status);
   HAL_CHECK_STATUS(status);
 
-  HAL_FreePWMPort(m_handle, &status);
+  HAL_FreePWMPort(m_handle);
   HAL_CHECK_STATUS(status);
 }
 

@@ -5,6 +5,7 @@ macro(wpilib_target_warnings target)
             -pedantic
             -Wextra
             -Wno-unused-parameter
+            -Wformat=2
             ${WPILIB_TARGET_WARNINGS}
         )
         if(NOT NO_WERROR)
@@ -20,6 +21,7 @@ macro(wpilib_target_warnings target)
                 /wd4244
                 /wd4251
                 /wd4267
+                /wd4324
                 /WX
                 /D_CRT_SECURE_NO_WARNINGS
                 ${WPILIB_TARGET_WARNINGS}

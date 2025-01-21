@@ -94,8 +94,8 @@ public class Drivetrain {
 
   /** Sets speeds to the drivetrain motors. */
   public void setSpeeds(DifferentialDriveWheelSpeeds speeds) {
-    var leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
-    var rightFeedforward = m_feedforward.calculate(speeds.rightMetersPerSecond);
+    final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+    final double rightFeedforward = m_feedforward.calculate(speeds.rightMetersPerSecond);
     double leftOutput =
         m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
     double rightOutput =
@@ -123,8 +123,6 @@ public class Drivetrain {
 
   /** Resets robot odometry. */
   public void resetOdometry(Pose2d pose) {
-    m_leftEncoder.reset();
-    m_rightEncoder.reset();
     m_drivetrainSimulator.setPose(pose);
     m_odometry.resetPosition(
         m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance(), pose);

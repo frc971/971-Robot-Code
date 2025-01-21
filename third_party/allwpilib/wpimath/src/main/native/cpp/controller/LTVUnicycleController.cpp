@@ -23,7 +23,8 @@ namespace {
 class State {
  public:
   /// X position in global coordinate frame.
-  [[maybe_unused]] static constexpr int kX = 0;
+  [[maybe_unused]]
+  static constexpr int kX = 0;
 
   /// Y position in global coordinate frame.
   static constexpr int kY = 1;
@@ -102,7 +103,7 @@ LTVUnicycleController::LTVUnicycleController(
     Matrixd<3, 2> discB;
     DiscretizeAB(A, B, dt, &discA, &discB);
 
-    Matrixd<3, 3> S = detail::DARE<3, 2>(discA, discB, Q, R_llt);
+    auto S = detail::DARE<3, 2>(discA, discB, Q, R_llt);
 
     // K = (BᵀSB + R)⁻¹BᵀSA
     m_table.insert(velocity, (discB.transpose() * S * discB + R)

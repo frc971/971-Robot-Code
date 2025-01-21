@@ -4,6 +4,6 @@ LD_LIBRARY_PATH="${BAZEL_OUTPUT_ROOT}external/arm_frc_gnueabi_deps/usr/lib/x86_6
 LD_LIBRARY_PATH+=":${BAZEL_OUTPUT_ROOT}external/arm_frc_gnueabi_deps/lib/x86_64-linux-gnu"
 export LD_LIBRARY_PATH
 
-exec -a arm-frc2024-linux-gnueabi-gcov \
-	"${BAZEL_OUTPUT_ROOT}external/arm_frc_linux_gnueabi_repo/bin/arm-frc2024-linux-gnueabi-gcov" \
+exec -a arm-frc2025-linux-gnueabi-gcov \
+	"${BAZEL_OUTPUT_ROOT}external/arm_frc_linux_gnueabi_repo/bin/arm-frc2025-linux-gnueabi-gcov" \
 	"$@"
