@@ -245,10 +245,13 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
       apriltag_detection_info_t info;
       info.tagsize = 6.5 * 0.0254;
 
-      info.fx = intrinsics_.at<double>(0, 0);
-      info.fy = intrinsics_.at<double>(1, 1);
-      info.cx = intrinsics_.at<double>(0, 2);
-      info.cy = intrinsics_.at<double>(1, 2);
+      // TODO(max): It seems that intrinsics_ gets deallocated before here, I
+      // moved it to distortion_camera_matrix_ but we should look at it. See
+      // cv::Mat::copyTo
+      info.fx = distortion_camera_matrix_.fx;
+      info.fy = distortion_camera_matrix_.fy;
+      info.cx = distortion_camera_matrix_.cx;
+      info.cy = distortion_camera_matrix_.cy;
 
       // Send original corner points in green
       std::vector<cv::Point2f> orig_corner_points =
