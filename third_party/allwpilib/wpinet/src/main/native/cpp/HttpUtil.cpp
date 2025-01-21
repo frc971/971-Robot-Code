@@ -5,13 +5,13 @@
 #include "wpinet/HttpUtil.h"
 
 #include <cctype>
+#include <string>
+#include <utility>
 
 #include <fmt/format.h>
 #include <wpi/Base64.h>
 #include <wpi/StringExtras.h>
 #include <wpi/raw_ostream.h>
-
-#include "wpinet/TCPConnector.h"
 
 namespace wpi {
 
@@ -354,7 +354,7 @@ HttpLocation::HttpLocation(std::string_view url_, bool* error,
       return;
     }
 
-    params.emplace_back(std::make_pair(param, value));
+    params.emplace_back(std::pair{param, value});
   }
 
   *error = false;

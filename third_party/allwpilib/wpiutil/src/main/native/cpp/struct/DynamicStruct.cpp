@@ -5,6 +5,8 @@
 #include "wpi/struct/DynamicStruct.h"
 
 #include <algorithm>
+#include <string>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -192,14 +194,13 @@ const StructDescriptor* StructDescriptorDatabase::Add(std::string_view name,
   }
 
   // turn parsed schema into descriptors
-  auto& theStruct = m_structs[name];
-  if (!theStruct) {
-    theStruct = std::make_unique<StructDescriptor>(
-        name, StructDescriptor::private_init{});
-  }
-  theStruct->m_schema = schema;
-  theStruct->m_fields.clear();
-  theStruct->m_fields.reserve(parsed.declarations.size());
+  auto& theStruct =
+      m_structs.try_emplace(name, name, StructDescriptor::private_init{})
+          .first->second;
+  theStruct.m_schema = schema;
+  theStruct.m_fields.clear();
+  theStruct.m_fieldsByName.clear();
+  theStruct.m_fields.reserve(parsed.declarations.size());
   bool isValid = true;
   for (auto&& decl : parsed.declarations) {
     auto type = TypeStringToType(decl.typeString);
@@ -248,43 +249,41 @@ const StructDescriptor* StructDescriptorDatabase::Add(std::string_view name,
       }
 
       // cross-reference struct, creating a placeholder if necessary
-      auto& aStruct = m_structs[decl.typeString];
-      if (!aStruct) {
-        aStruct = std::make_unique<StructDescriptor>(
-            decl.typeString, StructDescriptor::private_init{});
-      }
+      auto& aStruct = m_structs
+                          .try_emplace(decl.typeString, decl.typeString,
+                                       StructDescriptor::private_init{})
+                          .first->second;
 
       // if the struct isn't valid, we can't be valid either
-      if (aStruct->IsValid()) {
-        size = aStruct->GetSize();
+      if (aStruct.IsValid()) {
+        size = aStruct.GetSize();
       } else {
         isValid = false;
       }
 
       // add to cross-references for when the struct does become valid
-      aStruct->m_references.emplace_back(theStruct.get());
-      structDesc = aStruct.get();
+      aStruct.m_references.emplace_back(&theStruct);
+      structDesc = &aStruct;
     }
 
     // create field
-    if (!theStruct->m_fieldsByName
-             .insert({decl.name, theStruct->m_fields.size()})
+    if (!theStruct.m_fieldsByName.insert({decl.name, theStruct.m_fields.size()})
              .second) {
       *err = fmt::format("duplicate field {}", decl.name);
       [[unlikely]] return nullptr;
     }
 
-    theStruct->m_fields.emplace_back(theStruct.get(), decl.name, type, size,
-                                     decl.arraySize, decl.bitWidth,
-                                     std::move(decl.enumValues), structDesc,
-                                     StructFieldDescriptor::private_init{});
+    theStruct.m_fields.emplace_back(&theStruct, decl.name, type, size,
+                                    decl.arraySize, decl.bitWidth,
+                                    std::move(decl.enumValues), structDesc,
+                                    StructFieldDescriptor::private_init{});
   }
 
-  theStruct->m_valid = isValid;
+  theStruct.m_valid = isValid;
   if (isValid) {
     // we have all the info needed, so calculate field offset & shift
     wpi::SmallVector<const StructDescriptor*, 16> stack;
-    auto err2 = theStruct->CalculateOffsets(stack);
+    auto err2 = theStruct.CalculateOffsets(stack);
     if (!err2.empty()) {
       *err = std::move(err2);
       [[unlikely]] return nullptr;
@@ -292,7 +291,7 @@ const StructDescriptor* StructDescriptorDatabase::Add(std::string_view name,
   } else {
     // check for circular reference
     wpi::SmallVector<const StructDescriptor*, 16> stack;
-    if (!theStruct->CheckCircular(stack)) {
+    if (!theStruct.CheckCircular(stack)) {
       wpi::SmallString<128> buf;
       wpi::raw_svector_ostream os{buf};
       for (auto&& elem : stack) {
@@ -306,7 +305,7 @@ const StructDescriptor* StructDescriptorDatabase::Add(std::string_view name,
     }
   }
 
-  return theStruct.get();
+  return &theStruct;
 }
 
 const StructDescriptor* StructDescriptorDatabase::Find(
@@ -315,7 +314,7 @@ const StructDescriptor* StructDescriptorDatabase::Find(
   if (it == m_structs.end()) {
     return nullptr;
   }
-  return it->second.get();
+  return &it->second;
 }
 
 uint64_t DynamicStruct::GetFieldImpl(const StructFieldDescriptor* field,
@@ -349,16 +348,75 @@ void MutableDynamicStruct::SetData(std::span<const uint8_t> data) {
   std::copy(data.begin(), data.begin() + m_desc->GetSize(), m_data.begin());
 }
 
-void MutableDynamicStruct::SetStringField(const StructFieldDescriptor* field,
+std::string_view DynamicStruct::GetStringField(
+    const StructFieldDescriptor* field) const {
+  assert(field->m_type == StructFieldType::kChar);
+  assert(field->m_parent == m_desc);
+  assert(m_desc->IsValid());
+  // Find last non zero character
+  size_t stringLength;
+  for (stringLength = field->m_arraySize; stringLength > 0; stringLength--) {
+    if (m_data[field->m_offset + stringLength - 1] != 0) {
+      break;
+    }
+  }
+  // If string is all zeroes, its empty and return an empty string.
+  if (stringLength == 0) {
+    return "";
+  }
+  // Check if the end of the string is in the middle of a continuation byte or
+  // not.
+  if ((m_data[field->m_offset + stringLength - 1] & 0x80) != 0) {
+    // This is a UTF8 continuation byte. Make sure its valid.
+    // Walk back until initial byte is found
+    size_t utf8StartByte = stringLength;
+    for (; utf8StartByte > 0; utf8StartByte--) {
+      if ((m_data[field->m_offset + utf8StartByte - 1] & 0x40) != 0) {
+        // Having 2nd bit set means start byte
+        break;
+      }
+    }
+    if (utf8StartByte == 0) {
+      // This case means string only contains continuation bytes
+      return "";
+    }
+    utf8StartByte--;
+    // Check if its a 2, 3, or 4 byte
+    uint8_t checkByte = m_data[field->m_offset + utf8StartByte];
+    if ((checkByte & 0xE0) == 0xC0) {
+      // 2 byte, need 1 more byte
+      if (utf8StartByte != stringLength - 2) {
+        stringLength = utf8StartByte;
+      }
+    } else if ((checkByte & 0xF0) == 0xE0) {
+      // 3 byte, need 2 more bytes
+      if (utf8StartByte != stringLength - 3) {
+        stringLength = utf8StartByte;
+      }
+    } else if ((checkByte & 0xF8) == 0xF0) {
+      // 4 byte, need 3 more bytes
+      if (utf8StartByte != stringLength - 4) {
+        stringLength = utf8StartByte;
+      }
+    }
+    // If we get here, the string is either completely garbage or fine.
+  }
+  return {reinterpret_cast<const char*>(&m_data[field->m_offset]),
+          stringLength};
+}
+
+bool MutableDynamicStruct::SetStringField(const StructFieldDescriptor* field,
                                           std::string_view value) {
   assert(field->m_type == StructFieldType::kChar);
   assert(field->m_parent == m_desc);
   assert(m_desc->IsValid());
   size_t len = (std::min)(field->m_arraySize, value.size());
+  bool copiedFull = len == value.size();
   std::copy(value.begin(), value.begin() + len,
             reinterpret_cast<char*>(&m_data[field->m_offset]));
-  std::fill(&m_data[field->m_offset + len],
-            &m_data[field->m_offset + field->m_arraySize], 0);
+  auto toFill = m_data.subspan(field->m_offset + len, field->m_arraySize - len);
+  std::fill(toFill.begin(), toFill.end(), 0);
+  return copiedFull;
 }
 
 void MutableDynamicStruct::SetStructField(const StructFieldDescriptor* field,

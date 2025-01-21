@@ -433,9 +433,9 @@ http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
     patches = ["//debian:fts.patch"],
-    sha256 = "10349791e4f9fa33100ee52a84e7f9ba4df581963818334771253369b0d12061",
+    sha256 = "0ed7c454eab947166c41177f72f795a408f4b7c5fc0f7fd6ee35dba1871fbfac",
     strip_prefix = "roborio-academic",
-    url = "https://github.com/wpilibsuite/opensdk/releases/download/v2024-1/cortexa9_vfpv3-roborio-academic-2024-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
+    url = "https://github.com/wpilibsuite/opensdk/releases/download/v2025-1/cortexa9_vfpv3-roborio-academic-2025-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
 )
 
 # The main partition built from //frc971/orin/build_rootfs.py.
@@ -467,9 +467,9 @@ http_archive(
 http_archive(
     name = "allwpilib_ni_libraries",
     build_file = "@//debian:ni-libraries.BUILD",
-    sha256 = "86458884701c817351b2ec651a2f13591258da54b4f54f05d8f1ce04eb214ba5",
-    strip_prefix = "ni-libraries-2024.2.1",
-    url = "https://github.com/wpilibsuite/ni-libraries/archive/refs/tags/v2024.2.1.zip",
+    sha256 = "b03047d50694bb3c8739d0a55c129e49448a8c9cc82a1dc90bc3cec69df8eff2",
+    strip_prefix = "ni-libraries-2025.0.0",
+    url = "https://github.com/wpilibsuite/ni-libraries/archive/refs/tags/v2025.0.0.zip",
 )
 
 # For protobuf. Don't use these.

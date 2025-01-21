@@ -44,6 +44,7 @@ struct JoystickDataCache {
   HAL_JoystickButtons buttons[kJoystickPorts];
   HAL_AllianceStationID allianceStation;
   double matchTime;
+  HAL_ControlWord controlWord;
 };
 static_assert(std::is_standard_layout_v<JoystickDataCache>);
 // static_assert(std::is_trivial_v<JoystickDataCache>);
@@ -54,6 +55,7 @@ struct FRCDriverStation {
   ~FRCDriverStation() { gShutdown = true; }
   wpi::EventVector newDataEvents;
   wpi::mutex cacheMutex;
+  wpi::mutex tcpCacheMutex;
 };
 }  // namespace
 
@@ -65,6 +67,16 @@ void JoystickDataCache::Update() {
   }
   allianceStation = SimDriverStationData->allianceStationId;
   matchTime = SimDriverStationData->matchTime;
+
+  HAL_ControlWord tmpControlWord;
+  std::memset(&tmpControlWord, 0, sizeof(tmpControlWord));
+  tmpControlWord.enabled = SimDriverStationData->enabled;
+  tmpControlWord.autonomous = SimDriverStationData->autonomous;
+  tmpControlWord.test = SimDriverStationData->test;
+  tmpControlWord.eStop = SimDriverStationData->eStop;
+  tmpControlWord.fmsAttached = SimDriverStationData->fmsAttached;
+  tmpControlWord.dsAttached = SimDriverStationData->dsAttached;
+  this->controlWord = tmpControlWord;
 }
 
 #define CHECK_JOYSTICK_NUMBER(stickNum)                  \
@@ -78,6 +90,29 @@ static JoystickDataCache* currentReadLocal = &caches[0];
 static std::atomic<JoystickDataCache*> currentCache{nullptr};
 static JoystickDataCache* lastGiven = &caches[1];
 static JoystickDataCache* cacheToUpdate = &caches[2];
+
+namespace {
+struct TcpCache {
+  TcpCache() { std::memset(this, 0, sizeof(*this)); }
+  void Update();
+  void CloneTo(TcpCache* other) { std::memcpy(other, this, sizeof(*this)); }
+
+  HAL_MatchInfo matchInfo;
+  HAL_JoystickDescriptor descriptors[HAL_kMaxJoysticks];
+};
+static_assert(std::is_standard_layout_v<TcpCache>);
+}  // namespace
+
+static TcpCache tcpCache;
+static TcpCache tcpCurrent;
+
+void TcpCache::Update() {
+  SimDriverStationData->GetMatchInfo(&matchInfo);
+
+  for (int i = 0; i < HAL_kMaxJoysticks; i++) {
+    SimDriverStationData->GetJoystickDescriptor(i, &descriptors[i]);
+  }
+}
 
 static ::FRCDriverStation* driverStation;
 
@@ -245,37 +280,47 @@ void HAL_GetAllJoystickData(HAL_JoystickAxes* axes, HAL_JoystickPOVs* povs,
 int32_t HAL_GetJoystickDescriptor(int32_t joystickNum,
                                   HAL_JoystickDescriptor* desc) {
   CHECK_JOYSTICK_NUMBER(joystickNum);
-  SimDriverStationData->GetJoystickDescriptor(joystickNum, desc);
+  std::scoped_lock lock{driverStation->tcpCacheMutex};
+  *desc = tcpCurrent.descriptors[joystickNum];
   return 0;
 }
 
 HAL_Bool HAL_GetJoystickIsXbox(int32_t joystickNum) {
-  HAL_JoystickDescriptor desc;
-  SimDriverStationData->GetJoystickDescriptor(joystickNum, &desc);
-  return desc.isXbox;
+  HAL_JoystickDescriptor joystickDesc;
+  if (HAL_GetJoystickDescriptor(joystickNum, &joystickDesc) < 0) {
+    return 0;
+  } else {
+    return joystickDesc.isXbox;
+  }
 }
 
 int32_t HAL_GetJoystickType(int32_t joystickNum) {
-  HAL_JoystickDescriptor desc;
-  SimDriverStationData->GetJoystickDescriptor(joystickNum, &desc);
-  return desc.type;
+  HAL_JoystickDescriptor joystickDesc;
+  if (HAL_GetJoystickDescriptor(joystickNum, &joystickDesc) < 0) {
+    return -1;
+  } else {
+    return joystickDesc.type;
+  }
 }
 
-char* HAL_GetJoystickName(int32_t joystickNum) {
-  HAL_JoystickDescriptor desc;
-  SimDriverStationData->GetJoystickDescriptor(joystickNum, &desc);
-  size_t len = std::strlen(desc.name);
-  char* name = static_cast<char*>(std::malloc(len + 1));
-  std::memcpy(name, desc.name, len + 1);
-  return name;
-}
-
-void HAL_FreeJoystickName(char* name) {
-  std::free(name);
+void HAL_GetJoystickName(struct WPI_String* name, int32_t joystickNum) {
+  HAL_JoystickDescriptor joystickDesc;
+  const char* cName = joystickDesc.name;
+  if (HAL_GetJoystickDescriptor(joystickNum, &joystickDesc) < 0) {
+    cName = "";
+  }
+  auto len = std::strlen(cName);
+  auto write = WPI_AllocateString(name, len);
+  std::memcpy(write, cName, len);
 }
 
 int32_t HAL_GetJoystickAxisType(int32_t joystickNum, int32_t axis) {
-  return 0;
+  HAL_JoystickDescriptor joystickDesc;
+  if (HAL_GetJoystickDescriptor(joystickNum, &joystickDesc) < 0) {
+    return -1;
+  } else {
+    return joystickDesc.axisTypes[axis];
+  }
 }
 
 int32_t HAL_SetJoystickOutputs(int32_t joystickNum, int64_t outputs,
@@ -294,7 +339,8 @@ double HAL_GetMatchTime(int32_t* status) {
 }
 
 int32_t HAL_GetMatchInfo(HAL_MatchInfo* info) {
-  SimDriverStationData->GetMatchInfo(info);
+  std::scoped_lock lock{driverStation->tcpCacheMutex};
+  *info = tcpCurrent.matchInfo;
   return 0;
 }
 
@@ -322,20 +368,43 @@ HAL_Bool HAL_RefreshDSData(void) {
   if (gShutdown) {
     return false;
   }
-  HAL_ControlWord controlWord;
-  std::memset(&controlWord, 0, sizeof(controlWord));
-  controlWord.enabled = SimDriverStationData->enabled;
-  controlWord.autonomous = SimDriverStationData->autonomous;
-  controlWord.test = SimDriverStationData->test;
-  controlWord.eStop = SimDriverStationData->eStop;
-  controlWord.fmsAttached = SimDriverStationData->fmsAttached;
-  controlWord.dsAttached = SimDriverStationData->dsAttached;
-  std::scoped_lock lock{driverStation->cacheMutex};
-  JoystickDataCache* prev = currentCache.exchange(nullptr);
-  if (prev != nullptr) {
-    currentRead = prev;
+  bool dsAttached = SimDriverStationData->dsAttached;
+  JoystickDataCache* prev;
+  {
+    std::scoped_lock lock{driverStation->cacheMutex};
+    prev = currentCache.exchange(nullptr);
+    if (prev != nullptr) {
+      currentRead = prev;
+    }
+    // If newest state shows we have a DS attached, just use the
+    // control word out of the cache, As it will be the one in sync
+    // with the data. If no data has been updated, at this point,
+    // and a DS wasn't attached previously, this will still return
+    // a zeroed out control word, with is the correct state for
+    // no new data.
+    if (!dsAttached) {
+      // If the DS is not attached, we need to zero out the control word.
+      // This is because HAL_RefreshDSData is called asynchronously from
+      // the DS data. The dsAttached variable comes directly from netcomm
+      // and could be updated before the caches are. If that happens,
+      // we would end up returning the previous cached control word,
+      // which is out of sync with the current control word and could
+      // break invariants such as which alliance station is in used.
+      // Also, when the DS has never been connected the rest of the fields
+      // in control word are garbage, so we also need to zero out in that
+      // case too
+      std::memset(&currentRead->controlWord, 0,
+                  sizeof(currentRead->controlWord));
+    }
+    newestControlWord = currentRead->controlWord;
   }
-  newestControlWord = controlWord;
+
+  {
+    tcpCache.Update();
+    std::scoped_lock tcpLock(driverStation->tcpCacheMutex);
+    tcpCache.CloneTo(&tcpCurrent);
+  }
+
   return prev != nullptr;
 }
 
@@ -369,6 +438,7 @@ void NewDriverStationData() {
   if (gShutdown) {
     return;
   }
+  SimDriverStationData->dsAttached = true;
   cacheToUpdate->Update();
 
   JoystickDataCache* given = cacheToUpdate;

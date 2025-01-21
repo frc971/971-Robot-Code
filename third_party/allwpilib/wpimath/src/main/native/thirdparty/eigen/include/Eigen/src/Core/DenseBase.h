@@ -621,17 +621,19 @@ class DenseBase
  protected:
   EIGEN_DEFAULT_COPY_CONSTRUCTOR(DenseBase)
   /** Default constructor. Do nothing. */
+#ifdef EIGEN_INTERNAL_DEBUGGING
   EIGEN_DEVICE_FUNC constexpr DenseBase() {
     /* Just checks for self-consistency of the flags.
      * Only do it when debugging Eigen, as this borders on paranoia and could slow compilation down
      */
-#ifdef EIGEN_INTERNAL_DEBUGGING
     EIGEN_STATIC_ASSERT(
         (internal::check_implication(MaxRowsAtCompileTime == 1 && MaxColsAtCompileTime != 1, int(IsRowMajor)) &&
          internal::check_implication(MaxColsAtCompileTime == 1 && MaxRowsAtCompileTime != 1, int(!IsRowMajor))),
         INVALID_STORAGE_ORDER_FOR_THIS_VECTOR_EXPRESSION)
-#endif
   }
+#else
+  EIGEN_DEVICE_FUNC constexpr DenseBase() = default;
+#endif
 
  private:
   EIGEN_DEVICE_FUNC explicit DenseBase(int);
@@ -639,6 +641,18 @@ class DenseBase
   template <typename OtherDerived>
   EIGEN_DEVICE_FUNC explicit DenseBase(const DenseBase<OtherDerived>&);
 };
+
+/** Free-function swap.
+ */
+template <typename DerivedA, typename DerivedB>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    // Use forwarding references to capture all combinations of cv-qualified l+r-value cases.
+    std::enable_if_t<std::is_base_of<DenseBase<std::decay_t<DerivedA>>, std::decay_t<DerivedA>>::value &&
+                         std::is_base_of<DenseBase<std::decay_t<DerivedB>>, std::decay_t<DerivedB>>::value,
+                     void>
+    swap(DerivedA&& a, DerivedB&& b) {
+  a.swap(b);
+}
 
 }  // end namespace Eigen
 

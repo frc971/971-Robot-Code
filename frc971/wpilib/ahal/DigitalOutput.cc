@@ -198,7 +198,7 @@ void DigitalOutput::DisablePWM() {
   HAL_SetDigitalPWMOutputChannel(m_pwmGenerator, kDigitalChannels, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 
-  HAL_FreeDigitalPWM(m_pwmGenerator, &status);
+  HAL_FreeDigitalPWM(m_pwmGenerator);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 
   m_pwmGenerator = HAL_kInvalidHandle;

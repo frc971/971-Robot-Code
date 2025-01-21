@@ -18,6 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@SuppressWarnings("AvoidEscapedUnicodeCharacters")
 class DynamicStructTest {
   @SuppressWarnings("MemberName")
   private StructDescriptorDatabase db;
@@ -48,16 +49,36 @@ class DynamicStructTest {
 
   @Test
   void testDelayedValid() {
-    var desc = assertDoesNotThrow(() -> db.add("test", "foo a"));
+    final var desc = assertDoesNotThrow(() -> db.add("test", "foo a"));
     assertFalse(desc.isValid());
-    var desc2 = assertDoesNotThrow(() -> db.add("test2", "foo a[2]"));
+    var desc2 = assertDoesNotThrow(() -> db.add("test2", "foo a; foo b;"));
     assertFalse(desc2.isValid());
-    var desc3 = assertDoesNotThrow(() -> db.add("foo", "int32 a"));
-    assertTrue(desc3.isValid());
+    var desc3 = assertDoesNotThrow(() -> db.add("test3", "foo a[2]"));
+    assertFalse(desc3.isValid());
+    var desc4 = assertDoesNotThrow(() -> db.add("foo", "int32 a"));
+    assertTrue(desc4.isValid());
     assertTrue(desc.isValid());
     assertEquals(desc.getSize(), 4);
     assertTrue(desc2.isValid());
     assertEquals(desc2.getSize(), 8);
+    assertTrue(desc3.isValid());
+    assertEquals(desc3.getSize(), 8);
+  }
+
+  @Test
+  void testReuseNestedStructDelayed() {
+    var desc2 = assertDoesNotThrow(() -> db.add("test2", "test a;test b;"));
+    var desc = assertDoesNotThrow(() -> db.add("test", "int32 a; uint16 b; int16 c;"));
+    assertTrue(desc.isValid());
+    assertTrue(desc2.isValid());
+    assertEquals(desc2.getSize(), 16);
+    var fields = desc2.getFields();
+    var field = fields.get(0);
+    assertEquals(field.getOffset(), 0);
+    assertEquals(field.getName(), "a");
+    field = fields.get(1);
+    assertEquals(field.getOffset(), 8);
+    assertEquals(field.getName(), "b");
   }
 
   @Test
@@ -307,21 +328,40 @@ class DynamicStructTest {
 
   private static Stream<Arguments> provideSimpleTestParams() {
     return Stream.of(
-        Arguments.of("bool a", 1, StructFieldType.kBool, false, false, 8, 0xff),
-        Arguments.of("char a", 1, StructFieldType.kChar, false, false, 8, 0xff),
-        Arguments.of("int8 a", 1, StructFieldType.kInt8, true, false, 8, 0xff),
-        Arguments.of("int16 a", 2, StructFieldType.kInt16, true, false, 16, 0xffff),
-        Arguments.of("int32 a", 4, StructFieldType.kInt32, true, false, 32, 0xffffffffL),
-        Arguments.of("int64 a", 8, StructFieldType.kInt64, true, false, 64, -1),
-        Arguments.of("uint8 a", 1, StructFieldType.kUint8, false, true, 8, 0xff),
-        Arguments.of("uint16 a", 2, StructFieldType.kUint16, false, true, 16, 0xffff),
-        Arguments.of("uint32 a", 4, StructFieldType.kUint32, false, true, 32, 0xffffffffL),
-        Arguments.of("uint64 a", 8, StructFieldType.kUint64, false, true, 64, -1),
-        Arguments.of("float a", 4, StructFieldType.kFloat, false, false, 32, 0xffffffffL),
-        Arguments.of("float32 a", 4, StructFieldType.kFloat, false, false, 32, 0xffffffffL),
-        Arguments.of("double a", 8, StructFieldType.kDouble, false, false, 64, -1),
-        Arguments.of("float64 a", 8, StructFieldType.kDouble, false, false, 64, -1),
-        Arguments.of("foo a", 0, StructFieldType.kStruct, false, false, 0, 0));
+        Arguments.of("bool a", 1, StructFieldType.kBool, false, false, 8, 0xff, 0, 0),
+        Arguments.of("char a", 1, StructFieldType.kChar, false, false, 8, 0xff, 0, 0),
+        Arguments.of("int8 a", 1, StructFieldType.kInt8, true, false, 8, 0xff, -128, 127),
+        Arguments.of("int16 a", 2, StructFieldType.kInt16, true, false, 16, 0xffff, -32768, 32767),
+        Arguments.of(
+            "int32 a",
+            4,
+            StructFieldType.kInt32,
+            true,
+            false,
+            32,
+            0xffffffffL,
+            -2147483648,
+            2147483647),
+        Arguments.of(
+            "int64 a",
+            8,
+            StructFieldType.kInt64,
+            true,
+            false,
+            64,
+            -1,
+            -9223372036854775808L,
+            9223372036854775807L),
+        Arguments.of("uint8 a", 1, StructFieldType.kUint8, false, true, 8, 0xff, 0, 255),
+        Arguments.of("uint16 a", 2, StructFieldType.kUint16, false, true, 16, 0xffff, 0, 65535),
+        Arguments.of(
+            "uint32 a", 4, StructFieldType.kUint32, false, true, 32, 0xffffffffL, 0, 4294967295L),
+        Arguments.of("uint64 a", 8, StructFieldType.kUint64, false, true, 64, -1, 0, 0),
+        Arguments.of("float a", 4, StructFieldType.kFloat, false, false, 32, 0xffffffffL, 0, 0),
+        Arguments.of("float32 a", 4, StructFieldType.kFloat, false, false, 32, 0xffffffffL, 0, 0),
+        Arguments.of("double a", 8, StructFieldType.kDouble, false, false, 64, -1, 0, 0),
+        Arguments.of("float64 a", 8, StructFieldType.kDouble, false, false, 64, -1, 0, 0),
+        Arguments.of("foo a", 0, StructFieldType.kStruct, false, false, 0, 0, 0, 0));
   }
 
   @ParameterizedTest
@@ -386,5 +426,155 @@ class DynamicStructTest {
       assertFalse(desc.isValid());
       assertNotNull(field.getStruct());
     }
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideSimpleTestParams")
+  void testIntRoundTrip(
+      String schema,
+      int size,
+      StructFieldType type,
+      boolean isInt,
+      boolean isUint,
+      int bitWidth,
+      long bitMask,
+      long minVal,
+      long maxVal) {
+    if (type == StructFieldType.kStruct) {
+      return;
+    }
+    var desc = assertDoesNotThrow(() -> db.add("test", schema));
+    assertTrue(desc.isValid());
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertNotNull(field);
+    if ((isInt || isUint) && type != StructFieldType.kUint64) {
+      // Java can't represent uint64 max
+      dynamic.setIntField(field, minVal);
+      assertEquals(minVal, dynamic.getIntField(field));
+      dynamic.setIntField(field, maxVal);
+      assertEquals(maxVal, dynamic.getIntField(field));
+    } else if (type == StructFieldType.kBool) {
+      dynamic.setBoolField(field, false);
+      assertFalse(dynamic.getBoolField(field));
+      dynamic.setBoolField(field, true);
+      assertTrue(dynamic.getBoolField(field));
+    }
+  }
+
+  @Test
+  void testStringAllZeros() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[32]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertEquals("", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTrip() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[32]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertTrue(dynamic.setStringField(field, "abc"));
+    assertEquals("abc", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripEmbeddedNull() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[32]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertTrue(dynamic.setStringField(field, "ab\0c"));
+    assertEquals("ab\0c", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripStringTooLong() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[2]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "abc"));
+    assertEquals("ab", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial2ByteUtf8() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[2]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\u0234"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTrip2ByteUtf8() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[3]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertTrue(dynamic.setStringField(field, "a\u0234"));
+    assertEquals("a\u0234", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial3ByteUtf8FirstByte() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[2]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\u1234"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial3ByteUtf8SecondByte() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[3]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\u1234"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTrip3ByteUtf8() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[4]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertTrue(dynamic.setStringField(field, "a\u1234"));
+    assertEquals("a\u1234", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial4ByteUtf8FirstByte() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[2]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\uD83D\uDC00"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial4ByteUtf8SecondByte() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[3]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\uD83D\uDC00"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTripPartial4ByteUtf8ThirdByte() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[4]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertFalse(dynamic.setStringField(field, "a\uD83D\uDC00"));
+    assertEquals("a", dynamic.getStringField(field));
+  }
+
+  @Test
+  void testStringRoundTrip4ByteUtf8() {
+    var desc = assertDoesNotThrow(() -> db.add("test", "char a[5]"));
+    var dynamic = DynamicStruct.allocate(desc);
+    var field = desc.findFieldByName("a");
+    assertTrue(dynamic.setStringField(field, "a\uD83D\uDC00"));
+    assertEquals("a\uD83D\uDC00", dynamic.getStringField(field));
   }
 }

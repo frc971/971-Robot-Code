@@ -6,15 +6,18 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <numeric>
 #include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <wpi/MemAlloc.h>
 #include <wpi/timestamp.h>
 
 #include "Value_internal.h"
 #include "networktables/NetworkTableValue.h"
-#include "ntcore_cpp.h"
 
 using namespace nt;
 
@@ -32,7 +35,7 @@ struct StringArrayStorage {
   size_t EstimateSize() const {
     return sizeof(StringArrayStorage) +
            strings.capacity() * sizeof(std::string) +
-           ntStrings.capacity() * sizeof(NT_String) +
+           ntStrings.capacity() * sizeof(WPI_String) +
            std::accumulate(strings.begin(), strings.end(), 0,
                            [](const auto& sum, const auto& val) {
                              return sum + val.capacity();
@@ -40,7 +43,7 @@ struct StringArrayStorage {
   }
 
   std::vector<std::string> strings;
-  std::vector<NT_String> ntStrings;
+  std::vector<WPI_String> ntStrings;
 };
 
 template <typename T>
@@ -58,41 +61,12 @@ inline std::shared_ptr<T[]> AllocateArray(size_t nelem) {
 }  // namespace
 
 void StringArrayStorage::InitNtStrings() {
-  // point NT_String's to the contents in the vector.
+  // point WPI_String's to the contents in the vector.
   ntStrings.reserve(strings.size());
   for (const auto& str : strings) {
     ntStrings.emplace_back(
-        NT_String{const_cast<char*>(str.c_str()), str.size()});
+        WPI_String{const_cast<char*>(str.c_str()), str.size()});
   }
-}
-
-Value::Value() {
-  m_val.type = NT_UNASSIGNED;
-  m_val.last_change = 0;
-  m_val.server_time = 0;
-  m_size = 0;
-}
-
-Value::Value(NT_Type type, size_t size, int64_t time, const private_init&)
-    : Value{type, size, time == 0 ? nt::Now() : time, 1, private_init{}} {}
-
-Value::Value(NT_Type type, size_t size, int64_t time, int64_t serverTime,
-             const private_init&) {
-  m_val.type = type;
-  m_val.last_change = time;
-  m_val.server_time = serverTime;
-  if (m_val.type == NT_BOOLEAN_ARRAY) {
-    m_val.data.arr_boolean.arr = nullptr;
-  } else if (m_val.type == NT_INTEGER_ARRAY) {
-    m_val.data.arr_int.arr = nullptr;
-  } else if (m_val.type == NT_FLOAT_ARRAY) {
-    m_val.data.arr_float.arr = nullptr;
-  } else if (m_val.type == NT_DOUBLE_ARRAY) {
-    m_val.data.arr_double.arr = nullptr;
-  } else if (m_val.type == NT_STRING_ARRAY) {
-    m_val.data.arr_string.arr = nullptr;
-  }
-  m_size = size;
 }
 
 Value Value::MakeBooleanArray(std::span<const bool> value, int64_t time) {
@@ -250,8 +224,7 @@ void nt::ConvertToC(const Value& in, NT_Value* out) {
     }
     case NT_STRING_ARRAY: {
       auto v = in.GetStringArray();
-      out->data.arr_string.arr = static_cast<NT_String*>(
-          wpi::safe_malloc(v.size() * sizeof(NT_String)));
+      out->data.arr_string.arr = WPI_AllocateStringArray(v.size());
       for (size_t i = 0; i < v.size(); ++i) {
         ConvertToC(std::string_view{v[i]}, &out->data.arr_string.arr[i]);
       }
@@ -263,18 +236,14 @@ void nt::ConvertToC(const Value& in, NT_Value* out) {
   }
 }
 
-size_t nt::ConvertToC(std::string_view in, char** out) {
-  *out = static_cast<char*>(wpi::safe_malloc(in.size() + 1));
-  std::memmove(*out, in.data(), in.size());  // NOLINT
-  (*out)[in.size()] = '\0';
-  return in.size();
-}
-
-void nt::ConvertToC(std::string_view in, NT_String* out) {
-  out->len = in.size();
-  out->str = static_cast<char*>(wpi::safe_malloc(in.size() + 1));
-  std::memcpy(out->str, in.data(), in.size());
-  out->str[in.size()] = '\0';
+void nt::ConvertToC(std::string_view in, WPI_String* out) {
+  if (in.empty()) {
+    out->len = 0;
+    out->str = nullptr;
+    return;
+  }
+  auto write = WPI_AllocateString(out, in.size());
+  std::memcpy(write, in.data(), in.size());
 }
 
 Value nt::ConvertFromC(const NT_Value& value) {

@@ -60,16 +60,6 @@
 // Compiler identification, EIGEN_COMP_*
 //------------------------------------------------------------------------------------------
 
-/// \internal Disable NEON features in Intellisense
-#if __INTELLISENSE__
-#ifdef __ARM_NEON
-#undef __ARM_NEON
-#endif
-#ifdef __ARM_NEON__
-#undef __ARM_NEON__
-#endif
-#endif
-
 /// \internal EIGEN_COMP_GNUC set to version (e.g., 951 for GCC 9.5.1) for all compilers compatible with GCC
 #ifdef __GNUC__
 #define EIGEN_COMP_GNUC (__GNUC__ * 100 + __GNUC_MINOR__ * 10 + __GNUC_PATCHLEVEL__)
@@ -206,6 +196,13 @@
 #define EIGEN_COMP_PGI 0
 #endif
 
+/// \internal EIGEN_COMP_NVHPC set to NVHPC version if the compiler is nvc++
+#if defined(__NVCOMPILER)
+#define EIGEN_COMP_NVHPC (__NVCOMPILER_MAJOR__ * 100 + __NVCOMPILER_MINOR__)
+#else
+#define EIGEN_COMP_NVHPC 0
+#endif
+
 /// \internal EIGEN_COMP_ARM set to 1 if the compiler is ARM Compiler
 #if defined(__CC_ARM) || defined(__ARMCC_VERSION)
 #define EIGEN_COMP_ARM 1
@@ -222,7 +219,7 @@
 
 /// \internal EIGEN_COMP_FCC set to FCC version if the compiler is Fujitsu Compiler (traditional mode)
 /// \note The Fujitsu C/C++ compiler uses the traditional mode based
-/// on EDG g++ 6.1 by default or if envoked with the -Nnoclang flag
+/// on EDG g++ 6.1 by default or if invoked with the -Nnoclang flag
 #if defined(__FUJITSU)
 #define EIGEN_COMP_FCC (__FCC_major__ * 100 + __FCC_minor__ * 10 + __FCC_patchlevel__)
 #else
@@ -231,7 +228,7 @@
 
 /// \internal EIGEN_COMP_CLANGFCC set to FCC version if the compiler is Fujitsu Compiler (Clang mode)
 /// \note The Fujitsu C/C++ compiler uses the non-traditional mode
-/// based on Clang 7.1.0 if envoked with the -Nclang flag
+/// based on Clang 7.1.0 if invoked with the -Nclang flag
 #if defined(__CLANG_FUJITSU)
 #define EIGEN_COMP_CLANGFCC (__FCC_major__ * 100 + __FCC_minor__ * 10 + __FCC_patchlevel__)
 #else
@@ -716,7 +713,7 @@
     (EIGEN_COMP_ICC && EIGEN_COMP_ICC < 1500) || (EIGEN_COMP_NVCC && EIGEN_COMP_NVCC < 80000) ||       \
     (EIGEN_COMP_CLANG_STRICT && EIGEN_COMP_CLANG < 390) ||                                             \
     (EIGEN_COMP_CLANGAPPLE && EIGEN_COMP_CLANGAPPLE < 9000000) || (EIGEN_COMP_GNUC_STRICT && EIGEN_COMP_GNUC < 510)
-#error This compiler appears to be too old to be supported by Eigen
+#error Eigen requires at least c++14 support.
 #endif
 
 // Does the compiler support C99?
@@ -974,6 +971,10 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr void ignore_unused_variable(cons
 // added then subtracted, which is otherwise compiled away with -ffast-math.
 //
 // See bug 1674
+#if defined(EIGEN_GPU_COMPILE_PHASE)
+#define EIGEN_OPTIMIZATION_BARRIER(X)
+#endif
+
 #if !defined(EIGEN_OPTIMIZATION_BARRIER)
 #if EIGEN_COMP_GNUC
    // According to https://gcc.gnu.org/onlinedocs/gcc/Constraints.html:
@@ -1082,14 +1083,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr void ignore_unused_variable(cons
 #define EIGEN_USING_STD(FUNC) using std::FUNC;
 #endif
 
-#if EIGEN_COMP_MSVC_STRICT && EIGEN_COMP_NVCC
-// Wwhen compiling with NVCC, using the base operator is necessary,
-//   otherwise we get duplicate definition errors
-// For later MSVC versions, we require explicit operator= definition, otherwise we get
-//   use of implicitly deleted operator errors.
-// (cf Bugs 920, 1000, 1324, 2291)
-#define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) using Base::operator=;
-#elif EIGEN_COMP_CLANG  // workaround clang bug (see http://forum.kde.org/viewtopic.php?f=74&t=102653)
+#if EIGEN_COMP_CLANG  // workaround clang bug (see http://forum.kde.org/viewtopic.php?f=74&t=102653)
 #define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)                                           \
   using Base::operator=;                                                                           \
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) {                 \

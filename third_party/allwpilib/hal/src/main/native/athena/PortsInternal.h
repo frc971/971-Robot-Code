@@ -3,8 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 
 #pragma once
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 
 #include <stdint.h>
 
@@ -43,5 +41,3 @@ constexpr int32_t kNumREVPHModules = 63;
 constexpr int32_t kNumREVPHChannels = 16;
 
 }  // namespace hal
-
-#pragma GCC diagnostic pop

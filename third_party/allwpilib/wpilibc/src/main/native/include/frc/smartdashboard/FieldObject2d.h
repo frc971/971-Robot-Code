@@ -8,7 +8,6 @@
 #include <span>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include <networktables/DoubleArrayTopic.h>
@@ -86,7 +85,6 @@ class FieldObject2d {
   /**
    * Get multiple poses.
    *
-   * @param obj Object entry
    * @return vector of 2D poses
    */
   std::vector<Pose2d> GetPoses() const;

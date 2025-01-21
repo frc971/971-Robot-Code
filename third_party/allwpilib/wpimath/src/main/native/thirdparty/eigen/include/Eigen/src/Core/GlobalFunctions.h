@@ -76,6 +76,7 @@ EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erf, scalar_erf_op, error function,\sa ArrayBas
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erfc, scalar_erfc_op, complement error function,\sa ArrayBase::erfc)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(ndtri, scalar_ndtri_op, inverse normal distribution function,\sa ArrayBase::ndtri)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(exp, scalar_exp_op, exponential,\sa ArrayBase::exp)
+EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(exp2, scalar_exp2_op, exponential,\sa ArrayBase::exp2)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(expm1, scalar_expm1_op, exponential of a value minus 1,\sa ArrayBase::expm1)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log, scalar_log_op, natural logarithm,\sa Eigen::log10 DOXCOMMA ArrayBase::log)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log1p, scalar_log1p_op, natural logarithm of 1 plus the value,\sa ArrayBase::log1p)
@@ -98,9 +99,12 @@ EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(rint, scalar_rint_op,
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(round, scalar_round_op,
                                  nearest integer,\sa Eigen::floor DOXCOMMA Eigen::ceil DOXCOMMA ArrayBase::round)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(
-    floor, scalar_floor_op, nearest integer not greater than the giben value,\sa Eigen::ceil DOXCOMMA ArrayBase::floor)
+    floor, scalar_floor_op, nearest integer not greater than the given value,\sa Eigen::ceil DOXCOMMA ArrayBase::floor)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(
-    ceil, scalar_ceil_op, nearest integer not less than the giben value,\sa Eigen::floor DOXCOMMA ArrayBase::ceil)
+    ceil, scalar_ceil_op, nearest integer not less than the given value,\sa Eigen::floor DOXCOMMA ArrayBase::ceil)
+EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(trunc, scalar_trunc_op,
+                                 nearest integer not greater in magnitude than the given value,\sa Eigen::trunc DOXCOMMA
+                                     ArrayBase::trunc)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(
     isnan, scalar_isnan_op, not -a - number test,\sa Eigen::isinf DOXCOMMA Eigen::isfinite DOXCOMMA ArrayBase::isnan)
 EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(

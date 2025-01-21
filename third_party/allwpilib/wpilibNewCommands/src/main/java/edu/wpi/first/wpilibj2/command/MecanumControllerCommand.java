@@ -55,8 +55,10 @@ public class MecanumControllerCommand extends Command {
   private final Supplier<MecanumDriveWheelSpeeds> m_currentWheelSpeeds;
   private final Consumer<MecanumDriveMotorVoltages> m_outputDriveVoltages;
   private final Consumer<MecanumDriveWheelSpeeds> m_outputWheelSpeeds;
-  private MecanumDriveWheelSpeeds m_prevSpeeds;
-  private double m_prevTime;
+  private double m_prevFrontLeftSpeedSetpoint; // m/s
+  private double m_prevRearLeftSpeedSetpoint; // m/s
+  private double m_prevFrontRightSpeedSetpoint; // m/s
+  private double m_prevRearRightSpeedSetpoint; // m/s
 
   /**
    * Constructs a new MecanumControllerCommand that when executed will follow the provided
@@ -331,8 +333,13 @@ public class MecanumControllerCommand extends Command {
     var initialYVelocity =
         initialState.velocityMetersPerSecond * initialState.poseMeters.getRotation().getSin();
 
-    m_prevSpeeds =
+    MecanumDriveWheelSpeeds prevSpeeds =
         m_kinematics.toWheelSpeeds(new ChassisSpeeds(initialXVelocity, initialYVelocity, 0.0));
+
+    m_prevFrontLeftSpeedSetpoint = prevSpeeds.frontLeftMetersPerSecond;
+    m_prevRearLeftSpeedSetpoint = prevSpeeds.rearLeftMetersPerSecond;
+    m_prevFrontRightSpeedSetpoint = prevSpeeds.frontRightMetersPerSecond;
+    m_prevRearRightSpeedSetpoint = prevSpeeds.rearRightMetersPerSecond;
 
     m_timer.restart();
   }
@@ -340,7 +347,6 @@ public class MecanumControllerCommand extends Command {
   @Override
   public void execute() {
     double curTime = m_timer.get();
-    double dt = curTime - m_prevTime;
 
     var desiredState = m_trajectory.sample(curTime);
 
@@ -350,10 +356,10 @@ public class MecanumControllerCommand extends Command {
 
     targetWheelSpeeds.desaturate(m_maxWheelVelocityMetersPerSecond);
 
-    var frontLeftSpeedSetpoint = targetWheelSpeeds.frontLeftMetersPerSecond;
-    var rearLeftSpeedSetpoint = targetWheelSpeeds.rearLeftMetersPerSecond;
-    var frontRightSpeedSetpoint = targetWheelSpeeds.frontRightMetersPerSecond;
-    var rearRightSpeedSetpoint = targetWheelSpeeds.rearRightMetersPerSecond;
+    double frontLeftSpeedSetpoint = targetWheelSpeeds.frontLeftMetersPerSecond;
+    double rearLeftSpeedSetpoint = targetWheelSpeeds.rearLeftMetersPerSecond;
+    double frontRightSpeedSetpoint = targetWheelSpeeds.frontRightMetersPerSecond;
+    double rearRightSpeedSetpoint = targetWheelSpeeds.rearRightMetersPerSecond;
 
     double frontLeftOutput;
     double rearLeftOutput;
@@ -362,24 +368,19 @@ public class MecanumControllerCommand extends Command {
 
     if (m_usePID) {
       final double frontLeftFeedforward =
-          m_feedforward.calculate(
-              frontLeftSpeedSetpoint,
-              (frontLeftSpeedSetpoint - m_prevSpeeds.frontLeftMetersPerSecond) / dt);
+          m_feedforward.calculateWithVelocities(
+              m_prevFrontLeftSpeedSetpoint, frontLeftSpeedSetpoint);
 
       final double rearLeftFeedforward =
-          m_feedforward.calculate(
-              rearLeftSpeedSetpoint,
-              (rearLeftSpeedSetpoint - m_prevSpeeds.rearLeftMetersPerSecond) / dt);
+          m_feedforward.calculateWithVelocities(m_prevRearLeftSpeedSetpoint, rearLeftSpeedSetpoint);
 
       final double frontRightFeedforward =
-          m_feedforward.calculate(
-              frontRightSpeedSetpoint,
-              (frontRightSpeedSetpoint - m_prevSpeeds.frontRightMetersPerSecond) / dt);
+          m_feedforward.calculateWithVelocities(
+              m_prevFrontRightSpeedSetpoint, frontRightSpeedSetpoint);
 
       final double rearRightFeedforward =
-          m_feedforward.calculate(
-              rearRightSpeedSetpoint,
-              (rearRightSpeedSetpoint - m_prevSpeeds.rearRightMetersPerSecond) / dt);
+          m_feedforward.calculateWithVelocities(
+              m_prevRearRightSpeedSetpoint, rearRightSpeedSetpoint);
 
       frontLeftOutput =
           frontLeftFeedforward
@@ -413,9 +414,6 @@ public class MecanumControllerCommand extends Command {
               rearLeftSpeedSetpoint,
               rearRightSpeedSetpoint));
     }
-
-    m_prevTime = curTime;
-    m_prevSpeeds = targetWheelSpeeds;
   }
 
   @Override

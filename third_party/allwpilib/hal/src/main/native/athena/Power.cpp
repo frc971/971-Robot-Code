@@ -25,12 +25,7 @@ static void initializePower(int32_t* status) {
 }  // namespace hal
 
 namespace hal::init {
-void InitializePower() {
-  if (power == nullptr) {
-    int32_t status = 0;
-    power.reset(tPower::create(&status));
-  }
-}
+void InitializePower() {}
 }  // namespace hal::init
 
 extern "C" {
@@ -121,6 +116,11 @@ int32_t HAL_GetUserCurrentFaults3V3(int32_t* status) {
 void HAL_SetUserRailEnabled3V3(HAL_Bool enabled, int32_t* status) {
   initializePower(status);
   power->writeDisable_User3V3(!enabled, status);
+}
+
+void HAL_ResetUserCurrentFaults(int32_t* status) {
+  initializePower(status);
+  power->strobeResetFaultCounts(status);
 }
 
 void HAL_SetBrownoutVoltage(double voltage, int32_t* status) {

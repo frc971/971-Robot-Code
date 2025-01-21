@@ -56,6 +56,7 @@ public class LinearFilter {
   private final DoubleCircularBuffer m_outputs;
   private final double[] m_inputGains;
   private final double[] m_outputGains;
+  private double m_lastOutput;
 
   private static int instances;
 
@@ -79,7 +80,7 @@ public class LinearFilter {
    * Creates a one-pole IIR low-pass filter of the form: y[n] = (1-gain) x[n] + gain y[n-1] where
    * gain = e<sup>-dt / T</sup>, T is the time constant in seconds.
    *
-   * <p>Note: T = 1 / (2 pi f) where f is the cutoff frequency in Hz, the frequency above which the
+   * <p>Note: T = 1 / (2πf) where f is the cutoff frequency in Hz, the frequency above which the
    * input starts to attenuate.
    *
    * <p>This filter is stable for time constants greater than zero.
@@ -100,7 +101,7 @@ public class LinearFilter {
    * Creates a first-order high-pass filter of the form: y[n] = gain x[n] + (-gain) x[n-1] + gain
    * y[n-1] where gain = e<sup>-dt / T</sup>, T is the time constant in seconds.
    *
-   * <p>Note: T = 1 / (2 pi f) where f is the cutoff frequency in Hz, the frequency below which the
+   * <p>Note: T = 1 / (2πf) where f is the cutoff frequency in Hz, the frequency below which the
    * input starts to attenuate.
    *
    * <p>This filter is stable for time constants greater than zero.
@@ -310,7 +311,17 @@ public class LinearFilter {
       m_outputs.addFirst(retVal);
     }
 
+    m_lastOutput = retVal;
     return retVal;
+  }
+
+  /**
+   * Returns the last value calculated by the LinearFilter.
+   *
+   * @return The last value.
+   */
+  public double lastValue() {
+    return m_lastOutput;
   }
 
   /**

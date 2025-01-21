@@ -5,11 +5,15 @@
 #pragma once
 
 #include <algorithm>
-#include <functional>
+#include <concepts>
 #include <stdexcept>
+#include <type_traits>
+
+#include <gcem.hpp>
+#include <wpi/Algorithm.h>
+#include <wpi/SmallVector.h>
 
 #include "frc/EigenCore.h"
-#include "frc/StateSpaceUtil.h"
 #include "frc/system/Discretization.h"
 #include "units/time.h"
 
@@ -43,26 +47,41 @@ class LinearSystem {
    * @param D    Feedthrough matrix.
    * @throws std::domain_error if any matrix element isn't finite.
    */
-  LinearSystem(const Matrixd<States, States>& A,
-               const Matrixd<States, Inputs>& B,
-               const Matrixd<Outputs, States>& C,
-               const Matrixd<Outputs, Inputs>& D) {
-    if (!A.allFinite()) {
+  constexpr LinearSystem(const Matrixd<States, States>& A,
+                         const Matrixd<States, Inputs>& B,
+                         const Matrixd<Outputs, States>& C,
+                         const Matrixd<Outputs, Inputs>& D) {
+    auto allFinite = [](const auto& mat) {
+      if (std::is_constant_evaluated()) {
+        for (int row = 0; row < mat.rows(); ++row) {
+          for (int col = 0; col < mat.cols(); ++col) {
+            if (!gcem::internal::is_finite(mat(row, col))) {
+              return false;
+            }
+          }
+        }
+        return true;
+      } else {
+        return mat.allFinite();
+      }
+    };
+
+    if (!allFinite(A)) {
       throw std::domain_error(
           "Elements of A aren't finite. This is usually due to model "
           "implementation errors.");
     }
-    if (!B.allFinite()) {
+    if (!allFinite(B)) {
       throw std::domain_error(
           "Elements of B aren't finite. This is usually due to model "
           "implementation errors.");
     }
-    if (!C.allFinite()) {
+    if (!allFinite(C)) {
       throw std::domain_error(
           "Elements of C aren't finite. This is usually due to model "
           "implementation errors.");
     }
-    if (!D.allFinite()) {
+    if (!allFinite(D)) {
       throw std::domain_error(
           "Elements of D aren't finite. This is usually due to model "
           "implementation errors.");
@@ -74,15 +93,15 @@ class LinearSystem {
     m_D = D;
   }
 
-  LinearSystem(const LinearSystem&) = default;
-  LinearSystem& operator=(const LinearSystem&) = default;
-  LinearSystem(LinearSystem&&) = default;
-  LinearSystem& operator=(LinearSystem&&) = default;
+  constexpr LinearSystem(const LinearSystem&) = default;
+  constexpr LinearSystem& operator=(const LinearSystem&) = default;
+  constexpr LinearSystem(LinearSystem&&) = default;
+  constexpr LinearSystem& operator=(LinearSystem&&) = default;
 
   /**
    * Returns the system matrix A.
    */
-  const Matrixd<States, States>& A() const { return m_A; }
+  constexpr const Matrixd<States, States>& A() const { return m_A; }
 
   /**
    * Returns an element of the system matrix A.
@@ -90,12 +109,12 @@ class LinearSystem {
    * @param i Row of A.
    * @param j Column of A.
    */
-  double A(int i, int j) const { return m_A(i, j); }
+  constexpr double A(int i, int j) const { return m_A(i, j); }
 
   /**
    * Returns the input matrix B.
    */
-  const Matrixd<States, Inputs>& B() const { return m_B; }
+  constexpr const Matrixd<States, Inputs>& B() const { return m_B; }
 
   /**
    * Returns an element of the input matrix B.
@@ -103,12 +122,12 @@ class LinearSystem {
    * @param i Row of B.
    * @param j Column of B.
    */
-  double B(int i, int j) const { return m_B(i, j); }
+  constexpr double B(int i, int j) const { return m_B(i, j); }
 
   /**
    * Returns the output matrix C.
    */
-  const Matrixd<Outputs, States>& C() const { return m_C; }
+  constexpr const Matrixd<Outputs, States>& C() const { return m_C; }
 
   /**
    * Returns an element of the output matrix C.
@@ -116,12 +135,12 @@ class LinearSystem {
    * @param i Row of C.
    * @param j Column of C.
    */
-  double C(int i, int j) const { return m_C(i, j); }
+  constexpr double C(int i, int j) const { return m_C(i, j); }
 
   /**
    * Returns the feedthrough matrix D.
    */
-  const Matrixd<Outputs, Inputs>& D() const { return m_D; }
+  constexpr const Matrixd<Outputs, Inputs>& D() const { return m_D; }
 
   /**
    * Returns an element of the feedthrough matrix D.
@@ -129,7 +148,7 @@ class LinearSystem {
    * @param i Row of D.
    * @param j Column of D.
    */
-  double D(int i, int j) const { return m_D(i, j); }
+  constexpr double D(int i, int j) const { return m_D(i, j); }
 
   /**
    * Computes the new x given the old x and the control input.
@@ -162,6 +181,56 @@ class LinearSystem {
   OutputVector CalculateY(const StateVector& x,
                           const InputVector& clampedU) const {
     return m_C * x + m_D * clampedU;
+  }
+
+  /**
+   * Returns the LinearSystem with the outputs listed in outputIndices.
+   *
+   * <p>This is used by state observers such as the Kalman Filter.
+   *
+   * @param outputIndices the list of output indices to include in the sliced
+   * system.
+   * @return the sliced LinearSystem with outputs set to row vectors of
+   * LinearSystem.
+   * @throws std::domain_error if any outputIndices are outside the range of
+   * system outputs.
+   * @throws std::domain_error if number of outputIndices exceeds the system
+   * outputs.
+   * @throws std::domain_error if duplication exists in outputIndices.
+   */
+  template <std::same_as<int>... OutputIndices>
+  LinearSystem<States, Inputs, sizeof...(OutputIndices)> Slice(
+      OutputIndices... outputIndices) {
+    static_assert(sizeof...(OutputIndices) <= Outputs,
+                  "More outputs requested than available. This is usually due "
+                  "to model implementation errors.");
+
+    wpi::for_each(
+        [](size_t i, const auto& elem) {
+          if (elem < 0 || elem >= Outputs) {
+            throw std::domain_error(
+                "Slice indices out of range. This is usually due to model "
+                "implementation errors.");
+          }
+        },
+        outputIndices...);
+
+    // Sort and deduplicate output indices
+    wpi::SmallVector<int> outputIndicesArray{outputIndices...};
+    std::sort(outputIndicesArray.begin(), outputIndicesArray.end());
+    auto last =
+        std::unique(outputIndicesArray.begin(), outputIndicesArray.end());
+    outputIndicesArray.erase(last, outputIndicesArray.end());
+
+    if (outputIndicesArray.size() != sizeof...(outputIndices)) {
+      throw std::domain_error(
+          "Duplicate indices exist. This is usually due to model "
+          "implementation errors.");
+    }
+
+    return LinearSystem<States, Inputs, sizeof...(OutputIndices)>{
+        m_A, m_B, m_C(outputIndicesArray, Eigen::placeholders::all),
+        m_D(outputIndicesArray, Eigen::placeholders::all)};
   }
 
  private:

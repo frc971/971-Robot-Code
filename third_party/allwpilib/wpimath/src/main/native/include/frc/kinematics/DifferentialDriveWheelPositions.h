@@ -31,21 +31,16 @@ struct WPILIB_DLLEXPORT DifferentialDriveWheelPositions {
    * @param other The other object.
    * @return Whether the two objects are equal.
    */
-  bool operator==(const DifferentialDriveWheelPositions& other) const = default;
+  constexpr bool operator==(
+      const DifferentialDriveWheelPositions& other) const = default;
 
-  /**
-   * Checks inequality between this DifferentialDriveWheelPositions and another
-   * object.
-   *
-   * @param other The other object.
-   * @return Whether the two objects are not equal.
-   */
-  bool operator!=(const DifferentialDriveWheelPositions& other) const = default;
-
-  DifferentialDriveWheelPositions Interpolate(
+  constexpr DifferentialDriveWheelPositions Interpolate(
       const DifferentialDriveWheelPositions& endValue, double t) const {
     return {wpi::Lerp(left, endValue.left, t),
             wpi::Lerp(right, endValue.right, t)};
   }
 };
 }  // namespace frc
+
+#include "frc/kinematics/proto/DifferentialDriveWheelPositionsProto.h"
+#include "frc/kinematics/struct/DifferentialDriveWheelPositionsStruct.h"

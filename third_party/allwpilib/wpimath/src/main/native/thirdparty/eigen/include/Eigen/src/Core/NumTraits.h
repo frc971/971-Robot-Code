@@ -101,10 +101,10 @@ namespace numext {
 template <typename Tgt, typename Src>
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
   // The behaviour of memcpy is not specified for non-trivially copyable types
-  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED)
   EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value && std::is_default_constructible<Tgt>::value,
-                      THIS_TYPE_IS_NOT_SUPPORTED);
-  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
+                      THIS_TYPE_IS_NOT_SUPPORTED)
+  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED)
 
   Tgt tgt;
   // Load src into registers first. This allows the memcpy to be elided by CUDA.
@@ -206,9 +206,7 @@ struct GenericNumTraits {
 
   EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR static inline T highest() { return (numext::numeric_limits<T>::max)(); }
 
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR static inline T lowest() {
-    return IsInteger ? (numext::numeric_limits<T>::min)() : static_cast<T>(-(numext::numeric_limits<T>::max)());
-  }
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR static inline T lowest() { return (numext::numeric_limits<T>::lowest)(); }
 
   EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR static inline T infinity() { return numext::numeric_limits<T>::infinity(); }
 
@@ -252,6 +250,7 @@ struct NumTraits<std::complex<Real_> > : GenericNumTraits<std::complex<Real_> > 
   typedef typename NumTraits<Real_>::Literal Literal;
   enum {
     IsComplex = 1,
+    IsSigned = NumTraits<Real_>::IsSigned,
     RequireInitialization = NumTraits<Real_>::RequireInitialization,
     ReadCost = 2 * NumTraits<Real_>::ReadCost,
     AddCost = 2 * NumTraits<Real>::AddCost,

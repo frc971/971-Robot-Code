@@ -69,7 +69,7 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, Conjugat
     gemm_pack_rhs<RhsScalar, Index, RhsMapper, Traits::nr, RhsStorageOrder> pack_rhs;
     gebp_kernel<LhsScalar, RhsScalar, Index, ResMapper, Traits::mr, Traits::nr, ConjugateLhs, ConjugateRhs> gebp;
 
-#if defined(EIGEN_HAS_OPENMP) || defined(EIGEN_GEMM_THREADPOOL)
+#if !defined(EIGEN_USE_BLAS) && (defined(EIGEN_HAS_OPENMP) || defined(EIGEN_GEMM_THREADPOOL))
     if (info) {
       // this is the parallel version!
       int tid = info->logical_thread_id;
@@ -97,6 +97,7 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, Conjugat
         // Then, we set info->task_info[tid].users to the number of threads to mark that all other threads are going to
         // use it.
         while (info->task_info[tid].users != 0) {
+          std::this_thread::yield();
         }
         info->task_info[tid].users = threads;
 
@@ -115,6 +116,7 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, Conjugat
           // However, no need to wait for the B' part which has been updated by the current thread!
           if (shift > 0) {
             while (info->task_info[i].sync != k) {
+              std::this_thread::yield();
             }
           }
 

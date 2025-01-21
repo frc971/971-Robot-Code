@@ -4,16 +4,20 @@
 
 #include "sysid/analysis/FilteringUtils.h"
 
+#include <algorithm>
+#include <functional>
 #include <limits>
 #include <numbers>
 #include <numeric>
-#include <stdexcept>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <fmt/format.h>
 #include <frc/filter/LinearFilter.h>
 #include <frc/filter/MedianFilter.h>
 #include <units/math.h>
+#include <wpi/MathExtras.h>
 #include <wpi/StringExtras.h>
 
 using namespace sysid;
@@ -126,7 +130,7 @@ sysid::TrimStepVoltageData(std::vector<PreparedData>* data,
   auto motionBegins = std::find_if(
       data->begin(), data->end(), [settings, firstPosition](auto& datum) {
         return std::abs(datum.position - firstPosition) >
-               (settings->motionThreshold * datum.dt.value());
+               (settings->velocityThreshold * datum.dt.value());
       });
 
   units::second_t positionDelay;
@@ -138,12 +142,25 @@ sysid::TrimStepVoltageData(std::vector<PreparedData>* data,
 
   auto maxAccel = std::max_element(
       data->begin(), data->end(), [](const auto& a, const auto& b) {
-        return std::abs(a.acceleration) < std::abs(b.acceleration);
+        // Since we don't know if its a forward or backwards test here, we use
+        // the sign of each point's velocity to determine how to compare their
+        // accelerations.
+        return wpi::sgn(a.velocity) * a.acceleration <
+               wpi::sgn(b.velocity) * b.acceleration;
+      });
+
+  // Current limiting can delay onset of the peak acceleration, so we need to
+  // find the first acceleration *near* the max.  Magic number tolerance here
+  // because this whole file is tech debt already
+  auto accelBegins = std::find_if(
+      data->begin(), data->end(), [&maxAccel](const auto& measurement) {
+        return wpi::sgn(measurement.velocity) * measurement.acceleration >
+               0.8 * wpi::sgn(maxAccel->velocity) * maxAccel->acceleration;
       });
 
   units::second_t velocityDelay;
-  if (maxAccel != data->end()) {
-    velocityDelay = maxAccel->timestamp - firstTimestamp;
+  if (accelBegins != data->end()) {
+    velocityDelay = accelBegins->timestamp - firstTimestamp;
 
     // Trim data before max acceleration
     data->erase(data->begin(), maxAccel);
@@ -153,18 +170,22 @@ sysid::TrimStepVoltageData(std::vector<PreparedData>* data,
 
   minStepTime = std::min(data->at(0).timestamp - firstTimestamp, minStepTime);
 
-  // Find maximum speed reached
-  const auto maxSpeed =
-      GetMaxSpeed(*data, [](auto&& pt) { return pt.velocity; });
-  // Find place where 90% of maximum speed exceeded
-  auto endIt =
-      std::find_if(data->begin(), data->end(), [&](const PreparedData& entry) {
-        return std::abs(entry.velocity) > maxSpeed * 0.9;
-      });
+  // If step test duration not yet specified, calculate default
+  if (settings->stepTestDuration == 0_s) {
+    // Find maximum speed reached
+    const auto maxSpeed =
+        GetMaxSpeed(*data, [](auto&& pt) { return pt.velocity; });
+    // Find place where 90% of maximum speed exceeded
+    auto endIt = std::find_if(
+        data->begin(), data->end(), [&](const PreparedData& entry) {
+          return std::abs(entry.velocity) > maxSpeed * 0.9;
+        });
 
-  if (endIt != data->end()) {
-    settings->stepTestDuration = std::min(
-        endIt->timestamp - data->front().timestamp + minStepTime, maxStepTime);
+    if (endIt != data->end()) {
+      settings->stepTestDuration =
+          std::min(endIt->timestamp - data->front().timestamp + minStepTime,
+                   maxStepTime);
+    }
   }
 
   // Find first entry greater than the step test duration
@@ -301,13 +322,15 @@ static units::second_t GetMaxStepTime(
     wpi::StringMap<std::vector<PreparedData>>& data) {
   auto maxStepTime = 0_s;
   for (auto& it : data) {
-    auto key = it.first();
-    auto& dataset = it.getValue();
+    auto& key = it.first;
+    auto& dataset = it.second;
 
     if (IsRaw(key) && wpi::contains(key, "dynamic")) {
-      auto duration = dataset.back().timestamp - dataset.front().timestamp;
-      if (duration > maxStepTime) {
-        maxStepTime = duration;
+      if (!dataset.empty()) {
+        auto duration = dataset.back().timestamp - dataset.front().timestamp;
+        if (duration > maxStepTime) {
+          maxStepTime = duration;
+        }
       }
     }
   }
@@ -326,13 +349,13 @@ void sysid::InitialTrimAndFilter(
   maxStepTime = GetMaxStepTime(preparedData);
 
   // Calculate Velocity Threshold if it hasn't been set yet
-  if (settings->motionThreshold == std::numeric_limits<double>::infinity()) {
+  if (settings->velocityThreshold == std::numeric_limits<double>::infinity()) {
     for (auto& it : preparedData) {
-      auto key = it.first();
-      auto& dataset = it.getValue();
+      auto& key = it.first;
+      auto& dataset = it.second;
       if (wpi::contains(key, "quasistatic")) {
-        settings->motionThreshold =
-            std::min(settings->motionThreshold,
+        settings->velocityThreshold =
+            std::min(settings->velocityThreshold,
                      GetNoiseFloor(dataset, kNoiseMeanWindow,
                                    [](auto&& pt) { return pt.velocity; }));
       }
@@ -340,17 +363,17 @@ void sysid::InitialTrimAndFilter(
   }
 
   for (auto& it : preparedData) {
-    auto key = it.first();
-    auto& dataset = it.getValue();
+    auto& key = it.first;
+    auto& dataset = it.second;
 
     // Trim quasistatic test data to remove all points where voltage is zero or
-    // velocity < motion threshold.
+    // velocity < velocity threshold.
     if (wpi::contains(key, "quasistatic")) {
       dataset.erase(std::remove_if(dataset.begin(), dataset.end(),
                                    [&](const auto& pt) {
                                      return std::abs(pt.voltage) <= 0 ||
                                             std::abs(pt.velocity) <
-                                                settings->motionThreshold;
+                                                settings->velocityThreshold;
                                    }),
                     dataset.end());
 
@@ -401,7 +424,7 @@ void sysid::AccelFilter(wpi::StringMap<std::vector<PreparedData>>* data) {
 
   // Remove points with acceleration = 0
   for (auto& it : preparedData) {
-    auto& dataset = it.getValue();
+    auto& dataset = it.second;
 
     for (size_t i = 0; i < dataset.size(); i++) {
       if (dataset.at(i).acceleration == 0.0) {
@@ -413,7 +436,7 @@ void sysid::AccelFilter(wpi::StringMap<std::vector<PreparedData>>* data) {
 
   // Confirm there's still data
   if (std::any_of(preparedData.begin(), preparedData.end(),
-                  [](const auto& it) { return it.getValue().empty(); })) {
+                  [](const auto& it) { return it.second.empty(); })) {
     throw sysid::InvalidDataError(
         "Acceleration filtering has removed all data.");
   }

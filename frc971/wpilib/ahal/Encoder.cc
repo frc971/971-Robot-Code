@@ -82,7 +82,7 @@ Encoder::Encoder(int aChannel, int bChannel, bool reverseDirection,
  */
 Encoder::~Encoder() {
   int32_t status = 0;
-  HAL_FreeEncoder(m_encoder, &status);
+  HAL_FreeEncoder(m_encoder);
   HAL_CHECK_STATUS(status);
 }
 

@@ -81,18 +81,15 @@
 // See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89325
 #pragma GCC diagnostic ignored "-Wattributes"
 #endif
-#if __GNUC__>=8
-#pragma GCC diagnostic ignored "-Wclass-memaccess"
-#endif
-#if __GNUC__>=11
+#if __GNUC__ >= 11
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-#if __GNUC__>=12
+#if __GNUC__ >= 12
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 #endif
 
-#if defined __NVCC__
+#if defined __NVCC__ && defined __CUDACC__
 // MSVC 14.16 (required by CUDA 9.*) does not support the _Pragma keyword, so
 // we instead use Microsoft's __pragma extension.
 #if defined _MSC_VER
