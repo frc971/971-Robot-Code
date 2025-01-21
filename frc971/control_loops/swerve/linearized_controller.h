@@ -90,12 +90,12 @@ class LinearizedController {
             << "): "
             << frc971::controls::Controllability(discrete_dynamics.A,
                                                  discrete_dynamics.B);
-    int dare_exit_code = 0;
-    Eigen::Matrix<Scalar, kNumInputs, NStates> K = SolveDare(
+    int sb02od_exit_code = -1;
+    GainMatrix K = SolveDare(
         discrete_dynamics.A, discrete_dynamics.B, params_.Q, params_.R,
         absl::GetFlag(FLAGS_use_slicot) ? DareSolver::Slicot
                                         : DareSolver::IterativeApproximation,
-        &dare_exit_code);
+        &sb02od_exit_code);
     auto dlqr_time = aos::monotonic_clock::now();
     const Input U_feedback = K * (goal - X);
     const Input U = U_ff + U_feedback;
@@ -114,7 +114,7 @@ class LinearizedController {
             .debug = {.U_ff = U_ff,
                       .U_feedback = U_feedback,
                       .feedback_contributions = feedback_contributions,
-                      .sb02od_exit_code = dare_exit_code}};
+                      .sb02od_exit_code = sb02od_exit_code}};
   }
 
   // Specifies what version of the DARE solver to use when attempting to solve
@@ -127,19 +127,16 @@ class LinearizedController {
                        const StateSquare &Q, const InputSquare &R,
                        DareSolver solver, int *sb02od_exit_code) {
     if (solver == DareSolver::Slicot) {
+      Eigen::Matrix<double, kNumInputs, NStates> K;
       // TODO(james): Swap this to a cheaper DARE solver; we should probably
       // just do something like we do in Trajectory::CalculatePathGains for the
       // tank spline controller where we approximate the infinite-horizon DARE
       // solution by doing a finite-horizon LQR.
-      auto K = frc971::controls::dlqr<double, NStates, kNumInputs>(
+      *sb02od_exit_code = (frc971::controls::dlqr<NStates, kNumInputs>(
           A.template cast<double>(), B.template cast<double>(),
-          Q.template cast<double>(), R.template cast<double>(),
-          /*check_preconditions=*/true);
-      if (!K.has_value()) {
-        *sb02od_exit_code = 1 + static_cast<int>(K.error());
-      } else {
-        *sb02od_exit_code = 0;
-        last_K_ = K.value().template cast<Scalar>();
+          Q.template cast<double>(), R.template cast<double>(), &K, nullptr));
+      if (*sb02od_exit_code == 0) {
+        last_K_ = K.template cast<Scalar>();
       }
       return last_K_;
     } else {

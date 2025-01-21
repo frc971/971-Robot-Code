@@ -1,7 +1,4 @@
-load(
-    "@com_github_google_flatbuffers//:typescript.bzl",
-    "flatbuffer_ts_library",
-)
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
@@ -533,64 +530,6 @@ cc_library(
 )
 
 cc_library(
-    name = "dare",
-    hdrs = [
-        "dare.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_tartanllama_expected",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_test(
-    name = "dare_test",
-    srcs = [
-        "dare_test.cc",
-    ],
-    data = [
-        "//third_party/python:python_runtime",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":dare",
-        "//aos/testing:googletest",
-        "//third_party/python",
-        "@com_google_absl//absl/log",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-py_test(
-    name = "dare_python_test",
-    srcs = [
-        "dare_python_test.py",
-    ],
-    data = [":cpp_dare.so"],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        "@pip//absl_py",
-        "@pip//numpy",
-        "@pip//scipy",
-    ],
-)
-
-cc_binary(
-    name = "cpp_dare.so",
-    srcs = ["dare_python_bindings.cc"],
-    linkshared = True,
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":dare",
-        "//third_party/python",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-    ],
-)
-
-cc_library(
     name = "dlqr",
     hdrs = [
         "dlqr.h",
@@ -598,9 +537,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":dare",
-        "@com_github_tartanllama_expected",
         "@org_tuxfamily_eigen//:eigen",
+        "@slycot_repo//:slicot",
     ],
 )
 
@@ -667,8 +605,7 @@ genrule(
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.cc",
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.json",
     ],
-    cmd =
-        "$(location //frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test) $(OUTS)",
+    cmd = "$(location //frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test) $(OUTS)",
     target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test",
@@ -685,8 +622,7 @@ genrule(
         "wrapped_subsystem_test_integral_plant.cc",
         "wrapped_subsystem_test_integral_plant.json",
     ],
-    cmd =
-        "$(location //frc971/control_loops/python:wrapped_subsystem_test) $(OUTS)",
+    cmd = "$(location //frc971/control_loops/python:wrapped_subsystem_test) $(OUTS)",
     target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//frc971/control_loops/python:wrapped_subsystem_test",
@@ -738,8 +674,7 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
-    name =
-        "static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test_subsystem_output.fbs",
     ],
@@ -747,8 +682,7 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
-    name =
-        "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position.fbs",
     ],
@@ -759,8 +693,7 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
-    name =
-        "static_zeroing_single_dof_profiled_subsystem_test_absolute_position_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_absolute_position_fbs",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test_absolute_position.fbs",
     ],
@@ -771,8 +704,7 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
-    name =
-        "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status_fbs",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status.fbs",
     ],
@@ -784,8 +716,7 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
-    name =
-        "static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_fbs",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status.fbs",
     ],
