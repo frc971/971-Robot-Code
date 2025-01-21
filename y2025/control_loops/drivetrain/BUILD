@@ -31,3 +31,9 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
+
+filegroup(
+    name = "rotation_json",
+    srcs = ["integral_rotation_plant.json"],
+    visibility = ["//visibility:public"],
+)

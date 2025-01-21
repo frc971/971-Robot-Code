@@ -123,6 +123,41 @@
       "max_size": 512
     },
     {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.Goal",
+      "source_node": "roborio",
+      "frequency": 250,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "time_to_live": 50000000
+        }
+      ]
+    },
+    {
+        "name": "/roborio/drivetrain",
+        "type": "frc971.control_loops.swerve.Position",
+        "source_node": "roborio",
+        "frequency": 250,
+        "num_senders": 1,
+        "logger": "LOCAL_AND_REMOTE_LOGGER",
+        "logger_nodes": [
+            "imu"
+        ],
+        "destination_nodes": [
+            {
+                "name": "imu",
+                "priority": 5,
+                "time_to_live": 50000000
+            }
+        ]
+    },
+    {
       "name": "/superstructure",
       "type": "y2025.control_loops.superstructure.Status",
       "source_node": "roborio",

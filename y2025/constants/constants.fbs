@@ -4,6 +4,7 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
 include "frc971/math/matrix.fbs";
 include "frc971/wpilib/swerve/swerve_constants.fbs";
+include "frc971/control_loops/swerve/swerve_zeroing.fbs";
 include "frc971/input/swerve_input_config.fbs";
 
 namespace y2025;
@@ -36,6 +37,17 @@ table RobotConstants {
   elevator_constants:PotAndAbsEncoderConstants (id: 0);
   pivot_constants:PotAndAbsEncoderConstants (id: 1);
   input_config: frc971.input.InputConfig (id: 2);
+  swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 3);
+}
+
+table VelocityControllerWeights {
+  thetas_q: double (id: 0);
+  omegas_q: double (id: 1);
+  vel_q: double (id: 2);
+  omega_q: double (id: 3);
+  theta_q: double (id: 4);
+  steer_current_r: double (id: 5);
+  drive_current_r: double (id: 6);
 }
 
 table EndEffectorVoltages {
@@ -54,6 +66,8 @@ table Common {
   elevator_set_points:ElevatorSetPoints (id: 6);
   pivot_set_points:PivotSetPoints (id: 7);
   end_effector_voltages:EndEffectorVoltages (id: 8);
+  weights: VelocityControllerWeights (id: 9);
+  rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 10);
 }
 
 table Constants {
