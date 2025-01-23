@@ -2,9 +2,13 @@ import {Component, OnInit} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {
-  Ranking,
-  RequestAllDriverRankingsResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_response_generated';
+  DriverRanking2025,
+  RequestAveragedDriverRankings2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response_generated';
+import {
+  HumanRanking2025,
+  RequestAveragedHumanRankings2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
 import {
   Stats2024,
   Request2024DataScoutingResponse,
@@ -27,7 +31,12 @@ import {
   ViewDataRequestor,
 } from '@org_frc971/scouting/www/rpc';
 
-type Source = 'Notes' | 'Stats2024' | 'PitImages' | 'DriverRanking';
+type Source =
+  | 'Notes'
+  | 'Stats2024'
+  | 'PitImages'
+  | 'DriverRanking'
+  | 'HumanRanking';
 
 //TODO(Filip): Deduplicate
 const COMP_LEVEL_LABELS = {
@@ -64,9 +73,11 @@ export class ViewComponent {
 
   // Stores the corresponding data.
   noteList: Note[] = [];
-  driverRankingList: Ranking[] = [];
+  driverRankingList: DriverRanking2025[] = [];
+  humanRankingList: HumanRanking2025[] = [];
   pitImageList: PitImage[][] = [];
   statList: Stats2024[] = [];
+  compCode: string = '2025camb';
 
   // Fetch notes on initialization.
   ngOnInit() {
@@ -78,7 +89,16 @@ export class ViewComponent {
   sortData() {
     this.ascendingSort = !this.ascendingSort;
     if (!this.ascendingSort) {
-      this.driverRankingList.sort((a, b) => b.matchNumber() - a.matchNumber());
+      this.driverRankingList.sort(function (a, b) {
+        return b
+          .teamNumber()
+          .localeCompare(a.teamNumber(), undefined, {numeric: true});
+      });
+      this.humanRankingList.sort(function (a, b) {
+        return b
+          .teamNumber()
+          .localeCompare(a.teamNumber(), undefined, {numeric: true});
+      });
       this.noteList.sort(function (a, b) {
         return b.team().localeCompare(a.team(), undefined, {numeric: true});
       });
@@ -89,7 +109,16 @@ export class ViewComponent {
       });
       this.statList.sort((a, b) => b.matchNumber() - a.matchNumber());
     } else {
-      this.driverRankingList.sort((a, b) => a.matchNumber() - b.matchNumber());
+      this.driverRankingList.sort(function (a, b) {
+        return a
+          .teamNumber()
+          .localeCompare(b.teamNumber(), undefined, {numeric: true});
+      });
+      this.humanRankingList.sort(function (a, b) {
+        return a
+          .teamNumber()
+          .localeCompare(b.teamNumber(), undefined, {numeric: true});
+      });
       this.noteList.sort(function (a, b) {
         return a.team().localeCompare(b.team(), undefined, {numeric: true});
       });
@@ -110,6 +139,7 @@ export class ViewComponent {
     this.errorMessage = '';
     this.noteList = [];
     this.driverRankingList = [];
+    this.humanRankingList = [];
     this.statList = [];
     this.pitImageList = [];
     this.fetchCurrentSource();
@@ -131,7 +161,11 @@ export class ViewComponent {
       }
 
       case 'DriverRanking': {
-        this.fetchDriverRanking();
+        this.fetchDriverRanking2025();
+      }
+
+      case 'HumanRanking': {
+        this.fetchHumanRanking2025();
       }
     }
   }
@@ -218,14 +252,28 @@ export class ViewComponent {
   }
 
   // Fetch all driver ranking data and store in driverRankingList.
-  async fetchDriverRanking() {
+  async fetchDriverRanking2025() {
     this.progressMessage = 'Fetching driver ranking data. Please be patient.';
     this.errorMessage = '';
 
     try {
       this.driverRankingList =
-        await this.viewDataRequestor.fetchDriverRankingList();
+        await this.viewDataRequestor.fetchDriverRanking2025List(this.compCode);
       this.progressMessage = 'Successfully fetched driver ranking data.';
+    } catch (e) {
+      this.errorMessage = e;
+      this.progressMessage = '';
+    }
+  }
+
+  async fetchHumanRanking2025() {
+    this.progressMessage = 'Fetching human ranking data. Please be patient.';
+    this.errorMessage = '';
+
+    try {
+      this.humanRankingList =
+        await this.viewDataRequestor.fetchHumanRanking2025List(this.compCode);
+      this.progressMessage = 'Successfully fetched human ranking data.';
     } catch (e) {
       this.errorMessage = e;
       this.progressMessage = '';

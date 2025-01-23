@@ -387,14 +387,16 @@ describe('Scouting app tests', () => {
 
   it('should: submit driver ranking', () => {
     // Navigate to Driver Ranking Page.
-    switchToTab('Driver Ranking');
-    headerShouldBe('Driver Ranking');
+    switchToTab('Ranking');
+    headerShouldBe('Ranking');
 
-    // Input match and team numbers.
+    // Input comp code match and team numbers.
+    setInputTo('#comp_code_selection', 'none');
     setInputTo('#match_number_selection', '11');
     setInputTo('#team_input_0', '123');
     setInputTo('#team_input_1', '456');
     setInputTo('#team_input_2', '789');
+    setInputTo('#human_player_team', '123');
     clickButton('Select');
 
     // Verify match and team key input.
@@ -402,15 +404,13 @@ describe('Scouting app tests', () => {
     cy.get('#team_key_label_0').should('have.text', ' 123 ');
     cy.get('#team_key_label_1').should('have.text', ' 456 ');
     cy.get('#team_key_label_2').should('have.text', ' 789 ');
+    cy.get('#hp_team_label').should('have.text', ' 123 ');
 
-    // Rank teams.
-    cy.get('#up_button_2').click();
-    cy.get('#down_button_0').click();
-
-    // Verify ranking change.
-    cy.get('#team_key_label_0').should('have.text', ' 789 ');
-    cy.get('#team_key_label_1').should('have.text', ' 123 ');
-    cy.get('#team_key_label_2').should('have.text', ' 456 ');
+    // Rank drivers and human player
+    setInputTo('#rank_0', 2);
+    setInputTo('#rank_1', 1);
+    setInputTo('#rank_2', 5);
+    setInputTo('#hp_rank', 5);
 
     // Submit.
     clickButton('Submit');

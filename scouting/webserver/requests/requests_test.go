@@ -1088,13 +1088,13 @@ func TestRequestAveragedDriverRanking2025(t *testing.T) {
 		Rankings2025List: []*request_averaged_driver_rankings_2025_response.DriverRanking2025T{
 			{
 				CompCode:   "fbuh",
-				TeamNumber: "894",
-				Score:      2.5,
+				TeamNumber: "32",
+				Score:      4,
 			},
 			{
 				CompCode:   "fbuh",
-				TeamNumber: "32",
-				Score:      4,
+				TeamNumber: "894",
+				Score:      2.5,
 			},
 		},
 	}

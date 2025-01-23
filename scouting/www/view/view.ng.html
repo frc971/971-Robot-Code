@@ -50,6 +50,16 @@
         Driver Ranking
       </a>
     </li>
+    <li>
+      <a
+        class="dropdown-item"
+        href="#"
+        (click)="switchDataSource('HumanRanking')"
+        id="human_ranking_source_dropdown"
+      >
+        Human Ranking
+      </a>
+    </li>
   </ul>
 </div>
 <h4>{{errorMessage}}</h4>
@@ -174,7 +184,7 @@
       <thead>
         <tr>
           <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Match</div>
+            <div class="align-self-center">Team</div>
             <div class="align-self-center" *ngIf="ascendingSort">
               <i (click)="sortData()" class="bi bi-caret-up"></i>
             </div>
@@ -182,24 +192,52 @@
               <i (click)="sortData()" class="bi bi-caret-down"></i>
             </div>
           </th>
-          <th scope="col">Rank1</th>
-          <th scope="col">Rank2</th>
-          <th scope="col">Rank3</th>
+          <th scope="col">Avg Score</th>
           <th scope="col"></th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let ranking of driverRankingList; index as i;">
-          <th scope="row">{{ranking.matchNumber()}}</th>
-          <td>{{ranking.rank1()}}</td>
-          <td>{{ranking.rank2()}}</td>
-          <td>{{ranking.rank3()}}</td>
-          <!-- Delete Icon. -->
+          <th scope="row">{{ranking.teamNumber()}}</th>
+          <td>{{ranking.score().toFixed(2)}}</td>
+          <!-- Delete Icon.
           <td>
             <button class="btn btn-danger" (click)="deleteDriverRankingData()">
               <i class="bi bi-trash"></i>
             </button>
-          </td>
+          </td> -->
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Human Ranking Data Display. -->
+  <div *ngSwitchCase="'HumanRanking'">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col" class="d-flex flex-row">
+            <div class="align-self-center">Team</div>
+            <div class="align-self-center" *ngIf="ascendingSort">
+              <i (click)="sortData()" class="bi bi-caret-up"></i>
+            </div>
+            <div class="align-self-center" *ngIf="!ascendingSort">
+              <i (click)="sortData()" class="bi bi-caret-down"></i>
+            </div>
+          </th>
+          <th scope="col">Avg Score</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ranking of humanRankingList; index as i;">
+          <th scope="row">{{ranking.teamNumber()}}</th>
+          <td>{{ranking.score().toFixed(2)}}</td>
+          <!-- Delete Icon.
+          <td>
+            <button class="btn btn-danger" (click)="deleteDriverRankingData()">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td> -->
         </tr>
       </tbody>
     </table>
