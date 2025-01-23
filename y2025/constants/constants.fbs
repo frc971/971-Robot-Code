@@ -29,6 +29,7 @@ table PotAndAbsEncoderConstants {
 table PivotSetPoints {
   neutral:double (id: 0);
   score:double (id: 1);
+  intake:double (id: 2);
 }
 
 table RobotConstants {

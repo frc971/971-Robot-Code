@@ -38,7 +38,8 @@
   "pivot_set_points": {
     // TODO: Update these set point constants
     "neutral": 0,
-    "score": 1
+    "score": 1,
+    "intake": 1.2
   },
   "elevator": {
     "zeroing_voltage": 3.0,

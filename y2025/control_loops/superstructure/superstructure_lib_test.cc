@@ -283,8 +283,16 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     auto pivot_positions =
         simulated_robot_constants_->common()->pivot_set_points();
     double pivot_set_point = pivot_positions->neutral();
-    if (superstructure_goal_fetcher_->pivot_goal() == PivotGoal::SCORE) {
-      pivot_set_point = pivot_positions->score();
+
+    switch (superstructure_goal_fetcher_->pivot_goal()) {
+      case PivotGoal::NEUTRAL:
+        break;
+      case PivotGoal::SCORE:
+        pivot_set_point = pivot_positions->score();
+        break;
+      case PivotGoal::INTAKE:
+        pivot_set_point = pivot_positions->intake();
+        break;
     }
 
     EXPECT_NEAR(pivot_set_point,
@@ -456,7 +464,7 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(10));
+  RunFor(chrono::seconds(3));
 
   VerifyNearGoal();
 
@@ -468,7 +476,19 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(10));
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
 
   VerifyNearGoal();
 }
