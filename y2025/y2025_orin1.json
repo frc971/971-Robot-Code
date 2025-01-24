@@ -306,20 +306,6 @@
       ]
     },
     {
-      "name": "image_logger",
-      "executable_name": "image_logger",
-      "args": [
-        "--rotate_every",
-        "30.0",
-        "--direct",
-        "--flush_size=4194304"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [
@@ -351,85 +337,6 @@
     {
       "name": "constants_sender",
       "autorestart": false,
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "argus_monitor_orin1",
-      "executable_name": "argus_monitor",
-      "args": [
-        "/orin1/camera0",
-        "frc971.vision.TargetMap",
-        "/orin1/camera1",
-        "frc971.vision.TargetMap",
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "argus_camera0",
-      "executable_name": "argus_camera",
-      "args": [
-          "--camera=0",
-          "--channel=/camera0"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "argus_camera1",
-      "executable_name": "argus_camera",
-      "args": [
-          "--camera=1",
-          "--channel=/camera1"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "apriltag_detector0",
-      "executable_name": "apriltag_detector",
-      "args": [
-          "--channel=/camera0"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "apriltag_detector1",
-      "executable_name": "apriltag_detector",
-      "args": [
-          "--channel=/camera1"
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin1"
-      ]
-    },
-    {
-      "name": "image_streamer",
-      "executable_name": "image_streamer",
-      "args": [
-        "--device=/dev/uvcvideo",
-        "--height=480",
-        "--width=640",
-        "--nopublish_images",
-        "--exposure=0",
-        "--framerate=30",
-        "--streaming_port=1181",
-        "--bitrate=1000000",
-        "--data_dir=/home/pi/bin/image_streamer_www"
-      ],
       "user": "pi",
       "nodes": [
         "orin1"

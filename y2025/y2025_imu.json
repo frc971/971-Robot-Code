@@ -242,6 +242,14 @@
       "max_size": 200
     },
     {
+      "name": "/imu/localizer",
+      "type": "frc971.IMUValuesBatch",
+      "source_node": "imu",
+      "frequency": 2200,
+      "max_size": 1600,
+      "num_senders": 2
+    },
+    {
       "name": "/imu",
       "type": "frc971.imu.DualImuBlenderStatus",
       "source_node": "imu",
@@ -399,20 +407,6 @@
       ]
     },
     {
-      "name": "image_logger",
-      "executable_name": "image_logger",
-      "args": [
-        "--rotate_every",
-        "30.0",
-        "--direct",
-        "--flush_size=4194304"
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [
@@ -459,69 +453,9 @@
         ]
     },
     {
-      "name": "argus_monitor_imu",
-      "executable_name": "argus_monitor",
-      "args": [
-        "/imu/camera0",
-        "frc971.vision.TargetMap",
-        "/imu/camera1",
-        "frc971.vision.TargetMap",
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
       "name": "ctre_interface",
       "args": [
-            "--nodie_on_malloc",
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
-      "name": "argus_camera0",
-      "executable_name": "argus_camera",
-      "args": [
-          "--camera=0",
-          "--channel=/camera0"
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
-      "name": "argus_camera1",
-      "executable_name": "argus_camera",
-      "args": [
-          "--camera=1",
-          "--channel=/camera1"
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
-      "name": "apriltag_detector0",
-      "executable_name": "apriltag_detector",
-      "args": [
-          "--channel=/camera0"
-      ],
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
-      "name": "apriltag_detector1",
-      "executable_name": "apriltag_detector",
-      "args": [
-          "--channel=/camera1"
+            "--nodie_on_malloc"
       ],
       "user": "pi",
       "nodes": [
@@ -559,11 +493,50 @@
     },
     {
       "match": {
+        "name": "/aos",
+        "type": "aos.RobotState",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/roborio/aos"
+      }
+    },
+    {
+      "match": {
         "name": "/hardware_monitor*",
         "source_node": "imu"
       },
       "rename": {
         "name": "/imu/hardware_monitor"
+      }
+    },
+    {
+      "match": {
+        "name": "/localizer*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/localizer"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Goal",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/roborio/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Position",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/roborio/drivetrain"
       }
     },
     {
@@ -595,8 +568,7 @@
       "rename": {
         "name":"/imu/drivetrain"
       }
-    },
-
+    }
   ],
   "nodes": [
     {
