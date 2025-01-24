@@ -43,6 +43,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     elevator_.Reset();
+    pivot_.Reset();
   }
   OutputT output_struct;
 
@@ -170,8 +171,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = elevator_.zeroed();
-  const bool estopped = elevator_.estopped();
+  const bool zeroed = elevator_.zeroed() && pivot_.zeroed();
+  const bool estopped = elevator_.estopped() || pivot_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
