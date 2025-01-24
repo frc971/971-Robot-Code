@@ -262,7 +262,31 @@
       "frequency": 1,
       "num_senders": 2,
       "max_size": 65536
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.Status",
+        "source_node": "imu",
+        "max_size": 10000,
+        "frequency": 250
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.CanPosition",
+        "source_node": "imu",
+        "frequency": 250,
+        "num_senders": 1,
+        "max_size": 656
+    },
+    {
+        "name": "/imu/drivetrain",
+        "type": "frc971.control_loops.swerve.Output",
+        "source_node": "imu",
+        "frequency": 400,
+        "max_size": 200,
+        "num_senders": 2
     }
+
   ],
   "applications": [
     {
@@ -426,6 +450,15 @@
       ]
     },
     {
+        "name": "swerve_control_loops",
+        "args": [
+            "--nodie_on_malloc"
+        ],
+        "nodes": [
+            "imu"
+        ]
+    },
+    {
       "name": "argus_monitor_imu",
       "executable_name": "argus_monitor",
       "args": [
@@ -433,6 +466,16 @@
         "frc971.vision.TargetMap",
         "/imu/camera1",
         "frc971.vision.TargetMap",
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "ctre_interface",
+      "args": [
+            "--nodie_on_malloc",
       ],
       "user": "pi",
       "nodes": [
@@ -522,7 +565,38 @@
       "rename": {
         "name": "/imu/hardware_monitor"
       }
-    }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Status",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.CanPosition",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.Output",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+
   ],
   "nodes": [
     {

@@ -1,5 +1,6 @@
 {% from 'y2025/constants/common.jinja2' import elevator_zero %}
 {% from 'y2025/constants/common.jinja2' import pivot_zero %}
+{% from 'y2025/constants/common.jinja2' import front_left_zero, front_right_zero, back_left_zero, back_right_zero %}
 
 {
   "cameras": [
@@ -23,6 +24,32 @@
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
       "potentiometer_offset": {{ 5.249596184591311 }}
+    },
+    "swerve_zeroing": {
+      {% set _ = front_left_zero.update(
+          {
+              "measured_absolute_position" : 2.934639251458032
+          }
+      ) %}
+      {% set _ = front_right_zero.update(
+          {
+              "measured_absolute_position" : 4.872094665936765
+          }
+      ) %}
+      {% set _ = back_left_zero.update(
+          {
+              "measured_absolute_position" : 0.05358620595755559
+          }
+      ) %}
+      {% set _ = back_right_zero.update(
+          {
+              "measured_absolute_position" : 5.672941265642591
+          }
+      ) %}
+      "front_left":  {{ front_left_zero | tojson(indent=2)}},
+      "front_right":  {{ front_right_zero | tojson(indent=2)}},
+      "back_left":  {{ back_left_zero | tojson(indent=2)}},
+      "back_right":  {{ back_right_zero | tojson(indent=2)}}
     },
     "input_config": {
       "use_redundant_joysticks": true,

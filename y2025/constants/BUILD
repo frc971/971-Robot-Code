@@ -26,6 +26,7 @@ jinja2_template(
         "common.jinja2",
         "common.json",
         "//y2025/constants/calib_files",
+        "//y2025/control_loops/drivetrain:rotation_json",
         "//y2025/control_loops/superstructure/elevator:elevator_json",
         "//y2025/control_loops/superstructure/pivot:pivot_json",
         "//y2025/vision/maps",
@@ -44,6 +45,7 @@ jinja2_template(
         "common.jinja2",
         "common.json",
         "//y2025/constants/calib_files",
+        "//y2025/control_loops/drivetrain:rotation_json",
         "//y2025/control_loops/superstructure/elevator:elevator_json",
         "//y2025/control_loops/superstructure/pivot:pivot_json",
         "//y2025/vision/maps",
@@ -58,6 +60,7 @@ static_flatbuffer(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/swerve:swerve_zeroing_fbs",
         "//frc971/input:swerve_input_config_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",

@@ -61,6 +61,25 @@
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
   },
+  "rotation": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 12.0,
+      "max_acceleration": 55.0
+    },
+    "range": {
+        "lower_hard": -inf,
+        "upper_hard": inf,
+        "lower": -inf,
+        "upper": inf
+    },
+    "loop": {% include 'y2025/control_loops/drivetrain/integral_rotation_plant.json' %}
+  },
   "elevator_set_points": {
     // TODO: Update these set point constants
     "neutral": 0,
@@ -74,6 +93,15 @@
   "end_effector_voltages": {
     "spit": -1.0,
     "intake": 1.0
+  },
+  "weights": {
+    "thetas_q": 1.0,
+    "omegas_q": 1e-4,
+    "vel_q": 50.0,
+    "theta_q": 50000.0,
+    "omega_q": 7.0,
+    "steer_current_r": 1e-5,
+    "drive_current_r": 1e-3
   }
 }
 
