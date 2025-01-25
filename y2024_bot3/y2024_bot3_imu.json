@@ -42,7 +42,19 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 30,
-      "max_size": 11376
+      "max_size": 11832
+    },
+    {
+      "name": "/imu/autonomous",
+      "type": "frc971.control_loops.swerve.Goal",
+      "source_node": "imu",
+      "frequency": 250
+    },
+    {
+      "name": "/imu/drivetrain",
+      "type": "frc971.control_loops.swerve.AutonomousInit",
+      "source_node": "imu",
+      "frequency": 250
     },
     {
       "name": "/imu/localizer",
@@ -73,7 +85,7 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 6144
+      "max_size": 9216
     },
     {
       "name": "/imu/aos",
@@ -280,11 +292,22 @@
       "max_size": 65536
     },
     {
-        "name": "/imu/drivetrain",
-        "type": "frc971.control_loops.swerve.Status",
-        "source_node": "imu",
-        "max_size": 10000,
-        "frequency": 250
+      "name": "/imu/drivetrain",
+      "type": "frc971.control_loops.swerve.Status",
+      "source_node": "imu",
+      "max_size": 10000,
+      "frequency": 250,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 50000000
+        }
+      ]
     },
     {
         "name": "/imu/drivetrain",
@@ -545,6 +568,17 @@
       ]
     },
     {
+      "name": "autonomous_main",
+      "executable_name": "autonomous_main",
+      "args": [
+        "--nodie_on_malloc"
+      ],
+      "autostart": true,
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
       "name": "localizer_logger",
       "executable_name": "localizer_logger",
       "user": "pi",
@@ -639,6 +673,26 @@
       },
       "rename": {
         "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain",
+        "type": "frc971.control_loops.swerve.AutonomousInit",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/drivetrain"
+      }
+    },
+    {
+      "match": {
+        "name": "/autonomous",
+        "type": "frc971.control_loops.swerve.Goal",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/autonomous"
       }
     },
     {

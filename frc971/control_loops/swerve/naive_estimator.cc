@@ -4,7 +4,8 @@
 #include "frc971/math/flatbuffers_matrix.h"
 
 namespace frc971::control_loops::swerve {
-NaiveEstimator::NaiveEstimator(const SwerveZeroing *zeroing_params,
+NaiveEstimator::NaiveEstimator(aos::EventLoop *event_loop,
+                               const SwerveZeroing *zeroing_params,
                                const Parameters &params)
     : zeroing_{zeroing::ContinuousAbsoluteEncoderZeroingEstimator{
                    aos::UnpackFlatbuffer(zeroing_params->front_left())},
@@ -15,7 +16,9 @@ NaiveEstimator::NaiveEstimator(const SwerveZeroing *zeroing_params,
                zeroing::ContinuousAbsoluteEncoderZeroingEstimator{
                    aos::UnpackFlatbuffer(zeroing_params->back_right())}},
       state_(State::Zero()),
-      params_(params) {
+      params_(params),
+      autonomous_init_fetcher_(
+          event_loop->MakeFetcher<AutonomousInit>("/drivetrain")) {
   velocities_.fill(0);
   last_drive_positions_.fill(0);
 }
@@ -24,6 +27,14 @@ NaiveEstimator::State NaiveEstimator::Update(
     aos::monotonic_clock::time_point now, const Position *position,
     const CanPosition *can_position, Scalar yaw_rate, Scalar accel_x,
     Scalar accel_y) {
+  autonomous_init_fetcher_.Fetch();
+  if (!autonomous_initialized_ && autonomous_init_fetcher_.get() != nullptr) {
+    state_(States::kX) = autonomous_init_fetcher_->x();
+    state_(States::kY) = -autonomous_init_fetcher_->y();
+    state_(States::kTheta) = -autonomous_init_fetcher_->theta();
+
+    autonomous_initialized_ = true;
+  }
   Eigen::Vector2d last_velocity{state_(States::kVx), state_(States::kVy)};
 
   bool first_iteration = false;

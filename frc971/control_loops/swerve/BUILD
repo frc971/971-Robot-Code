@@ -59,6 +59,11 @@ static_flatbuffer(
     srcs = ["swerve_trajectory.fbs"],
 )
 
+static_flatbuffer(
+    name = "autonomous_init_fbs",
+    srcs = ["autonomous_init.fbs"],
+)
+
 py_binary(
     name = "simulation",
     srcs = [
@@ -557,11 +562,13 @@ cc_library(
     srcs = ["naive_estimator.cc"],
     hdrs = ["naive_estimator.h"],
     deps = [
+        ":autonomous_init_fbs",
         ":simplified_dynamics",
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_status_fbs",
         ":swerve_zeroing_fbs",
+        "//aos/events:event_loop",
         "//frc971/math:flatbuffers_matrix",
         "//frc971/zeroing:continuous_absolute_encoder",
     ],
@@ -586,6 +593,7 @@ cc_library(
     srcs = ["autonomous_controller.cc"],
     hdrs = ["autonomous_controller.h"],
     deps = [
+        ":autonomous_init_fbs",
         ":simplified_dynamics",
         ":swerve_drivetrain_goal_fbs",
         ":swerve_drivetrain_status_fbs",
