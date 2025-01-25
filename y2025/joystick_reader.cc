@@ -42,13 +42,13 @@ namespace superstructure = y2025::control_loops::superstructure;
 
 namespace swerve = frc971::control_loops::swerve;
 
-const ButtonLocation kElevatorL4(2, 6);
+const ButtonLocation kElevatorL4(1, 6);
 const ButtonLocation kElevatorL3(2, 7);
 const ButtonLocation kElevatorL2(2, 8);
 const ButtonLocation kElevatorL1(1, 7);
 const ButtonLocation kElevatorIntake(1, 8);
 
-const ButtonLocation kPivotScore(1, 6);
+const ButtonLocation kPivotScore(1, 5);
 
 const ButtonLocation kEndEffectorIntake(2, 3);
 const ButtonLocation kEndEffectorSpit(2, 4);
@@ -87,18 +87,6 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     if (data.IsPressed(kElevatorL4)) {
       superstructure_goal_builder->set_elevator_goal(
           superstructure::ElevatorGoal::SCORE_L4);
-    } else if (data.IsPressed(kElevatorL3)) {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::SCORE_L3);
-    } else if (data.IsPressed(kElevatorL2)) {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::SCORE_L2);
-    } else if (data.IsPressed(kElevatorL1)) {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::SCORE_L1);
-    } else if (data.IsPressed(kElevatorIntake)) {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::INTAKE);
     } else {
       superstructure_goal_builder->set_elevator_goal(
           superstructure::ElevatorGoal::NEUTRAL);
