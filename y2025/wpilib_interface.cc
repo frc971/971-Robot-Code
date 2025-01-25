@@ -354,8 +354,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<TalonFX>(9, true, "rio", &rio_signal_registry,
                                   current_limits->pivot_stator_current_limit(),
                                   current_limits->pivot_supply_current_limit());
-
     rio_talons.push_back(pivot);
+
+    std::shared_ptr<TalonFX> climber_one = std::make_shared<TalonFX>(
+        11, true, "rio", &rio_signal_registry,
+        current_limits->climber_stator_current_limit(),
+        current_limits->climber_supply_current_limit());
+    std::shared_ptr<TalonFX> climber_two = std::make_shared<TalonFX>(
+        12, true, "rio", &rio_signal_registry,
+        current_limits->climber_stator_current_limit(),
+        current_limits->climber_supply_current_limit());
+
+    rio_talons.push_back(climber_one);
+    rio_talons.push_back(climber_two);
 
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(canivore_signals_registry),
@@ -398,7 +409,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader rio_can_sensor_reader(
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talons,
-        [&elevator_one, &elevator_two, &pivot,
+        [&elevator_one, &elevator_two, &pivot, &climber_one, &climber_two,
          &superstructure_rio_position_sender,
          &robot_constants](ctre::phoenix::StatusCode status) {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
@@ -412,6 +423,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               constants::Values::kElevatorOutputRatio);
           pivot->SerializePosition(superstructure_rio_builder->add_pivot(),
                                    constants::Values::kPivotOutputRatio);
+          climber_one->SerializePosition(
+              superstructure_rio_builder->add_climber_one(),
+              constants::Values::kClimberOutputRatio);
+          climber_two->SerializePosition(
+              superstructure_rio_builder->add_climber_two(),
+              constants::Values::kClimberOutputRatio);
+
           superstructure_rio_builder->set_status(static_cast<int>(status));
           superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
 
@@ -439,11 +457,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.elevator_voltage());
               talonfx_map.find("pivot")->second->WriteVoltage(
                   output.pivot_voltage());
+              talonfx_map.find("climber_one")
+                  ->second->WriteVoltage(output.climber_voltage());
+              talonfx_map.find("climber_two")
+                  ->second->WriteVoltage(output.climber_voltage());
             });
 
     can_superstructure_writer.add_talonfx("elevator_one", elevator_one);
     can_superstructure_writer.add_talonfx("elevator_two", elevator_two);
     can_superstructure_writer.add_talonfx("pivot", pivot);
+    can_superstructure_writer.add_talonfx("climber_one", climber_one);
+    can_superstructure_writer.add_talonfx("climber_two", climber_two);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_superstructure_writer](
