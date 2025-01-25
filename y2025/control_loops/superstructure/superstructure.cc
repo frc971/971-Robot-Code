@@ -165,6 +165,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.pivot_voltage) : nullptr,
           status->fbb());
 
+  double climber_voltage = 0.0;
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->climber_goal()) {
+      case (ClimberGoal::NEUTRAL):
+        break;
+      case (ClimberGoal::CLIMB):
+        climber_voltage =
+            robot_constants_->common()->climber_voltage()->climb();
+        break;
+      case (ClimberGoal::RETRACT):
+        climber_voltage =
+            robot_constants_->common()->climber_voltage()->retract();
+    }
+  }
+  output_struct.climber_voltage = climber_voltage;
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
