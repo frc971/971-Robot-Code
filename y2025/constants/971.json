@@ -1,6 +1,6 @@
 {% from 'y2025/constants/common.jinja2' import elevator_zero %}
 {% from 'y2025/constants/common.jinja2' import pivot_zero %}
-{% from 'y2025/constants/common.jinja2' import front_left_zero, front_right_zero, back_left_zero, back_right_zero %}
+{% from 'y2025/constants/common.jinja2' import front_left_zero, front_right_zero, back_left_zero, back_right_zero, pi %}
 
 {
   "cameras": [
@@ -9,41 +9,40 @@
     "elevator_constants": {
       {% set _ = elevator_zero.update(
           {
-              "measured_absolute_position" : 0.0
+              "measured_absolute_position" :  0.0904905366093744
           }
       ) %}
       "zeroing_constants": {{ elevator_zero | tojson(indent=2)}},
-      "potentiometer_offset": 0.0
+      "potentiometer_offset": {{ -0.00028883892916312884  - 0.04629819407715449 + 0.0074791000854042555 }}
     },
-    //TODO change these constants for y2025 bot
     "pivot_constants": {
       {% set _ = pivot_zero.update(
           {
-              "measured_absolute_position" : 0.17940018799940982
+              "measured_absolute_position" : 0.15277942752779805
           }
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 5.249596184591311 }}
+      "potentiometer_offset": {{ 0.002987694833262111 + 1.7365426706906293 + 0.1433391135374452 - 3.7664252126154008 - 4.910277834208133 + 13.58573292540177}}
     },
     "swerve_zeroing": {
       {% set _ = front_left_zero.update(
           {
-              "measured_absolute_position" : 2.934639251458032
+              "measured_absolute_position" : 0.19921039335979795 - pi / 4
           }
       ) %}
       {% set _ = front_right_zero.update(
           {
-              "measured_absolute_position" : 4.872094665936765
+              "measured_absolute_position" : 2.03505551159389 - pi / 4
           }
       ) %}
       {% set _ = back_left_zero.update(
           {
-              "measured_absolute_position" : 0.05358620595755559
+              "measured_absolute_position" : 5.325744713874661 - pi / 4
           }
       ) %}
       {% set _ = back_right_zero.update(
           {
-              "measured_absolute_position" : 5.672941265642591
+              "measured_absolute_position" : 0.2757959326788219 + pi / 4
           }
       ) %}
       "front_left":  {{ front_left_zero | tojson(indent=2)}},
@@ -52,9 +51,9 @@
       "back_right":  {{ back_right_zero | tojson(indent=2)}}
     },
     "input_config": {
-      "use_redundant_joysticks": true,
-      "vx_offset": 0.31496063,
-      "vy_offset": 0.2519685,
+      "use_redundant_joysticks": false,
+      "vx_offset": 0.0,
+      "vy_offset": 0.0,
       "omega_offset": 0.0
     }
   },

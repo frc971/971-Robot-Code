@@ -4,7 +4,6 @@
     "absolute_encoder_scale": {{ 2.0 * 3.14}}
   },
   "current_limits": {
-    // TODO replace these dummy values for y2025 bot
     "drivetrain_stator_current_limit": 100,
     "drivetrain_supply_current_limit": 50,
     "elevator_stator_current_limit": 100,
@@ -17,49 +16,46 @@
     "climber_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
-  // TODO change constants for y2025 bot
   "pivot": {
-    "zeroing_voltage": 3.0,
-    "operating_voltage": 12.0,
+    "zeroing_voltage": 2.0,
+    "operating_voltage": 8.0,
     "zeroing_profile_params": {
-      "max_velocity": 0.5,
-      "max_acceleration": 3.0
+      "max_velocity": 1.0,
+      "max_acceleration": 2.0
     },
     "default_profile_params":{
       "max_velocity": 6.0,
-      "max_acceleration": 40.0
+      "max_acceleration": 20.0
     },
     "range": {
-        "lower_hard": -0.4979327221131373,
-        "upper_hard": 2,
-        "lower": -0.4979327221131373,
-        "upper": 2
+        "lower_hard": {{ 2 * -3.1415 / 3 }},
+        "upper_hard": {{ 2 * 3.1415 / 3 }},
+        "lower": {{ 2 * -3.1415 / 3 }},
+        "upper": {{ 2 * 3.1415 / 3 }}
     },
     "loop": {% include 'y2025/control_loops/superstructure/pivot/integral_pivot_plant.json' %}
   },
   "pivot_set_points": {
-    // TODO: Update these set point constants
-    "neutral": 0,
-    "score": 1,
+    "neutral": {{ -3.1415 / 4.0 }},
+    "score": 0.7446929224249587,
     "intake": 1.2
   },
   "elevator": {
-    "zeroing_voltage": 3.0,
-    "operating_voltage": 12.0,
+    "zeroing_voltage": 2.0,
+    "operating_voltage": 4.0,
     "zeroing_profile_params": {
-      "max_velocity": 0.5,
-      "max_acceleration": 3.0
+      "max_velocity": 1,
+      "max_acceleration": 2.0
     },
     "default_profile_params":{
-      "max_velocity": 6.0,
-      "max_acceleration": 40.0
+      "max_velocity": 4.0,
+      "max_acceleration": 10.0
     },
     "range": {
-        // TODO: update these constants
-        "lower_hard": -0.4979327221131373,
-        "upper_hard": 1.557377933185559,
-        "lower": -0.4979327221131373,
-        "upper": 1.557377933185559
+        "lower_hard": 0.0,
+        "upper_hard": 0.6811428748966724,
+        "lower": 0.0,
+        "upper": 0.675
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
   },
@@ -87,13 +83,12 @@
     "loop": {% include 'y2025/control_loops/drivetrain/integral_rotation_plant.json' %}
   },
   "elevator_set_points": {
-    // TODO: Update these set point constants
-    "neutral": 0,
-    "intake": 1,
+    "neutral": 0.05,
+    "intake": 0.1,
     "score_l1": 0.1,
     "score_l2": 0.2,
     "score_l3": 0.3,
-    "score_l4": 0.4
+    "score_l4": 0.18374590200970545
   },
   //TODO: Update these voltages
   "end_effector_voltages": {

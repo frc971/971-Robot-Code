@@ -45,19 +45,21 @@ struct Values {
            kDrivetrainEncoderCountsPerRevolution();
   }
 
-  // TODO: get the correct values for all these constants
-
   static constexpr double kElevatorOutputRatio =
       control_loops::superstructure::elevator::kOutputRatio;
 
-  static constexpr double kElevatorPotRatio() { return (12.0 / 48.0); }
+  static constexpr double kElevatorPotRatio() { return 1; }
 
   static constexpr double kElevatorPotMetersPerRevolution() {
-    return 22 * 0.25 * 0.0254;
+    return (1.751 / 2.0) * 0.0254 * (2.0 * M_PI);
+  }
+
+  static constexpr double kElevatorEncoderMetersPerRadian() {
+    return kElevatorPotMetersPerRevolution() / 2.0 / M_PI;
   }
 
   static constexpr double kElevatorPotMetersPerVolt() {
-    return kElevatorPotRatio() * (5.0 /*turns*/ / 5.0 /*volts*/) *
+    return kElevatorPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
            kElevatorPotMetersPerRevolution();
   }
 
@@ -65,7 +67,7 @@ struct Values {
     return 4096.0;
   }
 
-  static constexpr double kElevatorEncoderRatio() { return (1.0 / 4.0); }
+  static constexpr double kElevatorEncoderRatio() { return 1.0; }
 
   static constexpr double kMaxElevatorEncoderPulsesPerSecond() {
     return control_loops::superstructure::elevator::kFreeSpeed / (2.0 * M_PI) *
@@ -79,16 +81,16 @@ struct Values {
     double potentiometer_offset;
   };
 
-  // TODO: get the correct values for all these constants
-
   static constexpr double kPivotOutputRatio =
       control_loops::superstructure::pivot::kOutputRatio;
 
-  static constexpr double kPivotPotRatio() { return (12.0 / 48.0); }
+  static constexpr double kPivotPotRatio() {
+    return (38.0 / 20.0) * (10.0 / 110.0);
+  }
 
   static constexpr double kPivotEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kPivotEncoderRatio() { return (1.0 / 4.0); }
+  static constexpr double kPivotEncoderRatio() { return (10.0 / 110.0); }
 
   static constexpr double kPivotPotRadiansPerVolt() {
     return kPivotPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *

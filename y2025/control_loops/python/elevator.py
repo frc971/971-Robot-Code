@@ -15,22 +15,20 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-first_stage_mass = 0.7957
-carriage_mass = 2.754
-
 kElevator = linear_system.LinearSystemParams(
     name='Elevator',
     motor=control_loop.KrakenFOC(),
-    # TODO: update these constants
-    G=(8.0 / 82.0),
-    radius=2.25 * 0.0254 / 2.0,
-    mass=first_stage_mass + carriage_mass,
+    G=(8.0 / 62.0),
+    radius=(1.751 / 2.0) * 0.0254,
+    mass=(5.554 / 2.205) + ((11.665 * 2) / 2.205),
     q_pos=0.070,
     q_vel=1.35,
     kalman_q_pos=0.12,
     kalman_q_vel=2.00,
     kalman_q_voltage=35.0,
-    kalman_r_position=0.05)
+    kalman_r_position=0.05,
+    dt=0.005,
+)
 
 
 def main(argv):
