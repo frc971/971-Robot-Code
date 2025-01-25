@@ -100,6 +100,8 @@ struct Values {
            control_loops::superstructure::pivot::kOutputRatio /
            kPivotEncoderRatio() * kPivotEncoderCountsPerRevolution();
   }
+  // TODO add a real value here
+  static constexpr double kClimberOutputRatio = 1;
 };
 
 // Creates and returns a Values instance for the constants.
