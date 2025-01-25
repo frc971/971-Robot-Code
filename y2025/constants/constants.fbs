@@ -36,6 +36,19 @@ table PivotSetPoints {
 table RobotConstants {
   elevator_constants:PotAndAbsEncoderConstants (id: 0);
   pivot_constants:PotAndAbsEncoderConstants (id: 1);
+  climber_constants:PotAndAbsEncoderConstants (id: 2);
+  input_config: frc971.input.InputConfig (id: 3);
+  swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 4);
+}
+
+table EndEffectorVoltages {
+  spit:double (id: 0);
+  intake:double (id: 1);
+}
+
+table ClimberVoltage {
+  climb:double (id: 0);
+  retract:double (id: 1);
   input_config: frc971.input.InputConfig (id: 2);
   swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 3);
 }
@@ -50,11 +63,6 @@ table VelocityControllerWeights {
   drive_current_r: double (id: 6);
 }
 
-table EndEffectorVoltages {
-  spit:double (id: 0);
-  intake:double (id: 1);
-}
-
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
@@ -66,8 +74,9 @@ table Common {
   elevator_set_points:ElevatorSetPoints (id: 6);
   pivot_set_points:PivotSetPoints (id: 7);
   end_effector_voltages:EndEffectorVoltages (id: 8);
-  weights: VelocityControllerWeights (id: 9);
-  rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 10);
+  climber_voltage:ClimberVoltage(id: 9);
+  weights: VelocityControllerWeights (id: 10);
+  rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 11);
 }
 
 table Constants {
@@ -85,6 +94,8 @@ table CurrentLimits {
   pivot_supply_current_limit:double (id: 5);
   end_effector_stator_current_limit:double (id: 6);
   end_effector_supply_current_limit:double (id: 7);
+  climber_stator_current_limit:double (id: 8);
+  climber_supply_current_limit:double (id: 9);
 }
 
 root_type Constants;

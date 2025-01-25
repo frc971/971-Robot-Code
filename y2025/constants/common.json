@@ -12,7 +12,9 @@
     "pivot_stator_current_limit": 100,
     "pivot_supply_current_limit": 50,
     "end_effector_stator_current_limit": 100,
-    "end_effector_supply_current_limit": 20
+    "end_effector_supply_current_limit": 20,
+    "climber_stator_current_limit": 100,
+    "climber_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
   // TODO change constants for y2025 bot
@@ -60,6 +62,10 @@
         "upper": 1.557377933185559
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
+  },
+  "climber_voltage": {
+    "climb": 8.0,
+    "retract": -8.0
   },
   "rotation": {
     "zeroing_voltage": 3.0,

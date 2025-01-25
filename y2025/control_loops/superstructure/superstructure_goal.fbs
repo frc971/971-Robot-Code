@@ -23,10 +23,17 @@ enum PivotGoal : ubyte {
     INTAKE = 2,
 }
 
+enum ClimberGoal : ubyte {
+    NEUTRAL = 0,
+    CLIMB = 1,
+    RETRACT = 2,
+}
+
 table Goal {
    elevator_goal:ElevatorGoal (id: 0);
    pivot_goal:PivotGoal (id: 1);
    end_effector_goal:EndEffectorGoal (id: 2);
+   climber_goal:ClimberGoal (id: 3);
 }
 
 root_type Goal;

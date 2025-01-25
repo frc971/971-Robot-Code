@@ -9,6 +9,12 @@ enum EndEffectorStatus : ubyte {
   SPITTING = 2,
 }
 
+enum ClimberStatus : ubyte {
+  IDLE = 0,
+  CLIMBING = 1,
+  RETRACTING = 2,
+}
+
 table Status {
     // All subsystems know their location.
     zeroed:bool (id: 0);
