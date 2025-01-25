@@ -407,6 +407,52 @@
       ]
     },
     {
+      "name": "apriltag_detector0",
+      "executable_name": "apriltag_detector",
+      "args": [
+          "--channel=/camera0"
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "apriltag_detector1",
+      "executable_name": "apriltag_detector",
+      "args": [
+          "--channel=/camera1"
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "argus_camera0",
+      "executable_name": "argus_camera",
+      "args": [
+          "--camera=0",
+          "--channel=/camera0"
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "argus_camera1",
+      "executable_name": "argus_camera",
+      "args": [
+          "--camera=1",
+          "--channel=/camera1"
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [

@@ -53,6 +53,7 @@ robot_downloader(
         "//frc971/vision:intrinsics_calibration",
         "//aos/util:filesystem_monitor",
         "//y2025/vision:viewer",
+        "//y2025/vision:apriltag_detector",
         "//y2025/constants:constants_sender",
         "//y2025/orin:ctre_interface",
         "//y2025/control_loops/swerve:swerve_control_loops",
