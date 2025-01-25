@@ -539,4 +539,34 @@ TEST_F(SuperstructureTest, EndEffectorTest) {
   VerifyNearGoal();
 }
 
+TEST_F(SuperstructureTest, PivotAndElevatorPositionTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::NEUTRAL);
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L1);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+}
+
 }  // namespace y2025::control_loops::superstructure::testing
