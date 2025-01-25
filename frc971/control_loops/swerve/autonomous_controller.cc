@@ -6,15 +6,8 @@
 #include "frc971/math/flatbuffers_matrix.h"
 
 // We are using a PID controller with only the P (proportional) part
-ABSL_FLAG(double, kVxProportionalGain, 100.0,
-          "Proportional gain for x velocity error");
-ABSL_FLAG(double, kVyProportionalGain, 100.0,
-          "Proportional gain for y velocity error");
-ABSL_FLAG(double, kOmegaProportionalGain, 100.0,
-          "Proportional gain for omega velocity error");
-ABSL_FLAG(bool, kUseEkfState, false,
-          "true if using the EKF's predicted state; "
-          "false if using the naive estimator's predicted state");
+ABSL_FLAG(double, kPositionGain, 0.5, "Proportional gain for positional error");
+ABSL_FLAG(double, kRotationGain, 0.5, "Proportional gain for rotational error");
 
 using frc971::control_loops::swerve::AutonomousController;
 
@@ -95,43 +88,50 @@ void AutonomousController::Iterate() {
   auto trajectory_point = trajectory_.message().discretized_trajectory()->Get(
       trajectory_index_.value());
 
-  constexpr size_t num_velocity_states =
+  constexpr size_t num_position_states =
       frc971::control_loops::swerve::SimplifiedDynamics<
-          double>::States::kNumVelocityStates;
-  Eigen::Matrix<double, num_velocity_states, 1> x_hat;
+          double>::States::kNumPositionStates;
+  Eigen::Matrix<double, num_position_states, 1> x_hat;
 
   swerve_drivetrain_status_fetcher_.Fetch();
-  if (absl::GetFlag(FLAGS_kUseEkfState)) {
-    x_hat = ToEigenOrDie<num_velocity_states, 1>(
-        *swerve_drivetrain_status_fetcher_.get()->velocity_ekf()->x_hat());
-  } else {
-    x_hat = ToEigenOrDie<num_velocity_states, 1>(
-        *swerve_drivetrain_status_fetcher_.get()
-             ->naive_estimator()
-             ->velocity_state());
+  x_hat = ToEigenOrDie<num_position_states, 1>(
+      *swerve_drivetrain_status_fetcher_.get()
+           ->naive_estimator()
+           ->position_state());
+
+  double x = x_hat(
+      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kX);
+  double y = x_hat(
+      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kY);
+  double theta = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
+                       double>::States::kTheta);
+
+  double kThreshold = 0.05;
+
+  double x_error = x - trajectory_point->position()->x();
+  double y_error = y - trajectory_point->position()->y();
+  double theta_error = theta - trajectory_point->position()->theta();
+
+  if (std::abs(x_error) < kThreshold) {
+    x_error = 0.0;
+  }
+  if (std::abs(y_error) < kThreshold) {
+    y_error = 0.0;
+  }
+  if (std::abs(theta_error) < kThreshold) {
+    theta_error = 0.0;
   }
 
-  double vx = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kVx);
-  double vy = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kVy);
-  double omega = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
-                       double>::States::kOmega);
+  VLOG(1) << "x error: " << x_error;
+  VLOG(1) << "y error: " << y_error;
+  VLOG(1) << "theta error: " << theta_error;
 
-  double vx_error = vx - trajectory_point->velocity()->x();
-  double vy_error = vy - trajectory_point->velocity()->y();
-  double omega_error = omega - trajectory_point->velocity()->theta();
-
-  VLOG(1) << "vx error: " << vx_error;
-  VLOG(1) << "vy error: " << vy_error;
-  VLOG(1) << "omega error: " << omega_error;
-
-  double goal_vx = trajectory_point->velocity()->x() +
-                   absl::GetFlag(FLAGS_kVxProportionalGain) * vx_error;
-  double goal_vy = trajectory_point->velocity()->y() +
-                   absl::GetFlag(FLAGS_kVyProportionalGain) * vy_error;
-  double goal_omega = trajectory_point->velocity()->theta() +
-                      absl::GetFlag(FLAGS_kOmegaProportionalGain) * omega_error;
+  double goal_vx = trajectory_point->velocity()->x() -
+                   absl::GetFlag(FLAGS_kPositionGain) * x_error;
+  double goal_vy = trajectory_point->velocity()->y() -
+                   absl::GetFlag(FLAGS_kPositionGain) * y_error;
+  double goal_omega = trajectory_point->velocity()->theta() -
+                      absl::GetFlag(FLAGS_kRotationGain) * theta_error;
 
   auto joystick_goal = builder->add_joystick_goal();
   joystick_goal->set_vx(goal_vx);

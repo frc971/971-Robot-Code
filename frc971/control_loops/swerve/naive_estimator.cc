@@ -110,6 +110,9 @@ NaiveEstimator::State NaiveEstimator::Update(
   state_(States::kTheta) += yaw_rate * dt;
   state_(States::kVx) = averaged_velocity.x();
   state_(States::kVy) = averaged_velocity.y();
+  state_(States::kX) += averaged_velocity.x() * dt;
+  state_(States::kY) += averaged_velocity.y() * dt;
+
   last_update_ = now;
   last_drive_update_ = drive_now;
   last_drive_positions_ = drive_positions;
@@ -117,18 +120,33 @@ NaiveEstimator::State NaiveEstimator::Update(
 }
 
 void NaiveEstimator::PopulateStatus(NaiveEstimatorStatusStatic *fbs) const {
-  CHECK(FromEigen(state_.cast<double>(), fbs->add_velocity_state()));
+  CHECK(FromEigen(state_.cast<double>(), fbs->add_position_state()));
   auto estimator_states = fbs->add_estimator_states();
   CHECK(estimator_states->reserve(4));
   for (size_t module = 0; module < 4; ++module) {
     zeroing_[module].GetEstimatorState(estimator_states->emplace_back());
   }
-  fbs->set_omega(state_(States::kOmega));
+  fbs->set_x(state_(States::kX));
+  fbs->set_y(state_(States::kY));
   fbs->set_yaw(state_(States::kTheta));
+  fbs->set_omega(state_(States::kOmega));
   fbs->set_vx(state_(States::kVx));
   fbs->set_vy(state_(States::kVy));
+
   CHECK(FromEigen(state_.template cast<double>(), fbs->add_x_hat()));
   CHECK(fbs->add_module_drive_velocities()->FromIterator(velocities_.begin(),
                                                          velocities_.end()));
+}
+
+void NaiveEstimator::AcceptRobotPositionEstimation(Scalar robot_x,
+                                                   Scalar robot_y,
+                                                   Scalar robot_yaw,
+                                                   Scalar pose_confidence) {
+  state_(States::kX) =
+      (1 - pose_confidence) * state_(States::kX) + pose_confidence * robot_x;
+  state_(States::kY) =
+      (1 - pose_confidence) * state_(States::kY) + pose_confidence * robot_y;
+  state_(States::kTheta) = (1 - pose_confidence) * state_(States::kTheta) +
+                           pose_confidence * robot_yaw;
 }
 }  // namespace frc971::control_loops::swerve
