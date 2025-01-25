@@ -4,6 +4,7 @@ table JoystickGoal {
   vx:float (id: 0);
   vy:float (id: 1);
   omega:float (id: 2);
+  auto_align:bool (id: 3);
 }
 
 root_type JoystickGoal;

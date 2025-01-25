@@ -185,6 +185,7 @@ class SwerveDrivetrainInputReader {
   const driver_station::JoystickAxis vx_axis_;
   const driver_station::JoystickAxis vy_axis_;
   const driver_station::JoystickAxis omega_axis_;
+  const driver_station::ButtonLocation auto_align_button_;
 
   // Structure containing the (potentially adjusted) steering and throttle
   // values from the joysticks.
@@ -192,6 +193,7 @@ class SwerveDrivetrainInputReader {
     double vx;
     double vy;
     double omega;
+    bool auto_align;
   };
 
  private:
@@ -199,10 +201,12 @@ class SwerveDrivetrainInputReader {
                               const SwerveConfig swerve_config,
                               driver_station::JoystickAxis vx_axis,
                               driver_station::JoystickAxis vy_axis,
-                              driver_station::JoystickAxis omega_axis)
+                              driver_station::JoystickAxis omega_axis,
+                              driver_station::ButtonLocation auto_align_button)
       : vx_axis_(vx_axis),
         vy_axis_(vy_axis),
         omega_axis_(omega_axis),
+        auto_align_button_(auto_align_button),
         goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
             "/drivetrain")),
         swerve_config_(swerve_config) {}
