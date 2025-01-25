@@ -22,9 +22,12 @@ SwerveControlLoops::SwerveControlLoops(
       can_position_fetcher_(event_loop->MakeFetcher<CanPosition>(name)),
       gyro_fetcher_(event_loop->TryMakeFetcher<::frc971::sensors::GyroReading>(
           "/drivetrain")),
+      auto_goal_fetcher_(event_loop->MakeFetcher<Goal>("/autonomous")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       imu_fetcher_(
           event_loop->TryMakeFetcher<::frc971::IMUValuesBatch>("/localizer")),
-      naive_estimator_(zeroing_params, params),
+      naive_estimator_(event_loop, zeroing_params, params),
       velocity_controller_(
           LinearVelocityController::MakeParameters(lvc_weights, params),
           params),
@@ -140,6 +143,13 @@ void SwerveControlLoops::RunIteration(
       aos::monotonic_clock::now();
   U_.setZero();
   std::optional<LinearVelocityController::ControllerResult> controller_result;
+  joystick_state_fetcher_.Fetch();
+  auto_goal_fetcher_.Fetch();
+  if (joystick_state_fetcher_.get() != nullptr &&
+      joystick_state_fetcher_->autonomous() &&
+      auto_goal_fetcher_.get() != nullptr) {
+    goal = auto_goal_fetcher_.get();
+  }
   if (goal != nullptr && current_state.has_value()) {
     CHECK_NE(goal->has_linear_velocity_goal(), goal->has_joystick_goal());
     if (goal->has_linear_velocity_goal()) {

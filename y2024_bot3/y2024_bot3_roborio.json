@@ -77,6 +77,13 @@
         ]
     },
     {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.sensors.GyroReading",
+      "source_node": "roborio",
+      "frequency": 250,
+      "num_senders": 2
+    },
+    {
       "name": "/roborio/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
@@ -209,14 +216,6 @@
       "num_senders": 2,
       "max_size": 1024
     },
-        {
-            "name": "/roborio/can",
-            "type": "frc971.can_logger.CanFrame",
-            "source_node": "roborio",
-            "frequency": 6000,
-            "num_senders": 2,
-            "max_size": 200
-        },
     {
         "name": "/roborio/drivetrain",
         "type": "frc971.control_loops.swerve.CanPosition",
@@ -255,6 +254,35 @@
         "frequency": 400,
         "num_senders": 2,
         "max_size": 200
+    },
+    {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.Goal",
+      "source_node": "roborio",
+      "frequency": 250
+    },
+    {
+      "name": "/swerve",
+      "type": "frc971.control_loops.swerve.Status",
+      "source_node": "roborio",
+      "max_size": 10000,
+      "frequency": 250
+    },
+    {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.Position",
+      "source_node": "roborio",
+      "frequency": 250,
+      "num_senders": 1,
+      "max_size": 480
+    },
+    {
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.CanPosition",
+      "source_node": "roborio",
+      "frequency": 250,
+      "num_senders": 1,
+      "max_size": 656
     },
     {
       "name": "/roborio",
@@ -373,25 +401,6 @@
       "nodes": [
         "roborio"
       ]
-    },
-    {
-      "name": "roborio_can_logger",
-      "executable_name": "can_logger",
-      "autostart": false,
-      "args": [
-        "--poll"
-      ],
-      "nodes": [
-        "roborio"
-      ]
-    },
-    {
-      "name": "autonomous",
-      "executable_name": "autonomous_main",
-      "autostart": true,
-      "nodes": [
-        "roborio"
-      ]
     }
   ],
   "maps": [
@@ -402,6 +411,15 @@
         },
         "rename": {
             "name": "/roborio/aos"
+        }
+    },
+    {
+        "match": {
+            "name": "/drivetrain*",
+            "source_node": "imu"
+        },
+        "rename": {
+            "name": "/imu/drivetrain"
         }
     },
     {
@@ -439,6 +457,24 @@
         "rename": {
             "name": "/roborio/constants"
         }
+    },
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/roborio/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/drivetrain*",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/roborio/drivetrain"
+      }
     }
   ],
   "nodes": [

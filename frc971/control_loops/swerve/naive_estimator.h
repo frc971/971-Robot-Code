@@ -1,6 +1,8 @@
 #ifndef FRC971_CONTROL_LOOPS_SWERVE_NAIVE_ESTIMATOR_H_
 #define FRC971_CONTROL_LOOPS_SWERVE_NAIVE_ESTIMATOR_H_
+#include "aos/events/event_loop.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/swerve/autonomous_init_generated.h"
 #include "frc971/control_loops/swerve/simplified_dynamics.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_can_position_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_generated.h"
@@ -27,7 +29,8 @@ class NaiveEstimator {
   using ModuleParams = Dynamics::ModuleParams;
   using State = Dynamics::PositionState<Scalar>;
   using States = Dynamics::States;
-  NaiveEstimator(const SwerveZeroing *zeroing_params, const Parameters &params);
+  NaiveEstimator(aos::EventLoop *event_loop,
+                 const SwerveZeroing *zeroing_params, const Parameters &params);
 
   // Provides an estimate of the current state of the system.
   State Update(aos::monotonic_clock::time_point now, const Position *position,
@@ -56,6 +59,10 @@ class NaiveEstimator {
   Parameters params_;
   // When the Update() method was last called.
   std::optional<aos::monotonic_clock::time_point> last_update_;
+
+  aos::Fetcher<AutonomousInit> autonomous_init_fetcher_;
+
+  bool autonomous_initialized_ = false;
 };
 }  // namespace frc971::control_loops::swerve
 #endif  // FRC971_CONTROL_LOOPS_SWERVE_NAIVE_ESTIMATOR_H_

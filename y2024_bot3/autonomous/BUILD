@@ -19,7 +19,7 @@ filegroup(
 genrule(
     name = "genrule_trajectory",
     srcs = [
-        "paths/slow-loop.json",
+        "paths/swerve-path.json",
     ],
     outs = [
         "trajectory.json",
@@ -57,7 +57,9 @@ filegroup(
 cc_binary(
     name = "autonomous_main",
     srcs = ["autonomous_main.cc"],
-    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    data = [
+        ":trajectory_bfbs",
+    ],
     deps = [
         "//aos:init",
         "//aos/events:shm_event_loop",

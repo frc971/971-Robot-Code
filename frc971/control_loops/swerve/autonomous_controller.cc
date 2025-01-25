@@ -21,13 +21,18 @@ AutonomousController::AutonomousController(
           trajectory_path)),
       swerve_goal_sender_(
           event_loop->MakeSender<frc971::control_loops::swerve::GoalStatic>(
-              "/drivetrain")),
+              "/autonomous")),
+      autonomous_init_sender_(
+          event_loop
+              ->MakeSender<frc971::control_loops::swerve::AutonomousInitStatic>(
+                  "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+          event_loop->MakeFetcher<aos::JoystickState>("/roborio/aos")),
       swerve_drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
-              "/swerve")),
+              "/drivetrain")),
       event_loop_(event_loop) {
+  completed_ = false;
   // setup callbacks
   for (auto action : *(trajectory_.message().timestamped_actions())) {
     if (callbacks.contains(action->name()->c_str())) {
@@ -40,8 +45,32 @@ AutonomousController::AutonomousController(
                  << "' not found in callbacks.";
     }
   }
+  {
+    auto builder = autonomous_init_sender_.MakeStaticBuilder();
+    builder->set_x(trajectory_.message()
+                       .discretized_trajectory()
+                       ->Get(0)
+                       ->position()
+                       ->x());
+    builder->set_y(trajectory_.message()
+                       .discretized_trajectory()
+                       ->Get(0)
+                       ->position()
+                       ->y());
+    builder->set_theta(trajectory_.message()
+                           .discretized_trajectory()
+                           ->Get(0)
+                           ->position()
+                           ->theta());
+    builder.CheckOk(builder.Send());
+  }
 
   const auto timer = event_loop_->AddTimer([this]() {
+    joystick_state_fetcher_.Fetch();
+    if (joystick_state_fetcher_.get() != nullptr) {
+      VLOG(1) << "Autonomous " << joystick_state_fetcher_->autonomous();
+      VLOG(1) << "Enabled " << joystick_state_fetcher_->enabled();
+    }
     if (trajectory_index_) {
       size_t index = trajectory_index_.value();
 
@@ -63,7 +92,8 @@ AutonomousController::AutonomousController(
         }
       }
     } else if (!completed_) {
-      if (joystick_state_fetcher_.Fetch()) {
+      joystick_state_fetcher_.Fetch();
+      if (joystick_state_fetcher_.get() != nullptr) {
         auto joystick_state = joystick_state_fetcher_.get();
         if (joystick_state->autonomous() && joystick_state->enabled()) {
           trajectory_index_ = 0;
@@ -106,11 +136,11 @@ void AutonomousController::Iterate() {
   double theta = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
                        double>::States::kTheta);
 
-  double kThreshold = 0.05;
+  double kThreshold = 0.005;
 
   double x_error = x - trajectory_point->position()->x();
-  double y_error = y - trajectory_point->position()->y();
-  double theta_error = theta - trajectory_point->position()->theta();
+  double y_error = y - (-trajectory_point->position()->y());
+  double theta_error = theta - (-trajectory_point->position()->theta());
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
@@ -128,9 +158,9 @@ void AutonomousController::Iterate() {
 
   double goal_vx = trajectory_point->velocity()->x() -
                    absl::GetFlag(FLAGS_kPositionGain) * x_error;
-  double goal_vy = trajectory_point->velocity()->y() -
+  double goal_vy = -trajectory_point->velocity()->y() -
                    absl::GetFlag(FLAGS_kPositionGain) * y_error;
-  double goal_omega = trajectory_point->velocity()->theta() -
+  double goal_omega = -trajectory_point->velocity()->theta() -
                       absl::GetFlag(FLAGS_kRotationGain) * theta_error;
 
   auto joystick_goal = builder->add_joystick_goal();
