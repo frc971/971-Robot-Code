@@ -298,6 +298,24 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     EXPECT_NEAR(pivot_set_point,
                 superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
 
+    double climber_expected_voltage = 0.0;
+
+    switch (superstructure_goal_fetcher_->climber_goal()) {
+      case ClimberGoal::NEUTRAL:
+        break;
+      case ClimberGoal::CLIMB:
+        climber_expected_voltage =
+            simulated_robot_constants_->common()->climber_voltage()->climb();
+        break;
+      case ClimberGoal::RETRACT:
+        climber_expected_voltage =
+            simulated_robot_constants_->common()->climber_voltage()->retract();
+        break;
+    }
+
+    ASSERT_TRUE(climber_expected_voltage ==
+                superstructure_output_fetcher_->climber_voltage());
+
     ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
@@ -386,6 +404,47 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+TEST_F(SuperstructureTest, ClimberPositionTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_climber_goal(ClimberGoal::NEUTRAL);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_climber_goal(ClimberGoal::CLIMB);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
 }
 
 TEST_F(SuperstructureTest, ElevatorPositionTest) {
