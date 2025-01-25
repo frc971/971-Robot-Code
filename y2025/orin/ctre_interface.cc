@@ -19,13 +19,13 @@ using frc971::wpilib::TalonFXParams;
 using frc971::wpilib::swerve::DrivetrainWriter;
 using frc971::wpilib::swerve::SwerveModule;
 using frc971::wpilib::swerve::SwerveModules;
-
 ABSL_FLAG(bool, ctre_diag_server, false,
           "If true, enable the diagnostics server for interacting with "
           "devices on the CAN bus using Phoenix Tuner");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("aos_config.json");
 
@@ -45,7 +45,6 @@ int main(int argc, char **argv) {
   loops.push_back(&constant_fetcher_event_loop);
 
   std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
-
   std::vector<std::shared_ptr<TalonFX>> falcons;
 
   const y2025::CurrentLimits *current_limits =
@@ -53,28 +52,27 @@ int main(int argc, char **argv) {
 
   SwerveModules modules{
       .front_left = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{6, true},
-          frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{2, true},
+          frc971::wpilib::TalonFXParams{3, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit()),
       .front_right = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{3, true},
-          frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{10, true},
+          frc971::wpilib::TalonFXParams{4, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit()),
       .back_left = std::make_shared<SwerveModule>(
           frc971::wpilib::TalonFXParams{7, true},
-          frc971::wpilib::TalonFXParams{8, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{6, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit()),
       .back_right = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{2, true},
-          frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{11, true},
+          frc971::wpilib::TalonFXParams{0, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit())};
 
   // Thread 2
-
   aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
 
   can_sensor_reader_event_loop.set_name("CANSensorReader");
@@ -93,14 +91,17 @@ int main(int argc, char **argv) {
        &can_position_sender](ctre::phoenix::StatusCode status) {
         // TODO(max): use status properly in the flatbuffer.
         (void)status;
+
         aos::Sender<frc971::control_loops::swerve::CanPositionStatic>::
             StaticBuilder builder = can_position_sender.MakeStaticBuilder();
         for (auto falcon : falcons) {
           falcon->RefreshNontimesyncedSignals();
         }
+
         const SwerveModule::ModuleGearRatios gear_ratios{
             .rotation = y2025::constants::Values::kRotationModuleRatio,
             .translation = y2025::constants::Values::kTranslationModuleRatio()};
+
         modules.front_left->PopulateCanPosition(builder->add_front_left(),
                                                 gear_ratios);
         modules.front_right->PopulateCanPosition(builder->add_front_right(),
@@ -109,6 +110,7 @@ int main(int argc, char **argv) {
                                                gear_ratios);
         modules.back_right->PopulateCanPosition(builder->add_back_right(),
                                                 gear_ratios);
+
         builder.CheckOk(builder.Send());
       });
 
@@ -116,7 +118,6 @@ int main(int argc, char **argv) {
 
   // Thread 3
   // Setup CAN
-
   if (!absl::GetFlag(FLAGS_ctre_diag_server)) {
     c_Phoenix_Diagnostics_SetSecondsToStart(-1);
     c_Phoenix_Diagnostics_Dispose();
@@ -151,6 +152,5 @@ int main(int argc, char **argv) {
   for (std::thread &thread : threads) {
     thread.join();
   }
-
   return 0;
 };
