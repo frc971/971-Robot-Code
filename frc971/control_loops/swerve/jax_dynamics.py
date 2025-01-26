@@ -43,7 +43,7 @@ def Coefficients(
     rw: float = 2 * 0.0254,
 
     # base is 20 kg without battery
-    m: float = 25.0,
+    m: float = 48.40,
     J: float = 6.0,
     Gd1: float = 12.0 / 42.0,
     rs: float = 28.0 / 20.0 / 2.0,

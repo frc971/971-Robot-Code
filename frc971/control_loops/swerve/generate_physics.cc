@@ -168,7 +168,7 @@ class SwerveSimulation {
 
       rw_ = real_double(2 * 0.0254);
 
-      m_ = real_double(25.0);  // base is 20 kg without battery
+      m_ = real_double(48.40);
       J_ = real_double(6.0);
 
       Gd1_ = real_double(12.0 / 42.0);
