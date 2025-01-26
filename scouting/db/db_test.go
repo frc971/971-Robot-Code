@@ -1080,8 +1080,8 @@ func TestHumanRanking2025(t *testing.T) {
 	defer fixture.TearDown()
 
 	expected := []HumanRanking2025{
-		{ID: 1, CompCode: "fol2024", MatchNumber: 9, TeamNumber: "22", Score: 1},
 		{ID: 2, CompCode: "fol2024", MatchNumber: 9, TeamNumber: "1234", Score: 2},
+		{ID: 1, CompCode: "fol2024", MatchNumber: 9, TeamNumber: "22", Score: 1},
 	}
 
 	err := fixture.db.AddHumanRanking2025(

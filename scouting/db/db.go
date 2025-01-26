@@ -451,12 +451,12 @@ func (database *Database) QueryDriverRanking(MatchNumber int) ([]DriverRankingDa
 
 func (database *Database) QueryDriverRanking2025(CompCode string) ([]DriverRanking2025, error) {
 	var data []DriverRanking2025
-	result := database.Where("comp_code = ?", CompCode).Find(&data)
+	result := database.Where("comp_code = ?", CompCode).Order("team_number").Find(&data)
 	return data, result.Error
 }
 
 func (database *Database) QueryHumanRanking2025(CompCode string) ([]HumanRanking2025, error) {
 	var data []HumanRanking2025
-	result := database.Where("comp_code = ?", CompCode).Find(&data)
+	result := database.Where("comp_code = ?", CompCode).Order("team_number").Find(&data)
 	return data, result.Error
 }
