@@ -24,6 +24,9 @@ elif [[ "$(hostname)" == "orin-"* ]]; then
   # Give read permissions for INA3221 electrical readings sysfs
   chmod -R a+r /sys/devices/platform/c240000.i2c/i2c-1/1-0040/hwmon/hwmon?/
 
+  # Lets it bind to ports under 1024 i.e. 971
+  setcap 'cap_net_bind_service=ep' /home/pi/bin/message_bridge_server
+
   exec starterd --user=pi --purge_shm_base
 else
   ROBOT_CODE="${HOME}/bin"
