@@ -179,6 +179,31 @@ type ParsedDriverRankingData struct {
 	Score float32
 }
 
+type NotesData2025 struct {
+	ID                   uint `gorm:"primaryKey"`
+	CompCode             string
+	TeamNumber           string
+	MatchNumber          int32
+	SetNumber            int32
+	CompLevel            string
+	Notes                string
+	GoodDriving          bool
+	BadDriving           bool
+	CoralGroundIntake    bool
+	CoralHpIntake        bool
+	AlgaeGroundIntake    bool
+	SolidAlgaeShooting   bool
+	SketchyAlgaeShooting bool
+	SolidCoralShooting   bool
+	SketchyCoralShooting bool
+	ShuffleCoral         bool
+	Penalties            bool
+	GoodDefense          bool
+	BadDefense           bool
+	EasilyDefended       bool
+	NoShow               bool
+}
+
 // Opens a database at the specified port on localhost. We currently don't
 // support connecting to databases on other hosts.
 func NewDatabase(user string, password string, port int) (*Database, error) {
@@ -194,7 +219,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &TeamMatch2025{}, &Shift{}, &Stats2024{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &TeamMatch2025{}, &Shift{}, &Stats2024{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -339,6 +364,12 @@ func (database *Database) ReturnAllNotes() ([]NotesData, error) {
 	return notes, result.Error
 }
 
+func (database *Database) ReturnAllNotes2025(CompCode string) ([]NotesData2025, error) {
+	var notes []NotesData2025
+	result := database.Where("comp_code = ?", CompCode).Order("match_number").Find(&notes)
+	return notes, result.Error
+}
+
 func (database *Database) ReturnAllDriverRankings() ([]DriverRankingData, error) {
 	var rankings []DriverRankingData
 	result := database.Find(&rankings)
@@ -469,11 +500,24 @@ func (database *Database) QueryActions(teamNumber_ string) ([]Action, error) {
 
 func (database *Database) QueryNotes(TeamNumber string) ([]string, error) {
 	var rawNotes []NotesData
-	result := database.Where("team_number = ?", TeamNumber).Find(&rawNotes)
+	result := database.Where("team_number = ?", TeamNumber).Order("match_number").Find(&rawNotes)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
+	notes := make([]string, len(rawNotes))
+	for i := range rawNotes {
+		notes[i] = rawNotes[i].Notes
+	}
+	return notes, nil
+}
+
+func (database *Database) QueryNotes2025(CompCode string, TeamNumber string) ([]string, error) {
+	var rawNotes []NotesData2025
+	result := database.Where("comp_code = ? AND team_number = ?", CompCode, TeamNumber).Order("match_number").Find(&rawNotes)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	notes := make([]string, len(rawNotes))
 	for i := range rawNotes {
 		notes[i] = rawNotes[i].Notes
@@ -502,6 +546,33 @@ func (database *Database) AddNotes(data NotesData) error {
 		BadDefense:     data.BadDefense,
 		EasilyDefended: data.EasilyDefended,
 		NoShow:         data.NoShow,
+	})
+	return result.Error
+}
+
+func (database *Database) AddNotes2025(data NotesData2025) error {
+	result := database.Create(&NotesData2025{
+		CompCode:             data.CompCode,
+		TeamNumber:           data.TeamNumber,
+		MatchNumber:          data.MatchNumber,
+		SetNumber:            data.SetNumber,
+		CompLevel:            data.CompLevel,
+		Notes:                data.Notes,
+		GoodDriving:          data.GoodDriving,
+		BadDriving:           data.BadDriving,
+		CoralGroundIntake:    data.CoralGroundIntake,
+		CoralHpIntake:        data.CoralHpIntake,
+		AlgaeGroundIntake:    data.AlgaeGroundIntake,
+		SolidAlgaeShooting:   data.SolidAlgaeShooting,
+		SketchyAlgaeShooting: data.SketchyAlgaeShooting,
+		SolidCoralShooting:   data.SolidCoralShooting,
+		ShuffleCoral:         data.ShuffleCoral,
+		SketchyCoralShooting: data.SketchyCoralShooting,
+		Penalties:            data.Penalties,
+		GoodDefense:          data.GoodDefense,
+		BadDefense:           data.BadDefense,
+		EasilyDefended:       data.EasilyDefended,
+		NoShow:               data.NoShow,
 	})
 	return result.Error
 }
