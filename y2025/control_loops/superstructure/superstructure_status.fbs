@@ -27,6 +27,8 @@ table Status {
     pivot:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
 
     end_effector_state:EndEffectorStatus (id: 4);
+
+    wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 5);
 }
 
 root_type Status;

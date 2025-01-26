@@ -25,6 +25,8 @@ table CANPosition {
     // CAN Position of the climber kraken
     climber_one:frc971.control_loops.CANTalonFX (id: 6);
     climber_two:frc971.control_loops.CANTalonFX (id: 7);
+
+    wrist:frc971.control_loops.CANTalonFX (id: 8);
 }
 
 root_type CANPosition;

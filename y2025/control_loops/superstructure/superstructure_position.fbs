@@ -12,6 +12,8 @@ table Position {
 
     // If this is true, the end effector beam break is triggered.
     end_effector_beam_break:bool (id: 2);
+
+    wrist:frc971.AbsolutePosition (id: 3);
 }
 
 root_type Position;

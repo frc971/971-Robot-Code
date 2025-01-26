@@ -34,6 +34,7 @@ table Goal {
    pivot_goal:PivotGoal (id: 1);
    end_effector_goal:EndEffectorGoal (id: 2);
    climber_goal:ClimberGoal (id: 3);
+   wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
 }
 
 root_type Goal;
