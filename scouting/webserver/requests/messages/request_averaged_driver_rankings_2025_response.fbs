@@ -1,0 +1,13 @@
+namespace scouting.webserver.requests;
+
+table DriverRanking2025 {
+	comp_code:string (id:0);
+	team_number:string (id:1);
+	score:float (id:2);
+}
+
+table RequestAveragedDriverRankings2025Response {
+    rankings_2025_list:[DriverRanking2025] (id:0);
+}
+
+root_type RequestAveragedDriverRankings2025Response;

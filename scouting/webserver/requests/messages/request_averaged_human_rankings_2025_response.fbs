@@ -1,0 +1,13 @@
+namespace scouting.webserver.requests;
+
+table HumanRanking2025 {
+	comp_code:string (id:0);
+	team_number:string (id:1);
+	score:float (id:2);
+}
+
+table RequestAveragedHumanRankings2025Response {
+    rankings_2025_list:[HumanRanking2025] (id:0);
+}
+
+root_type RequestAveragedHumanRankings2025Response;

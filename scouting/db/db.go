@@ -115,6 +115,24 @@ type DriverRankingData struct {
 	Rank3       string
 }
 
+type DriverRanking2025 struct {
+	// Each Driver Ranking data is the ranking for one team
+	ID          uint `gorm:"primaryKey"`
+	CompCode    string
+	MatchNumber int32
+	TeamNumber  string
+	Score       int32
+}
+
+type HumanRanking2025 struct {
+	// Each Human Ranking data is the ranking for one team
+	ID          uint `gorm:"primaryKey"`
+	CompCode    string
+	MatchNumber int32
+	TeamNumber  string
+	Score       int32
+}
+
 type ParsedDriverRankingData struct {
 	// This data stores the output of DriverRank.jl.
 
@@ -141,7 +159,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2024{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2024{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -398,6 +416,26 @@ func (database *Database) AddDriverRanking(data DriverRankingData) error {
 	return result.Error
 }
 
+func (database *Database) AddDriverRanking2025(data DriverRanking2025) error {
+	result := database.Create(&DriverRanking2025{
+		CompCode:    data.CompCode,
+		MatchNumber: data.MatchNumber,
+		TeamNumber:  data.TeamNumber,
+		Score:       data.Score,
+	})
+	return result.Error
+}
+
+func (database *Database) AddHumanRanking2025(data HumanRanking2025) error {
+	result := database.Create(&HumanRanking2025{
+		CompCode:    data.CompCode,
+		MatchNumber: data.MatchNumber,
+		TeamNumber:  data.TeamNumber,
+		Score:       data.Score,
+	})
+	return result.Error
+}
+
 func (database *Database) AddParsedDriverRanking(data ParsedDriverRankingData) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -408,5 +446,17 @@ func (database *Database) AddParsedDriverRanking(data ParsedDriverRankingData) e
 func (database *Database) QueryDriverRanking(MatchNumber int) ([]DriverRankingData, error) {
 	var data []DriverRankingData
 	result := database.Where("match_number = ?", MatchNumber).Find(&data)
+	return data, result.Error
+}
+
+func (database *Database) QueryDriverRanking2025(CompCode string) ([]DriverRanking2025, error) {
+	var data []DriverRanking2025
+	result := database.Where("comp_code = ?", CompCode).Find(&data)
+	return data, result.Error
+}
+
+func (database *Database) QueryHumanRanking2025(CompCode string) ([]HumanRanking2025, error) {
+	var data []HumanRanking2025
+	result := database.Where("comp_code = ?", CompCode).Find(&data)
 	return data, result.Error
 }
