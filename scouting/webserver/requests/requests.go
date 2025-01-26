@@ -23,6 +23,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
@@ -32,6 +34,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
@@ -47,6 +51,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
@@ -62,10 +68,14 @@ type RequestAllDriverRankings = request_all_driver_rankings.RequestAllDriverRank
 type RequestAllDriverRankingsResponseT = request_all_driver_rankings_response.RequestAllDriverRankingsResponseT
 type RequestAllNotes = request_all_notes.RequestAllNotes
 type RequestAllNotesResponseT = request_all_notes_response.RequestAllNotesResponseT
+type RequestAllNotes2025 = request_all_notes_2025.RequestAllNotes2025
+type RequestAllNotes2025ResponseT = request_all_notes_2025_response.RequestAllNotes2025ResponseT
 type Request2024DataScouting = request_2024_data_scouting.Request2024DataScouting
 type Request2024DataScoutingResponseT = request_2024_data_scouting_response.Request2024DataScoutingResponseT
 type SubmitNotes = submit_notes.SubmitNotes
 type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
+type SubmitNotes2025 = submit_notes_2025.SubmitNotes2025
+type SubmitNotes2025ResponseT = submit_notes_2025_response.SubmitNotes2025ResponseT
 type SubmitPitImage = submit_pit_image.SubmitPitImage
 type SubmitPitImageResponseT = submit_pit_image_response.SubmitPitImageResponseT
 type RequestPitImages = request_pit_images.RequestPitImages
@@ -76,6 +86,8 @@ type RequestCurrentScouting = request_current_scouting.RequestCurrentScouting
 type RequestCurrentScoutingResponseT = request_current_scouting_response.RequestCurrentScoutingResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
+type RequestNotes2025ForTeam = request_notes_2025_for_team.RequestNotes2025ForTeam
+type RequestNotes2025ForTeamResponseT = request_notes_2025_for_team_response.RequestNotes2025ForTeamResponseT
 type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
 type RequestShiftScheduleResponseT = request_shift_schedule_response.RequestShiftScheduleResponseT
 type RequestAveragedDriverRankings2025 = request_averaged_driver_rankings_2025.RequestAveragedDriverRankings2025
@@ -104,6 +116,7 @@ type Database interface {
 	AddToStats2024(db.Stats2024) error
 	ReturnMatches() ([]db.TeamMatch, error)
 	ReturnAllNotes() ([]db.NotesData, error)
+	ReturnAllNotes2025(string) ([]db.NotesData2025, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats2024() ([]db.Stats2024, error)
@@ -112,9 +125,11 @@ type Database interface {
 	QueryHumanRanking2025(compCode string) ([]db.HumanRanking2025, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
+	QueryNotes2025(compCode string, teamNumber string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
 	ReturnPitImages() ([]db.PitImage, error)
 	AddNotes(db.NotesData) error
+	AddNotes2025(db.NotesData2025) error
 	AddPitImage(db.PitImage) error
 	AddDriverRanking(db.DriverRankingData) error
 	AddAction(db.Action) error
@@ -482,6 +497,56 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	w.Write(builder.FinishedBytes())
 }
 
+type submitNote2025ScoutingHandler struct {
+	db Database
+}
+
+func (handler submitNote2025ScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "SubmitNotes2025", submit_notes_2025.GetRootAsSubmitNotes2025)
+	if !success {
+		return
+	}
+
+	err = handler.db.AddNotes2025(db.NotesData2025{
+		CompCode:             string(request.CompCode()),
+		TeamNumber:           string(request.TeamNumber()),
+		MatchNumber:          request.MatchNumber(),
+		SetNumber:            request.SetNumber(),
+		CompLevel:            string(request.CompLevel()),
+		Notes:                string(request.Notes()),
+		GoodDriving:          bool(request.GoodDriving()),
+		BadDriving:           bool(request.BadDriving()),
+		CoralGroundIntake:    bool(request.CoralGroundIntake()),
+		CoralHpIntake:        bool(request.CoralHpIntake()),
+		AlgaeGroundIntake:    bool(request.AlgaeGroundIntake()),
+		SolidAlgaeShooting:   bool(request.SolidAlgaeShooting()),
+		SketchyAlgaeShooting: bool(request.SketchyAlgaeShooting()),
+		SolidCoralShooting:   bool(request.SolidCoralShooting()),
+		SketchyCoralShooting: bool(request.SketchyCoralShooting()),
+		ShuffleCoral:         bool(request.ShuffleCoral()),
+		Penalties:            bool(request.Penalties()),
+		GoodDefense:          bool(request.GoodDefense()),
+		BadDefense:           bool(request.BadDefense()),
+		EasilyDefended:       bool(request.EasilyDefended()),
+		NoShow:               bool(request.NoShow()),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes 2025: %v", err))
+		return
+	}
+
+	var response SubmitNotes2025ResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type submitPitImageScoutingHandler struct {
 	db Database
 }
@@ -800,6 +865,38 @@ func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *
 	w.Write(builder.FinishedBytes())
 }
 
+type requestNotes2025ForTeamHandler struct {
+	db Database
+}
+
+func (handler requestNotes2025ForTeamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "RequestNotes2025ForTeam", request_notes_2025_for_team.GetRootAsRequestNotes2025ForTeam)
+	if !success {
+		return
+	}
+
+	notes, err := handler.db.QueryNotes2025(string(request.CompCode()), string(request.TeamNumber()))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query notes 2025: %v", err))
+		return
+	}
+
+	var response RequestNotes2025ForTeamResponseT
+	for _, data := range notes {
+		response.Notes2025 = append(response.Notes2025, &request_notes_2025_for_team_response.Note2025T{data})
+	}
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type requestShiftScheduleHandler struct {
 	db Database
 }
@@ -1025,6 +1122,60 @@ func (handler requestAllNotesHandler) ServeHTTP(w http.ResponseWriter, req *http
 			MatchNumber:    note.MatchNumber,
 			CompLevel:      note.CompLevel,
 			SetNumber:      note.SetNumber,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type requestAllNotes2025Handler struct {
+	db Database
+}
+
+func (handler requestAllNotes2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "RequestAllNotes2025", request_all_notes_2025.GetRootAsRequestAllNotes2025)
+	if !success {
+		return
+	}
+
+	notes, err := handler.db.ReturnAllNotes2025(string(request.CompCode()))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
+		return
+	}
+
+	var response RequestAllNotes2025ResponseT
+	for _, note := range notes {
+		response.Note2025List = append(response.Note2025List, &request_all_notes_2025_response.Note2025T{
+			CompCode:             note.CompCode,
+			TeamNumber:           note.TeamNumber,
+			MatchNumber:          note.MatchNumber,
+			SetNumber:            note.SetNumber,
+			CompLevel:            note.CompLevel,
+			Notes:                note.Notes,
+			GoodDriving:          note.GoodDriving,
+			BadDriving:           note.BadDriving,
+			CoralGroundIntake:    note.CoralGroundIntake,
+			CoralHpIntake:        note.CoralHpIntake,
+			AlgaeGroundIntake:    note.AlgaeGroundIntake,
+			SolidAlgaeShooting:   note.SolidAlgaeShooting,
+			SketchyAlgaeShooting: note.SketchyAlgaeShooting,
+			SolidCoralShooting:   note.SolidCoralShooting,
+			SketchyCoralShooting: note.SketchyCoralShooting,
+			ShuffleCoral:         note.ShuffleCoral,
+			Penalties:            note.Penalties,
+			GoodDefense:          note.GoodDefense,
+			BadDefense:           note.BadDefense,
+			EasilyDefended:       note.EasilyDefended,
+			NoShow:               note.NoShow,
 		})
 	}
 
@@ -1331,16 +1482,19 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
+	scoutingServer.Handle("/requests/request/all_notes_2025", requestAllNotes2025Handler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
 	scoutingServer.Handle("/requests/request/averaged_driver_rankings_2025", RequestAveragedDriverRankings2025Handler{db})
 	scoutingServer.Handle("/requests/request/averaged_human_rankings_2025", RequestAveragedHumanRankings2025Handler{db})
 	scoutingServer.Handle("/requests/request/2024_data_scouting", request2024DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
+	scoutingServer.Handle("/requests/submit/submit_notes_2025", submitNote2025ScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/pit_images", requestPitImagesHandler{db})
 	scoutingServer.Handle("/requests/request/all_pit_images", requestAllPitImagesHandler{db})
 	scoutingServer.Handle("/requests/request/current_scouting", requestCurrentScoutingHandler{make(map[string]map[string]time.Time), db, clock})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
+	scoutingServer.Handle("/requests/request/notes_2025_for_team", requestNotes2025ForTeamHandler{db})
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})

@@ -1,0 +1,9 @@
+namespace scouting.webserver.requests;
+
+table RequestNotes2025ForTeam {
+  comp_code:string (id: 0);
+  team_number:string (id: 1);
+}
+
+root_type RequestNotes2025ForTeam;
+

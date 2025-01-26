@@ -149,6 +149,71 @@ class TestDebugCli(unittest.TestCase):
             CompLevel: (string) (len=2) "qm"
             }"""), stdout)
 
+    def test_submit_and_request_notes_2025(self):
+        self.start_servers(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "comp_code": "2020mttd",
+            "team_number": "100",
+            "match_number": 3,
+            "set_number": 1,
+            "comp_level": "qm",
+            "notes": "A very inspiring and useful comment",
+            "good_driving": True,
+            "bad_driving": False,
+            "coral_ground_intake": False,
+            "coral_hp_intake": True,
+            "algae_ground_intake": True,
+            "solid_algae_shooting": False,
+            "sketchy_algae_shooting": False,
+            "solid_coral_shooting": False,
+            "sketchy_coral_shooting": False,
+            "shuffle_coral": False,
+            "penalties": False,
+            "good_defense": True,
+            "bad_defense": True,
+            "easily_defended": True,
+            "no_show": False,
+        })
+        exit_code, _, stderr = run_debug_cli(["-submitNotes2025", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({
+            "comp_code": "2020mttd",
+        })
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAllNotes2025", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(
+            textwrap.dedent("""\
+            {
+            CompCode: (string) (len=8) "2020mttd",
+            TeamNumber: (string) (len=3) "100",
+            MatchNumber: (int32) 3,
+            SetNumber: (int32) 1,
+            CompLevel: (string) (len=2) "qm",
+            Notes: (string) (len=35) "A very inspiring and useful comment",
+            GoodDriving: (bool) true,
+            BadDriving: (bool) false,
+            CoralGroundIntake: (bool) false,
+            CoralHpIntake: (bool) true,
+            AlgaeGroundIntake: (bool) true,
+            SolidAlgaeShooting: (bool) false,
+            SketchyAlgaeShooting: (bool) false,
+            SolidCoralShooting: (bool) false,
+            SketchyCoralShooting: (bool) false,
+            ShuffleCoral: (bool) false,
+            Penalties: (bool) false,
+            GoodDefense: (bool) true,
+            BadDefense: (bool) true,
+            EasilyDefended: (bool) true,
+            NoShow: (bool) false
+            }"""), stdout)
+
     def test_submit_and_request_driver_ranking(self):
         self.start_servers(year=2020, event_code="fake")
 
