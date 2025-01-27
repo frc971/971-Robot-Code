@@ -107,6 +107,7 @@ type Action struct {
 	SetNumber   int32  `gorm:"primaryKey"`
 	CompLevel   string `gorm:"primaryKey"`
 	CompType    string `gorm:"primaryKey"`
+	CompCode    string `gorm:"primaryKey"`
 	// This contains a serialized scouting.webserver.requests.ActionType flatbuffer.
 	CompletedAction []byte
 	Timestamp       int64 `gorm:"primaryKey"`
@@ -404,6 +405,12 @@ func (database *Database) ReturnStats2024() ([]Stats2024, error) {
 	var stats2024 []Stats2024
 	result := database.Find(&stats2024)
 	return stats2024, result.Error
+}
+
+func (database *Database) ReturnStats2025() ([]Stats2025, error) {
+	var stats2025 []Stats2025
+	result := database.Find(&stats2025)
+	return stats2025, result.Error
 }
 
 func (database *Database) QueryStats2025(CompCode string) ([]Stats2025, error) {
