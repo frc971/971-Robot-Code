@@ -3,6 +3,20 @@
 
 namespace y2025::control_loops {
 
+using frc971::control_loops::swerve::LinearVelocityController;
+
+LinearVelocityController::ControllerWeights CreateWeights(
+    const y2025::VelocityControllerWeights *weights) {
+  return LinearVelocityController::ControllerWeights{
+      .thetas_q = weights->thetas_q(),
+      .omegas_q = weights->omegas_q(),
+      .vel_q = weights->vel_q(),
+      .theta_q = weights->theta_q(),
+      .omega_q = weights->omega_q(),
+      .steer_current_r = weights->steer_current_r(),
+      .drive_current_r = weights->drive_current_r()};
+}
+
 template <typename Scalar>
 frc971::control_loops::swerve::SimplifiedDynamics<Scalar>::Parameters
 MakeSwerveParameters() {
