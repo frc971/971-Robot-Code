@@ -23,6 +23,16 @@ type TeamMatch struct {
 	TeamNumber       string
 }
 
+type TeamMatch2025 struct {
+	MatchNumber      int32  `gorm:"primaryKey"`
+	CompCode         string `gorm:"primaryKey"`
+	SetNumber        int32  `gorm:"primaryKey"`
+	CompLevel        string `gorm:"primaryKey"`
+	Alliance         string `gorm:"primaryKey"` // "R" or "B"
+	AlliancePosition int32  `gorm:"primaryKey"` // 1, 2, or 3
+	TeamNumber       string
+}
+
 type Shift struct {
 	MatchNumber                                                      int32 `gorm:"primaryKey"`
 	R1scouter, R2scouter, R3scouter, B1scouter, B2scouter, B3scouter string
@@ -64,6 +74,31 @@ type Stats2024 struct {
 	// "unknown" if submitted without logging in.
 	// Empty if the stats have not yet been collected.
 	CollectedBy string
+}
+
+type Stats2025 struct {
+	CompCode                           string `gorm:"primaryKey"`
+	TeamNumber                         string `gorm:"primaryKey"`
+	MatchNumber                        int32  `gorm:"primaryKey"`
+	SetNumber                          int32  `gorm:"primaryKey"`
+	CompLevel                          string `gorm:"primaryKey"`
+	CompType                           string `gorm:"primaryKey"`
+	StartingQuadrant                   int32
+	L1Auto, L2Auto, L3Auto, L4Auto     int32
+	NetAuto, ProcessorAuto             int32
+	CoralDroppedAuto, AlgaeDroppedAuto int32
+	CoralMissedAuto, AlgaeMissedAuto   int32
+	MobilityAuto                       bool
+	//teleop
+	L1Teleop, L2Teleop, L3Teleop, L4Teleop   int32
+	ProcessorTeleop, NetTeleop               int32
+	CoralDroppedTeleop, AlgaeDroppedTeleop   int32
+	CoralMissedTeleop, AlgaeMissedTeleop     int32
+	AvgCycle                                 int64
+	RobotDied                                bool
+	Park, ShallowCage, DeepCage, BuddieClimb bool
+	NoShow                                   bool
+	CollectedBy                              string
 }
 
 type Action struct {
@@ -159,7 +194,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2024{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &TeamMatch2025{}, &Shift{}, &Stats2024{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -181,6 +216,13 @@ func (database *Database) SetDebugLogLevel() {
 }
 
 func (database *Database) AddToMatch(m TeamMatch) error {
+	result := database.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&m)
+	return result.Error
+}
+
+func (database *Database) AddToMatch2025(m TeamMatch2025) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&m)
@@ -230,11 +272,43 @@ func (database *Database) AddToStats2024(s Stats2024) error {
 	return result.Error
 }
 
+func (database *Database) AddToStats2025(s Stats2025) error {
+	if s.CompType == "Regular" {
+		matches, err := database.queryMatches2025(s.TeamNumber, s.CompCode)
+		if err != nil {
+			return err
+		}
+		foundMatch := false
+		for _, match := range matches {
+			if match.MatchNumber == s.MatchNumber {
+				foundMatch = true
+				break
+			}
+		}
+		if !foundMatch {
+			return errors.New(fmt.Sprint(
+				"Failed to find team ", s.TeamNumber,
+				" in match ", s.MatchNumber, " in the schedule."))
+		}
+	}
+
+	result := database.Create(&s)
+	return result.Error
+}
+
 func (database *Database) DeleteFromStats2024(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	var stats2024 []Stats2024
 	result := database.
 		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
 		Delete(&stats2024)
+	return result.Error
+}
+
+func (database *Database) DeleteFromStats2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	var stats2025 []Stats2025
+	result := database.
+		Where("comp_code = ? AND comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compCode_, compLevel_, matchNumber_, setNumber_, teamNumber_).
+		Delete(&stats2025)
 	return result.Error
 }
 
@@ -301,6 +375,15 @@ func (database *Database) ReturnStats2024() ([]Stats2024, error) {
 	return stats2024, result.Error
 }
 
+func (database *Database) QueryStats2025(CompCode string) ([]Stats2025, error) {
+	var stats2025 []Stats2025
+	result := database.
+		Where("comp_code = ? ",
+			CompCode).
+		Find(&stats2025).Order("team_number").Order("match_number")
+	return stats2025, result.Error
+}
+
 func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]Stats2024, error) {
 	var stats2024 []Stats2024
 	result := database.
@@ -308,6 +391,15 @@ func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber 
 			teamNumber, matchNumber, setNumber, compLevel, compType).
 		Find(&stats2024)
 	return stats2024, result.Error
+}
+
+func (database *Database) ReturnStats2025ForTeam(compCode string, teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]Stats2025, error) {
+	var stats2025 []Stats2025
+	result := database.
+		Where(" comp_code = ? AND team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND comp_type = ?",
+			compCode, teamNumber, matchNumber, setNumber, compLevel, compType).
+		Find(&stats2025)
+	return stats2025, result.Error
 }
 
 func (database *Database) ReturnRankings() ([]Ranking, error) {
@@ -320,6 +412,14 @@ func (database *Database) queryMatches(teamNumber_ string) ([]TeamMatch, error) 
 	var matches []TeamMatch
 	result := database.
 		Where("team_number = $1", teamNumber_).
+		Find(&matches)
+	return matches, result.Error
+}
+
+func (database *Database) queryMatches2025(teamNumber_ string, compCode string) ([]TeamMatch2025, error) {
+	var matches []TeamMatch2025
+	result := database.
+		Where("team_number = $1 AND comp_code = $2", teamNumber_, compCode).Order("comp_code").Order("match_number").
 		Find(&matches)
 	return matches, result.Error
 }

@@ -234,6 +234,143 @@ func TestAddToStats2024DB(t *testing.T) {
 	}
 }
 
+func TestAddToStats2025DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2025{
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "432",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: true, NoShow: false, CollectedBy: "jimmy",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "52A",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
+			CoralDroppedAuto: 0, AlgaeDroppedAuto: 0, CoralMissedAuto: 0, AlgaeMissedAuto: 0,
+			MobilityAuto: false,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: true, NoShow: false, CollectedBy: "frank",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "745",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: false,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false,
+		},
+		Stats2025{
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "894",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			L1Auto: 3, L2Auto: 1, L3Auto: 2, L4Auto: 1, NetAuto: 0, ProcessorAuto: 1,
+			CoralDroppedAuto: 1, AlgaeDroppedAuto: 0, CoralMissedAuto: 1, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     4, L2Teleop: 2, L3Teleop: 3, L4Teleop: 1,
+			ProcessorTeleop: 2, NetTeleop: 1,
+			CoralDroppedTeleop: 3, AlgaeDroppedTeleop: 2,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: false,
+			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "maddie",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "934",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Practice", TeamNumber: "942",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
+			CoralDroppedAuto: 0, AlgaeDroppedAuto: 0, CoralMissedAuto: 0, AlgaeMissedAuto: 0,
+			MobilityAuto: false,
+			L1Teleop:     0, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 0, NetTeleop: 0,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0,
+			CoralMissedTeleop: 0, AlgaeMissedTeleop: 0,
+			AvgCycle: 0, RobotDied: false,
+			Park: false, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "georgia",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "942",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 1, AlgaeDroppedAuto: 2, CoralMissedAuto: 1, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "fiona",
+		},
+	}
+
+	matches := []TeamMatch2025{
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "745"},
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "934"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch2025(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2025(correct[i])
+		check(t, err, "Failed to add 2025stats to DB")
+	}
+
+	got, err := fixture.db.QueryStats2025("fakeCompCode")
+	check(t, err, "Failed QueryStats2025()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestInsertPreScoutedStats2024(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -262,21 +399,28 @@ func TestInsertPreScoutedStats2024(t *testing.T) {
 	check(t, err, "Failed to add prescouted stats to DB")
 }
 
-func TestInsertPracticeMatchStats2024(t *testing.T) {
+func TestInsertPracticeMatchStats2025(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	stats := Stats2024{
+	stats := Stats2025{
+
+		CompCode: "fakeCompCode",
 		CompType: "Regular", TeamNumber: "6344",
 		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
-		SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
-		Speaker: 0, Amp: 5, SpeakerAmplified: 1,
-		NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
-		Park: true, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "emma",
+		L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+		CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+		MobilityAuto: true,
+		L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+		ProcessorTeleop: 2, NetTeleop: 3,
+		CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
+		CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+		AvgCycle: 0, RobotDied: true,
+		Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
 	}
 
 	// Attempt to insert the non-practice match data and make sure it fails.
-	err := fixture.db.AddToStats2024(stats)
+	err := fixture.db.AddToStats2025(stats)
 	if err == nil {
 		t.Fatal("Expected error from inserting the stats.")
 	}
@@ -286,8 +430,100 @@ func TestInsertPracticeMatchStats2024(t *testing.T) {
 
 	// Mark the data as practice match data. It should now succeed.
 	stats.CompType = "Practice"
-	err = fixture.db.AddToStats2024(stats)
+	err = fixture.db.AddToStats2025(stats)
 	check(t, err, "Failed to add prescouted stats to DB")
+}
+
+func TestQueryingStats2025ByTeam(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := []Stats2025{
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "328A",
+			MatchNumber: 7, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 4, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "emma",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "978",
+			MatchNumber: 2, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 4,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "328A",
+			MatchNumber: 4, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     4, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
+		},
+	}
+
+	matches := []TeamMatch2025{
+
+		TeamMatch2025{MatchNumber: 7, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "328A"},
+		TeamMatch2025{MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 2, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "978"},
+		TeamMatch2025{MatchNumber: 4, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "328A"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch2025(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := range stats {
+		err := fixture.db.AddToStats2025(stats[i])
+		check(t, err, "Failed to add 2025stats to DB")
+	}
+
+	// Validate that requesting status for a single team gets us the
+	// expected data.
+	statsFor328A, err := fixture.db.ReturnStats2025ForTeam("fakeCompCode", "328A", 7, 1, "qm", "Regular")
+
+	check(t, err, "Failed ReturnStats2025()")
+
+	if !reflect.DeepEqual([]Stats2025{stats[0]}, statsFor328A) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsFor328A, stats[0])
+	}
+	// Validate that requesting team data for a non-existent match returns
+	// nothing.
+	statsForMissing, err := fixture.db.ReturnStats2025ForTeam("fakeCompCode", "6344", 9, 1, "qm", "Regular")
+
+	check(t, err, "Failed ReturnStats2025()")
+
+	if !reflect.DeepEqual([]Stats2025{}, statsForMissing) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsForMissing, []Stats2025{})
+	}
 }
 
 func TestQueryingStats2024ByTeam(t *testing.T) {
@@ -447,6 +683,136 @@ func TestDeleteFromStats2024(t *testing.T) {
 
 	got, err := fixture.db.ReturnStats2024()
 	check(t, err, "Failed ReturnStats2024()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestDeleteFromStats2025(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	startingStats := []Stats2025{
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "345",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "bailey",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "645",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 2, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 1, L3Teleop: 5, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 3, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "kate",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "323",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     3, L2Teleop: 4, L3Teleop: 2, L4Teleop: 0,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "tyler",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "542",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     1, L2Teleop: 0, L3Teleop: 0, L4Teleop: 7,
+			ProcessorTeleop: 2, NetTeleop: 3,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 4,
+			CoralMissedTeleop: 1, AlgaeMissedTeleop: 0,
+			AvgCycle: 0, RobotDied: true,
+			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "max",
+		},
+	}
+
+	correct := []Stats2025{
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "345",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "bailey",
+		},
+	}
+
+	originalMatches := []TeamMatch2025{
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "345"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "645"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "323"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "542"},
+	}
+
+	// Matches for which we want to delete the stats.
+	matches := []TeamMatch2025{
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "645"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "323"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "542"},
+	}
+
+	for _, match := range originalMatches {
+		err := fixture.db.AddToMatch2025(match)
+		check(t, err, "Failed to add match")
+		fmt.Println("Match has been added : ", match.TeamNumber)
+	}
+
+	for _, stat := range startingStats {
+		err := fixture.db.AddToStats2025(stat)
+		check(t, err, "Failed to add stat")
+	}
+
+	for _, match := range matches {
+		err := fixture.db.DeleteFromStats2025(match.CompCode, match.CompLevel, match.MatchNumber, match.SetNumber, match.TeamNumber)
+		check(t, err, "Failed to delete stat2025")
+	}
+
+	got, err := fixture.db.QueryStats2025("fakeCompCode")
+	check(t, err, "Failed QueryStats2025()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
@@ -806,6 +1172,102 @@ func TestReturnRankingsDB(t *testing.T) {
 
 	got, err := fixture.db.ReturnRankings()
 	check(t, err, "Failed ReturnRankings()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestReturnStats2025DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2025{
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Practice4", TeamNumber: "432",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 3, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     1, L2Teleop: 1, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "henry",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "52A",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     3, L2Teleop: 1, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "jordan",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Practice", TeamNumber: "894",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 1, ProcessorAuto: 0,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     6, L2Teleop: 0, L3Teleop: 0, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "emma",
+		},
+		Stats2025{
+
+			CompCode: "fakeCompCode",
+			CompType: "Regular", TeamNumber: "942",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			L1Auto: 2, L2Auto: 4, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
+			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
+			MobilityAuto: true,
+			L1Teleop:     3, L2Teleop: 0, L3Teleop: 3, L4Teleop: 3,
+			ProcessorTeleop: 2, NetTeleop: 4,
+			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
+			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
+			AvgCycle: 0, RobotDied: true,
+			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "harry",
+		},
+	}
+
+	matches := []TeamMatch2025{
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch2025(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2025(correct[i])
+		check(t, err, fmt.Sprint("Failed to add stats ", i))
+	}
+
+	got, err := fixture.db.QueryStats2025("fakeCompCode")
+	check(t, err, "Failed QueryStats2025()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
