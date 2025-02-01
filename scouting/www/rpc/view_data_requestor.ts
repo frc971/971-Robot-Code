@@ -6,11 +6,16 @@ import {
   Note,
   RequestAllNotesResponse,
 } from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_response_generated';
-import {RequestAllDriverRankings} from '@org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_generated';
+import {RequestAveragedDriverRankings2025} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_generated';
 import {
-  Ranking,
-  RequestAllDriverRankingsResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_response_generated';
+  DriverRanking2025,
+  RequestAveragedDriverRankings2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response_generated';
+import {RequestAveragedHumanRankings2025} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_generated';
+import {
+  HumanRanking2025,
+  RequestAveragedHumanRankings2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
 import {Request2024DataScouting} from '@org_frc971/scouting/webserver/requests/messages/request_2024_data_scouting_generated';
 import {
   PitImage,
@@ -62,25 +67,86 @@ export class ViewDataRequestor {
     }
     return noteList;
   }
-  // Returns all driver ranking entries from the database.
-  async fetchDriverRankingList(): Promise<Ranking[]> {
-    let fbBuffer = await this.fetchFromServer(
-      RequestAllDriverRankings.startRequestAllDriverRankings,
-      RequestAllDriverRankings.endRequestAllDriverRankings,
-      '/requests/request/all_driver_rankings'
+  // Returns driver ranking entries from the database.
+  async fetchDriverRanking2025List(
+    comp_code: string
+  ): Promise<DriverRanking2025[]> {
+    const builder = new Builder();
+
+    builder.finish(
+      RequestAveragedDriverRankings2025.createRequestAveragedDriverRankings2025(
+        builder,
+        builder.createString(comp_code)
+      )
     );
 
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/request/averaged_driver_rankings_2025', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    const resBuffer = await res.arrayBuffer();
+    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+
+    if (!res.ok) {
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      throw `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+    }
+
     const parsedResponse =
-      RequestAllDriverRankingsResponse.getRootAsRequestAllDriverRankingsResponse(
+      RequestAveragedDriverRankings2025Response.getRootAsRequestAveragedDriverRankings2025Response(
         fbBuffer
       );
     // Convert the flatbuffer list into an array. That's more useful.
     const driverRankingList = [];
-    for (let i = 0; i < parsedResponse.driverRankingListLength(); i++) {
-      driverRankingList.push(parsedResponse.driverRankingList(i));
+    for (let i = 0; i < parsedResponse.rankings2025ListLength(); i++) {
+      driverRankingList.push(parsedResponse.rankings2025List(i));
     }
     return driverRankingList;
   }
+
+  // Returns human ranking entries from the database.
+  async fetchHumanRanking2025List(
+    comp_code: string
+  ): Promise<HumanRanking2025[]> {
+    const builder = new Builder();
+
+    builder.finish(
+      RequestAveragedHumanRankings2025.createRequestAveragedHumanRankings2025(
+        builder,
+        builder.createString(comp_code)
+      )
+    );
+
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/request/averaged_human_rankings_2025', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    const resBuffer = await res.arrayBuffer();
+    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+
+    if (!res.ok) {
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      throw `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+    }
+
+    const parsedResponse =
+      RequestAveragedHumanRankings2025Response.getRootAsRequestAveragedHumanRankings2025Response(
+        fbBuffer
+      );
+    // Convert the flatbuffer list into an array. That's more useful.
+    const humanRankingList = [];
+    for (let i = 0; i < parsedResponse.rankings2025ListLength(); i++) {
+      humanRankingList.push(parsedResponse.rankings2025List(i));
+    }
+    return humanRankingList;
+  }
+
   // Returns all data scouting entries from the database.
   async fetchStats2024List(): Promise<Stats2024[]> {
     let fbBuffer = await this.fetchFromServer(

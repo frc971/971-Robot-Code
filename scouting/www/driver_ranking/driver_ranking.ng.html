@@ -1,20 +1,33 @@
 <div class="header">
-  <h2>Driver Ranking</h2>
+  <h2>Ranking</h2>
 </div>
 
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
-    <label for="match_number_selection">Match Number</label>
-    <input
-      [(ngModel)]="match_number"
-      type="number"
-      id="match_number_selection"
-      min="1"
-      max="9999"
-    />
-    <br />
-    <br />
-    <div *ngIf="team_ranking.length==3">
+    <div>
+      <label for="comp_code_collection">Comp Code</label>
+      <select
+        name="comp_code_selection"
+        id="comp_code_selection"
+        [(ngModel)]="comp_code"
+      >
+        <option value="none">N/A</option>
+        <option value="2025camb">Pinnacles</option>
+        <option value="2025cave">Ventura</option>
+        <option value="2025cafr">Central Valley</option>
+      </select>
+    </div>
+    <div>
+      <label for="match_number_selection">Match Number</label>
+      <input
+        [(ngModel)]="match_number"
+        type="number"
+        id="match_number_selection"
+        min="1"
+        max="9999"
+      />
+    </div>
+    <div>
       <label>Team Numbers</label>
       <input
         *ngFor="let x of [1,2,3]; let i = index;"
@@ -23,13 +36,12 @@
         id="team_input_{{i}}"
       />
     </div>
-    <div *ngIf="team_ranking.length==6">
-      <label>Team Numbers</label>
+    <div>
+      <label>Human Player Team</label>
       <input
-        *ngFor="let x of [1,2,3,4,5,6]; let i = index;"
-        [(ngModel)]="team_ranking[i]"
+        [(ngModel)]="human_player_team"
         type="text"
-        id="team_input_{{i}}"
+        id="human_player_team"
       />
     </div>
     <button
@@ -41,66 +53,51 @@
     </button>
   </div>
 
-  <div *ngSwitchCase="'TeamSelectionAdd'">
-    <label>Team Numbers</label>
-    <input
-      *ngFor="let x of [1,2,3]; let i = index;"
-      [(ngModel)]="added_teams[i]"
-      type="text"
-      id="team_input_{{i}}"
-    />
-    <button
-      class="btn btn-primary"
-      (click)="addTeamNumbers()"
-      id="select_button"
-    >
-      Add
-    </button>
-  </div>
-
   <div *ngSwitchCase="'Data'">
     <h4 id="match_number_heading">Match #{{match_number}}</h4>
+    <h2>Driver Rankings:</h2>
     <div *ngFor="let team_key of team_ranking; let i = index">
       <div class="d-flex flex-row justify-content-center pt-2">
         <div class="d-flex flex-row">
-          <h4 class="align-self-center" id="team_rank_label_{{i}}">
-            {{i + 1}}
-          </h4>
           <h1 class="align-self-center" id="team_key_label_{{i}}">
             {{team_key}}
           </h1>
         </div>
-        <button
-          class="btn btn-success"
-          (click)="rankUp(i)"
-          id="up_button_{{i}}"
-        >
-          &uarr;
-        </button>
-        <!--&uarr; is the html code for an up arrow-->
-        <button
-          class="btn btn-danger"
-          (click)="rankDown(i)"
-          id="down_button_{{i}}"
-        >
-          &darr;
-        </button>
-        <!--&darr; is the html code for a down arrow-->
+        <input
+          id="rank_{{i}}"
+          [(ngModel)]="rankings[i]"
+          type="range"
+          min="1"
+          max="5"
+          value="1"
+        />
+        <p id="label_{{i}}">{{rankings[i]}}</p>
+      </div>
+    </div>
+    <div>
+      <h2>Human Player Ranking:</h2>
+      <div class="d-flex flex-row justify-content-center pt-2">
+        <div class="d-flex flex-row">
+          <h1 id="hp_team_label" class="align-self-center">
+            {{human_player_team}}
+          </h1>
+        </div>
+
+        <input
+          id="hp_rank"
+          [(ngModel)]="human_player_ranking"
+          type="range"
+          min="1"
+          max="3"
+          value="1"
+        />
+        <p id="hp_label">{{human_player_ranking}}</p>
       </div>
     </div>
     <div class="d-flex flex-row justify-content-center pt-2">
       <div>
         <button class="btn btn-secondary" (click)="editTeams()">
           Edit Teams
-        </button>
-      </div>
-      <div *ngIf="team_ranking.length != 6">
-        <button
-          id="add-team-button"
-          class="btn btn-primary"
-          (click)="addTeams()"
-        >
-          Add Teams
         </button>
       </div>
       <div>
