@@ -85,12 +85,20 @@ func main() {
 		"The end point where the server is listening.")
 	submitDriverRankingPtr := flag.String("submitDriverRanking", "",
 		"If specified, parse the file as a submitDriverRanking JSON request.")
+	submitDriverRanking2025Ptr := flag.String("submitDriverRanking2025", "",
+		"If specified, parse the file as a submitDriverRanking2025 JSON request.")
+	submitHumanRanking2025Ptr := flag.String("submitHumanRanking2025", "",
+		"If specified, parse the file as a submitHumanRanking2025 JSON request.")
 	submitNotesPtr := flag.String("submitNotes", "",
 		"If specified, parse the file as a submitNotes JSON request.")
 	requestAllMatchesPtr := flag.String("requestAllMatches", "",
 		"If specified, parse the file as a RequestAllMatches JSON request.")
 	requestAllDriverRankingsPtr := flag.String("requestAllDriverRankings", "",
 		"If specified, parse the file as a requestAllDriverRankings JSON request.")
+	requestAveragedDriverRankings2025Ptr := flag.String("requestAveragedDriverRankings2025", "",
+		"If specified, parse the file as a requestAveragedDriverRankings2025 JSON request.")
+	requestAveragedHumanRankings2025Ptr := flag.String("requestAveragedHumanRankings2025", "",
+		"If specified, parse the file as a requestAveragedHumanRankings2025 JSON request.")
 	requestAllNotesPtr := flag.String("requestAllNotes", "",
 		"If specified, parse the file as a requestAllNotes JSON request.")
 	requestCurrentScoutingPtr := flag.String("requestCurrentScouting", "",
@@ -116,6 +124,18 @@ func main() {
 		*submitDriverRankingPtr,
 		*addressPtr,
 		debug.SubmitDriverRanking)
+	maybePerformRequest(
+		"submitDriverRanking2025",
+		"scouting/webserver/requests/messages/submit_driver_ranking_2025.fbs",
+		*submitDriverRanking2025Ptr,
+		*addressPtr,
+		debug.SubmitDriverRanking2025)
+	maybePerformRequest(
+		"submitHumanRanking2025",
+		"scouting/webserver/requests/messages/submit_human_ranking_2025.fbs",
+		*submitHumanRanking2025Ptr,
+		*addressPtr,
+		debug.SubmitHumanRanking2025)
 
 	maybePerformRequest(
 		"RequestAllMatches",
@@ -130,6 +150,18 @@ func main() {
 		*requestAllDriverRankingsPtr,
 		*addressPtr,
 		debug.RequestAllDriverRankings)
+	maybePerformRequest(
+		"requestAveragedDriverRankings2025",
+		"scouting/webserver/requests/messages/request_averaged_driver_rankings_2025.fbs",
+		*requestAveragedDriverRankings2025Ptr,
+		*addressPtr,
+		debug.RequestAveragedDriverRankings2025)
+	maybePerformRequest(
+		"requestAveragedHumanRankings2025",
+		"scouting/webserver/requests/messages/request_averaged_human_rankings_2025.fbs",
+		*requestAveragedHumanRankings2025Ptr,
+		*addressPtr,
+		debug.RequestAveragedHumanRankings2025)
 
 	maybePerformRequest(
 		"requestAllNotes",
