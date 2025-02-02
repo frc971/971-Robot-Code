@@ -174,8 +174,11 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   const double raw_vy =
       -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
 
-  const double speed = kVelScale * aos::Deadband(std::hypot(raw_vx, raw_vy),
-                                                 kMovementDeadband, 1.0);
+  // Link to the cubicish function: https://www.desmos.com/3d/shvumybi1g
+  // TODO add a deadband (currently there is none)
+  const double speed =
+      kVelScale * aos::Deadband(std::hypot(pow(raw_vx, 3), pow(raw_vy, 3)),
+                                kMovementDeadband, 1.0);
   const double theta = std::atan2(raw_vy, raw_vx);
 
   const double vx = speed * std::cos(theta);
