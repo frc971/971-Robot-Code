@@ -70,6 +70,24 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "tensorrt",
+    srcs = glob(
+        include = [
+            "usr/lib/libnvinfer*",
+            "usr/lib/libnvonnx*",
+        ],
+    ),
+    hdrs = glob(
+        include = [
+            "usr/include/NvInfer*.h",
+            "usr/include/NvOnnx*.h",
+        ],
+    ),
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "gstreamer1.0-plugins-bad-dev-filegroup",
     srcs = [
@@ -8027,7 +8045,6 @@ filegroup(
         "usr/include/opencv4/opencv2/core_detect.hpp",
         "usr/include/opencv4/opencv2/cudaarithm.hpp",
         "usr/include/opencv4/opencv2/cudabgsegm.hpp",
-        "usr/include/opencv4/opencv2/cudacodec.hpp",
         "usr/include/opencv4/opencv2/cudafeatures2d.hpp",
         "usr/include/opencv4/opencv2/cudafilters.hpp",
         "usr/include/opencv4/opencv2/cudaimgproc.hpp",
@@ -8526,7 +8543,7 @@ filegroup(
         "usr/lib/cmake/opencv4/OpenCVConfig-version.cmake",
         "usr/lib/cmake/opencv4/OpenCVModules.cmake",
         "usr/lib/cmake/opencv4/OpenCVModules-release.cmake",
-        "usr/lib/pkgconfig/opencv4.pc",
+        "usr/lib/pkgconfig/opencv.pc",
         ":opencv-filegroup",
     ],
 )
@@ -8683,7 +8700,6 @@ cc_library(
         "usr/include/opencv4/opencv2/core_detect.hpp",
         "usr/include/opencv4/opencv2/cudaarithm.hpp",
         "usr/include/opencv4/opencv2/cudabgsegm.hpp",
-        "usr/include/opencv4/opencv2/cudacodec.hpp",
         "usr/include/opencv4/opencv2/cudafeatures2d.hpp",
         "usr/include/opencv4/opencv2/cudafilters.hpp",
         "usr/include/opencv4/opencv2/cudaimgproc.hpp",
@@ -9198,7 +9214,6 @@ filegroup(
         ":libopencv-core405-filegroup",
         ":libopencv-cudaarithm405-filegroup",
         ":libopencv-cudabgsegm405-filegroup",
-        ":libopencv-cudacodec405-filegroup",
         ":libopencv-cudafeatures2d405-filegroup",
         ":libopencv-cudafilters405-filegroup",
         ":libopencv-cudaimgproc405-filegroup",
@@ -9275,7 +9290,6 @@ cc_library(
         ":libopencv-core405-headers",
         ":libopencv-cudaarithm405-headers",
         ":libopencv-cudabgsegm405-headers",
-        ":libopencv-cudacodec405-headers",
         ":libopencv-cudafeatures2d405-headers",
         ":libopencv-cudafilters405-headers",
         ":libopencv-cudaimgproc405-headers",
@@ -9362,7 +9376,6 @@ filegroup(
         ":libopencv-core405-filegroup",
         ":libopencv-cudaarithm405-filegroup",
         ":libopencv-cudabgsegm405-filegroup",
-        ":libopencv-cudacodec405-filegroup",
         ":libopencv-cudafeatures2d405-filegroup",
         ":libopencv-cudafilters405-filegroup",
         ":libopencv-cudaimgproc405-filegroup",
@@ -9433,7 +9446,6 @@ cc_library(
         ":libopencv-core405-headers",
         ":libopencv-cudaarithm405-headers",
         ":libopencv-cudabgsegm405-headers",
-        ":libopencv-cudacodec405-headers",
         ":libopencv-cudafeatures2d405-headers",
         ":libopencv-cudafilters405-headers",
         ":libopencv-cudaimgproc405-headers",
@@ -12924,6 +12936,7 @@ filegroup(
         ":libgcc1-filegroup",
         ":libopencv-core405-filegroup",
         ":libopencv-imgproc405-filegroup",
+        ":libopencv-photo405-filegroup",
         ":libstdc++6-filegroup",
     ],
 )
@@ -12937,6 +12950,37 @@ cc_library(
         ":libc6-headers",
         ":libgcc1-headers",
         ":libopencv-core405-headers",
+        ":libopencv-imgproc405-headers",
+        ":libopencv-photo405-headers",
+        ":libstdc++6-headers",
+    ],
+)
+
+filegroup(
+    name = "libopencv-photo405-filegroup",
+    srcs = [
+        "usr/lib/libopencv_photo.so.4.5.5",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+        ":libopencv-core405-filegroup",
+        ":libopencv-cudaarithm405-filegroup",
+        ":libopencv-cudaimgproc405-filegroup",
+        ":libopencv-imgproc405-filegroup",
+        ":libstdc++6-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libopencv-photo405-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+        ":libopencv-core405-headers",
+        ":libopencv-cudaarithm405-headers",
+        ":libopencv-cudaimgproc405-headers",
         ":libopencv-imgproc405-headers",
         ":libstdc++6-headers",
     ],
@@ -13006,6 +13050,171 @@ filegroup(
 
 cc_library(
     name = "tbb-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+        ":libstdc++6-headers",
+    ],
+)
+
+filegroup(
+    name = "libopencv-cudaimgproc405-filegroup",
+    srcs = [
+        "usr/lib/libopencv_cudaimgproc.so.4.5.5",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+        ":libnpp-filegroup",
+        ":libopencv-core405-filegroup",
+        ":libopencv-cudaarithm405-filegroup",
+        ":libopencv-cudafilters405-filegroup",
+        ":libstdc++6-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libopencv-cudaimgproc405-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+        ":libnpp-headers",
+        ":libopencv-core405-headers",
+        ":libopencv-cudaarithm405-headers",
+        ":libopencv-cudafilters405-headers",
+        ":libstdc++6-headers",
+    ],
+)
+
+filegroup(
+    name = "libopencv-cudafilters405-filegroup",
+    srcs = [
+        "usr/lib/libopencv_cudafilters.so.4.5.5",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+        ":libnpp-filegroup",
+        ":libopencv-core405-filegroup",
+        ":libopencv-cudaarithm405-filegroup",
+        ":libopencv-imgproc405-filegroup",
+        ":libstdc++6-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libopencv-cudafilters405-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+        ":libnpp-headers",
+        ":libopencv-core405-headers",
+        ":libopencv-cudaarithm405-headers",
+        ":libopencv-imgproc405-headers",
+        ":libstdc++6-headers",
+    ],
+)
+
+filegroup(
+    name = "libopencv-cudaarithm405-filegroup",
+    srcs = [
+        "usr/lib/libopencv_cudaarithm.so.4.5.5",
+        ":libc6-filegroup",
+        ":libcublas-filegroup",
+        ":libcufft-filegroup",
+        ":libgcc1-filegroup",
+        ":libnpp-filegroup",
+        ":libopencv-core405-filegroup",
+        ":libstdc++6-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libopencv-cudaarithm405-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libcublas-headers",
+        ":libcufft-headers",
+        ":libgcc1-headers",
+        ":libnpp-headers",
+        ":libopencv-core405-headers",
+        ":libstdc++6-headers",
+    ],
+)
+
+filegroup(
+    name = "libnpp-filegroup",
+    srcs = [
+        "usr/local/cuda-11.4/lib/libnppc.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppial.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppicc.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppidei.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppif.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppig.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppim.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppist.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppisu.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnppitc.so.11.4.0.287",
+        "usr/local/cuda-11.4/lib/libnpps.so.11.4.0.287",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libnpp-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+    ],
+)
+
+filegroup(
+    name = "libcufft-filegroup",
+    srcs = [
+        "usr/local/cuda-11.4/lib/libcufft.so.10.6.0.202",
+        "usr/local/cuda-11.4/lib/libcufftw.so.10.6.0.202",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libcufft-headers",
+    hdrs = [
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libc6-headers",
+        ":libgcc1-headers",
+    ],
+)
+
+filegroup(
+    name = "libcublas-filegroup",
+    srcs = [
+        "usr/local/cuda-11.4/lib/libcublas.so.11.6.6.84",
+        "usr/local/cuda-11.4/lib/libcublasLt.so.11.6.6.84",
+        "usr/local/cuda-11.4/lib/libnvblas.so.11.6.6.84",
+        ":libc6-filegroup",
+        ":libgcc1-filegroup",
+        ":libstdc++6-filegroup",
+    ],
+)
+
+cc_library(
+    name = "libcublas-headers",
     hdrs = [
     ],
     visibility = ["//visibility:public"],
@@ -13131,30 +13340,6 @@ cc_library(
         ":libgcc1-headers",
         ":libstdc++6-headers",
         ":libz1-headers",
-    ],
-)
-
-filegroup(
-    name = "libcublas-filegroup",
-    srcs = [
-        "usr/local/cuda-11.4/lib/libcublas.so.11.6.6.84",
-        "usr/local/cuda-11.4/lib/libcublasLt.so.11.6.6.84",
-        "usr/local/cuda-11.4/lib/libnvblas.so.11.6.6.84",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libcublas-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-        ":libstdc++6-headers",
     ],
 )
 
@@ -13395,6 +13580,7 @@ filegroup(
         ":libc6-filegroup",
         ":libgcc1-filegroup",
         ":libopencv-core405-filegroup",
+        ":libopencv-cudaarithm405-filegroup",
         ":libopencv-features2d405-filegroup",
         ":libopencv-imgproc405-filegroup",
         ":libstdc++6-filegroup",
@@ -13410,6 +13596,7 @@ cc_library(
         ":libc6-headers",
         ":libgcc1-headers",
         ":libopencv-core405-headers",
+        ":libopencv-cudaarithm405-headers",
         ":libopencv-features2d405-headers",
         ":libopencv-imgproc405-headers",
         ":libstdc++6-headers",
@@ -13756,36 +13943,6 @@ cc_library(
 )
 
 filegroup(
-    name = "libnpp-filegroup",
-    srcs = [
-        "usr/local/cuda-11.4/lib/libnppc.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppial.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppicc.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppidei.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppif.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppig.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppim.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppist.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppisu.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnppitc.so.11.4.0.287",
-        "usr/local/cuda-11.4/lib/libnpps.so.11.4.0.287",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libnpp-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-    ],
-)
-
-filegroup(
     name = "libopencv-cudalegacy405-filegroup",
     srcs = [
         "usr/lib/libopencv_cudalegacy.so.4.5.5",
@@ -13848,117 +14005,6 @@ cc_library(
         ":libopencv-dnn405-headers",
         ":libopencv-imgproc405-headers",
         ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
-    name = "libopencv-cudaimgproc405-filegroup",
-    srcs = [
-        "usr/lib/libopencv_cudaimgproc.so.4.5.5",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-        ":libnpp-filegroup",
-        ":libopencv-core405-filegroup",
-        ":libopencv-cudaarithm405-filegroup",
-        ":libopencv-cudafilters405-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libopencv-cudaimgproc405-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-        ":libnpp-headers",
-        ":libopencv-core405-headers",
-        ":libopencv-cudaarithm405-headers",
-        ":libopencv-cudafilters405-headers",
-        ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
-    name = "libopencv-cudafilters405-filegroup",
-    srcs = [
-        "usr/lib/libopencv_cudafilters.so.4.5.5",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-        ":libnpp-filegroup",
-        ":libopencv-core405-filegroup",
-        ":libopencv-cudaarithm405-filegroup",
-        ":libopencv-imgproc405-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libopencv-cudafilters405-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-        ":libnpp-headers",
-        ":libopencv-core405-headers",
-        ":libopencv-cudaarithm405-headers",
-        ":libopencv-imgproc405-headers",
-        ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
-    name = "libopencv-cudaarithm405-filegroup",
-    srcs = [
-        "usr/lib/libopencv_cudaarithm.so.4.5.5",
-        ":libc6-filegroup",
-        ":libcublas-filegroup",
-        ":libcufft-filegroup",
-        ":libgcc1-filegroup",
-        ":libnpp-filegroup",
-        ":libopencv-core405-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libopencv-cudaarithm405-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libcublas-headers",
-        ":libcufft-headers",
-        ":libgcc1-headers",
-        ":libnpp-headers",
-        ":libopencv-core405-headers",
-        ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
-    name = "libcufft-filegroup",
-    srcs = [
-        "usr/local/cuda-11.4/lib/libcufft.so.10.6.0.202",
-        "usr/local/cuda-11.4/lib/libcufftw.so.10.6.0.202",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libcufft-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
     ],
 )
 
@@ -14310,36 +14356,6 @@ cc_library(
         ":libc6-headers",
         ":libgcc1-headers",
         ":libopencv-core405-headers",
-        ":libopencv-imgproc405-headers",
-        ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
-    name = "libopencv-photo405-filegroup",
-    srcs = [
-        "usr/lib/libopencv_photo.so.4.5.5",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-        ":libopencv-core405-filegroup",
-        ":libopencv-cudaarithm405-filegroup",
-        ":libopencv-cudaimgproc405-filegroup",
-        ":libopencv-imgproc405-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libopencv-photo405-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-        ":libopencv-core405-headers",
-        ":libopencv-cudaarithm405-headers",
-        ":libopencv-cudaimgproc405-headers",
         ":libopencv-imgproc405-headers",
         ":libstdc++6-headers",
     ],
@@ -16470,30 +16486,6 @@ cc_library(
 )
 
 filegroup(
-    name = "libopencv-cudacodec405-filegroup",
-    srcs = [
-        "usr/lib/libopencv_cudacodec.so.4.5.5",
-        ":libc6-filegroup",
-        ":libgcc1-filegroup",
-        ":libopencv-core405-filegroup",
-        ":libstdc++6-filegroup",
-    ],
-)
-
-cc_library(
-    name = "libopencv-cudacodec405-headers",
-    hdrs = [
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libc6-headers",
-        ":libgcc1-headers",
-        ":libopencv-core405-headers",
-        ":libstdc++6-headers",
-    ],
-)
-
-filegroup(
     name = "libopencv-cudabgsegm405-filegroup",
     srcs = [
         "usr/lib/libopencv_cudabgsegm.so.4.5.5",
@@ -16690,72 +16682,560 @@ cc_library(
 filegroup(
     name = "opencv-samples-filegroup",
     srcs = [
-        "usr/share/opencv4/samples/python/_coverage.py",
-        "usr/share/opencv4/samples/python/_doc.py",
-        "usr/share/opencv4/samples/python/asift.py",
-        "usr/share/opencv4/samples/python/audio_spectrogram.py",
-        "usr/share/opencv4/samples/python/browse.py",
-        "usr/share/opencv4/samples/python/calibrate.py",
-        "usr/share/opencv4/samples/python/camera_calibration_show_extrinsics.py",
-        "usr/share/opencv4/samples/python/camshift.py",
-        "usr/share/opencv4/samples/python/coherence.py",
-        "usr/share/opencv4/samples/python/color_histogram.py",
-        "usr/share/opencv4/samples/python/common.py",
-        "usr/share/opencv4/samples/python/contours.py",
-        "usr/share/opencv4/samples/python/deconvolution.py",
-        "usr/share/opencv4/samples/python/demo.py",
-        "usr/share/opencv4/samples/python/dft.py",
-        "usr/share/opencv4/samples/python/digits.py",
-        "usr/share/opencv4/samples/python/digits_adjust.py",
-        "usr/share/opencv4/samples/python/digits_video.py",
-        "usr/share/opencv4/samples/python/dis_opt_flow.py",
-        "usr/share/opencv4/samples/python/distrans.py",
-        "usr/share/opencv4/samples/python/drawing.py",
-        "usr/share/opencv4/samples/python/edge.py",
-        "usr/share/opencv4/samples/python/essential_mat_reconstr.py",
-        "usr/share/opencv4/samples/python/facedetect.py",
-        "usr/share/opencv4/samples/python/feature_homography.py",
-        "usr/share/opencv4/samples/python/find_obj.py",
-        "usr/share/opencv4/samples/python/fitline.py",
-        "usr/share/opencv4/samples/python/floodfill.py",
-        "usr/share/opencv4/samples/python/gabor_threads.py",
-        "usr/share/opencv4/samples/python/gaussian_mix.py",
-        "usr/share/opencv4/samples/python/grabcut.py",
-        "usr/share/opencv4/samples/python/hist.py",
-        "usr/share/opencv4/samples/python/houghcircles.py",
-        "usr/share/opencv4/samples/python/houghlines.py",
-        "usr/share/opencv4/samples/python/inpaint.py",
-        "usr/share/opencv4/samples/python/kalman.py",
-        "usr/share/opencv4/samples/python/kmeans.py",
-        "usr/share/opencv4/samples/python/laplace.py",
-        "usr/share/opencv4/samples/python/lappyr.py",
-        "usr/share/opencv4/samples/python/letter_recog.py",
-        "usr/share/opencv4/samples/python/lk_homography.py",
-        "usr/share/opencv4/samples/python/lk_track.py",
-        "usr/share/opencv4/samples/python/logpolar.py",
-        "usr/share/opencv4/samples/python/morphology.py",
-        "usr/share/opencv4/samples/python/mosse.py",
-        "usr/share/opencv4/samples/python/mouse_and_match.py",
-        "usr/share/opencv4/samples/python/mser.py",
-        "usr/share/opencv4/samples/python/opencv_version.py",
-        "usr/share/opencv4/samples/python/opt_flow.py",
-        "usr/share/opencv4/samples/python/peopledetect.py",
-        "usr/share/opencv4/samples/python/plane_ar.py",
-        "usr/share/opencv4/samples/python/plane_tracker.py",
-        "usr/share/opencv4/samples/python/qrcode.py",
-        "usr/share/opencv4/samples/python/squares.py",
-        "usr/share/opencv4/samples/python/stereo_match.py",
-        "usr/share/opencv4/samples/python/stitching.py",
-        "usr/share/opencv4/samples/python/stitching_detailed.py",
-        "usr/share/opencv4/samples/python/text_skewness_correction.py",
-        "usr/share/opencv4/samples/python/texture_flow.py",
-        "usr/share/opencv4/samples/python/tracker.py",
-        "usr/share/opencv4/samples/python/tst_scene_render.py",
-        "usr/share/opencv4/samples/python/turing.py",
-        "usr/share/opencv4/samples/python/video.py",
-        "usr/share/opencv4/samples/python/video_threaded.py",
-        "usr/share/opencv4/samples/python/video_v4l2.py",
-        "usr/share/opencv4/samples/python/watershed.py",
+        "usr/share/opencv4/samples/CMakeLists.txt",
+        "usr/share/opencv4/samples/alphamat/information_flow_matting.cpp",
+        "usr/share/opencv4/samples/alphamat/input_images/plant.jpg",
+        "usr/share/opencv4/samples/alphamat/output_mattes/plant_result.png",
+        "usr/share/opencv4/samples/alphamat/trimaps/plant.png",
+        "usr/share/opencv4/samples/aruco/aruco_samples_utility.hpp",
+        "usr/share/opencv4/samples/aruco/calibrate_camera.cpp",
+        "usr/share/opencv4/samples/aruco/calibrate_camera_charuco.cpp",
+        "usr/share/opencv4/samples/aruco/create_board.cpp",
+        "usr/share/opencv4/samples/aruco/create_board_charuco.cpp",
+        "usr/share/opencv4/samples/aruco/create_diamond.cpp",
+        "usr/share/opencv4/samples/aruco/create_marker.cpp",
+        "usr/share/opencv4/samples/aruco/detect_board.cpp",
+        "usr/share/opencv4/samples/aruco/detect_board_charuco.cpp",
+        "usr/share/opencv4/samples/aruco/detect_diamonds.cpp",
+        "usr/share/opencv4/samples/aruco/detect_markers.cpp",
+        "usr/share/opencv4/samples/aruco/detector_params.yml",
+        "usr/share/opencv4/samples/aruco/tutorial_camera_charuco.yml",
+        "usr/share/opencv4/samples/aruco/tutorial_camera_params.yml",
+        "usr/share/opencv4/samples/aruco/tutorial_charuco_create_detect.cpp",
+        "usr/share/opencv4/samples/aruco/tutorial_dict.yml",
+        "usr/share/opencv4/samples/barcode/barcode.cpp",
+        "usr/share/opencv4/samples/bgsegm/bgfg.cpp",
+        "usr/share/opencv4/samples/bgsegm/evaluation.py",
+        "usr/share/opencv4/samples/bgsegm/viz.py",
+        "usr/share/opencv4/samples/bgsegm/viz_synthetic_seq.py",
+        "usr/share/opencv4/samples/bioinspired/OpenEXRimages_HDR_Retina_toneMapping.cpp",
+        "usr/share/opencv4/samples/bioinspired/cpp/OpenEXRimages_HDR_Retina_toneMapping.cpp",
+        "usr/share/opencv4/samples/bioinspired/cpp/OpenEXRimages_HDR_Retina_toneMapping_video.cpp",
+        "usr/share/opencv4/samples/bioinspired/cpp/retinaDemo.cpp",
+        "usr/share/opencv4/samples/bioinspired/cpp/tutorial_code/bioinspired/retina_tutorial.cpp",
+        "usr/share/opencv4/samples/bioinspired/ocl/retina_ocl.cpp",
+        "usr/share/opencv4/samples/bioinspired/retinaDemo.cpp",
+        "usr/share/opencv4/samples/ccalib/multi_cameras_calibration.cpp",
+        "usr/share/opencv4/samples/ccalib/omni_calibration.cpp",
+        "usr/share/opencv4/samples/ccalib/omni_stereo_calibration.cpp",
+        "usr/share/opencv4/samples/ccalib/random_pattern_calibration.cpp",
+        "usr/share/opencv4/samples/ccalib/random_pattern_generator.cpp",
+        "usr/share/opencv4/samples/cpp/3calibration.cpp",
+        "usr/share/opencv4/samples/cpp/CMakeLists.txt",
+        "usr/share/opencv4/samples/cpp/application_trace.cpp",
+        "usr/share/opencv4/samples/cpp/asift.cpp",
+        "usr/share/opencv4/samples/cpp/audio_spectrogram.cpp",
+        "usr/share/opencv4/samples/cpp/bgfg_segm.cpp",
+        "usr/share/opencv4/samples/cpp/calibration.cpp",
+        "usr/share/opencv4/samples/cpp/camshiftdemo.cpp",
+        "usr/share/opencv4/samples/cpp/cloning_demo.cpp",
+        "usr/share/opencv4/samples/cpp/cloning_gui.cpp",
+        "usr/share/opencv4/samples/cpp/connected_components.cpp",
+        "usr/share/opencv4/samples/cpp/contours2.cpp",
+        "usr/share/opencv4/samples/cpp/convexhull.cpp",
+        "usr/share/opencv4/samples/cpp/cout_mat.cpp",
+        "usr/share/opencv4/samples/cpp/create_mask.cpp",
+        "usr/share/opencv4/samples/cpp/dbt_face_detection.cpp",
+        "usr/share/opencv4/samples/cpp/delaunay2.cpp",
+        "usr/share/opencv4/samples/cpp/demhist.cpp",
+        "usr/share/opencv4/samples/cpp/detect_blob.cpp",
+        "usr/share/opencv4/samples/cpp/detect_mser.cpp",
+        "usr/share/opencv4/samples/cpp/dft.cpp",
+        "usr/share/opencv4/samples/cpp/digits_lenet.cpp",
+        "usr/share/opencv4/samples/cpp/digits_svm.cpp",
+        "usr/share/opencv4/samples/cpp/dis_opticalflow.cpp",
+        "usr/share/opencv4/samples/cpp/distrans.cpp",
+        "usr/share/opencv4/samples/cpp/drawing.cpp",
+        "usr/share/opencv4/samples/cpp/edge.cpp",
+        "usr/share/opencv4/samples/cpp/ela.cpp",
+        "usr/share/opencv4/samples/cpp/em.cpp",
+        "usr/share/opencv4/samples/cpp/epipolar_lines.cpp",
+        "usr/share/opencv4/samples/cpp/essential_mat_reconstr.cpp",
+        "usr/share/opencv4/samples/cpp/facedetect.cpp",
+        "usr/share/opencv4/samples/cpp/facial_features.cpp",
+        "usr/share/opencv4/samples/cpp/falsecolor.cpp",
+        "usr/share/opencv4/samples/cpp/fback.cpp",
+        "usr/share/opencv4/samples/cpp/ffilldemo.cpp",
+        "usr/share/opencv4/samples/cpp/filestorage.cpp",
+        "usr/share/opencv4/samples/cpp/fitellipse.cpp",
+        "usr/share/opencv4/samples/cpp/flann_search_dataset.cpp",
+        "usr/share/opencv4/samples/cpp/grabcut.cpp",
+        "usr/share/opencv4/samples/cpp/image_alignment.cpp",
+        "usr/share/opencv4/samples/cpp/imagelist_creator.cpp",
+        "usr/share/opencv4/samples/cpp/imagelist_reader.cpp",
+        "usr/share/opencv4/samples/cpp/inpaint.cpp",
+        "usr/share/opencv4/samples/cpp/intelligent_scissors.cpp",
+        "usr/share/opencv4/samples/cpp/intersectExample.cpp",
+        "usr/share/opencv4/samples/cpp/kalman.cpp",
+        "usr/share/opencv4/samples/cpp/kmeans.cpp",
+        "usr/share/opencv4/samples/cpp/laplace.cpp",
+        "usr/share/opencv4/samples/cpp/letter_recog.cpp",
+        "usr/share/opencv4/samples/cpp/lkdemo.cpp",
+        "usr/share/opencv4/samples/cpp/logistic_regression.cpp",
+        "usr/share/opencv4/samples/cpp/lsd_lines.cpp",
+        "usr/share/opencv4/samples/cpp/mask_tmpl.cpp",
+        "usr/share/opencv4/samples/cpp/matchmethod_orb_akaze_brisk.cpp",
+        "usr/share/opencv4/samples/cpp/minarea.cpp",
+        "usr/share/opencv4/samples/cpp/morphology2.cpp",
+        "usr/share/opencv4/samples/cpp/neural_network.cpp",
+        "usr/share/opencv4/samples/cpp/npr_demo.cpp",
+        "usr/share/opencv4/samples/cpp/opencv_version.cpp",
+        "usr/share/opencv4/samples/cpp/pca.cpp",
+        "usr/share/opencv4/samples/cpp/peopledetect.cpp",
+        "usr/share/opencv4/samples/cpp/phase_corr.cpp",
+        "usr/share/opencv4/samples/cpp/points_classifier.cpp",
+        "usr/share/opencv4/samples/cpp/polar_transforms.cpp",
+        "usr/share/opencv4/samples/cpp/qrcode.cpp",
+        "usr/share/opencv4/samples/cpp/segment_objects.cpp",
+        "usr/share/opencv4/samples/cpp/select3dobj.cpp",
+        "usr/share/opencv4/samples/cpp/simd_basic.cpp",
+        "usr/share/opencv4/samples/cpp/smiledetect.cpp",
+        "usr/share/opencv4/samples/cpp/squares.cpp",
+        "usr/share/opencv4/samples/cpp/stereo_calib.cpp",
+        "usr/share/opencv4/samples/cpp/stereo_match.cpp",
+        "usr/share/opencv4/samples/cpp/stitching.cpp",
+        "usr/share/opencv4/samples/cpp/stitching_detailed.cpp",
+        "usr/share/opencv4/samples/cpp/text_skewness_correction.cpp",
+        "usr/share/opencv4/samples/cpp/train_HOG.cpp",
+        "usr/share/opencv4/samples/cpp/train_svmsgd.cpp",
+        "usr/share/opencv4/samples/cpp/travelsalesman.cpp",
+        "usr/share/opencv4/samples/cpp/tree_engine.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_audio.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_audio_combination.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_basic.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_camera.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_gphoto2_autofocus.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_gstreamer_pipeline.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_image_sequence.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_microphone.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_openni.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_realsense.cpp",
+        "usr/share/opencv4/samples/cpp/videocapture_starter.cpp",
+        "usr/share/opencv4/samples/cpp/videowriter_basic.cpp",
+        "usr/share/opencv4/samples/cpp/warpPerspective_demo.cpp",
+        "usr/share/opencv4/samples/cpp/watershed.cpp",
+        "usr/share/opencv4/samples/cudaoptflow/nvidia_optical_flow.cpp",
+        "usr/share/opencv4/samples/cudaoptflow/optical_flow.cpp",
+        "usr/share/opencv4/samples/data/Blender_Suzanne1.jpg",
+        "usr/share/opencv4/samples/data/Blender_Suzanne2.jpg",
+        "usr/share/opencv4/samples/data/H1to3p.xml",
+        "usr/share/opencv4/samples/data/HappyFish.jpg",
+        "usr/share/opencv4/samples/data/LinuxLogo.jpg",
+        "usr/share/opencv4/samples/data/Megamind.avi",
+        "usr/share/opencv4/samples/data/Megamind_bugy.avi",
+        "usr/share/opencv4/samples/data/WindowsLogo.jpg",
+        "usr/share/opencv4/samples/data/aero1.jpg",
+        "usr/share/opencv4/samples/data/aero3.jpg",
+        "usr/share/opencv4/samples/data/aloeGT.png",
+        "usr/share/opencv4/samples/data/aloeL.jpg",
+        "usr/share/opencv4/samples/data/aloeR.jpg",
+        "usr/share/opencv4/samples/data/alphabet_36.txt",
+        "usr/share/opencv4/samples/data/alphabet_94.txt",
+        "usr/share/opencv4/samples/data/apple.jpg",
+        "usr/share/opencv4/samples/data/baboon.jpg",
+        "usr/share/opencv4/samples/data/basketball1.png",
+        "usr/share/opencv4/samples/data/basketball2.png",
+        "usr/share/opencv4/samples/data/blox.jpg",
+        "usr/share/opencv4/samples/data/board.jpg",
+        "usr/share/opencv4/samples/data/box.png",
+        "usr/share/opencv4/samples/data/box_in_scene.png",
+        "usr/share/opencv4/samples/data/building.jpg",
+        "usr/share/opencv4/samples/data/butterfly.jpg",
+        "usr/share/opencv4/samples/data/calibration.yml",
+        "usr/share/opencv4/samples/data/cards.png",
+        "usr/share/opencv4/samples/data/chessboard.png",
+        "usr/share/opencv4/samples/data/chicky_512.png",
+        "usr/share/opencv4/samples/data/data01.xml",
+        "usr/share/opencv4/samples/data/detect_blob.png",
+        "usr/share/opencv4/samples/data/digits.png",
+        "usr/share/opencv4/samples/data/dnn/action_recongnition_kinetics.txt",
+        "usr/share/opencv4/samples/data/dnn/classification_classes_ILSVRC2012.txt",
+        "usr/share/opencv4/samples/data/dnn/enet-classes.txt",
+        "usr/share/opencv4/samples/data/dnn/object_detection_classes_coco.txt",
+        "usr/share/opencv4/samples/data/dnn/object_detection_classes_pascal_voc.txt",
+        "usr/share/opencv4/samples/data/dnn/object_detection_classes_yolov3.txt",
+        "usr/share/opencv4/samples/data/ela_modified.jpg",
+        "usr/share/opencv4/samples/data/ela_original.jpg",
+        "usr/share/opencv4/samples/data/ellipses.jpg",
+        "usr/share/opencv4/samples/data/essential_mat_data.txt",
+        "usr/share/opencv4/samples/data/fruits.jpg",
+        "usr/share/opencv4/samples/data/gradient.png",
+        "usr/share/opencv4/samples/data/graf1.png",
+        "usr/share/opencv4/samples/data/graf3.png",
+        "usr/share/opencv4/samples/data/home.jpg",
+        "usr/share/opencv4/samples/data/imageTextN.png",
+        "usr/share/opencv4/samples/data/imageTextR.png",
+        "usr/share/opencv4/samples/data/intrinsics.yml",
+        "usr/share/opencv4/samples/data/left.jpg",
+        "usr/share/opencv4/samples/data/left01.jpg",
+        "usr/share/opencv4/samples/data/left02.jpg",
+        "usr/share/opencv4/samples/data/left03.jpg",
+        "usr/share/opencv4/samples/data/left04.jpg",
+        "usr/share/opencv4/samples/data/left05.jpg",
+        "usr/share/opencv4/samples/data/left06.jpg",
+        "usr/share/opencv4/samples/data/left07.jpg",
+        "usr/share/opencv4/samples/data/left08.jpg",
+        "usr/share/opencv4/samples/data/left09.jpg",
+        "usr/share/opencv4/samples/data/left11.jpg",
+        "usr/share/opencv4/samples/data/left12.jpg",
+        "usr/share/opencv4/samples/data/left13.jpg",
+        "usr/share/opencv4/samples/data/left14.jpg",
+        "usr/share/opencv4/samples/data/left_intrinsics.yml",
+        "usr/share/opencv4/samples/data/lena.jpg",
+        "usr/share/opencv4/samples/data/lena_tmpl.jpg",
+        "usr/share/opencv4/samples/data/letter-recognition.data",
+        "usr/share/opencv4/samples/data/leuvenA.jpg",
+        "usr/share/opencv4/samples/data/leuvenB.jpg",
+        "usr/share/opencv4/samples/data/licenseplate_motion.jpg",
+        "usr/share/opencv4/samples/data/mask.png",
+        "usr/share/opencv4/samples/data/messi5.jpg",
+        "usr/share/opencv4/samples/data/ml.png",
+        "usr/share/opencv4/samples/data/notes.png",
+        "usr/share/opencv4/samples/data/opencv-logo.png",
+        "usr/share/opencv4/samples/data/opencv-logo-white.png",
+        "usr/share/opencv4/samples/data/orange.jpg",
+        "usr/share/opencv4/samples/data/pca_test1.jpg",
+        "usr/share/opencv4/samples/data/pic1.png",
+        "usr/share/opencv4/samples/data/pic2.png",
+        "usr/share/opencv4/samples/data/pic3.png",
+        "usr/share/opencv4/samples/data/pic4.png",
+        "usr/share/opencv4/samples/data/pic5.png",
+        "usr/share/opencv4/samples/data/pic6.png",
+        "usr/share/opencv4/samples/data/right.jpg",
+        "usr/share/opencv4/samples/data/right01.jpg",
+        "usr/share/opencv4/samples/data/right02.jpg",
+        "usr/share/opencv4/samples/data/right03.jpg",
+        "usr/share/opencv4/samples/data/right04.jpg",
+        "usr/share/opencv4/samples/data/right05.jpg",
+        "usr/share/opencv4/samples/data/right06.jpg",
+        "usr/share/opencv4/samples/data/right07.jpg",
+        "usr/share/opencv4/samples/data/right08.jpg",
+        "usr/share/opencv4/samples/data/right09.jpg",
+        "usr/share/opencv4/samples/data/right11.jpg",
+        "usr/share/opencv4/samples/data/right12.jpg",
+        "usr/share/opencv4/samples/data/right13.jpg",
+        "usr/share/opencv4/samples/data/right14.jpg",
+        "usr/share/opencv4/samples/data/rubberwhale1.png",
+        "usr/share/opencv4/samples/data/rubberwhale2.png",
+        "usr/share/opencv4/samples/data/smarties.png",
+        "usr/share/opencv4/samples/data/squirrel_cls.jpg",
+        "usr/share/opencv4/samples/data/starry_night.jpg",
+        "usr/share/opencv4/samples/data/stereo_calib.xml",
+        "usr/share/opencv4/samples/data/stuff.jpg",
+        "usr/share/opencv4/samples/data/sudoku.png",
+        "usr/share/opencv4/samples/data/templ.png",
+        "usr/share/opencv4/samples/data/text_defocus.jpg",
+        "usr/share/opencv4/samples/data/text_motion.jpg",
+        "usr/share/opencv4/samples/data/tmpl.png",
+        "usr/share/opencv4/samples/data/tree.avi",
+        "usr/share/opencv4/samples/data/vtest.avi",
+        "usr/share/opencv4/samples/datasets/ar_hmdb.cpp",
+        "usr/share/opencv4/samples/datasets/ar_hmdb_benchmark.cpp",
+        "usr/share/opencv4/samples/datasets/ar_sports.cpp",
+        "usr/share/opencv4/samples/datasets/fr_adience.cpp",
+        "usr/share/opencv4/samples/datasets/fr_lfw.cpp",
+        "usr/share/opencv4/samples/datasets/fr_lfw_benchmark.cpp",
+        "usr/share/opencv4/samples/datasets/gr_chalearn.cpp",
+        "usr/share/opencv4/samples/datasets/gr_skig.cpp",
+        "usr/share/opencv4/samples/datasets/hpe_humaneva.cpp",
+        "usr/share/opencv4/samples/datasets/hpe_parse.cpp",
+        "usr/share/opencv4/samples/datasets/ir_affine.cpp",
+        "usr/share/opencv4/samples/datasets/ir_robot.cpp",
+        "usr/share/opencv4/samples/datasets/is_bsds.cpp",
+        "usr/share/opencv4/samples/datasets/is_weizmann.cpp",
+        "usr/share/opencv4/samples/datasets/msm_epfl.cpp",
+        "usr/share/opencv4/samples/datasets/msm_middlebury.cpp",
+        "usr/share/opencv4/samples/datasets/or_imagenet.cpp",
+        "usr/share/opencv4/samples/datasets/or_mnist.cpp",
+        "usr/share/opencv4/samples/datasets/or_pascal.cpp",
+        "usr/share/opencv4/samples/datasets/or_sun.cpp",
+        "usr/share/opencv4/samples/datasets/pd_caltech.cpp",
+        "usr/share/opencv4/samples/datasets/pd_inria.cpp",
+        "usr/share/opencv4/samples/datasets/slam_kitti.cpp",
+        "usr/share/opencv4/samples/datasets/slam_tumindoor.cpp",
+        "usr/share/opencv4/samples/datasets/sr_bsds.cpp",
+        "usr/share/opencv4/samples/datasets/sr_div2k.cpp",
+        "usr/share/opencv4/samples/datasets/sr_general100.cpp",
+        "usr/share/opencv4/samples/datasets/tr_chars.cpp",
+        "usr/share/opencv4/samples/datasets/tr_chars_benchmark.cpp",
+        "usr/share/opencv4/samples/datasets/tr_icdar.cpp",
+        "usr/share/opencv4/samples/datasets/tr_icdar_benchmark.cpp",
+        "usr/share/opencv4/samples/datasets/tr_svt.cpp",
+        "usr/share/opencv4/samples/datasets/tr_svt_benchmark.cpp",
+        "usr/share/opencv4/samples/datasets/track_vot.cpp",
+        "usr/share/opencv4/samples/dnn/CMakeLists.txt",
+        "usr/share/opencv4/samples/dnn/classification.cpp",
+        "usr/share/opencv4/samples/dnn/colorization.cpp",
+        "usr/share/opencv4/samples/dnn/common.hpp",
+        "usr/share/opencv4/samples/dnn/custom_layers.hpp",
+        "usr/share/opencv4/samples/dnn/dasiamrpn_tracker.cpp",
+        "usr/share/opencv4/samples/dnn/face_detect.cpp",
+        "usr/share/opencv4/samples/dnn/human_parsing.cpp",
+        "usr/share/opencv4/samples/dnn/object_detection.cpp",
+        "usr/share/opencv4/samples/dnn/openpose.cpp",
+        "usr/share/opencv4/samples/dnn/person_reid.cpp",
+        "usr/share/opencv4/samples/dnn/scene_text_detection.cpp",
+        "usr/share/opencv4/samples/dnn/scene_text_recognition.cpp",
+        "usr/share/opencv4/samples/dnn/scene_text_spotting.cpp",
+        "usr/share/opencv4/samples/dnn/segmentation.cpp",
+        "usr/share/opencv4/samples/dnn/text_detection.cpp",
+        "usr/share/opencv4/samples/dnn_objdetect/data/README.md",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeDet_deploy.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeDet_solver.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeDet_train_test.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeNet_deploy.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeNet_solver.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/data/SqueezeNet_train_test.prototxt",
+        "usr/share/opencv4/samples/dnn_objdetect/image_classification.cpp",
+        "usr/share/opencv4/samples/dnn_objdetect/obj_detect.cpp",
+        "usr/share/opencv4/samples/dnn_superres/butterfly.png",
+        "usr/share/opencv4/samples/dnn_superres/dnn_superres.cpp",
+        "usr/share/opencv4/samples/dnn_superres/dnn_superres_benchmark_quality.cpp",
+        "usr/share/opencv4/samples/dnn_superres/dnn_superres_benchmark_time.cpp",
+        "usr/share/opencv4/samples/dnn_superres/dnn_superres_multioutput.cpp",
+        "usr/share/opencv4/samples/dnn_superres/dnn_superres_video.cpp",
+        "usr/share/opencv4/samples/dpm/cascade_detect_camera.cpp",
+        "usr/share/opencv4/samples/dpm/cascade_detect_sequence.cpp",
+        "usr/share/opencv4/samples/dpm/data/inriaperson.xml",
+        "usr/share/opencv4/samples/face/CMakeLists.txt",
+        "usr/share/opencv4/samples/face/Facemark.java",
+        "usr/share/opencv4/samples/face/etc/at.txt",
+        "usr/share/opencv4/samples/face/etc/create_csv.py",
+        "usr/share/opencv4/samples/face/etc/crop_face.py",
+        "usr/share/opencv4/samples/face/facemark_demo_aam.cpp",
+        "usr/share/opencv4/samples/face/facemark_demo_lbf.cpp",
+        "usr/share/opencv4/samples/face/facemark_lbf_fitting.cpp",
+        "usr/share/opencv4/samples/face/facerec_demo.cpp",
+        "usr/share/opencv4/samples/face/facerec_eigenfaces.cpp",
+        "usr/share/opencv4/samples/face/facerec_fisherfaces.cpp",
+        "usr/share/opencv4/samples/face/facerec_lbph.cpp",
+        "usr/share/opencv4/samples/face/facerec_save_load.cpp",
+        "usr/share/opencv4/samples/face/facerec_video.cpp",
+        "usr/share/opencv4/samples/face/landmarks_demo.py",
+        "usr/share/opencv4/samples/face/mace_webcam.cpp",
+        "usr/share/opencv4/samples/face/sampleDetectLandmarks.cpp",
+        "usr/share/opencv4/samples/face/sampleDetectLandmarksvideo.cpp",
+        "usr/share/opencv4/samples/face/sample_config_file.xml",
+        "usr/share/opencv4/samples/face/sample_face_swapping.cpp",
+        "usr/share/opencv4/samples/face/sample_train_landmark_detector.cpp",
+        "usr/share/opencv4/samples/face/sample_train_landmark_detector2.cpp",
+        "usr/share/opencv4/samples/face/samplewriteconfigfile.cpp",
+        "usr/share/opencv4/samples/fuzzy/fuzzy_filtering.cpp",
+        "usr/share/opencv4/samples/fuzzy/fuzzy_inpainting.cpp",
+        "usr/share/opencv4/samples/fuzzy/input.png",
+        "usr/share/opencv4/samples/fuzzy/mask1.png",
+        "usr/share/opencv4/samples/fuzzy/mask2.png",
+        "usr/share/opencv4/samples/fuzzy/mask3.png",
+        "usr/share/opencv4/samples/gapi/api_example.cpp",
+        "usr/share/opencv4/samples/gapi/draw_example.cpp",
+        "usr/share/opencv4/samples/gapi/face_detection_mtcnn.cpp",
+        "usr/share/opencv4/samples/gapi/gaze_estimation.cpp",
+        "usr/share/opencv4/samples/gapi/infer_ie_onnx_hybrid.cpp",
+        "usr/share/opencv4/samples/gapi/infer_single_roi.cpp",
+        "usr/share/opencv4/samples/gapi/infer_ssd_onnx.cpp",
+        "usr/share/opencv4/samples/gapi/onevpl_infer_single_roi.cpp",
+        "usr/share/opencv4/samples/gapi/privacy_masking_camera.cpp",
+        "usr/share/opencv4/samples/gapi/semantic_segmentation.cpp",
+        "usr/share/opencv4/samples/gapi/slides_blur_gapi.cpp",
+        "usr/share/opencv4/samples/gapi/slides_sobel_cv.cpp",
+        "usr/share/opencv4/samples/gapi/slides_sobel_gapi.cpp",
+        "usr/share/opencv4/samples/gapi/text_detection.cpp",
+        "usr/share/opencv4/samples/gpu/CMakeLists.txt",
+        "usr/share/opencv4/samples/gpu/alpha_comp.cpp",
+        "usr/share/opencv4/samples/gpu/bgfg_segm.cpp",
+        "usr/share/opencv4/samples/gpu/cascadeclassifier.cpp",
+        "usr/share/opencv4/samples/gpu/farneback_optical_flow.cpp",
+        "usr/share/opencv4/samples/gpu/generalized_hough.cpp",
+        "usr/share/opencv4/samples/gpu/hog.cpp",
+        "usr/share/opencv4/samples/gpu/houghlines.cpp",
+        "usr/share/opencv4/samples/gpu/morphology.cpp",
+        "usr/share/opencv4/samples/gpu/multi.cpp",
+        "usr/share/opencv4/samples/gpu/pyrlk_optical_flow.cpp",
+        "usr/share/opencv4/samples/gpu/stereo_match.cpp",
+        "usr/share/opencv4/samples/gpu/stereo_multi.cpp",
+        "usr/share/opencv4/samples/gpu/super_resolution.cpp",
+        "usr/share/opencv4/samples/gpu/surf_keypoint_matcher.cpp",
+        "usr/share/opencv4/samples/gpu/video_reader.cpp",
+        "usr/share/opencv4/samples/gpu/video_writer.cpp",
+        "usr/share/opencv4/samples/hfs/CMakeLists.txt",
+        "usr/share/opencv4/samples/hfs/data/000.jpg",
+        "usr/share/opencv4/samples/hfs/data/001.jpg",
+        "usr/share/opencv4/samples/hfs/data/002.jpg",
+        "usr/share/opencv4/samples/hfs/example.cpp",
+        "usr/share/opencv4/samples/img_hash/hash_samples.cpp",
+        "usr/share/opencv4/samples/intensity_transform/intensity_transform.cpp",
+        "usr/share/opencv4/samples/line_descriptor/compute_descriptors.cpp",
+        "usr/share/opencv4/samples/line_descriptor/knn_matching.cpp",
+        "usr/share/opencv4/samples/line_descriptor/lines_extraction.cpp",
+        "usr/share/opencv4/samples/line_descriptor/lsd_lines_extraction.cpp",
+        "usr/share/opencv4/samples/line_descriptor/matching.cpp",
+        "usr/share/opencv4/samples/line_descriptor/radius_matching.cpp",
+        "usr/share/opencv4/samples/mcc/chart_detection.cpp",
+        "usr/share/opencv4/samples/mcc/chart_detection_with_network.cpp",
+        "usr/share/opencv4/samples/mcc/color_correction_model.cpp",
+        "usr/share/opencv4/samples/opencl/CMakeLists.txt",
+        "usr/share/opencv4/samples/opencl/opencl-opencv-interop.cpp",
+        "usr/share/opencv4/samples/optflow/gpc_evaluate.cpp",
+        "usr/share/opencv4/samples/optflow/gpc_train.cpp",
+        "usr/share/opencv4/samples/optflow/gpc_train_middlebury.py",
+        "usr/share/opencv4/samples/optflow/gpc_train_sintel.py",
+        "usr/share/opencv4/samples/optflow/motempl.cpp",
+        "usr/share/opencv4/samples/optflow/motempl.py",
+        "usr/share/opencv4/samples/optflow/optical_flow_benchmark.py",
+        "usr/share/opencv4/samples/optflow/optical_flow_evaluation.cpp",
+        "usr/share/opencv4/samples/optflow/pcaflow_demo.cpp",
+        "usr/share/opencv4/samples/optflow/simpleflow_demo.cpp",
+        "usr/share/opencv4/samples/optflow/tvl1_optical_flow.cpp",
+        "usr/share/opencv4/samples/phase_unwrapping/unwrap.cpp",
+        "usr/share/opencv4/samples/plot/plot_demo.cpp",
+        "usr/share/opencv4/samples/quality/brisque_eval_tid2008.cpp",
+        "usr/share/opencv4/samples/quality/brisque_model_live.yml",
+        "usr/share/opencv4/samples/quality/brisque_range_live.yml",
+        "usr/share/opencv4/samples/quality/brisque_trainer_livedb.cpp",
+        "usr/share/opencv4/samples/rapid/track_marker.py",
+        "usr/share/opencv4/samples/reg/CMakeLists.txt",
+        "usr/share/opencv4/samples/reg/LR_05.png",
+        "usr/share/opencv4/samples/reg/LR_06.png",
+        "usr/share/opencv4/samples/reg/home.png",
+        "usr/share/opencv4/samples/reg/map_test.cpp",
+        "usr/share/opencv4/samples/reg/reg_shift.py",
+        "usr/share/opencv4/samples/rgbd/colored_kinfu_demo.cpp",
+        "usr/share/opencv4/samples/rgbd/dynafu_demo.cpp",
+        "usr/share/opencv4/samples/rgbd/io_utils.hpp",
+        "usr/share/opencv4/samples/rgbd/kinfu_demo.cpp",
+        "usr/share/opencv4/samples/rgbd/kinfu_demo.py",
+        "usr/share/opencv4/samples/rgbd/large_kinfu_demo.cpp",
+        "usr/share/opencv4/samples/rgbd/linemod.cpp",
+        "usr/share/opencv4/samples/rgbd/odometry_evaluation.cpp",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8HSV.idx.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8HSV.wS1.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8HSV.wS2.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8I.idx.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8I.wS1.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8I.wS2.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8MAXBGR.idx.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8MAXBGR.wS1.yml.gz",
+        "usr/share/opencv4/samples/saliency/ObjectnessTrainedModel/ObjNessB2W8MAXBGR.wS2.yml.gz",
+        "usr/share/opencv4/samples/saliency/computeSaliency.cpp",
+        "usr/share/opencv4/samples/samples_utils.cmake",
+        "usr/share/opencv4/samples/shape/data/shape_sample/1.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/10.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/11.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/12.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/13.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/14.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/15.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/16.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/17.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/18.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/19.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/2.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/20.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/3.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/4.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/5.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/6.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/7.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/8.png",
+        "usr/share/opencv4/samples/shape/data/shape_sample/9.png",
+        "usr/share/opencv4/samples/shape/shape_example.cpp",
+        "usr/share/opencv4/samples/stereo/dense_disparity.cpp",
+        "usr/share/opencv4/samples/stereo/export_param_file.cpp",
+        "usr/share/opencv4/samples/stereo/sample.cpp",
+        "usr/share/opencv4/samples/stereo/sample_quasi_dense.py",
+        "usr/share/opencv4/samples/structured_light/cap_pattern.cpp",
+        "usr/share/opencv4/samples/structured_light/capsinpattern.cpp",
+        "usr/share/opencv4/samples/structured_light/pointcloud.cpp",
+        "usr/share/opencv4/samples/structured_light/projectorcalibration.cpp",
+        "usr/share/opencv4/samples/surface_matching/data/parasaurolophus_6700.ply",
+        "usr/share/opencv4/samples/surface_matching/data/parasaurolophus_low_normals2.ply",
+        "usr/share/opencv4/samples/surface_matching/data/rs1_normals.ply",
+        "usr/share/opencv4/samples/surface_matching/data/rs22_proc2.ply",
+        "usr/share/opencv4/samples/surface_matching/ppf_icp.py",
+        "usr/share/opencv4/samples/surface_matching/ppf_load_match.cpp",
+        "usr/share/opencv4/samples/surface_matching/ppf_load_match.py",
+        "usr/share/opencv4/samples/surface_matching/ppf_normal_computation.cpp",
+        "usr/share/opencv4/samples/sycl/CMakeLists.txt",
+        "usr/share/opencv4/samples/sycl/sycl-opencv-interop.cpp",
+        "usr/share/opencv4/samples/tapi/CMakeLists.txt",
+        "usr/share/opencv4/samples/tapi/bgfg_segm.cpp",
+        "usr/share/opencv4/samples/tapi/camshift.cpp",
+        "usr/share/opencv4/samples/tapi/clahe.cpp",
+        "usr/share/opencv4/samples/tapi/dense_optical_flow.cpp",
+        "usr/share/opencv4/samples/tapi/hog.cpp",
+        "usr/share/opencv4/samples/tapi/opencl_custom_kernel.cpp",
+        "usr/share/opencv4/samples/tapi/pyrlk_optical_flow.cpp",
+        "usr/share/opencv4/samples/tapi/squares.cpp",
+        "usr/share/opencv4/samples/tapi/ufacedetect.cpp",
+        "usr/share/opencv4/samples/tapi/video_acceleration.cpp",
+        "usr/share/opencv4/samples/tracking/benchmark.cpp",
+        "usr/share/opencv4/samples/tracking/csrt.cpp",
+        "usr/share/opencv4/samples/tracking/goturnTracker.cpp",
+        "usr/share/opencv4/samples/tracking/kcf.cpp",
+        "usr/share/opencv4/samples/tracking/multiTracker_dataset.cpp",
+        "usr/share/opencv4/samples/tracking/multitracker.cpp",
+        "usr/share/opencv4/samples/tracking/multitracker.py",
+        "usr/share/opencv4/samples/tracking/samples_utility.hpp",
+        "usr/share/opencv4/samples/tracking/tracker.cpp",
+        "usr/share/opencv4/samples/tracking/tracker.py",
+        "usr/share/opencv4/samples/tracking/tracker_dataset.cpp",
+        "usr/share/opencv4/samples/tracking/tracking_by_matching.cpp",
+        "usr/share/opencv4/samples/tracking/tutorial_customizing_cn_tracker.cpp",
+        "usr/share/opencv4/samples/tracking/tutorial_introduction_to_tracker.cpp",
+        "usr/share/opencv4/samples/tracking/tutorial_multitracker.cpp",
+        "usr/share/opencv4/samples/videostab/videostab.cpp",
+        "usr/share/opencv4/samples/wechat_qrcode/qrcode.py",
+        "usr/share/opencv4/samples/wechat_qrcode/qrcode_example.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/bagofwords_classification.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/export-boostdesc.py",
+        "usr/share/opencv4/samples/xfeatures2d/gms_matcher.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/pct_signatures.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/pct_webcam.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/shape_transformation.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/surf_matcher.cpp",
+        "usr/share/opencv4/samples/xfeatures2d/video_homography.cpp",
+        "usr/share/opencv4/samples/ximgproc/CMakeLists.txt",
+        "usr/share/opencv4/samples/ximgproc/brightedgesexample.cpp",
+        "usr/share/opencv4/samples/ximgproc/color_match_template.cpp",
+        "usr/share/opencv4/samples/ximgproc/colorize.cpp",
+        "usr/share/opencv4/samples/ximgproc/dericheSample.py",
+        "usr/share/opencv4/samples/ximgproc/deriche_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/disparity_filtering.cpp",
+        "usr/share/opencv4/samples/ximgproc/edge_drawing.py",
+        "usr/share/opencv4/samples/ximgproc/edgeboxes_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/edgeboxes_demo.py",
+        "usr/share/opencv4/samples/ximgproc/edgepreserving_filter_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/fast_hough_transform.cpp",
+        "usr/share/opencv4/samples/ximgproc/filterdemo.cpp",
+        "usr/share/opencv4/samples/ximgproc/findredlinedpolygonfromgooglemaps.py",
+        "usr/share/opencv4/samples/ximgproc/fld_lines.cpp",
+        "usr/share/opencv4/samples/ximgproc/fourier_descriptors_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/fourier_descriptors_demo.py",
+        "usr/share/opencv4/samples/ximgproc/graphsegmentation_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/live_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/niblack_thresholding.cpp",
+        "usr/share/opencv4/samples/ximgproc/paillou_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/peilin.cpp",
+        "usr/share/opencv4/samples/ximgproc/peilin_plane.png",
+        "usr/share/opencv4/samples/ximgproc/peilin_shape.png",
+        "usr/share/opencv4/samples/ximgproc/polygonstanfordoutput.png",
+        "usr/share/opencv4/samples/ximgproc/radon_transform_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/radon_transform_demo.py",
+        "usr/share/opencv4/samples/ximgproc/run_length_morphology_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/seeds.cpp",
+        "usr/share/opencv4/samples/ximgproc/selectivesearchsegmentation_demo.cpp",
+        "usr/share/opencv4/samples/ximgproc/selectivesearchsegmentation_demo.py",
+        "usr/share/opencv4/samples/ximgproc/slic.cpp",
+        "usr/share/opencv4/samples/ximgproc/stanford.png",
+        "usr/share/opencv4/samples/ximgproc/structured_edge_detection.cpp",
+        "usr/share/opencv4/samples/ximgproc/thinning.cpp",
+        "usr/share/opencv4/samples/xphoto/bm3d_image_denoising.cpp",
+        "usr/share/opencv4/samples/xphoto/color_balance.cpp",
+        "usr/share/opencv4/samples/xphoto/color_balance_benchmark.py",
+        "usr/share/opencv4/samples/xphoto/dct_image_denoising.cpp",
+        "usr/share/opencv4/samples/xphoto/inpainting.cpp",
+        "usr/share/opencv4/samples/xphoto/learn_color_balance.py",
+        "usr/share/opencv4/samples/xphoto/oil.cpp",
     ],
 )
 
@@ -16981,7 +17461,6 @@ filegroup(
         ":libgcc1-filegroup",
         ":libopencv-core405-filegroup",
         ":libopencv-cudaarithm405-filegroup",
-        ":libopencv-cudacodec405-filegroup",
         ":libopencv-cudafilters405-filegroup",
         ":libopencv-cudaimgproc405-filegroup",
         ":libopencv-cudaoptflow405-filegroup",
@@ -17004,7 +17483,6 @@ cc_library(
         ":libgcc1-headers",
         ":libopencv-core405-headers",
         ":libopencv-cudaarithm405-headers",
-        ":libopencv-cudacodec405-headers",
         ":libopencv-cudafilters405-headers",
         ":libopencv-cudaimgproc405-headers",
         ":libopencv-cudaoptflow405-headers",
@@ -17109,47 +17587,764 @@ cc_library(
     ],
 )
 
-# pkgconf -> alsa
+# pkgconf -> gstreamer-gl-x11-1.0
 cc_library(
-    name = "alsa",
+    name = "gstreamer-gl-x11-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libasound-dev-headers",
-        ":usr_lib_libasound.so.2.0.0-lib",
+        ":gstreamer-gl-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":x11-xcb",
     ],
 )
 
-# pkgconf -> nppitc-11.8
+# pkgconf -> xcb-xinput
 cc_library(
-    name = "nppitc-11.8",
+    name = "xcb-xinput",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xinput.so.0.1.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> atk
+cc_library(
+    name = "atk",
+    includes = ["usr/include/atk-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":libatk-1.0-0-headers",
+        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
+    ],
+)
+
+# pkgconf -> libpng
+cc_library(
+    name = "libpng",
+    includes = ["usr/include/libpng16"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpng16-16-headers",
+        ":usr_lib_libpng16.so.16.39.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> icu-uc
+cc_library(
+    name = "icu-uc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":icu-dev-headers",
+        ":usr_lib_libicudata.so.70.1-lib",
+        ":usr_lib_libicuuc.so.70.1-lib",
+    ],
+)
+
+# pkgconf -> presentproto
+cc_library(
+    name = "presentproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> libacl
+cc_library(
+    name = "libacl",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":acl-dev-headers",
+        ":usr_lib_libacl.so.1.1.2301-lib",
+    ],
+)
+
+# pkgconf -> nppim-11.8
+cc_library(
+    name = "nppim-11.8",
     includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
         ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
+        ":usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> gail-3.0
+# pkgconf -> xcmiscproto
 cc_library(
-    name = "gail-3.0",
-    includes = ["usr/include/gail-3.0"],
+    name = "xcmiscproto",
     visibility = ["//visibility:public"],
     deps = [
-        ":atk",
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> xcb-dpms
+cc_library(
+    name = "xcb-dpms",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-dpms.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> cairo-png
+cc_library(
+    name = "cairo-png",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> libprocps
+cc_library(
+    name = "libprocps",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":procps-dev-headers",
+        ":usr_lib_libprocps.so.8.0.3-lib",
+    ],
+)
+
+# pkgconf -> libsoup-2.4
+cc_library(
+    name = "libsoup-2.4",
+    includes = ["usr/include/libsoup-2.4"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":libpsl",
+        ":libsoup-2.4-dev-headers",
+        ":libxml-2.0",
+        ":sqlite3",
+        ":usr_lib_libsoup-2.4.so.1.11.2-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> gstreamer-video-1.0
+cc_library(
+    name = "gstreamer-video-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> nppist-11.8
+cc_library(
+    name = "nppist-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> librsvg-2.0
+cc_library(
+    name = "librsvg-2.0",
+    includes = ["usr/include/librsvg-2.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":lib_libm.so.6-lib",
+        ":librsvg-2-dev-headers",
+        ":usr_lib_librsvg-2.so.2.48.0-lib",
+    ],
+)
+
+# pkgconf -> libv4l2
+cc_library(
+    name = "libv4l2",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libv4l-dev-headers",
+        ":libv4lconvert",
+        ":usr_lib_libv4l2.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> readline
+cc_library(
+    name = "readline",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libreadline8-headers",
+        ":ncurses",
+        ":usr_lib_libreadline.so.8.1-lib",
+    ],
+)
+
+# pkgconf -> nppist-11.4
+cc_library(
+    name = "nppist-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> tbb
+cc_library(
+    name = "tbb",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":tbb-headers",
+        ":usr_lib_libtbb.so.12.5-lib",
+    ],
+)
+
+# pkgconf -> libpsx
+cc_library(
+    name = "libpsx",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libpthread.so.0-lib",
+        ":libcap-headers",
+        ":usr_lib_libpsx.so.2.66-lib",
+    ],
+)
+
+# pkgconf -> ofono
+cc_library(
+    name = "ofono",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":ofono-dev-headers",
+    ],
+)
+
+# pkgconf -> libusb-1.0
+cc_library(
+    name = "libusb-1.0",
+    includes = ["usr/include/libusb-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libusb-1.0.so.0.3.0-lib",
+        ":libusb-1.0-dev-headers",
+    ],
+)
+
+# pkgconf -> tinfo
+cc_library(
+    name = "tinfo",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libtinfo.so.5.9-lib",
+        ":ncurses-dev-headers",
+    ],
+)
+
+# pkgconf -> python3-embed
+cc_library(
+    name = "python3-embed",
+    includes = ["usr/include/python3.10"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":python3-dev-headers",
+        ":usr_lib_libpython3.10.so.1.0-lib",
+    ],
+)
+
+# pkgconf -> gmodule-2.0
+cc_library(
+    name = "gmodule-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-no-export-2.0",
+        ":libglib-2.0-dev-headers",
+    ],
+)
+
+# pkgconf -> py3cairo
+cc_library(
+    name = "py3cairo",
+    includes = ["usr/include/pycairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":python3-pycairo-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-mpegts-1.0
+cc_library(
+    name = "gstreamer-mpegts-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstmpegts-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> xcursor
+cc_library(
+    name = "xcursor",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcursor1-headers",
+        ":usr_lib_libXcursor.so.1.0.2-lib",
+        ":x11",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> xcb-xinerama
+cc_library(
+    name = "xcb-xinerama",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xinerama.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> libxcrypt
+cc_library(
+    name = "libxcrypt",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcrypt2-headers",
+        ":usr_lib_libcrypt.so.2.0.0-lib",
+    ],
+)
+
+# pkgconf -> epoxy
+cc_library(
+    name = "epoxy",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":egl",
+        ":gl",
+        ":libepoxy0-headers",
+        ":usr_lib_libepoxy.so.0.0.0-lib",
+        ":x11",
+    ],
+)
+
+# pkgconf -> recordproto
+cc_library(
+    name = "recordproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-controller-1.0
+cc_library(
+    name = "gstreamer-controller-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer1.0-dev-headers",
+        ":usr_lib_libgstcontroller-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> libpcre
+cc_library(
+    name = "libpcre",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpcre1-headers",
+        ":usr_lib_libpcre.so.1.2.13-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-plugins-bad-1.0
+cc_library(
+    name = "gstreamer-plugins-bad-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+    ],
+)
+
+# pkgconf -> xf86driproto
+cc_library(
+    name = "xf86driproto",
+    includes = ["usr/include/X11/dri"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> libmpg123
+cc_library(
+    name = "libmpg123",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":mpg123-dev-headers",
+        ":usr_lib_libmpg123.so.0.46.7-lib",
+    ],
+)
+
+# pkgconf -> ext2fs
+cc_library(
+    name = "ext2fs",
+    includes = ["usr/include/ext2fs"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":com_err",
+        ":e2fsprogs-dev-headers",
+        ":lib_libext2fs.so.2.4-lib",
+    ],
+)
+
+# pkgconf -> avahi-client
+cc_library(
+    name = "avahi-client",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":avahi-dev-headers",
+        ":usr_lib_libavahi-client.so.3.2.9-lib",
+        ":usr_lib_libavahi-common.so.3.5.4-lib",
+    ],
+)
+
+# pkgconf -> glesv1_cm
+cc_library(
+    name = "glesv1_cm",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglvnd-dev-headers",
+        ":usr_lib_libGLESv1_CM.so.1.2.0-lib",
+    ],
+)
+
+# pkgconf -> gobject-introspection-1.0
+cc_library(
+    name = "gobject-introspection-1.0",
+    includes = ["usr/include/gobject-introspection-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":gobject-introspection-dev-headers",
+        ":usr_lib_libgirepository-1.0.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> gtk+-unix-print-3.0
+cc_library(
+    name = "gtk+-unix-print-3.0",
+    includes = ["usr/include/gtk-3.0/unix-print"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gtk+-3.0",
         ":libgtk-3.0-headers",
-        ":usr_lib_libgailutil-3.so.0.0.0-lib",
     ],
 )
 
-# pkgconf -> wayland-client
+# pkgconf -> harfbuzz-subset
 cc_library(
-    name = "wayland-client",
+    name = "harfbuzz-subset",
+    includes = ["usr/include/harfbuzz"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libffi",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":harfbuzz",
+        ":libharfbuzz0-headers",
+        ":usr_lib_libharfbuzz-subset.so.0.40001.0-lib",
+    ],
+)
+
+# pkgconf -> resourceproto
+cc_library(
+    name = "resourceproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> xcb-xvmc
+cc_library(
+    name = "xcb-xvmc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xvmc.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> xcb-present
+cc_library(
+    name = "xcb-present",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-present.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> pciaccess
+cc_library(
+    name = "pciaccess",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpciaccess-dev-headers",
+        ":usr_lib_libpciaccess.so.0.11.1-lib",
+    ],
+)
+
+# pkgconf -> pango
+cc_library(
+    name = "pango",
+    includes = ["usr/include/pango-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":fontconfig",
+        ":freetype2",
+        ":fribidi",
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":harfbuzz",
+        ":pango-headers",
+        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
+        ":xft",
+        ":xrender",
+    ],
+)
+
+# pkgconf -> nvrtc-11.4
+cc_library(
+    name = "nvrtc-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-nvrtc-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-pbutils-1.0
+cc_library(
+    name = "gstreamer-pbutils-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> gstreamer-transcoder-1.0
+cc_library(
+    name = "gstreamer-transcoder-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-pbutils-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgsttranscoder-1.0.so.0-lib",
+    ],
+)
+
+# pkgconf -> dbus-1
+cc_library(
+    name = "dbus-1",
+    includes = [
+        "usr/include/dbus-1.0",
+        "usr/lib/dbus-1.0/include",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dbus-dev-headers",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+    ],
+)
+
+# pkgconf -> cairo-svg
+cc_library(
+    name = "cairo-svg",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-check-1.0
+cc_library(
+    name = "gstreamer-check-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer1.0-dev-headers",
+        ":usr_lib_libgstcheck-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> nppicc-11.4
+cc_library(
+    name = "nppicc-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> glu
+cc_library(
+    name = "glu",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gl",
+        ":libglu-dev-headers",
+        ":usr_lib_libGLU.so.1.3.1-lib",
+    ],
+)
+
+# pkgconf -> wayland-scanner
+cc_library(
+    name = "wayland-scanner",
+    visibility = ["//visibility:public"],
+    deps = [
         ":wayland-dev-headers",
+    ],
+)
+
+# pkgconf -> renderproto
+cc_library(
+    name = "renderproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> cufft-11.4
+cc_library(
+    name = "cufft-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcufft-headers",
+        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
+    ],
+)
+
+# pkgconf -> libpcrecpp
+cc_library(
+    name = "libpcrecpp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpcre1-headers",
+        ":usr_lib_libpcre.so.1.2.13-lib",
+        ":usr_lib_libpcrecpp.so.0.0.2-lib",
+    ],
+)
+
+# pkgconf -> flac
+cc_library(
+    name = "flac",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":flac-dev-headers",
+        ":ogg",
+        ":usr_lib_libFLAC.so.8.3.0-lib",
+    ],
+)
+
+# pkgconf -> lzo2
+cc_library(
+    name = "lzo2",
+    includes = ["usr/include/lzo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":liblzo2-dev-headers",
+        ":usr_lib_liblzo2.so.2.0.0-lib",
+    ],
+)
+
+# pkgconf -> taglib_c
+cc_library(
+    name = "taglib_c",
+    includes = ["usr/include/taglib"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libtag-dev-headers",
+        ":taglib",
+        ":usr_lib_libtag_c.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> cufft-11.8
+cc_library(
+    name = "cufft-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcufft-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
+    ],
+)
+
+# pkgconf -> libunwind-ptrace
+cc_library(
+    name = "libunwind-ptrace",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libunwind-generic",
+        ":libunwind-headers",
+        ":usr_lib_libunwind-ptrace.so.0.0.0-lib",
     ],
 )
 
@@ -17167,180 +18362,67 @@ cc_library(
     ],
 )
 
-# pkgconf -> libdrm_nouveau
+# pkgconf -> orc-test-0.4
 cc_library(
-    name = "libdrm_nouveau",
-    includes = [
-        "usr/include/libdrm",
-        "usr/include/libdrm/nouveau",
-    ],
+    name = "orc-test-0.4",
+    includes = ["usr/include/orc-0.4"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":usr_lib_libdrm_nouveau.so.2.0.0-lib",
+        ":lib_libm.so.6-lib",
+        ":orc-dev-headers",
+        ":usr_lib_liborc-0.4.so.0.32.0-lib",
+        ":usr_lib_liborc-test-0.4.so.0.32.0-lib",
     ],
 )
 
-# pkgconf -> speex
+# pkgconf -> gio-unix-2.0
 cc_library(
-    name = "speex",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libspeex-dev-headers",
-        ":usr_lib_libspeex.so.1.5.1-lib",
-    ],
-)
-
-# pkgconf -> ticw
-cc_library(
-    name = "ticw",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":ncurses-dev-headers",
-        ":ncursesw",
-        ":usr_lib_libticw.so.5.9-lib",
-    ],
-)
-
-# pkgconf -> libunwind-ptrace
-cc_library(
-    name = "libunwind-ptrace",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libunwind-generic",
-        ":libunwind-headers",
-        ":usr_lib_libunwind-ptrace.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libdvbv5
-cc_library(
-    name = "libdvbv5",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libudev",
-        ":libv4l-dev-headers",
-        ":usr_lib_libdvbv5.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> renderproto
-cc_library(
-    name = "renderproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> libpng
-cc_library(
-    name = "libpng",
-    includes = ["usr/include/libpng16"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libpng16-16-headers",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> menu
-cc_library(
-    name = "menu",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":ncurses",
-        ":ncurses-dev-headers",
-        ":usr_lib_libmenu.so.5.9-lib",
-    ],
-)
-
-# pkgconf -> gdk-pixbuf-2.0
-cc_library(
-    name = "gdk-pixbuf-2.0",
-    includes = ["usr/include/gdk-pixbuf-2.0"],
+    name = "gio-unix-2.0",
+    includes = ["usr/include/gio-unix-2.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":gio-2.0",
+        ":gobject-2.0",
+        ":libglib-2.0-dev-headers",
+    ],
+)
+
+# pkgconf -> libudev
+cc_library(
+    name = "libudev",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libudev.so.1.7.3-lib",
+        ":systemd-dev-headers",
+    ],
+)
+
+# pkgconf -> harfbuzz-gobject
+cc_library(
+    name = "harfbuzz-gobject",
+    includes = ["usr/include/harfbuzz"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":harfbuzz",
+        ":libharfbuzz0-headers",
+        ":usr_lib_libharfbuzz-gobject.so.0.40001.0-lib",
+    ],
+)
+
+# pkgconf -> gio-2.0
+cc_library(
+    name = "gio-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
         ":glib-2.0",
         ":gmodule-no-export-2.0",
         ":gobject-2.0",
-        ":libgdk-pixbuf-2.0-0-headers",
-        ":libjpeg",
-        ":libpng",
-        ":shared-mime-info",
-        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
-    ],
-)
-
-# pkgconf -> libjpeg
-cc_library(
-    name = "libjpeg",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libjpeg62-headers",
-        ":usr_lib_libjpeg.so.62.3.0-lib",
-    ],
-)
-
-# pkgconf -> libsyn123
-cc_library(
-    name = "libsyn123",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":mpg123-dev-headers",
-        ":usr_lib_libsyn123.so.0.1.4-lib",
-    ],
-)
-
-# pkgconf -> xf86dgaproto
-cc_library(
-    name = "xf86dgaproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> wayland-scanner
-cc_library(
-    name = "wayland-scanner",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":wayland-dev-headers",
-    ],
-)
-
-# pkgconf -> scrnsaverproto
-cc_library(
-    name = "scrnsaverproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> wayland-server
-cc_library(
-    name = "wayland-server",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libffi",
-        ":usr_lib_libwayland-server.so.0.20.0-lib",
-        ":wayland-dev-headers",
-    ],
-)
-
-# pkgconf -> smartcols
-cc_library(
-    name = "smartcols",
-    includes = ["usr/include/libsmartcols"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libsmartcols.so.1.1.0-lib",
-        ":libblkid1-headers",
+        ":libglib-2.0-dev-headers",
+        ":mount",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":zlib",
     ],
 )
 
@@ -17351,6 +18433,426 @@ cc_library(
     deps = [
         ":usr_lib_libzstd.so.1.5.2-lib",
         ":zstd-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-app-1.0
+cc_library(
+    name = "gstreamer-app-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":usr_lib_libgstapp-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> gail-3.0
+cc_library(
+    name = "gail-3.0",
+    includes = ["usr/include/gail-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":atk",
+        ":libgtk-3.0-headers",
+        ":usr_lib_libgailutil-3.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> libtiff-4
+cc_library(
+    name = "libtiff-4",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libtiff5-headers",
+        ":usr_lib_libtiff.so.5.7.0-lib",
+    ],
+)
+
+# pkgconf -> fixesproto
+cc_library(
+    name = "fixesproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xextproto",
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> atspi-2
+cc_library(
+    name = "atspi-2",
+    includes = ["usr/include/at-spi-2.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dbus-1",
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":libatspi0-headers",
+        ":usr_lib_libatspi.so.0.0.1-lib",
+        ":x11",
+        ":xi",
+        ":xtst",
+    ],
+)
+
+# pkgconf -> liblzma
+cc_library(
+    name = "liblzma",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":usr_lib_liblzma.so.5.2.6-lib",
+        ":xz-dev-headers",
+    ],
+)
+
+# pkgconf -> nppc-11.4
+cc_library(
+    name = "nppc-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> cudart-11.8
+cc_library(
+    name = "cudart-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-cudart-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
+    ],
+)
+
+# pkgconf -> xcb-xv
+cc_library(
+    name = "xcb-xv",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xv.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> ell
+cc_library(
+    name = "ell",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libell-dev-headers",
+        ":usr_lib_libell.so.0.0.2-lib",
+    ],
+)
+
+# pkgconf -> libsystemd
+cc_library(
+    name = "libsystemd",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libsystemd.so.0.33.0-lib",
+        ":systemd-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-play-1.0
+cc_library(
+    name = "gstreamer-play-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-pbutils-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstplay-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> libpulse-simple
+cc_library(
+    name = "libpulse-simple",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpulse",
+        ":pulseaudio-dev-headers",
+        ":usr_lib_libpulse-simple.so.0.1.1-lib",
+    ],
+)
+
+# pkgconf -> libwebp
+cc_library(
+    name = "libwebp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libwebp-headers",
+        ":usr_lib_libwebp.so.7.1.5-lib",
+    ],
+)
+
+# pkgconf -> gmodule-export-2.0
+cc_library(
+    name = "gmodule-export-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-no-export-2.0",
+        ":libglib-2.0-dev-headers",
+    ],
+)
+
+# pkgconf -> libglog
+cc_library(
+    name = "libglog",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglog0-headers",
+        ":usr_lib_libglog.so.0.5.0-lib",
+    ],
+)
+
+# pkgconf -> bluez
+cc_library(
+    name = "bluez",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":bluez5-dev-headers",
+        ":usr_lib_libbluetooth.so.3.19.7-lib",
+    ],
+)
+
+# pkgconf -> sndfile
+cc_library(
+    name = "sndfile",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":flac",
+        ":libsndfile-dev-headers",
+        ":usr_lib_libsndfile.so.1.0.31-lib",
+    ],
+)
+
+# pkgconf -> dbus-glib-1
+cc_library(
+    name = "dbus-glib-1",
+    includes = ["usr/include/dbus-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dbus-1",
+        ":libdbus-glib-1-dev-headers",
+        ":usr_lib_libdbus-glib-1.so.2.3.5-lib",
+    ],
+)
+
+# pkgconf -> glib-2.0
+cc_library(
+    name = "glib-2.0",
+    includes = [
+        "usr/include/glib-2.0",
+        "usr/lib/glib-2.0/include",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglib-2.0-dev-headers",
+        ":libpcre",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+    ],
+)
+
+# pkgconf -> compositeproto
+cc_library(
+    name = "compositeproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> speexdsp
+cc_library(
+    name = "speexdsp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libspeexdsp-dev-headers",
+        ":usr_lib_libspeexdsp.so.1.5.1-lib",
+    ],
+)
+
+# pkgconf -> randrproto
+cc_library(
+    name = "randrproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-sctp-1.0
+cc_library(
+    name = "gstreamer-sctp-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstsctp-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-audio-1.0
+cc_library(
+    name = "gstreamer-audio-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> curand-11.4
+cc_library(
+    name = "curand-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcurand-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
+    ],
+)
+
+# pkgconf -> tic
+cc_library(
+    name = "tic",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses",
+        ":ncurses-dev-headers",
+        ":usr_lib_libtic.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> gobject-2.0
+cc_library(
+    name = "gobject-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":libffi",
+        ":libglib-2.0-dev-headers",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+# pkgconf -> vorbis
+cc_library(
+    name = "vorbis",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libvorbis-dev-headers",
+        ":ogg",
+        ":usr_lib_libvorbis.so.0.4.9-lib",
+    ],
+)
+
+# pkgconf -> orc-0.4
+cc_library(
+    name = "orc-0.4",
+    includes = ["usr/include/orc-0.4"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":orc-dev-headers",
+        ":usr_lib_liborc-0.4.so.0.32.0-lib",
+    ],
+)
+
+# pkgconf -> hogweed
+cc_library(
+    name = "hogweed",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":#",
+        ":nettle",
+        ":nettle-dev-headers",
+        ":usr_lib_libgmp.so.10.4.1-lib",
+        ":usr_lib_libhogweed.so.6.4-lib",
+    ],
+)
+
+# pkgconf -> dpmsproto
+cc_library(
+    name = "dpmsproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> fdisk
+cc_library(
+    name = "fdisk",
+    includes = ["usr/include/libfdisk"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libfdisk.so.1.1.0-lib",
+        ":libblkid1-headers",
+        ":uuid",
+    ],
+)
+
+# pkgconf -> gstreamer-vulkan-1.0
+cc_library(
+    name = "gstreamer-vulkan-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstvulkan-1.0.so.0.2007.0-lib",
+        ":vulkan",
+        ":wayland-client",
+        ":xcb",
+        ":xkbcommon",
+        ":xkbcommon-x11",
+    ],
+)
+
+# pkgconf -> libseccomp
+cc_library(
+    name = "libseccomp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libseccomp-dev-headers",
+        ":usr_lib_libseccomp.so.2.5.3-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-vulkan-xcb-1.0
+cc_library(
+    name = "gstreamer-vulkan-xcb-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-vulkan-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":xcb",
     ],
 )
 
@@ -17383,62 +18885,185 @@ cc_library(
     ],
 )
 
-# pkgconf -> libcap-ng
+# pkgconf -> ice
 cc_library(
-    name = "libcap-ng",
+    name = "ice",
     visibility = ["//visibility:public"],
     deps = [
-        ":lib_libcap-ng.so.0.0.0-lib",
-        ":libcap-ng-dev-headers",
+        ":libice-dev-headers",
+        ":usr_lib_libICE.so.6.3.0-lib",
+        ":xproto",
     ],
 )
 
-# pkgconf -> gstreamer-controller-1.0
+# pkgconf -> fribidi
 cc_library(
-    name = "gstreamer-controller-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
+    name = "fribidi",
+    includes = ["usr/include/fribidi"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libfribidi0-headers",
+        ":usr_lib_libfribidi.so.0.4.0-lib",
+    ],
+)
+
+# pkgconf -> xext
+cc_library(
+    name = "xext",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxext6-headers",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":x11",
+        ":xextproto",
+    ],
+)
+
+# pkgconf -> xft
+cc_library(
+    name = "xft",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fontconfig",
+        ":freetype2",
+        ":libxft2-headers",
+        ":usr_lib_libXft.so.2.3.4-lib",
+        ":xproto",
+        ":xrender",
+    ],
+)
+
+# pkgconf -> xf86dgaproto
+cc_library(
+    name = "xf86dgaproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> vorbisenc
+cc_library(
+    name = "vorbisenc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libvorbis-dev-headers",
+        ":usr_lib_libvorbisenc.so.2.0.12-lib",
+        ":vorbis",
+    ],
+)
+
+# pkgconf -> npps-11.4
+cc_library(
+    name = "npps-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> avahi-glib
+cc_library(
+    name = "avahi-glib",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":avahi-dev-headers",
+        ":glib-2.0",
+        ":usr_lib_libavahi-glib.so.1.0.2-lib",
+    ],
+)
+
+# pkgconf -> curand-11.8
+cc_library(
+    name = "curand-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcurand-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
+    ],
+)
+
+# pkgconf -> xcb-xfixes
+cc_library(
+    name = "xcb-xfixes",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xfixes.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> formw
+cc_library(
+    name = "formw",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses-dev-headers",
+        ":ncursesw",
+        ":usr_lib_libformw.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> dri2proto
+cc_library(
+    name = "dri2proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> harfbuzz
+cc_library(
+    name = "harfbuzz",
+    includes = ["usr/include/harfbuzz"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":freetype2",
+        ":glib-2.0",
+        ":libharfbuzz0-headers",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+    ],
+)
+
+# pkgconf -> fontconfig
+cc_library(
+    name = "fontconfig",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":freetype2",
+        ":libfontconfig1-headers",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":uuid",
+    ],
+)
+
+# pkgconf -> gudev-1.0
+cc_library(
+    name = "gudev-1.0",
+    includes = ["usr/include/gudev-1.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":glib-2.0",
-        ":gmodule-2.0",
         ":gobject-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer1.0-dev-headers",
-        ":usr_lib_libgstcontroller-1.0.so.0.2007.0-lib",
+        ":libgudev-1.0-dev-headers",
+        ":libudev",
+        ":usr_lib_libgudev-1.0.so.0.3.0-lib",
     ],
 )
 
-# pkgconf -> gobject-introspection-no-export-1.0
+# pkgconf -> nppitc-11.8
 cc_library(
-    name = "gobject-introspection-no-export-1.0",
-    includes = ["usr/include/gobject-introspection-1.0"],
+    name = "nppitc-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":gobject-introspection-1.0",
-        ":gobject-introspection-dev-headers",
-    ],
-)
-
-# pkgconf -> theoradec
-cc_library(
-    name = "theoradec",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libtheora-dev-headers",
-        ":ogg",
-        ":usr_lib_libtheoradec.so.1.1.4-lib",
-    ],
-)
-
-# pkgconf -> expat
-cc_library(
-    name = "expat",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libexpat1-headers",
-        ":usr_lib_libexpat.so.1.8.10-lib",
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
     ],
 )
 
@@ -17453,26 +19078,182 @@ cc_library(
     ],
 )
 
-# pkgconf -> gstreamer-insertbin-1.0
+# pkgconf -> expat
 cc_library(
-    name = "gstreamer-insertbin-1.0",
+    name = "expat",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libexpat1-headers",
+        ":usr_lib_libexpat.so.1.8.10-lib",
+    ],
+)
+
+# pkgconf -> nice
+cc_library(
+    name = "nice",
+    includes = ["usr/include/nice"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":gnutls",
+        ":gthread-2.0",
+        ":libnice-dev-headers",
+        ":usr_lib_libnice.so.10.11.0-lib",
+    ],
+)
+
+# pkgconf -> scrnsaverproto
+cc_library(
+    name = "scrnsaverproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> wayland-client
+cc_library(
+    name = "wayland-client",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libffi",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":wayland-dev-headers",
+    ],
+)
+
+# pkgconf -> cairo-pdf
+cc_library(
+    name = "cairo-pdf",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":lib_libz.so.1.2.11-lib",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-gl-egl-1.0
+cc_library(
+    name = "gstreamer-gl-egl-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":egl",
+        ":gstreamer-gl-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-bad-audio-1.0
+cc_library(
+    name = "gstreamer-bad-audio-1.0",
     includes = ["usr/include/gstreamer-1.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
         ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstinsertbin-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstbadaudio-1.0.so.0.2007.0-lib",
     ],
 )
 
-# pkgconf -> tic
+# pkgconf -> xf86bigfontproto
 cc_library(
-    name = "tic",
+    name = "xf86bigfontproto",
     visibility = ["//visibility:public"],
     deps = [
-        ":ncurses",
-        ":ncurses-dev-headers",
-        ":usr_lib_libtic.so.5.9-lib",
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> xcb-shm
+cc_library(
+    name = "xcb-shm",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-shm.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> vulkan
+cc_library(
+    name = "vulkan",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libvulkan1-headers",
+        ":usr_lib_libvulkan.so.1.3.204-lib",
+    ],
+)
+
+# pkgconf -> xfixes
+cc_library(
+    name = "xfixes",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxfixes3-headers",
+        ":usr_lib_libXfixes.so.3.1.0-lib",
+        ":x11",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> gnutls
+cc_library(
+    name = "gnutls",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hogweed",
+        ":libgnutls-dev-headers",
+        ":libidn2",
+        ":nettle",
+        ":usr_lib_libgnutls.so.30.32.0-lib",
+    ],
+)
+
+# pkgconf -> wayland-eglstream
+cc_library(
+    name = "wayland-eglstream",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":eglexternalplatform",
+        ":libnvidia-egl-wayland1-headers",
+        ":usr_lib_libnvidia-egl-wayland.so.1.1.9-lib",
+    ],
+)
+
+# pkgconf -> xextproto
+cc_library(
+    name = "xextproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> cufile-11.8
+cc_library(
+    name = "cufile-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcufile-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcufile.so.1.4.0-lib",
+    ],
+)
+
+# pkgconf -> nppig-11.8
+cc_library(
+    name = "nppig-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
     ],
 )
 
@@ -17489,103 +19270,334 @@ cc_library(
     ],
 )
 
-# pkgconf -> libdrm_amdgpu
+# pkgconf -> cufftw-11.4
 cc_library(
-    name = "libdrm_amdgpu",
-    includes = ["usr/include/libdrm"],
+    name = "cufftw-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":usr_lib_libdrm_amdgpu.so.1.0.0-lib",
+        ":libcufft-headers",
+        ":usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
     ],
 )
 
-# pkgconf -> pangocairo
+# pkgconf -> gtk+-wayland-3.0
 cc_library(
-    name = "pangocairo",
-    includes = ["usr/include/pango-1.0"],
+    name = "gtk+-wayland-3.0",
+    includes = ["usr/include/gtk-3.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cairo",
-        ":fontconfig",
-        ":freetype2",
-        ":fribidi",
-        ":gio-2.0",
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":harfbuzz",
-        ":harfbuzz-gobject",
-        ":pango",
-        ":pango-headers",
-        ":pangoft2",
-        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
-        ":xft",
-        ":xrender",
+        ":atk",
+        ":gdk-3.0",
+        ":libgtk-3.0-headers",
+        ":usr_lib_libgtk-3.so.0.2404.30-lib",
     ],
 )
 
-# pkgconf -> vapigen
+# pkgconf -> videoproto
 cc_library(
-    name = "vapigen",
+    name = "videoproto",
     visibility = ["//visibility:public"],
     deps = [
-        ":vala-dev-headers",
+        ":xorgproto-dev-headers",
     ],
 )
 
-# pkgconf -> blkid
+# pkgconf -> libwebpdemux
 cc_library(
-    name = "blkid",
-    includes = ["usr/include/blkid"],
+    name = "libwebpdemux",
     visibility = ["//visibility:public"],
     deps = [
-        ":lib_libblkid.so.1.1.0-lib",
-        ":libblkid1-headers",
+        ":libwebp",
+        ":libwebp-headers",
+        ":usr_lib_libwebpdemux.so.2.0.11-lib",
     ],
 )
 
-# pkgconf -> nppist-11.8
+# pkgconf -> gstreamer-rtp-1.0
 cc_library(
-    name = "nppist-11.8",
+    name = "gstreamer-rtp-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> nppisu-11.8
+cc_library(
+    name = "nppisu-11.8",
     includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
         ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+        ":usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> zlib
+# pkgconf -> nppc-11.8
 cc_library(
-    name = "zlib",
+    name = "nppc-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":lib_libz.so.1.2.11-lib",
-        ":libz1-headers",
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> xcomposite
+# pkgconf -> libsyn123
 cc_library(
-    name = "xcomposite",
+    name = "libsyn123",
     visibility = ["//visibility:public"],
     deps = [
-        ":libxcomposite1-headers",
-        ":usr_lib_libXcomposite.so.1.0.0-lib",
+        ":mpg123-dev-headers",
+        ":usr_lib_libsyn123.so.0.1.4-lib",
+    ],
+)
+
+# pkgconf -> panelw
+cc_library(
+    name = "panelw",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses-dev-headers",
+        ":ncursesw",
+        ":usr_lib_libpanelw.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-allocators-1.0
+cc_library(
+    name = "gstreamer-allocators-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":usr_lib_libgstallocators-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> ogg
+cc_library(
+    name = "ogg",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libogg-dev-headers",
+        ":usr_lib_libogg.so.0.8.5-lib",
+    ],
+)
+
+# pkgconf -> libcap-ng
+cc_library(
+    name = "libcap-ng",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libcap-ng.so.0.0.0-lib",
+        ":libcap-ng-dev-headers",
+    ],
+)
+
+# pkgconf -> menu
+cc_library(
+    name = "menu",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses",
+        ":ncurses-dev-headers",
+        ":usr_lib_libmenu.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> libbtrfsutil
+cc_library(
+    name = "libbtrfsutil",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":btrfs-tools-dev-headers",
+        ":usr_lib_libbtrfsutil.so.1.2.0-lib",
+    ],
+)
+
+# pkgconf -> xcb-xkb
+cc_library(
+    name = "xcb-xkb",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xkb.so.1.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> libdrm_omap
+cc_library(
+    name = "libdrm_omap",
+    includes = [
+        "usr/include/libdrm",
+        "usr/include/omap",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":libdrm-dev-headers",
+        ":usr_lib_libdrm_omap.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> libnsl
+cc_library(
+    name = "libnsl",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnsl-dev-headers",
+        ":libtirpc",
+        ":usr_lib_libnsl.so.3.0.0-lib",
+    ],
+)
+
+# pkgconf -> cairo-xlib
+cc_library(
+    name = "cairo-xlib",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> xi
+cc_library(
+    name = "xi",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":inputproto",
+        ":libxi6-headers",
+        ":usr_lib_libXi.so.6.1.0-lib",
         ":x11",
-        ":xproto",
     ],
 )
 
-# pkgconf -> avahi-gobject
+# pkgconf -> npps-11.8
 cc_library(
-    name = "avahi-gobject",
+    name = "npps-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":avahi-dev-headers",
-        ":glib-2.0",
-        ":usr_lib_libavahi-gobject.so.0.0.5-lib",
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> dri
+cc_library(
+    name = "dri",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":mesa-dev-headers",
+    ],
+)
+
+# pkgconf -> applewmproto
+cc_library(
+    name = "applewmproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> speex
+cc_library(
+    name = "speex",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libspeex-dev-headers",
+        ":usr_lib_libspeex.so.1.5.1-lib",
+    ],
+)
+
+# pkgconf -> nppicc-11.8
+cc_library(
+    name = "nppicc-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> libip4tc
+cc_library(
+    name = "libip4tc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iptables-dev-headers",
+        ":usr_lib_libip4tc.so.2.0.0-lib",
+    ],
+)
+
+# pkgconf -> mount
+cc_library(
+    name = "mount",
+    includes = ["usr/include/libmount"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":blkid",
+        ":lib_libmount.so.1.1.0-lib",
+        ":libblkid1-headers",
+    ],
+)
+
+# pkgconf -> xtables
+cc_library(
+    name = "xtables",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iptables-dev-headers",
+        ":usr_lib_libxtables.so.12.4.0-lib",
+    ],
+)
+
+# pkgconf -> glx
+cc_library(
+    name = "glx",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglvnd-dev-headers",
+        ":usr_lib_libGLX.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> alsa
+cc_library(
+    name = "alsa",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libasound-dev-headers",
+        ":usr_lib_libasound.so.2.0.0-lib",
+    ],
+)
+
+# pkgconf -> cuda-11.8
+cc_library(
+    name = "cuda-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-driver-11-8-dev-headers",
+        ":usr_lib_libcuda.so.1.1-lib",
     ],
 )
 
@@ -17602,43 +19614,1268 @@ cc_library(
     ],
 )
 
-# pkgconf -> glib-2.0
+# pkgconf -> libmediactl
 cc_library(
-    name = "glib-2.0",
-    includes = [
-        "usr/include/glib-2.0",
-        "usr/lib/glib-2.0/include",
-    ],
+    name = "libmediactl",
     visibility = ["//visibility:public"],
     deps = [
-        ":libglib-2.0-dev-headers",
-        ":libpcre",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":libv4l-dev-headers",
+        ":usr_lib_libmediactl.so.0.0.0-lib",
     ],
 )
 
-# pkgconf -> cairo
+# pkgconf -> xproto
 cc_library(
-    name = "cairo",
-    includes = ["usr/include/cairo"],
+    name = "xproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> avahi-core
+cc_library(
+    name = "avahi-core",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":avahi-dev-headers",
+        ":usr_lib_libavahi-common.so.3.5.4-lib",
+        ":usr_lib_libavahi-core.so.7.1.0-lib",
+    ],
+)
+
+# pkgconf -> inputproto
+cc_library(
+    name = "inputproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> gmp
+cc_library(
+    name = "gmp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libgmp-dev-headers",
+        ":usr_lib_libgmp.so.10.4.1-lib",
+    ],
+)
+
+# pkgconf -> gdk-3.0
+cc_library(
+    name = "gdk-3.0",
+    includes = ["usr/include/gtk-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-unix-2.0",
+        ":libgtk-3.0-headers",
+        ":pango",
+        ":usr_lib_libgdk-3.so.0.2404.30-lib",
+    ],
+)
+
+# pkgconf -> libxml-2.0
+cc_library(
+    name = "libxml-2.0",
+    includes = ["usr/include/libxml2"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxml2-headers",
+        ":usr_lib_libxml2.so.2.9.14-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-gl-prototypes-1.0
+cc_library(
+    name = "gstreamer-gl-prototypes-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glesv2",
+        ":gstreamer-gl-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":opengl",
+    ],
+)
+
+# pkgconf -> gstreamer-gl-wayland-1.0
+cc_library(
+    name = "gstreamer-gl-wayland-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-gl-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":wayland-client",
+        ":wayland-egl",
+    ],
+)
+
+# pkgconf -> vorbisfile
+cc_library(
+    name = "vorbisfile",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libvorbis-dev-headers",
+        ":usr_lib_libvorbisfile.so.3.3.8-lib",
+        ":vorbis",
+    ],
+)
+
+# pkgconf -> egl
+cc_library(
+    name = "egl",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglvnd-dev-headers",
+        ":usr_lib_libEGL.so.1.1.0-lib",
+    ],
+)
+
+# pkgconf -> xcb-randr
+cc_library(
+    name = "xcb-randr",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-randr.so.0.1.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> ticw
+cc_library(
+    name = "ticw",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses-dev-headers",
+        ":ncursesw",
+        ":usr_lib_libticw.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> python3
+cc_library(
+    name = "python3",
+    includes = ["usr/include/python3.10"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":python3-dev-headers",
+    ],
+)
+
+# pkgconf -> libical
+cc_library(
+    name = "libical",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":icu-i18n",
+        ":libical-dev-headers",
+        ":usr_lib_libical.so.3.0.16-lib",
+        ":usr_lib_libicalss.so.3.0.16-lib",
+        ":usr_lib_libicalvcal.so.3.0.16-lib",
+    ],
+)
+
+# pkgconf -> libexif
+cc_library(
+    name = "libexif",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libexif12-headers",
+        ":usr_lib_libexif.so.12.3.4-lib",
+    ],
+)
+
+# pkgconf -> gtk+-x11-3.0
+cc_library(
+    name = "gtk+-x11-3.0",
+    includes = ["usr/include/gtk-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":atk",
+        ":gdk-3.0",
+        ":libgtk-3.0-headers",
+        ":usr_lib_libgtk-3.so.0.2404.30-lib",
+    ],
+)
+
+# pkgconf -> libunwind-coredump
+cc_library(
+    name = "libunwind-coredump",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libunwind-generic",
+        ":libunwind-headers",
+        ":usr_lib_libunwind-coredump.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-rtsp-server-1.0
+cc_library(
+    name = "gstreamer-rtsp-server-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-app-1.0",
+        ":gstreamer-net-1.0",
+        ":gstreamer-rtp-1.0",
+        ":gstreamer-rtsp-1.0",
+        ":gstreamer-sdp-1.0",
+        ":gstreamer1.0-rtsp-server-dev-headers",
+        ":usr_lib_libgstrtspserver-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-codecparsers-1.0
+cc_library(
+    name = "gstreamer-codecparsers-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstcodecparsers-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> xshmfence
+cc_library(
+    name = "xshmfence",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxshmfence-dev-headers",
+        ":usr_lib_libxshmfence.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> libdrm_vc4
+cc_library(
+    name = "libdrm_vc4",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":libdrm-dev-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-rtsp-1.0
+cc_library(
+    name = "gstreamer-rtsp-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-pbutils-1.0",
+        ":gstreamer-rtp-1.0",
+        ":gstreamer-sdp-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> theoradec
+cc_library(
+    name = "theoradec",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libtheora-dev-headers",
+        ":ogg",
+        ":usr_lib_libtheoradec.so.1.1.4-lib",
+    ],
+)
+
+# pkgconf -> nppif-11.4
+cc_library(
+    name = "nppif-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> gdk-wayland-3.0
+cc_library(
+    name = "gdk-wayland-3.0",
+    includes = ["usr/include/gtk-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-unix-2.0",
+        ":libgtk-3.0-headers",
+        ":pango",
+        ":usr_lib_libgdk-3.so.0.2404.30-lib",
+    ],
+)
+
+# pkgconf -> pangofc
+cc_library(
+    name = "pangofc",
+    includes = ["usr/include/pango-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pango-headers",
+        ":pangoft2",
+    ],
+)
+
+# pkgconf -> gstreamer-tag-1.0
+cc_library(
+    name = "gstreamer-tag-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> libvala-0.56
+cc_library(
+    name = "libvala-0.56",
+    includes = ["usr/include/vala-0.56"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":usr_lib_libvala-0.56.so.0.0.0-lib",
+        ":vala-dev-headers",
+    ],
+)
+
+# pkgconf -> xf86vidmodeproto
+cc_library(
+    name = "xf86vidmodeproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> zlib
+cc_library(
+    name = "zlib",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libz.so.1.2.11-lib",
+        ":libz1-headers",
+    ],
+)
+
+# pkgconf -> vapigen-0.56
+cc_library(
+    name = "vapigen-0.56",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":vala-dev-headers",
+    ],
+)
+
+# pkgconf -> pygobject-3.0
+cc_library(
+    name = "pygobject-3.0",
+    includes = ["usr/include/pygobject-3.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":gobject-2.0",
-        ":libcairo2-headers",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":libffi",
+        ":python3-pygobject-dev-headers",
     ],
 )
 
-# pkgconf -> gobject-introspection-1.0
+# pkgconf -> cairo-ft
 cc_library(
-    name = "gobject-introspection-1.0",
-    includes = ["usr/include/gobject-introspection-1.0"],
+    name = "cairo-ft",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> wayland-cursor
+cc_library(
+    name = "wayland-cursor",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
+        ":wayland-client",
+        ":wayland-dev-headers",
+    ],
+)
+
+# pkgconf -> cairo-gobject
+cc_library(
+    name = "cairo-gobject",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
+    ],
+)
+
+# pkgconf -> xcb-render
+cc_library(
+    name = "xcb-render",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-render.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> python-3.10
+cc_library(
+    name = "python-3.10",
+    includes = ["usr/include/python3.10"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":python3-dev-headers",
+    ],
+)
+
+# pkgconf -> form
+cc_library(
+    name = "form",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses",
+        ":ncurses-dev-headers",
+        ":usr_lib_libform.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> pangoot
+cc_library(
+    name = "pangoot",
+    includes = ["usr/include/pango-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pango-headers",
+        ":pangoft2",
+    ],
+)
+
+# pkgconf -> damageproto
+cc_library(
+    name = "damageproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> libidn2
+cc_library(
+    name = "libidn2",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libidn2-dev-headers",
+        ":usr_lib_libidn2.so.0.3.7-lib",
+    ],
+)
+
+# pkgconf -> xkbcommon
+cc_library(
+    name = "xkbcommon",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxkbcommon0-headers",
+        ":usr_lib_libxkbcommon.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> gdk-pixbuf-2.0
+cc_library(
+    name = "gdk-pixbuf-2.0",
+    includes = ["usr/include/gdk-pixbuf-2.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gmodule-no-export-2.0",
+        ":gobject-2.0",
+        ":libgdk-pixbuf-2.0-0-headers",
+        ":libjpeg",
+        ":libpng",
+        ":shared-mime-info",
+        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-vulkan-wayland-1.0
+cc_library(
+    name = "gstreamer-vulkan-wayland-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-vulkan-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":wayland-client",
+    ],
+)
+
+# pkgconf -> gthread-2.0
+cc_library(
+    name = "gthread-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":libglib-2.0-dev-headers",
+        ":usr_lib_libgthread-2.0.so.0.7200.3-lib",
+    ],
+)
+
+# pkgconf -> pixman-1
+cc_library(
+    name = "pixman-1",
+    includes = ["usr/include/pixman-1"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpixman-1-0-headers",
+        ":usr_lib_libpixman-1.so.0.40.0-lib",
+    ],
+)
+
+# pkgconf -> libgphoto2_port
+cc_library(
+    name = "libgphoto2_port",
+    includes = ["usr/include/gphoto2"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libm.so.6-lib",
+        ":libgphoto2-6-headers",
+        ":usr_lib_libgphoto2_port.so.12.0.0-lib",
+    ],
+)
+
+# pkgconf -> cusparse-11.4
+cc_library(
+    name = "cusparse-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcusparse-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
+    ],
+)
+
+# pkgconf -> smartcols
+cc_library(
+    name = "smartcols",
+    includes = ["usr/include/libsmartcols"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libsmartcols.so.1.1.0-lib",
+        ":libblkid1-headers",
+    ],
+)
+
+# pkgconf -> cairo-tee
+cc_library(
+    name = "cairo-tee",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-net-1.0
+cc_library(
+    name = "gstreamer-net-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":gio-unix-2.0",
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer1.0-dev-headers",
+        ":usr_lib_libgstnet-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> theoraenc
+cc_library(
+    name = "theoraenc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libtheora-dev-headers",
+        ":ogg",
+        ":theoradec",
+        ":usr_lib_libtheoraenc.so.1.1.2-lib",
+    ],
+)
+
+# pkgconf -> cusparse-11.8
+cc_library(
+    name = "cusparse-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcusparse-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
+    ],
+)
+
+# pkgconf -> cublas-11.8
+cc_library(
+    name = "cublas-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcublas-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+    ],
+)
+
+# pkgconf -> opengl
+cc_library(
+    name = "opengl",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libglvnd-dev-headers",
+        ":usr_lib_libOpenGL.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> nppif-11.8
+cc_library(
+    name = "nppif-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-riff-1.0
+cc_library(
+    name = "gstreamer-riff-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstriff-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> libffi
+cc_library(
+    name = "libffi",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libffi8-headers",
+        ":usr_lib_libffi.so.8.1.2-lib",
+    ],
+)
+
+# pkgconf -> cairo-script
+cc_library(
+    name = "cairo-script",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":lib_libz.so.1.2.11-lib",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> python-3.10-embed
+cc_library(
+    name = "python-3.10-embed",
+    includes = ["usr/include/python3.10"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":python3-dev-headers",
+        ":usr_lib_libpython3.10.so.1.0-lib",
+    ],
+)
+
+# pkgconf -> cublas-11.4
+cc_library(
+    name = "cublas-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcublas-headers",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+    ],
+)
+
+# pkgconf -> cairo-ps
+cc_library(
+    name = "cairo-ps",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":lib_libz.so.1.2.11-lib",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> xineramaproto
+cc_library(
+    name = "xineramaproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> bigreqsproto
+cc_library(
+    name = "bigreqsproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> libical-glib
+cc_library(
+    name = "libical-glib",
     visibility = ["//visibility:public"],
     deps = [
         ":glib-2.0",
         ":gobject-2.0",
-        ":gobject-introspection-dev-headers",
-        ":usr_lib_libgirepository-1.0.so.1.0.0-lib",
+        ":libical",
+        ":libical-dev-headers",
+        ":usr_lib_libical-glib.so.3.0.16-lib",
+    ],
+)
+
+# pkgconf -> xcb-xf86dri
+cc_library(
+    name = "xcb-xf86dri",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xf86dri.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> avahi-gobject
+cc_library(
+    name = "avahi-gobject",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":avahi-dev-headers",
+        ":glib-2.0",
+        ":usr_lib_libavahi-gobject.so.0.0.5-lib",
+    ],
+)
+
+# pkgconf -> xcb-screensaver
+cc_library(
+    name = "xcb-screensaver",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-screensaver.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> libkms
+cc_library(
+    name = "libkms",
+    includes = ["usr/include/libkms"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":libdrm-dev-headers",
+        ":usr_lib_libkms.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> x11-xcb
+cc_library(
+    name = "x11-xcb",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libx11-dev-headers",
+        ":usr_lib_libX11-xcb.so.1.0.0-lib",
+        ":x11",
+    ],
+)
+
+# pkgconf -> libpcreposix
+cc_library(
+    name = "libpcreposix",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpcre",
+        ":libpcre1-headers",
+        ":usr_lib_libpcreposix.so.0.0.7-lib",
+    ],
+)
+
+# pkgconf -> libturbojpeg
+cc_library(
+    name = "libturbojpeg",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libjpeg62-headers",
+        ":usr_lib_libturbojpeg.so.0.2.0-lib",
+    ],
+)
+
+# pkgconf -> libwebpmux
+cc_library(
+    name = "libwebpmux",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libwebp",
+        ":libwebp-headers",
+        ":usr_lib_libwebpmux.so.3.0.10-lib",
+    ],
+)
+
+# pkgconf -> dbus-python
+cc_library(
+    name = "dbus-python",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dbus-1",
+        ":python3-dbus-dev-headers",
+    ],
+)
+
+# pkgconf -> gmodule-no-export-2.0
+cc_library(
+    name = "gmodule-no-export-2.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":libglib-2.0-dev-headers",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+    ],
+)
+
+# pkgconf -> xtst
+cc_library(
+    name = "xtst",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxtst6-headers",
+        ":recordproto",
+        ":usr_lib_libXtst.so.6.1.0-lib",
+        ":x11",
+    ],
+)
+
+# pkgconf -> libunwind-setjmp
+cc_library(
+    name = "libunwind-setjmp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libunwind",
+        ":libunwind-headers",
+        ":usr_lib_libunwind-setjmp.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> pangoft2
+cc_library(
+    name = "pangoft2",
+    includes = ["usr/include/pango-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":fontconfig",
+        ":freetype2",
+        ":fribidi",
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":harfbuzz",
+        ":harfbuzz-gobject",
+        ":pango",
+        ":pango-headers",
+        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
+        ":xft",
+        ":xrender",
+    ],
+)
+
+# pkgconf -> wayland-server
+cc_library(
+    name = "wayland-server",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libffi",
+        ":usr_lib_libwayland-server.so.0.20.0-lib",
+        ":wayland-dev-headers",
+    ],
+)
+
+# pkgconf -> xcomposite
+cc_library(
+    name = "xcomposite",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcomposite1-headers",
+        ":usr_lib_libXcomposite.so.1.0.0-lib",
+        ":x11",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> nppisu-11.4
+cc_library(
+    name = "nppisu-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> gtk+-3.0
+cc_library(
+    name = "gtk+-3.0",
+    includes = ["usr/include/gtk-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":atk",
+        ":gdk-3.0",
+        ":libgtk-3.0-headers",
+        ":usr_lib_libgtk-3.so.0.2404.30-lib",
+    ],
+)
+
+# pkgconf -> dri3proto
+cc_library(
+    name = "dri3proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> nppial-11.4
+cc_library(
+    name = "nppial-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> cuda-11.4
+cc_library(
+    name = "cuda-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-driver-dev-headers",
+        ":usr_lib_libcuda.so.1.1-lib",
+    ],
+)
+
+# pkgconf -> libv4l1
+cc_library(
+    name = "libv4l1",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libv4l-dev-headers",
+        ":libv4l2",
+        ":usr_lib_libv4l1.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> kbproto
+cc_library(
+    name = "kbproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> panel
+cc_library(
+    name = "panel",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ncurses",
+        ":ncurses-dev-headers",
+        ":usr_lib_libpanel.so.5.9-lib",
+    ],
+)
+
+# pkgconf -> libip6tc
+cc_library(
+    name = "libip6tc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iptables-dev-headers",
+        ":usr_lib_libip6tc.so.2.0.0-lib",
+    ],
+)
+
+# pkgconf -> xdmcp
+cc_library(
+    name = "xdmcp",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxdmcp6-headers",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> flac++
+cc_library(
+    name = "flac++",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":flac",
+        ":flac-dev-headers",
+        ":usr_lib_libFLAC++.so.6.3.0-lib",
+    ],
+)
+
+# pkgconf -> xcb-damage
+cc_library(
+    name = "xcb-damage",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-damage.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> xcb-dri2
+cc_library(
+    name = "xcb-dri2",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-dri2.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> libdrm_intel
+cc_library(
+    name = "libdrm_intel",
+    includes = ["usr/include/libdrm"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":libdrm-dev-headers",
+        ":pciaccess",
+        ":usr_lib_libdrm_intel.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> gdk-x11-3.0
+cc_library(
+    name = "gdk-x11-3.0",
+    includes = ["usr/include/gtk-3.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-unix-2.0",
+        ":libgtk-3.0-headers",
+        ":pango",
+        ":usr_lib_libgdk-3.so.0.2404.30-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-sdp-1.0
+cc_library(
+    name = "gstreamer-sdp-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-pbutils-1.0",
+        ":gstreamer-rtp-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-base-dev-headers",
+        ":orc-0.4",
+        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
+        ":zlib",
+    ],
+)
+
+# pkgconf -> protobuf
+cc_library(
+    name = "protobuf",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libprotobuf30-headers",
+        ":usr_lib_libprotobuf.so.30.0.6-lib",
+    ],
+)
+
+# pkgconf -> theora
+cc_library(
+    name = "theora",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libtheora-dev-headers",
+        ":ogg",
+        ":usr_lib_libtheora.so.0.3.10-lib",
+    ],
+)
+
+# pkgconf -> gmpxx
+cc_library(
+    name = "gmpxx",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gmp",
+        ":libgmp-dev-headers",
+        ":usr_lib_libgmpxx.so.4.6.1-lib",
+    ],
+)
+
+# pkgconf -> nettle
+cc_library(
+    name = "nettle",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":nettle-dev-headers",
+        ":usr_lib_libnettle.so.8.4-lib",
+    ],
+)
+
+# pkgconf -> com_err
+cc_library(
+    name = "com_err",
+    includes = ["usr/include/et"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":e2fsprogs-dev-headers",
+        ":lib_libcom_err.so.2.1-lib",
+    ],
+)
+
+# pkgconf -> icu-i18n
+cc_library(
+    name = "icu-i18n",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":icu-dev-headers",
+        ":icu-uc",
+        ":usr_lib_libicui18n.so.70.1-lib",
+    ],
+)
+
+# pkgconf -> libcap
+cc_library(
+    name = "libcap",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libcap.so.2.66-lib",
+        ":libcap-headers",
+    ],
+)
+
+# pkgconf -> libgphoto2
+cc_library(
+    name = "libgphoto2",
+    includes = ["usr/include/gphoto2"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib_libm.so.6-lib",
+        ":libexif",
+        ":libgphoto2-6-headers",
+        ":libgphoto2_port",
+        ":usr_lib_libgphoto2.so.6.1.0-lib",
+    ],
+)
+
+# pkgconf -> gstreamer-wayland-1.0
+cc_library(
+    name = "gstreamer-wayland-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstwayland-1.0.so.0.2007.0-lib",
+        ":wayland-client",
+    ],
+)
+
+# pkgconf -> libv4lconvert
+cc_library(
+    name = "libv4lconvert",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libv4l-dev-headers",
+        ":usr_lib_libv4lconvert.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> libout123
+cc_library(
+    name = "libout123",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":mpg123-dev-headers",
+        ":usr_lib_libout123.so.0.4.3-lib",
+    ],
+)
+
+# pkgconf -> x11
+cc_library(
+    name = "x11",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libx11-dev-headers",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":xcb",
+        ":xproto",
     ],
 )
 
@@ -17654,31 +20891,268 @@ cc_library(
     ],
 )
 
-# pkgconf -> gmpxx
+# pkgconf -> wayland-egl-backend
 cc_library(
-    name = "gmpxx",
+    name = "wayland-egl-backend",
     visibility = ["//visibility:public"],
     deps = [
-        ":gmp",
-        ":libgmp-dev-headers",
-        ":usr_lib_libgmpxx.so.4.6.1-lib",
+        ":wayland-dev-headers",
     ],
 )
 
-# pkgconf -> theora
+# pkgconf -> xcb-sync
 cc_library(
-    name = "theora",
+    name = "xcb-sync",
     visibility = ["//visibility:public"],
     deps = [
-        ":libtheora-dev-headers",
-        ":ogg",
-        ":usr_lib_libtheora.so.0.3.10-lib",
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-sync.so.1.0.0-lib",
+        ":xcb",
     ],
 )
 
-# pkgconf -> opencv4
+# pkgconf -> libpulse-mainloop-glib
 cc_library(
-    name = "opencv4",
+    name = "libpulse-mainloop-glib",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpulse",
+        ":pulseaudio-dev-headers",
+        ":usr_lib_libpulse-mainloop-glib.so.0.0.6-lib",
+    ],
+)
+
+# pkgconf -> e2p
+cc_library(
+    name = "e2p",
+    includes = ["usr/include/e2p"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":e2fsprogs-dev-headers",
+        ":lib_libe2p.so.2.3-lib",
+    ],
+)
+
+# pkgconf -> sbc
+cc_library(
+    name = "sbc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libsbc-dev-headers",
+        ":usr_lib_libsbc.so.1.3.0-lib",
+    ],
+)
+
+# pkgconf -> xcb-dri3
+cc_library(
+    name = "xcb-dri3",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-dri3.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> cairo-glesv2
+cc_library(
+    name = "cairo-glesv2",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> xxf86vm
+cc_library(
+    name = "xxf86vm",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxxf86vm-dev-headers",
+        ":usr_lib_libXxf86vm.so.1.0.0-lib",
+        ":x11",
+        ":xf86vidmodeproto",
+    ],
+)
+
+# pkgconf -> icu-io
+cc_library(
+    name = "icu-io",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":icu-dev-headers",
+        ":icu-i18n",
+        ":usr_lib_libicuio.so.70.1-lib",
+    ],
+)
+
+# pkgconf -> protobuf-lite
+cc_library(
+    name = "protobuf-lite",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libprotobuf30-headers",
+        ":usr_lib_libprotobuf-lite.so.30.0.6-lib",
+    ],
+)
+
+# pkgconf -> cudart-11.4
+cc_library(
+    name = "cudart-11.4",
+    includes = ["usr/local/cuda-11.4/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-cudart-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
+    ],
+)
+
+# pkgconf -> pthread-stubs
+cc_library(
+    name = "pthread-stubs",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libpthread-stubs-dev-headers",
+    ],
+)
+
+# pkgconf -> ck-connector
+cc_library(
+    name = "ck-connector",
+    includes = ["usr/include/ConsoleKit/ck-connector"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":consolekit-dev-headers",
+        ":dbus-1",
+        ":usr_lib_libck-connector.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> cufftw-11.8
+cc_library(
+    name = "cufftw-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libcufft-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
+    ],
+)
+
+# pkgconf -> xv
+cc_library(
+    name = "xv",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxv-dev-headers",
+        ":usr_lib_libXv.so.1.0.0-lib",
+        ":x11",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> cairo-xlib-xrender
+cc_library(
+    name = "cairo-xlib-xrender",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo-xlib",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> libmnl
+cc_library(
+    name = "libmnl",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libmnl-dev-headers",
+        ":usr_lib_libmnl.so.0.2.0-lib",
+    ],
+)
+
+# pkgconf -> fontsproto
+cc_library(
+    name = "fontsproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> xcb-composite
+cc_library(
+    name = "xcb-composite",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-composite.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> gstreamer-base-1.0
+cc_library(
+    name = "gstreamer-base-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":gstreamer-1.0",
+        ":gstreamer1.0-dev-headers",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> libjpeg
+cc_library(
+    name = "libjpeg",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libjpeg62-headers",
+        ":usr_lib_libjpeg.so.62.3.0-lib",
+    ],
+)
+
+# pkgconf -> dmxproto
+cc_library(
+    name = "dmxproto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":xorgproto-dev-headers",
+    ],
+)
+
+# pkgconf -> nvrtc-11.8
+cc_library(
+    name = "nvrtc-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cuda-nvrtc-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
+    ],
+)
+
+# pkgconf -> libdvbv5
+cc_library(
+    name = "libdvbv5",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libudev",
+        ":libv4l-dev-headers",
+        ":usr_lib_libdvbv5.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> opencv
+cc_library(
+    name = "opencv",
     includes = ["usr/include/opencv4"],
     visibility = ["//visibility:public"],
     deps = [
@@ -17693,7 +21167,6 @@ cc_library(
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
         ":usr_lib_libopencv_cudabgsegm.so.4.5.5-lib",
-        ":usr_lib_libopencv_cudacodec.so.4.5.5-lib",
         ":usr_lib_libopencv_cudafeatures2d.so.4.5.5-lib",
         ":usr_lib_libopencv_cudafilters.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaimgproc.so.4.5.5-lib",
@@ -17752,543 +21225,12 @@ cc_library(
     ],
 )
 
-# pkgconf -> libpulse-simple
+# pkgconf -> libglvnd
 cc_library(
-    name = "libpulse-simple",
+    name = "libglvnd",
     visibility = ["//visibility:public"],
     deps = [
-        ":libpulse",
-        ":pulseaudio-dev-headers",
-        ":usr_lib_libpulse-simple.so.0.1.1-lib",
-    ],
-)
-
-# pkgconf -> libip4tc
-cc_library(
-    name = "libip4tc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":iptables-dev-headers",
-        ":usr_lib_libip4tc.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> cairo-script
-cc_library(
-    name = "cairo-script",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":lib_libz.so.1.2.11-lib",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> recordproto
-cc_library(
-    name = "recordproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> libunwind-coredump
-cc_library(
-    name = "libunwind-coredump",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libunwind-generic",
-        ":libunwind-headers",
-        ":usr_lib_libunwind-coredump.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> xtst
-cc_library(
-    name = "xtst",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxtst6-headers",
-        ":recordproto",
-        ":usr_lib_libXtst.so.6.1.0-lib",
-        ":x11",
-    ],
-)
-
-# pkgconf -> libv4l2rds
-cc_library(
-    name = "libv4l2rds",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libv4l-dev-headers",
-        ":usr_lib_libv4l2rds.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libvala-0.56
-cc_library(
-    name = "libvala-0.56",
-    includes = ["usr/include/vala-0.56"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":usr_lib_libvala-0.56.so.0.0.0-lib",
-        ":vala-dev-headers",
-    ],
-)
-
-# pkgconf -> libxcrypt
-cc_library(
-    name = "libxcrypt",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcrypt2-headers",
-        ":usr_lib_libcrypt.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> sndfile
-cc_library(
-    name = "sndfile",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":flac",
-        ":libsndfile-dev-headers",
-        ":usr_lib_libsndfile.so.1.0.31-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-wayland-1.0
-cc_library(
-    name = "gstreamer-wayland-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstwayland-1.0.so.0.2007.0-lib",
-        ":wayland-client",
-    ],
-)
-
-# pkgconf -> fontsproto
-cc_library(
-    name = "fontsproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> gmp
-cc_library(
-    name = "gmp",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libgmp-dev-headers",
-        ":usr_lib_libgmp.so.10.4.1-lib",
-    ],
-)
-
-# pkgconf -> xcb-xtest
-cc_library(
-    name = "xcb-xtest",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xtest.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> gstreamer-vulkan-wayland-1.0
-cc_library(
-    name = "gstreamer-vulkan-wayland-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-vulkan-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":wayland-client",
-    ],
-)
-
-# pkgconf -> cairo-ft
-cc_library(
-    name = "cairo-ft",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> gstreamer-video-1.0
-cc_library(
-    name = "gstreamer-video-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> kbproto
-cc_library(
-    name = "kbproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> xfixes
-cc_library(
-    name = "xfixes",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxfixes3-headers",
-        ":usr_lib_libXfixes.so.3.1.0-lib",
-        ":x11",
-        ":xproto",
-    ],
-)
-
-# pkgconf -> gstreamer-1.0
-cc_library(
-    name = "gstreamer-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":gobject-2.0",
-        ":gstreamer1.0-dev-headers",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> libidn2
-cc_library(
-    name = "libidn2",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libidn2-dev-headers",
-        ":usr_lib_libidn2.so.0.3.7-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-bad-audio-1.0
-cc_library(
-    name = "gstreamer-bad-audio-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstbadaudio-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> libattr
-cc_library(
-    name = "libattr",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":attr-dev-headers",
-        ":usr_lib_libattr.so.1.1.2501-lib",
-    ],
-)
-
-# pkgconf -> cuda-11.4
-cc_library(
-    name = "cuda-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cuda-driver-dev-headers",
-        ":usr_lib_libcuda.so.1.1-lib",
-    ],
-)
-
-# pkgconf -> taglib_c
-cc_library(
-    name = "taglib_c",
-    includes = ["usr/include/taglib"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libtag-dev-headers",
-        ":taglib",
-        ":usr_lib_libtag_c.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-app-1.0
-cc_library(
-    name = "gstreamer-app-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":usr_lib_libgstapp-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> nppig-11.4
-cc_library(
-    name = "nppig-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-sdp-1.0
-cc_library(
-    name = "gstreamer-sdp-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-2.0",
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-pbutils-1.0",
-        ":gstreamer-rtp-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> atk
-cc_library(
-    name = "atk",
-    includes = ["usr/include/atk-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":libatk-1.0-0-headers",
-        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
-    ],
-)
-
-# pkgconf -> videoproto
-cc_library(
-    name = "videoproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> libmpg123
-cc_library(
-    name = "libmpg123",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":mpg123-dev-headers",
-        ":usr_lib_libmpg123.so.0.46.7-lib",
-    ],
-)
-
-# pkgconf -> libip6tc
-cc_library(
-    name = "libip6tc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":iptables-dev-headers",
-        ":usr_lib_libip6tc.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> vorbis
-cc_library(
-    name = "vorbis",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libvorbis-dev-headers",
-        ":ogg",
-        ":usr_lib_libvorbis.so.0.4.9-lib",
-    ],
-)
-
-# pkgconf -> xrender
-cc_library(
-    name = "xrender",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxrender1-headers",
-        ":usr_lib_libXrender.so.1.3.0-lib",
-        ":x11",
-        ":xproto",
-    ],
-)
-
-# pkgconf -> gstreamer-rtsp-1.0
-cc_library(
-    name = "gstreamer-rtsp-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-pbutils-1.0",
-        ":gstreamer-rtp-1.0",
-        ":gstreamer-sdp-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> libudev
-cc_library(
-    name = "libudev",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libudev.so.1.7.3-lib",
-        ":systemd-dev-headers",
-    ],
-)
-
-# pkgconf -> ss
-cc_library(
-    name = "ss",
-    includes = ["usr/include/ss"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":com_err",
-        ":e2fsprogs-dev-headers",
-        ":lib_libss.so.2.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-plugins-bad-1.0
-cc_library(
-    name = "gstreamer-plugins-bad-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-    ],
-)
-
-# pkgconf -> libexif
-cc_library(
-    name = "libexif",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libexif12-headers",
-        ":usr_lib_libexif.so.12.3.4-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-base-1.0
-cc_library(
-    name = "gstreamer-base-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":gobject-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer1.0-dev-headers",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> xft
-cc_library(
-    name = "xft",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":fontconfig",
-        ":freetype2",
-        ":libxft2-headers",
-        ":usr_lib_libXft.so.2.3.4-lib",
-        ":xproto",
-        ":xrender",
-    ],
-)
-
-# pkgconf -> dbus-1
-cc_library(
-    name = "dbus-1",
-    includes = [
-        "usr/include/dbus-1.0",
-        "usr/lib/dbus-1.0/include",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":dbus-dev-headers",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
-    ],
-)
-
-# pkgconf -> curand-11.4
-cc_library(
-    name = "curand-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcurand-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-tag-1.0
-cc_library(
-    name = "gstreamer-tag-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> gstreamer-gl-wayland-1.0
-cc_library(
-    name = "gstreamer-gl-wayland-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-gl-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":wayland-client",
-        ":wayland-egl",
+        ":libglvnd-dev-headers",
     ],
 )
 
@@ -18305,93 +21247,115 @@ cc_library(
     ],
 )
 
-# pkgconf -> ice
+# pkgconf -> pangocairo
 cc_library(
-    name = "ice",
+    name = "pangocairo",
+    includes = ["usr/include/pango-1.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libice-dev-headers",
-        ":usr_lib_libICE.so.6.3.0-lib",
-        ":xproto",
+        ":cairo",
+        ":fontconfig",
+        ":freetype2",
+        ":fribidi",
+        ":gio-2.0",
+        ":glib-2.0",
+        ":gobject-2.0",
+        ":harfbuzz",
+        ":harfbuzz-gobject",
+        ":pango",
+        ":pango-headers",
+        ":pangoft2",
+        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
+        ":xft",
+        ":xrender",
     ],
 )
 
-# pkgconf -> nppicc-11.4
+# pkgconf -> nppim-11.4
 cc_library(
-    name = "nppicc-11.4",
+    name = "nppim-11.4",
     includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
         ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
+        ":usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> gtk+-wayland-3.0
+# pkgconf -> xcb-xtest
 cc_library(
-    name = "gtk+-wayland-3.0",
-    includes = ["usr/include/gtk-3.0"],
+    name = "xcb-xtest",
     visibility = ["//visibility:public"],
     deps = [
-        ":atk",
-        ":gdk-3.0",
-        ":libgtk-3.0-headers",
-        ":usr_lib_libgtk-3.so.0.2404.30-lib",
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-xtest.so.0.0.0-lib",
+        ":xcb",
     ],
 )
 
-# pkgconf -> pixman-1
+# pkgconf -> xcb
 cc_library(
-    name = "pixman-1",
-    includes = ["usr/include/pixman-1"],
+    name = "xcb",
     visibility = ["//visibility:public"],
     deps = [
-        ":libpixman-1-0-headers",
-        ":usr_lib_libpixman-1.so.0.40.0-lib",
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":xau",
     ],
 )
 
-# pkgconf -> panelw
+# pkgconf -> gstreamer-insertbin-1.0
 cc_library(
-    name = "panelw",
+    name = "gstreamer-insertbin-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":ncurses-dev-headers",
-        ":ncursesw",
-        ":usr_lib_libpanelw.so.5.9-lib",
+        ":gstreamer-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstinsertbin-1.0.so.0.2007.0-lib",
     ],
 )
 
-# pkgconf -> cufftw-11.8
+# pkgconf -> xdamage
 cc_library(
-    name = "cufftw-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
+    name = "xdamage",
     visibility = ["//visibility:public"],
     deps = [
-        ":libcufft-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
+        ":libxdamage1-headers",
+        ":usr_lib_libXdamage.so.1.1.0-lib",
+        ":x11",
+        ":xproto",
     ],
 )
 
-# pkgconf -> libpcreposix
+# pkgconf -> libattr
 cc_library(
-    name = "libpcreposix",
+    name = "libattr",
     visibility = ["//visibility:public"],
     deps = [
-        ":libpcre",
-        ":libpcre1-headers",
-        ":usr_lib_libpcreposix.so.0.0.7-lib",
+        ":attr-dev-headers",
+        ":usr_lib_libattr.so.1.1.2501-lib",
     ],
 )
 
-# pkgconf -> cusparse-11.4
+# pkgconf -> sqlite3
 cc_library(
-    name = "cusparse-11.4",
+    name = "sqlite3",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libsqlite3-dev-headers",
+        ":usr_lib_libsqlite3.so.0.8.6-lib",
+    ],
+)
+
+# pkgconf -> nppig-11.4
+cc_library(
+    name = "nppig-11.4",
     includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libcusparse-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
     ],
 )
 
@@ -18409,401 +21373,6 @@ cc_library(
     ],
 )
 
-# pkgconf -> gstreamer-audio-1.0
-cc_library(
-    name = "gstreamer-audio-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> cairo-glesv2
-cc_library(
-    name = "cairo-glesv2",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> nppitc-11.4
-cc_library(
-    name = "nppitc-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> libbtrfsutil
-cc_library(
-    name = "libbtrfsutil",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":btrfs-tools-dev-headers",
-        ":usr_lib_libbtrfsutil.so.1.2.0-lib",
-    ],
-)
-
-# pkgconf -> harfbuzz-subset
-cc_library(
-    name = "harfbuzz-subset",
-    includes = ["usr/include/harfbuzz"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":harfbuzz",
-        ":libharfbuzz0-headers",
-        ":usr_lib_libharfbuzz-subset.so.0.40001.0-lib",
-    ],
-)
-
-# pkgconf -> tbb
-cc_library(
-    name = "tbb",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":tbb-headers",
-        ":usr_lib_libtbb.so.12.5-lib",
-    ],
-)
-
-# pkgconf -> hogweed
-cc_library(
-    name = "hogweed",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":#",
-        ":nettle",
-        ":nettle-dev-headers",
-        ":usr_lib_libgmp.so.10.4.1-lib",
-        ":usr_lib_libhogweed.so.6.4-lib",
-    ],
-)
-
-# pkgconf -> libdrm_intel
-cc_library(
-    name = "libdrm_intel",
-    includes = ["usr/include/libdrm"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":pciaccess",
-        ":usr_lib_libdrm_intel.so.1.0.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-screensaver
-cc_library(
-    name = "xcb-screensaver",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-screensaver.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> wayland-cursor
-cc_library(
-    name = "wayland-cursor",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
-        ":wayland-client",
-        ":wayland-dev-headers",
-    ],
-)
-
-# pkgconf -> nppisu-11.8
-cc_library(
-    name = "nppisu-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> epoxy
-cc_library(
-    name = "epoxy",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":egl",
-        ":gl",
-        ":libepoxy0-headers",
-        ":usr_lib_libepoxy.so.0.0.0-lib",
-        ":x11",
-    ],
-)
-
-# pkgconf -> cairo-xlib-xrender
-cc_library(
-    name = "cairo-xlib-xrender",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo-xlib",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> gio-unix-2.0
-cc_library(
-    name = "gio-unix-2.0",
-    includes = ["usr/include/gio-unix-2.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-2.0",
-        ":gobject-2.0",
-        ":libglib-2.0-dev-headers",
-    ],
-)
-
-# pkgconf -> npps-11.8
-cc_library(
-    name = "npps-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> gmodule-2.0
-cc_library(
-    name = "gmodule-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-no-export-2.0",
-        ":libglib-2.0-dev-headers",
-    ],
-)
-
-# pkgconf -> compositeproto
-cc_library(
-    name = "compositeproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> alsa-topology
-cc_library(
-    name = "alsa-topology",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":alsa",
-        ":libasound-dev-headers",
-        ":usr_lib_libatopology.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> libpulse
-cc_library(
-    name = "libpulse",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":pulseaudio-dev-headers",
-        ":usr_lib_libpulse.so.0.24.0-lib",
-    ],
-)
-
-# pkgconf -> gmodule-export-2.0
-cc_library(
-    name = "gmodule-export-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-no-export-2.0",
-        ":libglib-2.0-dev-headers",
-    ],
-)
-
-# pkgconf -> orc-test-0.4
-cc_library(
-    name = "orc-test-0.4",
-    includes = ["usr/include/orc-0.4"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libm.so.6-lib",
-        ":orc-dev-headers",
-        ":usr_lib_liborc-0.4.so.0.32.0-lib",
-        ":usr_lib_liborc-test-0.4.so.0.32.0-lib",
-    ],
-)
-
-# pkgconf -> uuid
-cc_library(
-    name = "uuid",
-    includes = ["usr/include/uuid"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libuuid1-headers",
-        ":usr_lib_libuuid.so.1.3.0-lib",
-    ],
-)
-
-# pkgconf -> mount
-cc_library(
-    name = "mount",
-    includes = ["usr/include/libmount"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":blkid",
-        ":lib_libmount.so.1.1.0-lib",
-        ":libblkid1-headers",
-    ],
-)
-
-# pkgconf -> xcb-render
-cc_library(
-    name = "xcb-render",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-render.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> libturbojpeg
-cc_library(
-    name = "libturbojpeg",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libjpeg62-headers",
-        ":usr_lib_libturbojpeg.so.0.2.0-lib",
-    ],
-)
-
-# pkgconf -> nppidei-11.8
-cc_library(
-    name = "nppidei-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> liblzma
-cc_library(
-    name = "liblzma",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":usr_lib_liblzma.so.5.2.6-lib",
-        ":xz-dev-headers",
-    ],
-)
-
-# pkgconf -> libpsx
-cc_library(
-    name = "libpsx",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libpthread.so.0-lib",
-        ":libcap-headers",
-        ":usr_lib_libpsx.so.2.66-lib",
-    ],
-)
-
-# pkgconf -> randrproto
-cc_library(
-    name = "randrproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> glproto
-cc_library(
-    name = "glproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> xproto
-cc_library(
-    name = "xproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> avahi-core
-cc_library(
-    name = "avahi-core",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":avahi-dev-headers",
-        ":usr_lib_libavahi-common.so.3.5.4-lib",
-        ":usr_lib_libavahi-core.so.7.1.0-lib",
-    ],
-)
-
-# pkgconf -> cublas-11.8
-cc_library(
-    name = "cublas-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcublas-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-    ],
-)
-
-# pkgconf -> libprocps
-cc_library(
-    name = "libprocps",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":procps-dev-headers",
-        ":usr_lib_libprocps.so.8.0.3-lib",
-    ],
-)
-
-# pkgconf -> opengl
-cc_library(
-    name = "opengl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libOpenGL.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libglvnd
-cc_library(
-    name = "libglvnd",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-    ],
-)
-
 # pkgconf -> libpsl
 cc_library(
     name = "libpsl",
@@ -18814,426 +21383,60 @@ cc_library(
     ],
 )
 
-# pkgconf -> taglib
+# pkgconf -> xcb-shape
 cc_library(
-    name = "taglib",
-    includes = ["usr/include/taglib"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libz.so.1.2.11-lib",
-        ":libtag-dev-headers",
-        ":usr_lib_libtag.so.1.18.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-xfixes
-cc_library(
-    name = "xcb-xfixes",
+    name = "xcb-shape",
     visibility = ["//visibility:public"],
     deps = [
         ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xfixes.so.0.0.0-lib",
+        ":usr_lib_libxcb-shape.so.0.0.0-lib",
         ":xcb",
     ],
 )
 
-# pkgconf -> nppial-11.8
+# pkgconf -> libpng16
 cc_library(
-    name = "nppial-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
+    name = "libpng16",
+    includes = ["usr/include/libpng16"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> libmnl
-cc_library(
-    name = "libmnl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libmnl-dev-headers",
-        ":usr_lib_libmnl.so.0.2.0-lib",
-    ],
-)
-
-# pkgconf -> gthread-2.0
-cc_library(
-    name = "gthread-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":libglib-2.0-dev-headers",
-        ":usr_lib_libgthread-2.0.so.0.7200.3-lib",
-    ],
-)
-
-# pkgconf -> libpcre
-cc_library(
-    name = "libpcre",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libpcre1-headers",
-        ":usr_lib_libpcre.so.1.2.13-lib",
-    ],
-)
-
-# pkgconf -> flac
-cc_library(
-    name = "flac",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":flac-dev-headers",
-        ":ogg",
-        ":usr_lib_libFLAC.so.8.3.0-lib",
-    ],
-)
-
-# pkgconf -> sbc
-cc_library(
-    name = "sbc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libsbc-dev-headers",
-        ":usr_lib_libsbc.so.1.3.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-proto
-cc_library(
-    name = "xcb-proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xcb-proto-dev-headers",
-    ],
-)
-
-# pkgconf -> xcb-xkb
-cc_library(
-    name = "xcb-xkb",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xkb.so.1.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> xf86vidmodeproto
-cc_library(
-    name = "xf86vidmodeproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> xtables
-cc_library(
-    name = "xtables",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":iptables-dev-headers",
-        ":usr_lib_libxtables.so.12.4.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-gl-egl-1.0
-cc_library(
-    name = "gstreamer-gl-egl-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":egl",
-        ":gstreamer-gl-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-    ],
-)
-
-# pkgconf -> dpmsproto
-cc_library(
-    name = "dpmsproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> nppial-11.4
-cc_library(
-    name = "nppial-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> x11
-cc_library(
-    name = "x11",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libx11-dev-headers",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":xcb",
-        ":xproto",
-    ],
-)
-
-# pkgconf -> lzo2
-cc_library(
-    name = "lzo2",
-    includes = ["usr/include/lzo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":liblzo2-dev-headers",
-        ":usr_lib_liblzo2.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-mpegts-1.0
-cc_library(
-    name = "gstreamer-mpegts-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstmpegts-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-gl-x11-1.0
-cc_library(
-    name = "gstreamer-gl-x11-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-gl-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":x11-xcb",
-    ],
-)
-
-# pkgconf -> nppicc-11.8
-cc_library(
-    name = "nppicc-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> pygobject-3.0
-cc_library(
-    name = "pygobject-3.0",
-    includes = ["usr/include/pygobject-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gobject-2.0",
-        ":libffi",
-        ":python3-pygobject-dev-headers",
-    ],
-)
-
-# pkgconf -> avahi-glib
-cc_library(
-    name = "avahi-glib",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":avahi-dev-headers",
-        ":glib-2.0",
-        ":usr_lib_libavahi-glib.so.1.0.2-lib",
-    ],
-)
-
-# pkgconf -> cudart-11.4
-cc_library(
-    name = "cudart-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cuda-cudart-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-check-1.0
-cc_library(
-    name = "gstreamer-check-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":gobject-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer1.0-dev-headers",
-        ":usr_lib_libgstcheck-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-transcoder-1.0
-cc_library(
-    name = "gstreamer-transcoder-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-pbutils-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgsttranscoder-1.0.so.0-lib",
-    ],
-)
-
-# pkgconf -> py3cairo
-cc_library(
-    name = "py3cairo",
-    includes = ["usr/include/pycairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":python3-pycairo-dev-headers",
-    ],
-)
-
-# pkgconf -> dri3proto
-cc_library(
-    name = "dri3proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> readline
-cc_library(
-    name = "readline",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libreadline8-headers",
-        ":ncurses",
-        ":usr_lib_libreadline.so.8.1-lib",
-    ],
-)
-
-# pkgconf -> xcmiscproto
-cc_library(
-    name = "xcmiscproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> panel
-cc_library(
-    name = "panel",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":ncurses",
-        ":ncurses-dev-headers",
-        ":usr_lib_libpanel.so.5.9-lib",
-    ],
-)
-
-# pkgconf -> gudev-1.0
-cc_library(
-    name = "gudev-1.0",
-    includes = ["usr/include/gudev-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":libgudev-1.0-dev-headers",
-        ":libudev",
-        ":usr_lib_libgudev-1.0.so.0.3.0-lib",
-    ],
-)
-
-# pkgconf -> resourceproto
-cc_library(
-    name = "resourceproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> pangoft2
-cc_library(
-    name = "pangoft2",
-    includes = ["usr/include/pango-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":fontconfig",
-        ":freetype2",
-        ":fribidi",
-        ":gio-2.0",
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":harfbuzz",
-        ":harfbuzz-gobject",
-        ":pango",
-        ":pango-headers",
-        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
-        ":xft",
-        ":xrender",
-    ],
-)
-
-# pkgconf -> damageproto
-cc_library(
-    name = "damageproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> gio-2.0
-cc_library(
-    name = "gio-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":gmodule-no-export-2.0",
-        ":gobject-2.0",
-        ":libglib-2.0-dev-headers",
-        ":mount",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":libpng16-16-headers",
+        ":usr_lib_libpng16.so.16.39.0-lib",
         ":zlib",
     ],
 )
 
-# pkgconf -> libical-glib
+# pkgconf -> gobject-introspection-no-export-1.0
 cc_library(
-    name = "libical-glib",
+    name = "gobject-introspection-no-export-1.0",
+    includes = ["usr/include/gobject-introspection-1.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":glib-2.0",
         ":gobject-2.0",
-        ":libical",
-        ":libical-dev-headers",
-        ":usr_lib_libical-glib.so.3.0.16-lib",
+        ":gobject-introspection-1.0",
+        ":gobject-introspection-dev-headers",
     ],
 )
 
-# pkgconf -> xcb-record
+# pkgconf -> cairo-xcb
 cc_library(
-    name = "xcb-record",
+    name = "cairo-xcb",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> xcb-glx
+cc_library(
+    name = "xcb-glx",
     visibility = ["//visibility:public"],
     deps = [
         ":libxcb-dev-headers",
-        ":usr_lib_libxcb-record.so.0.0.0-lib",
+        ":usr_lib_libxcb-glx.so.0.0.0-lib",
         ":xcb",
     ],
 )
@@ -19249,789 +21452,70 @@ cc_library(
     ],
 )
 
-# pkgconf -> npps-11.4
+# pkgconf -> libdrm_etnaviv
 cc_library(
-    name = "npps-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> xf86driproto
-cc_library(
-    name = "xf86driproto",
-    includes = ["usr/include/X11/dri"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> gstreamer-vulkan-xcb-1.0
-cc_library(
-    name = "gstreamer-vulkan-xcb-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-vulkan-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> libv4l1
-cc_library(
-    name = "libv4l1",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libv4l-dev-headers",
-        ":libv4l2",
-        ":usr_lib_libv4l1.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libunwind-setjmp
-cc_library(
-    name = "libunwind-setjmp",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libunwind",
-        ":libunwind-headers",
-        ":usr_lib_libunwind-setjmp.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-allocators-1.0
-cc_library(
-    name = "gstreamer-allocators-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":usr_lib_libgstallocators-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> applewmproto
-cc_library(
-    name = "applewmproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> python-3.10-embed
-cc_library(
-    name = "python-3.10-embed",
-    includes = ["usr/include/python3.10"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":python3-dev-headers",
-        ":usr_lib_libpython3.10.so.1.0-lib",
-    ],
-)
-
-# pkgconf -> cairo-xcb-shm
-cc_library(
-    name = "cairo-xcb-shm",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> xkbregistry
-cc_library(
-    name = "xkbregistry",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxkbcommon0-headers",
-        ":libxml-2.0",
-        ":usr_lib_libxkbregistry.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> cairo-egl
-cc_library(
-    name = "cairo-egl",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> xcb-shape
-cc_library(
-    name = "xcb-shape",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-shape.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> vorbisfile
-cc_library(
-    name = "vorbisfile",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libvorbis-dev-headers",
-        ":usr_lib_libvorbisfile.so.3.3.8-lib",
-        ":vorbis",
-    ],
-)
-
-# pkgconf -> nppisu-11.4
-cc_library(
-    name = "nppisu-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> libdrm_omap
-cc_library(
-    name = "libdrm_omap",
-    includes = [
-        "usr/include/libdrm",
-        "usr/include/omap",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":usr_lib_libdrm_omap.so.1.0.0-lib",
-    ],
-)
-
-# pkgconf -> libusb-1.0
-cc_library(
-    name = "libusb-1.0",
-    includes = ["usr/include/libusb-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libusb-1.0.so.0.3.0-lib",
-        ":libusb-1.0-dev-headers",
-    ],
-)
-
-# pkgconf -> glesv1_cm
-cc_library(
-    name = "glesv1_cm",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libGLESv1_CM.so.1.2.0-lib",
-    ],
-)
-
-# pkgconf -> fdisk
-cc_library(
-    name = "fdisk",
-    includes = ["usr/include/libfdisk"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libfdisk.so.1.1.0-lib",
-        ":libblkid1-headers",
-        ":uuid",
-    ],
-)
-
-# pkgconf -> cairo-svg
-cc_library(
-    name = "cairo-svg",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> libdrm
-cc_library(
-    name = "libdrm",
+    name = "libdrm_etnaviv",
     includes = ["usr/include/libdrm"],
     visibility = ["//visibility:public"],
     deps = [
+        ":libdrm",
         ":libdrm-dev-headers",
-        ":usr_lib_tegra_libdrm.so.2-lib",
+        ":usr_lib_libdrm_etnaviv.so.1.0.0-lib",
     ],
 )
 
-# pkgconf -> xi
+# pkgconf -> gflags
 cc_library(
-    name = "xi",
+    name = "gflags",
     visibility = ["//visibility:public"],
     deps = [
-        ":inputproto",
-        ":libxi6-headers",
-        ":usr_lib_libXi.so.6.1.0-lib",
-        ":x11",
+        ":gflags-dev-headers",
+        ":usr_lib_libgflags.so.2.2.2-lib",
     ],
 )
 
-# pkgconf -> dbus-python
+# pkgconf -> nppidei-11.4
 cc_library(
-    name = "dbus-python",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":dbus-1",
-        ":python3-dbus-dev-headers",
-    ],
-)
-
-# pkgconf -> cuda-11.8
-cc_library(
-    name = "cuda-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cuda-driver-11-8-dev-headers",
-        ":usr_lib_libcuda.so.1.1-lib",
-    ],
-)
-
-# pkgconf -> xext
-cc_library(
-    name = "xext",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxext6-headers",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":x11",
-        ":xextproto",
-    ],
-)
-
-# pkgconf -> gstreamer-player-1.0
-cc_library(
-    name = "gstreamer-player-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-pbutils-1.0",
-        ":gstreamer-play-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstplayer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> cairo-tee
-cc_library(
-    name = "cairo-tee",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> nppist-11.4
-cc_library(
-    name = "nppist-11.4",
+    name = "nppidei-11.4",
     includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
         ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+        ":usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> libunwind
+# pkgconf -> gstreamer-fft-1.0
 cc_library(
-    name = "libunwind",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libunwind-headers",
-        ":usr_lib_libunwind.so.8.0.1-lib",
-    ],
-)
-
-# pkgconf -> nppif-11.8
-cc_library(
-    name = "nppif-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> inputproto
-cc_library(
-    name = "inputproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> gstreamer-pbutils-1.0
-cc_library(
-    name = "gstreamer-pbutils-1.0",
+    name = "gstreamer-fft-1.0",
     includes = ["usr/include/gstreamer-1.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer-video-1.0",
         ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
-        ":zlib",
+        ":usr_lib_libgstfft-1.0.so.0.2007.0-lib",
     ],
 )
 
-# pkgconf -> libgphoto2
+# pkgconf -> glesv2
 cc_library(
-    name = "libgphoto2",
-    includes = ["usr/include/gphoto2"],
+    name = "glesv2",
     visibility = ["//visibility:public"],
     deps = [
-        ":lib_libm.so.6-lib",
-        ":libexif",
-        ":libgphoto2-6-headers",
-        ":libgphoto2_port",
-        ":usr_lib_libgphoto2.so.6.1.0-lib",
+        ":libglvnd-dev-headers",
+        ":usr_lib_libGLESv2.so.2.1.0-lib",
     ],
 )
 
-# pkgconf -> orc-0.4
+# pkgconf -> libdrm_radeon
 cc_library(
-    name = "orc-0.4",
-    includes = ["usr/include/orc-0.4"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":orc-dev-headers",
-        ":usr_lib_liborc-0.4.so.0.32.0-lib",
-    ],
-)
-
-# pkgconf -> avahi-client
-cc_library(
-    name = "avahi-client",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":avahi-dev-headers",
-        ":usr_lib_libavahi-client.so.3.2.9-lib",
-        ":usr_lib_libavahi-common.so.3.5.4-lib",
-    ],
-)
-
-# pkgconf -> xcb-glx
-cc_library(
-    name = "xcb-glx",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-glx.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> libical
-cc_library(
-    name = "libical",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":icu-i18n",
-        ":libical-dev-headers",
-        ":usr_lib_libical.so.3.0.16-lib",
-        ":usr_lib_libicalss.so.3.0.16-lib",
-        ":usr_lib_libicalvcal.so.3.0.16-lib",
-    ],
-)
-
-# pkgconf -> form
-cc_library(
-    name = "form",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":ncurses",
-        ":ncurses-dev-headers",
-        ":usr_lib_libform.so.5.9-lib",
-    ],
-)
-
-# pkgconf -> gtk+-unix-print-3.0
-cc_library(
-    name = "gtk+-unix-print-3.0",
-    includes = ["usr/include/gtk-3.0/unix-print"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gtk+-3.0",
-        ":libgtk-3.0-headers",
-    ],
-)
-
-# pkgconf -> xcb-randr
-cc_library(
-    name = "xcb-randr",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-randr.so.0.1.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> speexdsp
-cc_library(
-    name = "speexdsp",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libspeexdsp-dev-headers",
-        ":usr_lib_libspeexdsp.so.1.5.1-lib",
-    ],
-)
-
-# pkgconf -> xcb-present
-cc_library(
-    name = "xcb-present",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-present.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> libdrm_vc4
-cc_library(
-    name = "libdrm_vc4",
+    name = "libdrm_radeon",
+    includes = ["usr/include/libdrm"],
     visibility = ["//visibility:public"],
     deps = [
         ":libdrm",
         ":libdrm-dev-headers",
-    ],
-)
-
-# pkgconf -> wayland-egl-backend
-cc_library(
-    name = "wayland-egl-backend",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":wayland-dev-headers",
-    ],
-)
-
-# pkgconf -> libtirpc
-cc_library(
-    name = "libtirpc",
-    includes = ["usr/include/tirpc"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libtirpc-dev-headers",
-        ":usr_lib_libtirpc.so.3.0.0-lib",
-    ],
-)
-
-# pkgconf -> fribidi
-cc_library(
-    name = "fribidi",
-    includes = ["usr/include/fribidi"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libfribidi0-headers",
-        ":usr_lib_libfribidi.so.0.4.0-lib",
-    ],
-)
-
-# pkgconf -> libmediactl
-cc_library(
-    name = "libmediactl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libv4l-dev-headers",
-        ":usr_lib_libmediactl.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> xau
-cc_library(
-    name = "xau",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxau6-headers",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":xproto",
-    ],
-)
-
-# pkgconf -> pangofc
-cc_library(
-    name = "pangofc",
-    includes = ["usr/include/pango-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":pango-headers",
-        ":pangoft2",
-    ],
-)
-
-# pkgconf -> nppif-11.4
-cc_library(
-    name = "nppif-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> ofono
-cc_library(
-    name = "ofono",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":ofono-dev-headers",
-    ],
-)
-
-# pkgconf -> cairo-xcb
-cc_library(
-    name = "cairo-xcb",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> cairo-xlib
-cc_library(
-    name = "cairo-xlib",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> cufft-11.4
-cc_library(
-    name = "cufft-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcufft-headers",
-        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
-    ],
-)
-
-# pkgconf -> libcroco-0.6
-cc_library(
-    name = "libcroco-0.6",
-    includes = ["usr/include/libcroco-0.6"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":libcroco-dev-headers",
-        ":usr_lib_libcroco-0.6.so.3.0.1-lib",
-    ],
-)
-
-# pkgconf -> cusolver-11.4
-cc_library(
-    name = "cusolver-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcusolver-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcusolver.so.11.4.1.48-lib",
-    ],
-)
-
-# pkgconf -> xf86bigfontproto
-cc_library(
-    name = "xf86bigfontproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> gstreamer-rtsp-server-1.0
-cc_library(
-    name = "gstreamer-rtsp-server-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-app-1.0",
-        ":gstreamer-net-1.0",
-        ":gstreamer-rtp-1.0",
-        ":gstreamer-rtsp-1.0",
-        ":gstreamer-sdp-1.0",
-        ":gstreamer1.0-rtsp-server-dev-headers",
-        ":usr_lib_libgstrtspserver-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> cairo-png
-cc_library(
-    name = "cairo-png",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> xcb-xinerama
-cc_library(
-    name = "xcb-xinerama",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xinerama.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> libseccomp
-cc_library(
-    name = "libseccomp",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libseccomp-dev-headers",
-        ":usr_lib_libseccomp.so.2.5.3-lib",
-    ],
-)
-
-# pkgconf -> xcb-sync
-cc_library(
-    name = "xcb-sync",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-sync.so.1.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> atk-bridge-2.0
-cc_library(
-    name = "atk-bridge-2.0",
-    includes = ["usr/include/at-spi2-atk/2.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":atk",
-        ":atspi-2",
-        ":dbus-1",
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":gobject-2.0",
-        ":libatk-bridge-2.0-0-headers",
-        ":usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libtiff-4
-cc_library(
-    name = "libtiff-4",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libtiff5-headers",
-        ":usr_lib_libtiff.so.5.7.0-lib",
-    ],
-)
-
-# pkgconf -> com_err
-cc_library(
-    name = "com_err",
-    includes = ["usr/include/et"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":e2fsprogs-dev-headers",
-        ":lib_libcom_err.so.2.1-lib",
-    ],
-)
-
-# pkgconf -> wayland-egl
-cc_library(
-    name = "wayland-egl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":usr_lib_libwayland-egl.so.1.20.0-lib",
-        ":wayland-client",
-        ":wayland-dev-headers",
-    ],
-)
-
-# pkgconf -> nvrtc-11.8
-cc_library(
-    name = "nvrtc-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cuda-nvrtc-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
-    ],
-)
-
-# pkgconf -> gobject-2.0
-cc_library(
-    name = "gobject-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":libffi",
-        ":libglib-2.0-dev-headers",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-gl-prototypes-1.0
-cc_library(
-    name = "gstreamer-gl-prototypes-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glesv2",
-        ":gstreamer-gl-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":opengl",
-    ],
-)
-
-# pkgconf -> xcursor
-cc_library(
-    name = "xcursor",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcursor1-headers",
-        ":usr_lib_libXcursor.so.1.0.2-lib",
-        ":x11",
-        ":xproto",
+        ":usr_lib_libdrm_radeon.so.1.0.1-lib",
     ],
 )
 
@@ -20047,251 +21531,6 @@ cc_library(
         ":libdrm",
         ":libdrm-dev-headers",
         ":usr_lib_libdrm_freedreno.so.1.0.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-vulkan-1.0
-cc_library(
-    name = "gstreamer-vulkan-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstvulkan-1.0.so.0.2007.0-lib",
-        ":vulkan",
-        ":wayland-client",
-        ":xcb",
-        ":xkbcommon",
-        ":xkbcommon-x11",
-    ],
-)
-
-# pkgconf -> gstreamer-sctp-1.0
-cc_library(
-    name = "gstreamer-sctp-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstsctp-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> e2p
-cc_library(
-    name = "e2p",
-    includes = ["usr/include/e2p"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":e2fsprogs-dev-headers",
-        ":lib_libe2p.so.2.3-lib",
-    ],
-)
-
-# pkgconf -> libglog
-cc_library(
-    name = "libglog",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglog0-headers",
-        ":usr_lib_libglog.so.0.5.0-lib",
-    ],
-)
-
-# pkgconf -> flac++
-cc_library(
-    name = "flac++",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":flac",
-        ":flac-dev-headers",
-        ":usr_lib_libFLAC++.so.6.3.0-lib",
-    ],
-)
-
-# pkgconf -> ck-connector
-cc_library(
-    name = "ck-connector",
-    includes = ["usr/include/ConsoleKit/ck-connector"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":consolekit-dev-headers",
-        ":dbus-1",
-        ":usr_lib_libck-connector.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-dri2
-cc_library(
-    name = "xcb-dri2",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-dri2.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> pango
-cc_library(
-    name = "pango",
-    includes = ["usr/include/pango-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":fontconfig",
-        ":freetype2",
-        ":fribidi",
-        ":gio-2.0",
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":harfbuzz",
-        ":pango-headers",
-        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-        ":xft",
-        ":xrender",
-    ],
-)
-
-# pkgconf -> gstreamer-play-1.0
-cc_library(
-    name = "gstreamer-play-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-pbutils-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer-video-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstplay-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> glx
-cc_library(
-    name = "glx",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libGLX.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> gdk-x11-3.0
-cc_library(
-    name = "gdk-x11-3.0",
-    includes = ["usr/include/gtk-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-unix-2.0",
-        ":libgtk-3.0-headers",
-        ":pango",
-        ":usr_lib_libgdk-3.so.0.2404.30-lib",
-    ],
-)
-
-# pkgconf -> presentproto
-cc_library(
-    name = "presentproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> libiptc
-cc_library(
-    name = "libiptc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":iptables-dev-headers",
-        ":libip4tc",
-    ],
-)
-
-# pkgconf -> libcrypt
-cc_library(
-    name = "libcrypt",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcrypt2-headers",
-        ":usr_lib_libcrypt.so.2.0.0-lib",
-    ],
-)
-
-# pkgconf -> librsvg-2.0
-cc_library(
-    name = "librsvg-2.0",
-    includes = ["usr/include/librsvg-2.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":lib_libm.so.6-lib",
-        ":librsvg-2-dev-headers",
-        ":usr_lib_librsvg-2.so.2.48.0-lib",
-    ],
-)
-
-# pkgconf -> nppc-11.4
-cc_library(
-    name = "nppc-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> libv4l2
-cc_library(
-    name = "libv4l2",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libv4l-dev-headers",
-        ":libv4lconvert",
-        ":usr_lib_libv4l2.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> fixesproto
-cc_library(
-    name = "fixesproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xextproto",
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> ext2fs
-cc_library(
-    name = "ext2fs",
-    includes = ["usr/include/ext2fs"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":com_err",
-        ":e2fsprogs-dev-headers",
-        ":lib_libext2fs.so.2.4-lib",
-    ],
-)
-
-# pkgconf -> vorbisenc
-cc_library(
-    name = "vorbisenc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libvorbis-dev-headers",
-        ":usr_lib_libvorbisenc.so.2.0.12-lib",
-        ":vorbis",
     ],
 )
 
@@ -20319,244 +21558,25 @@ cc_library(
     ],
 )
 
-# pkgconf -> libnsl
+# pkgconf -> libpulse
 cc_library(
-    name = "libnsl",
+    name = "libpulse",
     visibility = ["//visibility:public"],
     deps = [
-        ":libnsl-dev-headers",
-        ":libtirpc",
-        ":usr_lib_libnsl.so.3.0.0-lib",
+        ":pulseaudio-dev-headers",
+        ":usr_lib_libpulse.so.0.24.0-lib",
     ],
 )
 
-# pkgconf -> fontconfig
+# pkgconf -> ss
 cc_library(
-    name = "fontconfig",
+    name = "ss",
+    includes = ["usr/include/ss"],
     visibility = ["//visibility:public"],
     deps = [
-        ":freetype2",
-        ":libfontconfig1-headers",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":uuid",
-    ],
-)
-
-# pkgconf -> theoraenc
-cc_library(
-    name = "theoraenc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libtheora-dev-headers",
-        ":ogg",
-        ":theoradec",
-        ":usr_lib_libtheoraenc.so.1.1.2-lib",
-    ],
-)
-
-# pkgconf -> icu-io
-cc_library(
-    name = "icu-io",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":icu-dev-headers",
-        ":icu-i18n",
-        ":usr_lib_libicuio.so.70.1-lib",
-    ],
-)
-
-# pkgconf -> bigreqsproto
-cc_library(
-    name = "bigreqsproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> xcb-dri3
-cc_library(
-    name = "xcb-dri3",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-dri3.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> nppig-11.8
-cc_library(
-    name = "nppig-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> nppc-11.8
-cc_library(
-    name = "nppc-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> gtk+-x11-3.0
-cc_library(
-    name = "gtk+-x11-3.0",
-    includes = ["usr/include/gtk-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":atk",
-        ":gdk-3.0",
-        ":libgtk-3.0-headers",
-        ":usr_lib_libgtk-3.so.0.2404.30-lib",
-    ],
-)
-
-# pkgconf -> gtk+-3.0
-cc_library(
-    name = "gtk+-3.0",
-    includes = ["usr/include/gtk-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":atk",
-        ":gdk-3.0",
-        ":libgtk-3.0-headers",
-        ":usr_lib_libgtk-3.so.0.2404.30-lib",
-    ],
-)
-
-# pkgconf -> harfbuzz
-cc_library(
-    name = "harfbuzz",
-    includes = ["usr/include/harfbuzz"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":freetype2",
-        ":glib-2.0",
-        ":libharfbuzz0-headers",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-    ],
-)
-
-# pkgconf -> libout123
-cc_library(
-    name = "libout123",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":mpg123-dev-headers",
-        ":usr_lib_libout123.so.0.4.3-lib",
-    ],
-)
-
-# pkgconf -> xv
-cc_library(
-    name = "xv",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxv-dev-headers",
-        ":usr_lib_libXv.so.1.0.0-lib",
-        ":x11",
-        ":xproto",
-    ],
-)
-
-# pkgconf -> atspi-2
-cc_library(
-    name = "atspi-2",
-    includes = ["usr/include/at-spi-2.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":dbus-1",
-        ":glib-2.0",
-        ":gobject-2.0",
-        ":libatspi0-headers",
-        ":usr_lib_libatspi.so.0.0.1-lib",
-        ":x11",
-        ":xi",
-        ":xtst",
-    ],
-)
-
-# pkgconf -> sqlite3
-cc_library(
-    name = "sqlite3",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libsqlite3-dev-headers",
-        ":usr_lib_libsqlite3.so.0.8.6-lib",
-    ],
-)
-
-# pkgconf -> cairo-pdf
-cc_library(
-    name = "cairo-pdf",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":lib_libz.so.1.2.11-lib",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> cairo-fc
-cc_library(
-    name = "cairo-fc",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> glesv2
-cc_library(
-    name = "glesv2",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libGLESv2.so.2.1.0-lib",
-    ],
-)
-
-# pkgconf -> tinfo
-cc_library(
-    name = "tinfo",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libtinfo.so.5.9-lib",
-        ":ncurses-dev-headers",
-    ],
-)
-
-# pkgconf -> icu-i18n
-cc_library(
-    name = "icu-i18n",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":icu-dev-headers",
-        ":icu-uc",
-        ":usr_lib_libicui18n.so.70.1-lib",
-    ],
-)
-
-# pkgconf -> xcb-composite
-cc_library(
-    name = "xcb-composite",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-composite.so.0.0.0-lib",
-        ":xcb",
+        ":com_err",
+        ":e2fsprogs-dev-headers",
+        ":lib_libss.so.2.0-lib",
     ],
 )
 
@@ -20571,179 +21591,133 @@ cc_library(
     ],
 )
 
-# pkgconf -> bluez
+# pkgconf -> alsa-topology
 cc_library(
-    name = "bluez",
+    name = "alsa-topology",
     visibility = ["//visibility:public"],
     deps = [
-        ":bluez5-dev-headers",
-        ":usr_lib_libbluetooth.so.3.19.7-lib",
+        ":alsa",
+        ":libasound-dev-headers",
+        ":usr_lib_libatopology.so.2.0.0-lib",
     ],
 )
 
-# pkgconf -> pciaccess
+# pkgconf -> libcrypt
 cc_library(
-    name = "pciaccess",
+    name = "libcrypt",
     visibility = ["//visibility:public"],
     deps = [
-        ":libpciaccess-dev-headers",
-        ":usr_lib_libpciaccess.so.0.11.1-lib",
+        ":libcrypt2-headers",
+        ":usr_lib_libcrypt.so.2.0.0-lib",
     ],
 )
 
-# pkgconf -> dmxproto
+# pkgconf -> xcb-record
 cc_library(
-    name = "dmxproto",
+    name = "xcb-record",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxcb-dev-headers",
+        ":usr_lib_libxcb-record.so.0.0.0-lib",
+        ":xcb",
+    ],
+)
+
+# pkgconf -> glproto
+cc_library(
+    name = "glproto",
     visibility = ["//visibility:public"],
     deps = [
         ":xorgproto-dev-headers",
     ],
 )
 
-# pkgconf -> libpng16
+# pkgconf -> libunwind
 cc_library(
-    name = "libpng16",
-    includes = ["usr/include/libpng16"],
+    name = "libunwind",
     visibility = ["//visibility:public"],
     deps = [
-        ":libpng16-16-headers",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-        ":zlib",
+        ":libunwind-headers",
+        ":usr_lib_libunwind.so.8.0.1-lib",
     ],
 )
 
-# pkgconf -> harfbuzz-gobject
+# pkgconf -> libcroco-0.6
 cc_library(
-    name = "harfbuzz-gobject",
-    includes = ["usr/include/harfbuzz"],
+    name = "libcroco-0.6",
+    includes = ["usr/include/libcroco-0.6"],
     visibility = ["//visibility:public"],
     deps = [
         ":glib-2.0",
-        ":gobject-2.0",
-        ":harfbuzz",
-        ":libharfbuzz0-headers",
-        ":usr_lib_libharfbuzz-gobject.so.0.40001.0-lib",
+        ":libcroco-dev-headers",
+        ":usr_lib_libcroco-0.6.so.3.0.1-lib",
     ],
 )
 
-# pkgconf -> pangoot
+# pkgconf -> libtirpc
 cc_library(
-    name = "pangoot",
-    includes = ["usr/include/pango-1.0"],
+    name = "libtirpc",
+    includes = ["usr/include/tirpc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":pango-headers",
-        ":pangoft2",
+        ":libtirpc-dev-headers",
+        ":usr_lib_libtirpc.so.3.0.0-lib",
     ],
 )
 
-# pkgconf -> xdmcp
+# pkgconf -> libv4l2rds
 cc_library(
-    name = "xdmcp",
+    name = "libv4l2rds",
     visibility = ["//visibility:public"],
     deps = [
-        ":libxdmcp6-headers",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":xproto",
+        ":libv4l-dev-headers",
+        ":usr_lib_libv4l2rds.so.0.0.0-lib",
     ],
 )
 
-# pkgconf -> nppim-11.8
+# pkgconf -> cairo-egl
 cc_library(
-    name = "nppim-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libnpp-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-codecparsers-1.0
-cc_library(
-    name = "gstreamer-codecparsers-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-plugins-bad-dev-headers",
-        ":usr_lib_libgstcodecparsers-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> libcap
-cc_library(
-    name = "libcap",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libcap.so.2.66-lib",
-        ":libcap-headers",
-    ],
-)
-
-# pkgconf -> libacl
-cc_library(
-    name = "libacl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":acl-dev-headers",
-        ":usr_lib_libacl.so.1.1.2301-lib",
-    ],
-)
-
-# pkgconf -> cairo-gobject
-cc_library(
-    name = "cairo-gobject",
+    name = "cairo-egl",
     includes = ["usr/include/cairo"],
     visibility = ["//visibility:public"],
     deps = [
         ":cairo",
         ":libcairo2-headers",
-        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
     ],
 )
 
-# pkgconf -> xcb-xinput
+# pkgconf -> wayland-egl
 cc_library(
-    name = "xcb-xinput",
+    name = "wayland-egl",
     visibility = ["//visibility:public"],
     deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xinput.so.0.1.0-lib",
-        ":xcb",
+        ":usr_lib_libwayland-egl.so.1.20.0-lib",
+        ":wayland-client",
+        ":wayland-dev-headers",
     ],
 )
 
-# pkgconf -> nppim-11.4
+# pkgconf -> gstreamer-1.0
 cc_library(
-    name = "nppim-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
+    name = "gstreamer-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
+        ":glib-2.0",
+        ":gmodule-2.0",
+        ":gobject-2.0",
+        ":gstreamer1.0-dev-headers",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
     ],
 )
 
-# pkgconf -> glu
+# pkgconf -> libkmod
 cc_library(
-    name = "glu",
+    name = "libkmod",
     visibility = ["//visibility:public"],
     deps = [
-        ":gl",
-        ":libglu-dev-headers",
-        ":usr_lib_libGLU.so.1.3.1-lib",
-    ],
-)
-
-# pkgconf -> protobuf
-cc_library(
-    name = "protobuf",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libprotobuf30-headers",
-        ":usr_lib_libprotobuf.so.30.0.6-lib",
+        ":kmod-dev-headers",
+        ":usr_lib_libkmod.so.2.3.7-lib",
     ],
 )
 
@@ -20758,319 +21732,133 @@ cc_library(
     ],
 )
 
-# pkgconf -> libwebpdemux
+# pkgconf -> nppial-11.8
 cc_library(
-    name = "libwebpdemux",
+    name = "nppial-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libwebp",
-        ":libwebp-headers",
-        ":usr_lib_libwebpdemux.so.2.0.11-lib",
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> python3-embed
+# pkgconf -> gl
 cc_library(
-    name = "python3-embed",
-    includes = ["usr/include/python3.10"],
+    name = "gl",
     visibility = ["//visibility:public"],
     deps = [
-        ":python3-dev-headers",
-        ":usr_lib_libpython3.10.so.1.0-lib",
+        ":libglvnd-dev-headers",
+        ":usr_lib_libGL.so.1.7.0-lib",
     ],
 )
 
-# pkgconf -> libpulse-mainloop-glib
+# pkgconf -> libdrm_nouveau
 cc_library(
-    name = "libpulse-mainloop-glib",
+    name = "libdrm_nouveau",
+    includes = [
+        "usr/include/libdrm",
+        "usr/include/libdrm/nouveau",
+    ],
     visibility = ["//visibility:public"],
     deps = [
-        ":libpulse",
-        ":pulseaudio-dev-headers",
-        ":usr_lib_libpulse-mainloop-glib.so.0.0.6-lib",
+        ":libdrm",
+        ":libdrm-dev-headers",
+        ":usr_lib_libdrm_nouveau.so.2.0.0-lib",
     ],
 )
 
-# pkgconf -> dbus-glib-1
+# pkgconf -> cairo
 cc_library(
-    name = "dbus-glib-1",
-    includes = ["usr/include/dbus-1.0"],
+    name = "cairo",
+    includes = ["usr/include/cairo"],
     visibility = ["//visibility:public"],
     deps = [
-        ":dbus-1",
-        ":libdbus-glib-1-dev-headers",
-        ":usr_lib_libdbus-glib-1.so.2.3.5-lib",
+        ":gobject-2.0",
+        ":libcairo2-headers",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
     ],
 )
 
-# pkgconf -> xdamage
+# pkgconf -> xcb-proto
 cc_library(
-    name = "xdamage",
+    name = "xcb-proto",
     visibility = ["//visibility:public"],
     deps = [
-        ":libxdamage1-headers",
-        ":usr_lib_libXdamage.so.1.1.0-lib",
+        ":xcb-proto-dev-headers",
+    ],
+)
+
+# pkgconf -> xrender
+cc_library(
+    name = "xrender",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxrender1-headers",
+        ":usr_lib_libXrender.so.1.3.0-lib",
         ":x11",
         ":xproto",
     ],
 )
 
-# pkgconf -> libsoup-2.4
+# pkgconf -> blkid
 cc_library(
-    name = "libsoup-2.4",
-    includes = ["usr/include/libsoup-2.4"],
+    name = "blkid",
+    includes = ["usr/include/blkid"],
     visibility = ["//visibility:public"],
     deps = [
-        ":gio-2.0",
-        ":glib-2.0",
-        ":gmodule-2.0",
-        ":gobject-2.0",
-        ":libpsl",
-        ":libsoup-2.4-dev-headers",
-        ":libxml-2.0",
-        ":sqlite3",
-        ":usr_lib_libsoup-2.4.so.1.11.2-lib",
-        ":zlib",
+        ":lib_libblkid.so.1.1.0-lib",
+        ":libblkid1-headers",
     ],
 )
 
-# pkgconf -> cairo-ps
+# pkgconf -> libdrm
 cc_library(
-    name = "cairo-ps",
-    includes = ["usr/include/cairo"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cairo",
-        ":lib_libz.so.1.2.11-lib",
-        ":libcairo2-headers",
-    ],
-)
-
-# pkgconf -> xcb-xf86dri
-cc_library(
-    name = "xcb-xf86dri",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xf86dri.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> xcb
-cc_library(
-    name = "xcb",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-        ":xau",
-    ],
-)
-
-# pkgconf -> formw
-cc_library(
-    name = "formw",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":ncurses-dev-headers",
-        ":ncursesw",
-        ":usr_lib_libformw.so.5.9-lib",
-    ],
-)
-
-# pkgconf -> libdrm_radeon
-cc_library(
-    name = "libdrm_radeon",
+    name = "libdrm",
     includes = ["usr/include/libdrm"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libdrm",
         ":libdrm-dev-headers",
-        ":usr_lib_libdrm_radeon.so.1.0.1-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
     ],
 )
 
-# pkgconf -> gstreamer-riff-1.0
+# pkgconf -> libiptc
 cc_library(
-    name = "gstreamer-riff-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
+    name = "libiptc",
     visibility = ["//visibility:public"],
     deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstriff-1.0.so.0.2007.0-lib",
-        ":zlib",
+        ":iptables-dev-headers",
+        ":libip4tc",
     ],
 )
 
-# pkgconf -> nppidei-11.4
+# pkgconf -> atk-bridge-2.0
 cc_library(
-    name = "nppidei-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
+    name = "atk-bridge-2.0",
+    includes = ["usr/include/at-spi2-atk/2.0"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libnpp-headers",
-        ":usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
-    ],
-)
-
-# pkgconf -> gdk-wayland-3.0
-cc_library(
-    name = "gdk-wayland-3.0",
-    includes = ["usr/include/gtk-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-unix-2.0",
-        ":libgtk-3.0-headers",
-        ":pango",
-        ":usr_lib_libgdk-3.so.0.2404.30-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-rtp-1.0
-cc_library(
-    name = "gstreamer-rtp-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer-audio-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer-tag-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":orc-0.4",
-        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
-        ":zlib",
-    ],
-)
-
-# pkgconf -> egl
-cc_library(
-    name = "egl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libEGL.so.1.1.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-damage
-cc_library(
-    name = "xcb-damage",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-damage.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> pthread-stubs
-cc_library(
-    name = "pthread-stubs",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libpthread-stubs-dev-headers",
-    ],
-)
-
-# pkgconf -> libkms
-cc_library(
-    name = "libkms",
-    includes = ["usr/include/libkms"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":usr_lib_libkms.so.1.0.0-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-net-1.0
-cc_library(
-    name = "gstreamer-net-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-2.0",
-        ":gio-unix-2.0",
+        ":atk",
+        ":atspi-2",
+        ":dbus-1",
         ":glib-2.0",
         ":gmodule-2.0",
         ":gobject-2.0",
-        ":gstreamer-1.0",
-        ":gstreamer-base-1.0",
-        ":gstreamer1.0-dev-headers",
-        ":usr_lib_libgstnet-1.0.so.0.2007.0-lib",
+        ":libatk-bridge-2.0-0-headers",
+        ":usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
     ],
 )
 
-# pkgconf -> libpcrecpp
+# pkgconf -> taglib
 cc_library(
-    name = "libpcrecpp",
+    name = "taglib",
+    includes = ["usr/include/taglib"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libpcre1-headers",
-        ":usr_lib_libpcre.so.1.2.13-lib",
-        ":usr_lib_libpcrecpp.so.0.0.2-lib",
-    ],
-)
-
-# pkgconf -> gnutls
-cc_library(
-    name = "gnutls",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":hogweed",
-        ":libgnutls-dev-headers",
-        ":libidn2",
-        ":nettle",
-        ":usr_lib_libgnutls.so.30.32.0-lib",
-    ],
-)
-
-# pkgconf -> libkmod
-cc_library(
-    name = "libkmod",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":kmod-dev-headers",
-        ":usr_lib_libkmod.so.2.3.7-lib",
-    ],
-)
-
-# pkgconf -> python-3.10
-cc_library(
-    name = "python-3.10",
-    includes = ["usr/include/python3.10"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":python3-dev-headers",
-    ],
-)
-
-# pkgconf -> cusparse-11.8
-cc_library(
-    name = "cusparse-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcusparse-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
-    ],
-)
-
-# pkgconf -> protobuf-lite
-cc_library(
-    name = "protobuf-lite",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libprotobuf30-headers",
-        ":usr_lib_libprotobuf-lite.so.30.0.6-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":libtag-dev-headers",
+        ":usr_lib_libtag.so.1.18.0-lib",
     ],
 )
 
@@ -21085,105 +21873,130 @@ cc_library(
     ],
 )
 
-# pkgconf -> xineramaproto
+# pkgconf -> vapigen
 cc_library(
-    name = "xineramaproto",
+    name = "vapigen",
     visibility = ["//visibility:public"],
     deps = [
-        ":xorgproto-dev-headers",
+        ":vala-dev-headers",
     ],
 )
 
-# pkgconf -> cufftw-11.4
+# pkgconf -> uuid
 cc_library(
-    name = "cufftw-11.4",
+    name = "uuid",
+    includes = ["usr/include/uuid"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libuuid1-headers",
+        ":usr_lib_libuuid.so.1.3.0-lib",
+    ],
+)
+
+# pkgconf -> libdrm_amdgpu
+cc_library(
+    name = "libdrm_amdgpu",
+    includes = ["usr/include/libdrm"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libdrm",
+        ":libdrm-dev-headers",
+        ":usr_lib_libdrm_amdgpu.so.1.0.0-lib",
+    ],
+)
+
+# pkgconf -> nppitc-11.4
+cc_library(
+    name = "nppitc-11.4",
     includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libcufft-headers",
-        ":usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
+        ":libnpp-headers",
+        ":usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
     ],
 )
 
-# pkgconf -> nvrtc-11.4
+# pkgconf -> cairo-xcb-shm
 cc_library(
-    name = "nvrtc-11.4",
+    name = "cairo-xcb-shm",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> gstreamer-player-1.0
+cc_library(
+    name = "gstreamer-player-1.0",
+    includes = ["usr/include/gstreamer-1.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gstreamer-1.0",
+        ":gstreamer-audio-1.0",
+        ":gstreamer-base-1.0",
+        ":gstreamer-pbutils-1.0",
+        ":gstreamer-play-1.0",
+        ":gstreamer-tag-1.0",
+        ":gstreamer-video-1.0",
+        ":gstreamer1.0-plugins-bad-dev-headers",
+        ":usr_lib_libgstplayer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+# pkgconf -> cairo-fc
+cc_library(
+    name = "cairo-fc",
+    includes = ["usr/include/cairo"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cairo",
+        ":libcairo2-headers",
+    ],
+)
+
+# pkgconf -> nppidei-11.8
+cc_library(
+    name = "nppidei-11.8",
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libnpp-11-8-dev-headers",
+        ":usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
+    ],
+)
+
+# pkgconf -> xau
+cc_library(
+    name = "xau",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxau6-headers",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":xproto",
+    ],
+)
+
+# pkgconf -> xkbregistry
+cc_library(
+    name = "xkbregistry",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":libxkbcommon0-headers",
+        ":libxml-2.0",
+        ":usr_lib_libxkbregistry.so.0.0.0-lib",
+    ],
+)
+
+# pkgconf -> cusolver-11.4
+cc_library(
+    name = "cusolver-11.4",
     includes = ["usr/local/cuda-11.4/include"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cuda-nvrtc-dev-headers",
-        ":usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
-    ],
-)
-
-# pkgconf -> libwebpmux
-cc_library(
-    name = "libwebpmux",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libwebp",
-        ":libwebp-headers",
-        ":usr_lib_libwebpmux.so.3.0.10-lib",
-    ],
-)
-
-# pkgconf -> ell
-cc_library(
-    name = "ell",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libell-dev-headers",
-        ":usr_lib_libell.so.0.0.2-lib",
-    ],
-)
-
-# pkgconf -> xcb-dpms
-cc_library(
-    name = "xcb-dpms",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-dpms.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> ogg
-cc_library(
-    name = "ogg",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libogg-dev-headers",
-        ":usr_lib_libogg.so.0.8.5-lib",
-    ],
-)
-
-# pkgconf -> vulkan
-cc_library(
-    name = "vulkan",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libvulkan1-headers",
-        ":usr_lib_libvulkan.so.1.3.204-lib",
-    ],
-)
-
-# pkgconf -> xextproto
-cc_library(
-    name = "xextproto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> nettle
-cc_library(
-    name = "nettle",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":nettle-dev-headers",
-        ":usr_lib_libnettle.so.8.4-lib",
+        ":libcusolver-dev-headers",
+        ":usr_local_cuda-11.8_lib_libcusolver.so.11.4.1.48-lib",
     ],
 )
 
@@ -21197,336 +22010,40 @@ cc_library(
     ],
 )
 
-# pkgconf -> libwebp
+# pkgconf -> shared-mime-info
 cc_library(
-    name = "libwebp",
+    name = "shared-mime-info",
     visibility = ["//visibility:public"],
     deps = [
-        ":libwebp-headers",
-        ":usr_lib_libwebp.so.7.1.5-lib",
+        ":shared-mime-info-headers",
     ],
 )
 
-# pkgconf -> libsystemd
+# pkgconf -> xtrans
 cc_library(
-    name = "libsystemd",
+    name = "xtrans",
     visibility = ["//visibility:public"],
     deps = [
-        ":lib_libsystemd.so.0.33.0-lib",
-        ":systemd-dev-headers",
+        ":xtrans-dev-headers",
     ],
 )
 
-# pkgconf -> libv4lconvert
+# pkgconf -> eigen3
 cc_library(
-    name = "libv4lconvert",
+    name = "eigen3",
+    includes = ["usr/include/eigen3"],
     visibility = ["//visibility:public"],
     deps = [
-        ":libv4l-dev-headers",
-        ":usr_lib_libv4lconvert.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> libdrm_etnaviv
-cc_library(
-    name = "libdrm_etnaviv",
-    includes = ["usr/include/libdrm"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libdrm",
-        ":libdrm-dev-headers",
-        ":usr_lib_libdrm_etnaviv.so.1.0.0-lib",
-    ],
-)
-
-# pkgconf -> libgphoto2_port
-cc_library(
-    name = "libgphoto2_port",
-    includes = ["usr/include/gphoto2"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":lib_libm.so.6-lib",
-        ":libgphoto2-6-headers",
-        ":usr_lib_libgphoto2_port.so.12.0.0-lib",
-    ],
-)
-
-# pkgconf -> vapigen-0.56
-cc_library(
-    name = "vapigen-0.56",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":vala-dev-headers",
-    ],
-)
-
-# pkgconf -> gdk-3.0
-cc_library(
-    name = "gdk-3.0",
-    includes = ["usr/include/gtk-3.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-unix-2.0",
-        ":libgtk-3.0-headers",
-        ":pango",
-        ":usr_lib_libgdk-3.so.0.2404.30-lib",
-    ],
-)
-
-# pkgconf -> cufft-11.8
-cc_library(
-    name = "cufft-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcufft-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
-    ],
-)
-
-# pkgconf -> gflags
-cc_library(
-    name = "gflags",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gflags-dev-headers",
-        ":usr_lib_libgflags.so.2.2.2-lib",
-    ],
-)
-
-# pkgconf -> cudart-11.8
-cc_library(
-    name = "cudart-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cuda-cudart-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
-    ],
-)
-
-# pkgconf -> python3
-cc_library(
-    name = "python3",
-    includes = ["usr/include/python3.10"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":python3-dev-headers",
-    ],
-)
-
-# pkgconf -> libxml-2.0
-cc_library(
-    name = "libxml-2.0",
-    includes = ["usr/include/libxml2"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxml2-headers",
-        ":usr_lib_libxml2.so.2.9.14-lib",
-    ],
-)
-
-# pkgconf -> gstreamer-fft-1.0
-cc_library(
-    name = "gstreamer-fft-1.0",
-    includes = ["usr/include/gstreamer-1.0"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gstreamer-1.0",
-        ":gstreamer1.0-plugins-base-dev-headers",
-        ":usr_lib_libgstfft-1.0.so.0.2007.0-lib",
-    ],
-)
-
-# pkgconf -> gl
-cc_library(
-    name = "gl",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libglvnd-dev-headers",
-        ":usr_lib_libGL.so.1.7.0-lib",
-    ],
-)
-
-# pkgconf -> xcb-xvmc
-cc_library(
-    name = "xcb-xvmc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xvmc.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> nice
-cc_library(
-    name = "nice",
-    includes = ["usr/include/nice"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":gio-2.0",
-        ":gnutls",
-        ":gthread-2.0",
-        ":libnice-dev-headers",
-        ":usr_lib_libnice.so.10.11.0-lib",
-    ],
-)
-
-# pkgconf -> wayland-eglstream
-cc_library(
-    name = "wayland-eglstream",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":eglexternalplatform",
-        ":libnvidia-egl-wayland1-headers",
-        ":usr_lib_libnvidia-egl-wayland.so.1.1.9-lib",
-    ],
-)
-
-# pkgconf -> x11-xcb
-cc_library(
-    name = "x11-xcb",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libx11-dev-headers",
-        ":usr_lib_libX11-xcb.so.1.0.0-lib",
-        ":x11",
-    ],
-)
-
-# pkgconf -> libffi
-cc_library(
-    name = "libffi",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libffi8-headers",
-        ":usr_lib_libffi.so.8.1.2-lib",
-    ],
-)
-
-# pkgconf -> xcb-xv
-cc_library(
-    name = "xcb-xv",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-xv.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> xkbcommon
-cc_library(
-    name = "xkbcommon",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxkbcommon0-headers",
-        ":usr_lib_libxkbcommon.so.0.0.0-lib",
-    ],
-)
-
-# pkgconf -> cufile-11.8
-cc_library(
-    name = "cufile-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcufile-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcufile.so.1.4.0-lib",
-    ],
-)
-
-# pkgconf -> icu-uc
-cc_library(
-    name = "icu-uc",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":icu-dev-headers",
-        ":usr_lib_libicudata.so.70.1-lib",
-        ":usr_lib_libicuuc.so.70.1-lib",
-    ],
-)
-
-# pkgconf -> xcb-shm
-cc_library(
-    name = "xcb-shm",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libxcb-dev-headers",
-        ":usr_lib_libxcb-shm.so.0.0.0-lib",
-        ":xcb",
-    ],
-)
-
-# pkgconf -> cublas-11.4
-cc_library(
-    name = "cublas-11.4",
-    includes = ["usr/local/cuda-11.4/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcublas-headers",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-    ],
-)
-
-# pkgconf -> curand-11.8
-cc_library(
-    name = "curand-11.8",
-    includes = ["usr/local/cuda-11.8/include"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":libcurand-11-8-dev-headers",
-        ":usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
-    ],
-)
-
-# pkgconf -> gmodule-no-export-2.0
-cc_library(
-    name = "gmodule-no-export-2.0",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":glib-2.0",
-        ":libglib-2.0-dev-headers",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-    ],
-)
-
-# pkgconf -> dri2proto
-cc_library(
-    name = "dri2proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":xorgproto-dev-headers",
-    ],
-)
-
-# pkgconf -> eglexternalplatform
-cc_library(
-    name = "eglexternalplatform",
-    includes = ["usr/include/EGL"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":eglexternalplatform-dev-headers",
-    ],
-)
-
-# pkgconf -> mobile-broadband-provider-info
-cc_library(
-    name = "mobile-broadband-provider-info",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":mobile-broadband-provider-info-dev-headers",
+        ":libeigen-dev-headers",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-    srcs = ["usr/lib/libgmodule-2.0.so.0.7200.3"],
+    name = "usr_lib_libdaemon.so.0.5.0-lib",
+    srcs = ["usr/lib/libdaemon.so.0.5.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
     ],
 )
 
@@ -21546,27 +22063,8 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libglib-2.0.so.0.7200.3-lib",
-    srcs = ["usr/lib/libglib-2.0.so.0.7200.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libpcre.so.1.2.13-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpcre.so.1.2.13-lib",
-    srcs = ["usr/lib/libpcre.so.1.2.13"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcurand.so.10.3.0.86"],
+    name = "usr_local_cuda-11.8_lib_libcusolver.so.11.4.1.48-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcusolver.so.11.4.1.48"],
     deps = [
         ":lib_libc.so.6-lib",
         ":lib_libdl.so.2-lib",
@@ -21574,6 +22072,8 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
     ],
 )
 
@@ -21588,14 +22088,6 @@ cc_library(
 cc_library(
     name = "lib_libm.so.6-lib",
     srcs = ["lib/libm.so.6"],
-    deps = [
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libdl.so.2-lib",
-    srcs = ["lib/libdl.so.2"],
     deps = [
         ":lib_libc.so.6-lib",
     ],
@@ -21619,6 +22111,27 @@ cc_library(
 )
 
 cc_library(
+    name = "usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcublasLt.so.11.11.3.6"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libdl.so.2-lib",
+    srcs = ["lib/libdl.so.2"],
+    deps = [
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
     name = "usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
     srcs = ["usr/local/cuda-11.8/lib/libcublas.so.11.11.3.6"],
     deps = [
@@ -21633,33 +22146,29 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcublasLt.so.11.11.3.6"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-shm.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-shm.so.0.0.0"],
+    name = "usr_lib_libxkbregistry.so.0.0.0-lib",
+    srcs = ["usr/lib/libxkbregistry.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":usr_lib_libxml2.so.2.9.14-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libXdmcp.so.6.0.0-lib",
-    srcs = ["usr/lib/libXdmcp.so.6.0.0"],
+    name = "usr_lib_libxml2.so.2.9.14-lib",
+    srcs = ["usr/lib/libxml2.so.2.9.14"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libz.so.1.2.11-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libz.so.1.2.11-lib",
+    srcs = ["lib/libz.so.1.2.11"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -21676,200 +22185,87 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libxcb.so.1.1.0-lib",
-    srcs = ["usr/lib/libxcb.so.1.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicudata.so.70.1-lib",
-    srcs = ["usr/lib/libicudata.so.70.1"],
+    name = "usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppidei.so.11.8.0.86"],
     deps = [
         ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicuuc.so.70.1-lib",
-    srcs = ["usr/lib/libicuuc.so.70.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
         ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
-        ":usr_lib_libicudata.so.70.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libstdc++.so.6.0.29-lib",
-    srcs = ["usr/lib/libstdc++.so.6.0.29"],
+    name = "usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppc.so.11.8.0.86"],
     deps = [
         ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
         ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcufile.so.1.4.0-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcufile.so.1.4.0"],
+    name = "usr_lib_libgstplayer-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstplayer-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxkbcommon.so.0.0.0-lib",
-    srcs = ["usr/lib/libxkbcommon.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xv.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xv.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libffi.so.8.1.2-lib",
-    srcs = ["usr/lib/libffi.so.8.1.2"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libX11-xcb.so.1.0.0-lib",
-    srcs = ["usr/lib/libX11-xcb.so.1.0.0"],
-    deps = [
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libnvidia-egl-wayland.so.1.1.9-lib",
-    srcs = ["usr/lib/libnvidia-egl-wayland.so.1.1.9"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
-        ":usr_lib_libwayland-server.so.0.20.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libwayland-client.so.0.20.0-lib",
-    srcs = ["usr/lib/libwayland-client.so.0.20.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libffi.so.8.1.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libwayland-server.so.0.20.0-lib",
-    srcs = ["usr/lib/libwayland-server.so.0.20.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libffi.so.8.1.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libnice.so.10.11.0-lib",
-    srcs = ["usr/lib/libnice.so.10.11.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgnutls.so.30.32.0-lib",
         ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstplay-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgnutls.so.30.32.0-lib",
-    srcs = ["usr/lib/libgnutls.so.30.32.0"],
+    name = "usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstvideo-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libgmp.so.10.4.1-lib",
-        ":usr_lib_libhogweed.so.6.4-lib",
-        ":usr_lib_libidn2.so.0.3.7-lib",
-        ":usr_lib_libnettle.so.8.4-lib",
-        ":usr_lib_libunistring.so.2.2.0-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_liborc-0.4.so.0.32.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgmp.so.10.4.1-lib",
-    srcs = ["usr/lib/libgmp.so.10.4.1"],
+    name = "usr_lib_liborc-0.4.so.0.32.0-lib",
+    srcs = ["usr/lib/liborc-0.4.so.0.32.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libhogweed.so.6.4-lib",
-    srcs = ["usr/lib/libhogweed.so.6.4"],
+    name = "usr_lib_libglib-2.0.so.0.7200.3-lib",
+    srcs = ["usr/lib/libglib-2.0.so.0.7200.3"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libgmp.so.10.4.1-lib",
-        ":usr_lib_libnettle.so.8.4-lib",
+        ":usr_lib_libpcre.so.1.2.13-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libnettle.so.8.4-lib",
-    srcs = ["usr/lib/libnettle.so.8.4"],
+    name = "usr_lib_libpcre.so.1.2.13-lib",
+    srcs = ["usr/lib/libpcre.so.1.2.13"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunistring.so.2.2.0-lib",
-    srcs = ["usr/lib/libunistring.so.2.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libidn2.so.0.3.7-lib",
-    srcs = ["usr/lib/libidn2.so.0.3.7"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libunistring.so.2.2.0-lib",
     ],
 )
 
@@ -21885,13 +22281,21 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libgio-2.0.so.0.7200.3-lib",
-    srcs = ["usr/lib/libgio-2.0.so.0.7200.3"],
+    name = "usr_lib_libffi.so.8.1.2-lib",
+    srcs = ["usr/lib/libffi.so.8.1.2"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libmount.so.1.1.0-lib",
-        ":lib_libz.so.1.2.11-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstreamer-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
         ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
         ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
@@ -21899,132 +22303,92 @@ cc_library(
 )
 
 cc_library(
-    name = "lib_libmount.so.1.1.0-lib",
-    srcs = ["lib/libmount.so.1.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libblkid.so.1.1.0-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libblkid.so.1.1.0-lib",
-    srcs = ["lib/libblkid.so.1.1.0"],
+    name = "usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+    srcs = ["usr/lib/libgmodule-2.0.so.0.7200.3"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libz.so.1.2.11-lib",
-    srcs = ["lib/libz.so.1.2.11"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xvmc.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xvmc.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGL.so.1.7.0-lib",
-    srcs = ["usr/lib/libGL.so.1.7.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLX.so.0.0.0-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGLX.so.0.0.0-lib",
-    srcs = ["usr/lib/libGLX.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libX11.so.6.4.0-lib",
-    srcs = ["usr/lib/libX11.so.6.4.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGLdispatch.so.0.0.0-lib",
-    srcs = ["usr/lib/libGLdispatch.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstfft-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstfft-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libxml2.so.2.9.14-lib",
-    srcs = ["usr/lib/libxml2.so.2.9.14"],
+    name = "usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstbase-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstplay-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstplay-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstpbutils-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgsttag-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
         ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcudart.so.11.8.89"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgflags.so.2.2.2-lib",
-    srcs = ["usr/lib/libgflags.so.2.2.2"],
+    name = "usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstaudio-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+        ":usr_lib_liborc-0.4.so.0.32.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcufft.so.10.9.0.58"],
+    name = "usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppitc.so.11.8.0.86"],
     deps = [
         ":lib_libc.so.6-lib",
         ":lib_libdl.so.2-lib",
@@ -22032,418 +22396,13 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgdk-3.so.0.2404.30-lib",
-    srcs = ["usr/lib/libgdk-3.so.0.2404.30"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXcomposite.so.1.0.0-lib",
-        ":usr_lib_libXcursor.so.1.0.2-lib",
-        ":usr_lib_libXdamage.so.1.1.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXfixes.so.3.1.0-lib",
-        ":usr_lib_libXi.so.6.1.0-lib",
-        ":usr_lib_libXrandr.so.2.2.0-lib",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
-        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
-        ":usr_lib_libepoxy.so.0.0.0-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libfribidi.so.0.4.0-lib",
-        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
-        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
-        ":usr_lib_libwayland-egl.so.1.20.0-lib",
-        ":usr_lib_libxkbcommon.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libfribidi.so.0.4.0-lib",
-    srcs = ["usr/lib/libfribidi.so.0.4.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libepoxy.so.0.0.0-lib",
-    srcs = ["usr/lib/libepoxy.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcairo.so.2.11600.0-lib",
-    srcs = ["usr/lib/libcairo.so.2.11600.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libEGL.so.1.1.0-lib",
-        ":usr_lib_libGLESv2.so.2.1.0-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXrender.so.1.3.0-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libpixman-1.so.0.40.0-lib",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-        ":usr_lib_libxcb-render.so.0.0.0-lib",
-        ":usr_lib_libxcb-shm.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXext.so.6.4.0-lib",
-    srcs = ["usr/lib/libXext.so.6.4.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXrender.so.1.3.0-lib",
-    srcs = ["usr/lib/libXrender.so.1.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-render.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-render.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpng16.so.16.39.0-lib",
-    srcs = ["usr/lib/libpng16.so.16.39.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libz.so.1.2.11-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGLESv2.so.2.1.0-lib",
-    srcs = ["usr/lib/libGLESv2.so.2.1.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libEGL.so.1.1.0-lib",
-    srcs = ["usr/lib/libEGL.so.1.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libfreetype.so.6.18.1-lib",
-    srcs = ["usr/lib/libfreetype.so.6.18.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libfontconfig.so.1.12.0-lib",
-    srcs = ["usr/lib/libfontconfig.so.1.12.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libexpat.so.1.8.10-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libuuid.so.1.3.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libuuid.so.1.3.0-lib",
-    srcs = ["usr/lib/libuuid.so.1.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libexpat.so.1.8.10-lib",
-    srcs = ["usr/lib/libexpat.so.1.8.10"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpixman-1.so.0.40.0-lib",
-    srcs = ["usr/lib/libpixman-1.so.0.40.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libwayland-egl.so.1.20.0-lib",
-    srcs = ["usr/lib/libwayland-egl.so.1.20.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libwayland-cursor.so.0.20.0-lib",
-    srcs = ["usr/lib/libwayland-cursor.so.0.20.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXfixes.so.3.1.0-lib",
-    srcs = ["usr/lib/libXfixes.so.3.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXdamage.so.1.1.0-lib",
-    srcs = ["usr/lib/libXdamage.so.1.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXfixes.so.3.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXcomposite.so.1.0.0-lib",
-    srcs = ["usr/lib/libXcomposite.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXcursor.so.1.0.2-lib",
-    srcs = ["usr/lib/libXcursor.so.1.0.2"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXfixes.so.3.1.0-lib",
-        ":usr_lib_libXrender.so.1.3.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXrandr.so.2.2.0-lib",
-    srcs = ["usr/lib/libXrandr.so.2.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXrender.so.1.3.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXi.so.6.1.0-lib",
-    srcs = ["usr/lib/libXi.so.6.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcairo-gobject.so.2.11600.0-lib",
-    srcs = ["usr/lib/libcairo-gobject.so.2.11600.0"],
-    deps = [
-        ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libEGL.so.1.1.0-lib",
-        ":usr_lib_libGLESv2.so.2.1.0-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXrender.so.1.3.0-lib",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libpixman-1.so.0.40.0-lib",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-        ":usr_lib_libxcb-render.so.0.0.0-lib",
-        ":usr_lib_libxcb-shm.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
-    srcs = ["usr/lib/libgdk_pixbuf-2.0.so.0.4200.10"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libjpeg.so.62.3.0-lib",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libjpeg.so.62.3.0-lib",
-    srcs = ["usr/lib/libjpeg.so.62.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libharfbuzz.so.0.40001.0-lib",
-    srcs = ["usr/lib/libharfbuzz.so.0.40001.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpango-1.0.so.0.5000.4-lib",
-    srcs = ["usr/lib/libpango-1.0.so.0.5000.4"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libfribidi.so.0.4.0-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
-    srcs = ["usr/lib/libpangocairo-1.0.so.0.5000.4"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
-    srcs = ["usr/lib/libpangoft2-1.0.so.0.5000.4"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgphoto2_port.so.12.0.0-lib",
-    srcs = ["usr/lib/libgphoto2_port.so.12.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":usr_lib_libltdl.so.7.3.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libltdl.so.7.3.2-lib",
-    srcs = ["usr/lib/libltdl.so.7.3.2"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdrm_etnaviv.so.1.0.0-lib",
-    srcs = ["usr/lib/libdrm_etnaviv.so.1.0.0"],
+    name = "usr_lib_libdrm_amdgpu.so.1.0.0-lib",
+    srcs = ["usr/lib/libdrm_amdgpu.so.1.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -22603,13 +22562,153 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libv4lconvert.so.0.0.0-lib",
-    srcs = ["usr/lib/libv4lconvert.so.0.0.0"],
+    name = "usr_lib_libuuid.so.1.3.0-lib",
+    srcs = ["usr/lib/libuuid.so.1.3.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libSM.so.6.0.1-lib",
+    srcs = ["usr/lib/libSM.so.6.0.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libICE.so.6.3.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libICE.so.6.3.0-lib",
+    srcs = ["usr/lib/libICE.so.6.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtag.so.1.18.0-lib",
+    srcs = ["usr/lib/libtag.so.1.18.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libstdc++.so.6.0.29-lib",
+    srcs = ["usr/lib/libstdc++.so.6.0.29"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
+    srcs = ["usr/lib/libatk-bridge-2.0.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
+        ":usr_lib_libatspi.so.0.0.1-lib",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libatk-1.0.so.0.23809.1-lib",
+    srcs = ["usr/lib/libatk-1.0.so.0.23809.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libatspi.so.0.0.1-lib",
+    srcs = ["usr/lib/libatspi.so.0.0.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXi.so.6.1.0-lib",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXi.so.6.1.0-lib",
+    srcs = ["usr/lib/libXi.so.6.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXext.so.6.4.0-lib",
+    srcs = ["usr/lib/libXext.so.6.4.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libX11.so.6.4.0-lib",
+    srcs = ["usr/lib/libX11.so.6.4.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb.so.1.1.0-lib",
+    srcs = ["usr/lib/libxcb.so.1.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXdmcp.so.6.0.0-lib",
+    srcs = ["usr/lib/libXdmcp.so.6.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdbus-1.so.3.32.3-lib",
+    srcs = ["usr/lib/libdbus-1.so.3.32.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libsystemd.so.0.33.0-lib",
     ],
 )
 
@@ -22643,46 +22742,51 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libwebp.so.7.1.5-lib",
-    srcs = ["usr/lib/libwebp.so.7.1.5"],
+    name = "lib_libblkid.so.1.1.0-lib",
+    srcs = ["lib/libblkid.so.1.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXrender.so.1.3.0-lib",
+    srcs = ["usr/lib/libXrender.so.1.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcairo.so.2.11600.0-lib",
+    srcs = ["usr/lib/libcairo.so.2.11600.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libEGL.so.1.1.0-lib",
+        ":usr_lib_libGLESv2.so.2.1.0-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXrender.so.1.3.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libpixman-1.so.0.40.0-lib",
+        ":usr_lib_libpng16.so.16.39.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":usr_lib_libxcb-render.so.0.0.0-lib",
+        ":usr_lib_libxcb-shm.so.0.0.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libdaemon.so.0.5.0-lib",
-    srcs = ["usr/lib/libdaemon.so.0.5.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libvulkan.so.1.3.204-lib",
-    srcs = ["usr/lib/libvulkan.so.1.3.204"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libogg.so.0.8.5-lib",
-    srcs = ["usr/lib/libogg.so.0.8.5"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-dpms.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-dpms.so.0.0.0"],
+    name = "usr_lib_libxcb-render.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-render.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -22693,64 +22797,40 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libell.so.0.0.2-lib",
-    srcs = ["usr/lib/libell.so.0.0.2"],
+    name = "usr_lib_libxcb-shm.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-shm.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libwebpmux.so.3.0.10-lib",
-    srcs = ["usr/lib/libwebpmux.so.3.0.10"],
+    name = "usr_lib_libpng16.so.16.39.0-lib",
+    srcs = ["usr/lib/libpng16.so.16.39.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
-        ":usr_lib_libwebp.so.7.1.5-lib",
+        ":lib_libz.so.1.2.11-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnvrtc.so.11.8.89"],
+    name = "usr_lib_libGLESv2.so.2.1.0-lib",
+    srcs = ["usr/lib/libGLESv2.so.2.1.0"],
     deps = [
         ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcufftw.so.10.9.0.58"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libSM.so.6.0.1-lib",
-    srcs = ["usr/lib/libSM.so.6.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libICE.so.6.3.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libICE.so.6.3.0-lib",
-    srcs = ["usr/lib/libICE.so.6.3.0"],
+    name = "usr_lib_libGLdispatch.so.0.0.0-lib",
+    srcs = ["usr/lib/libGLdispatch.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -22758,22 +22838,92 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libprotobuf-lite.so.30.0.6-lib",
-    srcs = ["usr/lib/libprotobuf-lite.so.30.0.6"],
+    name = "usr_lib_libEGL.so.1.1.0-lib",
+    srcs = ["usr/lib/libEGL.so.1.1.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libfreetype.so.6.18.1-lib",
+    srcs = ["usr/lib/libfreetype.so.6.18.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_lib_libpng16.so.16.39.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcusparse.so.11.7.5.86"],
+    name = "usr_lib_libfontconfig.so.1.12.0-lib",
+    srcs = ["usr/lib/libfontconfig.so.1.12.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libexpat.so.1.8.10-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libuuid.so.1.3.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libexpat.so.1.8.10-lib",
+    srcs = ["usr/lib/libexpat.so.1.8.10"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpixman-1.so.0.40.0-lib",
+    srcs = ["usr/lib/libpixman-1.so.0.40.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdrm_nouveau.so.2.0.0-lib",
+    srcs = ["usr/lib/libdrm_nouveau.so.2.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libGL.so.1.7.0-lib",
+    srcs = ["usr/lib/libGL.so.1.7.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libGLX.so.0.0.0-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libGLX.so.0.0.0-lib",
+    srcs = ["usr/lib/libGLX.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppial.so.11.8.0.86"],
     deps = [
         ":lib_libc.so.6-lib",
         ":lib_libdl.so.2-lib",
@@ -22781,6 +22931,7 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
@@ -22806,70 +22957,57 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libpcrecpp.so.0.0.2-lib",
-    srcs = ["usr/lib/libpcrecpp.so.0.0.2"],
+    name = "usr_lib_libwayland-egl.so.1.20.0-lib",
+    srcs = ["usr/lib/libwayland-egl.so.1.20.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libv4l2rds.so.0.0.0-lib",
+    srcs = ["usr/lib/libv4l2rds.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtirpc.so.3.0.0-lib",
+    srcs = ["usr/lib/libtirpc.so.3.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcroco-0.6.so.3.0.1-lib",
+    srcs = ["usr/lib/libcroco-0.6.so.3.0.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libxml2.so.2.9.14-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunwind.so.8.0.1-lib",
+    srcs = ["usr/lib/libunwind.so.8.0.1"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libpcre.so.1.2.13-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstnet-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstnet-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstreamer-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstbase-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libkms.so.1.0.0-lib",
-    srcs = ["usr/lib/libkms.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-damage.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-damage.so.0.0.0"],
+    name = "usr_lib_libxcb-record.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-record.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -22880,39 +23018,33 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstrtp-1.0.so.0.2007.0"],
+    name = "usr_lib_libcrypt.so.2.0.0-lib",
+    srcs = ["usr/lib/libcrypt.so.2.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppidei.so.11.8.0.86"],
+    name = "usr_lib_libatopology.so.2.0.0-lib",
+    srcs = ["usr/lib/libatopology.so.2.0.0"],
     deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+        ":usr_lib_libasound.so.2.0.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppc.so.11.8.0.86"],
+    name = "usr_lib_libasound.so.2.0.0-lib",
+    srcs = ["usr/lib/libasound.so.2.0.0"],
     deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
@@ -22920,73 +23052,8 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libgstriff-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstriff-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgsttag-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstaudio-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-        ":usr_lib_liborc-0.4.so.0.32.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_liborc-0.4.so.0.32.0-lib",
-    srcs = ["usr/lib/liborc-0.4.so.0.32.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdrm_radeon.so.1.0.1-lib",
-    srcs = ["usr/lib/libdrm_radeon.so.1.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libformw.so.5.9-lib",
-    srcs = ["usr/lib/libformw.so.5.9"],
+    name = "usr_lib_libmenuw.so.5.9-lib",
+    srcs = ["usr/lib/libmenuw.so.5.9"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -23015,86 +23082,32 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libxcb-xf86dri.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xf86dri.so.0.0.0"],
+    name = "lib_libss.so.2.0-lib",
+    srcs = ["lib/libss.so.2.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":lib_libcom_err.so.2.1-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libsoup-2.4.so.1.11.2-lib",
-    srcs = ["usr/lib/libsoup-2.4.so.1.11.2"],
+    name = "lib_libcom_err.so.2.1-lib",
+    srcs = ["lib/libcom_err.so.2.1"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libpsl.so.5.3.3-lib",
-        ":usr_lib_libsqlite3.so.0.8.6-lib",
-        ":usr_lib_libxml2.so.2.9.14-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libpsl.so.5.3.3-lib",
-    srcs = ["usr/lib/libpsl.so.5.3.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libicudata.so.70.1-lib",
-        ":usr_lib_libicuuc.so.70.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libsqlite3.so.0.8.6-lib",
-    srcs = ["usr/lib/libsqlite3.so.0.8.6"],
+    name = "usr_lib_libpulse.so.0.24.0-lib",
+    srcs = ["usr/lib/libpulse.so.0.24.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdbus-glib-1.so.2.3.5-lib",
-    srcs = ["usr/lib/libdbus-glib-1.so.2.3.5"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
         ":usr_lib_libdbus-1.so.3.32.3-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdbus-1.so.3.32.3-lib",
-    srcs = ["usr/lib/libdbus-1.so.3.32.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libsystemd.so.0.33.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpulse-mainloop-glib.so.0.0.6-lib",
-    srcs = ["usr/lib/libpulse-mainloop-glib.so.0.0.6"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libpulse.so.0.24.0-lib",
         ":usr_lib_pulseaudio_libpulsecommon-15.0.so-lib",
     ],
 )
@@ -23124,6 +23137,15 @@ cc_library(
         ":usr_lib_libogg.so.0.8.5-lib",
         ":usr_lib_libvorbis.so.0.4.9-lib",
         ":usr_lib_libvorbisenc.so.2.0.12-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libogg.so.0.8.5-lib",
+    srcs = ["usr/lib/libogg.so.0.8.5"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
     ],
 )
 
@@ -23162,364 +23184,6 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libpulse.so.0.24.0-lib",
-    srcs = ["usr/lib/libpulse.so.0.24.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
-        ":usr_lib_pulseaudio_libpulsecommon-15.0.so-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpython3.10.so.1.0-lib",
-    srcs = ["usr/lib/libpython3.10.so.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libwebpdemux.so.2.0.11-lib",
-    srcs = ["usr/lib/libwebpdemux.so.2.0.11"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libwebp.so.7.1.5-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libprotobuf.so.30.0.6-lib",
-    srcs = ["usr/lib/libprotobuf.so.30.0.6"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGLU.so.1.3.1-lib",
-    srcs = ["usr/lib/libGLU.so.1.3.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libGL.so.1.7.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppim.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xinput.so.0.1.0-lib",
-    srcs = ["usr/lib/libxcb-xinput.so.0.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libacl.so.1.1.2301-lib",
-    srcs = ["usr/lib/libacl.so.1.1.2301"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libattr.so.1.1.2501-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libattr.so.1.1.2501-lib",
-    srcs = ["usr/lib/libattr.so.1.1.2501"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstcodecparsers-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstcodecparsers-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libharfbuzz-gobject.so.0.40001.0-lib",
-    srcs = ["usr/lib/libharfbuzz-gobject.so.0.40001.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpciaccess.so.0.11.1-lib",
-    srcs = ["usr/lib/libpciaccess.so.0.11.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libbluetooth.so.3.19.7-lib",
-    srcs = ["usr/lib/libbluetooth.so.3.19.7"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libmenuw.so.5.9-lib",
-    srcs = ["usr/lib/libmenuw.so.5.9"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libncursesw.so.5.9-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-composite.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-composite.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicui18n.so.70.1-lib",
-    srcs = ["usr/lib/libicui18n.so.70.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":usr_lib_libicudata.so.70.1-lib",
-        ":usr_lib_libicuuc.so.70.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libatspi.so.0.0.1-lib",
-    srcs = ["usr/lib/libatspi.so.0.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXi.so.6.1.0-lib",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXv.so.1.0.0-lib",
-    srcs = ["usr/lib/libXv.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libout123.so.0.4.3-lib",
-    srcs = ["usr/lib/libout123.so.0.4.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgtk-3.so.0.2404.30-lib",
-    srcs = ["usr/lib/libgtk-3.so.0.2404.30"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXcomposite.so.1.0.0-lib",
-        ":usr_lib_libXcursor.so.1.0.2-lib",
-        ":usr_lib_libXdamage.so.1.1.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXfixes.so.3.1.0-lib",
-        ":usr_lib_libXi.so.6.1.0-lib",
-        ":usr_lib_libXrandr.so.2.2.0-lib",
-        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
-        ":usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
-        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
-        ":usr_lib_libepoxy.so.0.0.0-lib",
-        ":usr_lib_libfontconfig.so.1.12.0-lib",
-        ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libfribidi.so.0.4.0-lib",
-        ":usr_lib_libgdk-3.so.0.2404.30-lib",
-        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
-        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
-        ":usr_lib_libwayland-egl.so.1.20.0-lib",
-        ":usr_lib_libxkbcommon.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
-    srcs = ["usr/lib/libatk-bridge-2.0.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
-        ":usr_lib_libatspi.so.0.0.1-lib",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libatk-1.0.so.0.23809.1-lib",
-    srcs = ["usr/lib/libatk-1.0.so.0.23809.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppig.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-dri3.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-dri3.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicuio.so.70.1-lib",
-    srcs = ["usr/lib/libicuio.so.70.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":usr_lib_libicudata.so.70.1-lib",
-        ":usr_lib_libicui18n.so.70.1-lib",
-        ":usr_lib_libicuuc.so.70.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtheoraenc.so.1.1.2-lib",
-    srcs = ["usr/lib/libtheoraenc.so.1.1.2"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libogg.so.0.8.5-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libnsl.so.3.0.0-lib",
-    srcs = ["usr/lib/libnsl.so.3.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libtirpc.so.3.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtirpc.so.3.0.0-lib",
-    srcs = ["usr/lib/libtirpc.so.3.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-    ],
-)
-
-cc_library(
     name = "usr_lib_libpangoxft-1.0.so.0.5000.4-lib",
     srcs = ["usr/lib/libpangoxft-1.0.so.0.5000.4"],
     deps = [
@@ -23551,119 +23215,136 @@ cc_library(
 )
 
 cc_library(
-    name = "lib_libext2fs.so.2.4-lib",
-    srcs = ["lib/libext2fs.so.2.4"],
+    name = "usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
+    srcs = ["usr/lib/libpangoft2-1.0.so.0.5000.4"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libcom_err.so.2.1-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libcom_err.so.2.1-lib",
-    srcs = ["lib/libcom_err.so.2.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libv4l2.so.0.0.0-lib",
-    srcs = ["usr/lib/libv4l2.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libv4lconvert.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_librsvg-2.so.2.48.0-lib",
-    srcs = ["usr/lib/librsvg-2.so.2.48.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libcairo.so.2.11600.0-lib",
-        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
         ":usr_lib_libfontconfig.so.1.12.0-lib",
         ":usr_lib_libfreetype.so.6.18.1-lib",
-        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
         ":usr_lib_libgio-2.0.so.0.7200.3-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
         ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
         ":usr_lib_libharfbuzz.so.0.40001.0-lib",
         ":usr_lib_libpango-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
-        ":usr_lib_libpng16.so.16.39.0-lib",
-        ":usr_lib_libxml2.so.2.9.14-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libcrypt.so.2.0.0-lib",
-    srcs = ["usr/lib/libcrypt.so.2.0.0"],
+    name = "usr_lib_libharfbuzz.so.0.40001.0-lib",
+    srcs = ["usr/lib/libharfbuzz.so.0.40001.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgio-2.0.so.0.7200.3-lib",
+    srcs = ["usr/lib/libgio-2.0.so.0.7200.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libmount.so.1.1.0-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libmount.so.1.1.0-lib",
+    srcs = ["lib/libmount.so.1.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libblkid.so.1.1.0-lib",
         ":lib_libc.so.6-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstplay-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstplay-1.0.so.0.2007.0"],
+    name = "usr_lib_libpango-1.0.so.0.5000.4-lib",
+    srcs = ["usr/lib/libpango-1.0.so.0.5000.4"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libfribidi.so.0.4.0-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
         ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstpbutils-1.0.so.0.2007.0"],
+    name = "usr_lib_libfribidi.so.0.4.0-lib",
+    srcs = ["usr/lib/libfribidi.so.0.4.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstvideo-1.0.so.0.2007.0"],
+    name = "usr_lib_libdrm_freedreno.so.1.0.0-lib",
+    srcs = ["usr/lib/libdrm_freedreno.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdrm_radeon.so.1.0.1-lib",
+    srcs = ["usr/lib/libdrm_radeon.so.1.0.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstfft-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstfft-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_liborc-0.4.so.0.32.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libxcb-dri2.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-dri2.so.0.0.0"],
+    name = "usr_lib_libgflags.so.2.2.2-lib",
+    srcs = ["usr/lib/libgflags.so.2.2.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdrm_etnaviv.so.1.0.0-lib",
+    srcs = ["usr/lib/libdrm_etnaviv.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-res.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-res.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -23674,72 +23355,93 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libck-connector.so.0.0.0-lib",
-    srcs = ["usr/lib/libck-connector.so.0.0.0"],
+    name = "usr_lib_libxcb-glx.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-glx.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libFLAC++.so.6.3.0-lib",
-    srcs = ["usr/lib/libFLAC++.so.6.3.0"],
+    name = "usr_lib_libxcb-shape.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-shape.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpsl.so.5.3.3-lib",
+    srcs = ["usr/lib/libpsl.so.5.3.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libicudata.so.70.1-lib",
+        ":usr_lib_libicuuc.so.70.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicudata.so.70.1-lib",
+    srcs = ["usr/lib/libicudata.so.70.1"],
+    deps = [
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicuuc.so.70.1-lib",
+    srcs = ["usr/lib/libicuuc.so.70.1"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
-        ":usr_lib_libFLAC.so.8.3.0-lib",
-        ":usr_lib_libogg.so.0.8.5-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libicudata.so.70.1-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libglog.so.0.5.0-lib",
-    srcs = ["usr/lib/libglog.so.0.5.0"],
+    name = "usr_lib_libgstwebrtc-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstwebrtc-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_lib_libunwind.so.8.0.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunwind.so.8.0.1-lib",
-    srcs = ["usr/lib/libunwind.so.8.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libe2p.so.2.3-lib",
-    srcs = ["lib/libe2p.so.2.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstsctp-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstsctp-1.0.so.0.2007.0"],
-    deps = [
         ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
         ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstvulkan-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstvulkan-1.0.so.0.2007.0"],
+    name = "usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstsdp-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstrtp-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -23747,12 +23449,113 @@ cc_library(
         ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
         ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
         ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
-        ":usr_lib_libvulkan.so.1.3.204-lib",
-        ":usr_lib_libwayland-client.so.0.20.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppig.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libsqlite3.so.0.8.6-lib",
+    srcs = ["usr/lib/libsqlite3.so.0.8.6"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libattr.so.1.1.2501-lib",
+    srcs = ["usr/lib/libattr.so.1.1.2501"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXdamage.so.1.1.0-lib",
+    srcs = ["usr/lib/libXdamage.so.1.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXfixes.so.3.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXfixes.so.3.1.0-lib",
+    srcs = ["usr/lib/libXfixes.so.3.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstinsertbin-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstinsertbin-1.0.so.0.2007.0"],
+    deps = [
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xtest.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xtest.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
         ":usr_lib_libxcb.so.1.1.0-lib",
-        ":usr_lib_libxkbcommon.so.0.0.0-lib",
-        ":usr_lib_libxkbcommon-x11.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppim.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
+    srcs = ["usr/lib/libpangocairo-1.0.so.0.5000.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
     ],
 )
 
@@ -23781,1072 +23584,11 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libdrm_freedreno.so.1.0.0-lib",
-    srcs = ["usr/lib/libdrm_freedreno.so.1.0.0"],
+    name = "usr_lib_libxkbcommon.so.0.0.0-lib",
+    srcs = ["usr/lib/libxkbcommon.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtiff.so.5.7.0-lib",
-    srcs = ["usr/lib/libtiff.so.5.7.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libjpeg.so.62.3.0-lib",
-        ":usr_lib_liblzma.so.5.2.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-sync.so.1.0.0-lib",
-    srcs = ["usr/lib/libxcb-sync.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libseccomp.so.2.5.3-lib",
-    srcs = ["usr/lib/libseccomp.so.2.5.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xinerama.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xinerama.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstrtspserver-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstrtspserver-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstapp-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstnet-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstapp-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstapp-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstsdp-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstrtsp-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libcusolver.so.11.4.1.48-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libcusolver.so.11.4.1.48"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcroco-0.6.so.3.0.1-lib",
-    srcs = ["usr/lib/libcroco-0.6.so.3.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libxml2.so.2.9.14-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppif.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libmediactl.so.0.0.0-lib",
-    srcs = ["usr/lib/libmediactl.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libudev.so.1.7.3-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libudev.so.1.7.3-lib",
-    srcs = ["lib/libudev.so.1.7.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-present.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-present.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libspeexdsp.so.1.5.1-lib",
-    srcs = ["usr/lib/libspeexdsp.so.1.5.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-randr.so.0.1.0-lib",
-    srcs = ["usr/lib/libxcb-randr.so.0.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libform.so.5.9-lib",
-    srcs = ["usr/lib/libform.so.5.9"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libncurses.so.5.9-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libncurses.so.5.9-lib",
-    srcs = ["lib/libncurses.so.5.9"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicalvcal.so.3.0.16-lib",
-    srcs = ["usr/lib/libicalvcal.so.3.0.16"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libical.so.3.0.16-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libical.so.3.0.16-lib",
-    srcs = ["usr/lib/libical.so.3.0.16"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libicui18n.so.70.1-lib",
-        ":usr_lib_libicuuc.so.70.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libicalss.so.3.0.16-lib",
-    srcs = ["usr/lib/libicalss.so.3.0.16"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libical.so.3.0.16-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-glx.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-glx.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libavahi-client.so.3.2.9-lib",
-    srcs = ["usr/lib/libavahi-client.so.3.2.9"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libavahi-common.so.3.5.4-lib",
-        ":usr_lib_libdbus-1.so.3.32.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libavahi-common.so.3.5.4-lib",
-    srcs = ["usr/lib/libavahi-common.so.3.5.4"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgphoto2.so.6.1.0-lib",
-    srcs = ["usr/lib/libgphoto2.so.6.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":usr_lib_libexif.so.12.3.4-lib",
-        ":usr_lib_libgphoto2_port.so.12.0.0-lib",
-        ":usr_lib_libltdl.so.7.3.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libexif.so.12.3.4-lib",
-    srcs = ["usr/lib/libexif.so.12.3.4"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppist.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstplayer-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstplayer-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstplay-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcuda.so.1.1-lib",
-    srcs = ["usr/lib/libcuda.so.1.1"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libnvrm_gpu.so-lib",
-        ":usr_lib_libnvrm_host1x.so-lib",
-        ":usr_lib_libnvrm_mem.so-lib",
-        ":usr_lib_libnvrm_sync.so-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libnvrm_gpu.so-lib",
-    srcs = ["usr/lib/libnvrm_gpu.so"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":usr_lib_libnvos.so-lib",
-        ":usr_lib_libnvrm_mem.so-lib",
-        ":usr_lib_libnvrm_sync.so-lib",
-        ":usr_lib_libnvsocsys.so-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libfdisk.so.1.1.0-lib",
-    srcs = ["lib/libfdisk.so.1.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libblkid.so.1.1.0-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libuuid.so.1.3.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libGLESv1_CM.so.1.2.0-lib",
-    srcs = ["usr/lib/libGLESv1_CM.so.1.2.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libusb-1.0.so.0.3.0-lib",
-    srcs = ["lib/libusb-1.0.so.0.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libudev.so.1.7.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdrm_omap.so.1.0.0-lib",
-    srcs = ["usr/lib/libdrm_omap.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppisu.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libvorbisfile.so.3.3.8-lib",
-    srcs = ["usr/lib/libvorbisfile.so.3.3.8"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libogg.so.0.8.5-lib",
-        ":usr_lib_libvorbis.so.0.4.9-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-shape.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-shape.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxkbregistry.so.0.0.0-lib",
-    srcs = ["usr/lib/libxkbregistry.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libxml2.so.2.9.14-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstallocators-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstallocators-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunwind-setjmp.so.0.0.0-lib",
-    srcs = ["usr/lib/libunwind-setjmp.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libunwind.so.8.0.1-lib",
-        ":usr_lib_libunwind-aarch64.so.8.0.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunwind-aarch64.so.8.0.1-lib",
-    srcs = ["usr/lib/libunwind-aarch64.so.8.0.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libunwind.so.8.0.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libv4l1.so.0.0.0-lib",
-    srcs = ["usr/lib/libv4l1.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libv4l2.so.0.0.0-lib",
-        ":usr_lib_libv4lconvert.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnpps.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-res.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-res.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-record.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-record.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libical-glib.so.3.0.16-lib",
-    srcs = ["usr/lib/libical-glib.so.3.0.16"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libical.so.3.0.16-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgudev-1.0.so.0.3.0-lib",
-    srcs = ["usr/lib/libgudev-1.0.so.0.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libudev.so.1.7.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpanel.so.5.9-lib",
-    srcs = ["usr/lib/libpanel.so.5.9"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libncurses.so.5.9-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libreadline.so.8.1-lib",
-    srcs = ["usr/lib/libreadline.so.8.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgsttranscoder-1.0.so.0-lib",
-    srcs = ["usr/lib/libgsttranscoder-1.0.so.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstcheck-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstcheck-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libavahi-glib.so.1.0.2-lib",
-    srcs = ["usr/lib/libavahi-glib.so.1.0.2"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libavahi-common.so.3.5.4-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppicc.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstmpegts-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstmpegts-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_liblzo2.so.2.0.0-lib",
-    srcs = ["usr/lib/liblzo2.so.2.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppial.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppial.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxtables.so.12.4.0-lib",
-    srcs = ["usr/lib/libxtables.so.12.4.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libsbc.so.1.3.0-lib",
-    srcs = ["usr/lib/libsbc.so.1.3.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgthread-2.0.so.0.7200.3-lib",
-    srcs = ["usr/lib/libgthread-2.0.so.0.7200.3"],
-    deps = [
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libmnl.so.0.2.0-lib",
-    srcs = ["usr/lib/libmnl.so.0.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xfixes.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xfixes.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtag.so.1.18.0-lib",
-    srcs = ["usr/lib/libtag.so.1.18.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libOpenGL.so.0.0.0-lib",
-    srcs = ["usr/lib/libOpenGL.so.0.0.0"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libGLdispatch.so.0.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libprocps.so.8.0.3-lib",
-    srcs = ["usr/lib/libprocps.so.8.0.3"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libsystemd.so.0.33.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libavahi-core.so.7.1.0-lib",
-    srcs = ["usr/lib/libavahi-core.so.7.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libavahi-common.so.3.5.4-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpsx.so.2.66-lib",
-    srcs = ["usr/lib/libpsx.so.2.66"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libturbojpeg.so.0.2.0-lib",
-    srcs = ["usr/lib/libturbojpeg.so.0.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_liborc-test-0.4.so.0.32.0-lib",
-    srcs = ["usr/lib/liborc-test-0.4.so.0.32.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_liborc-0.4.so.0.32.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libatopology.so.2.0.0-lib",
-    srcs = ["usr/lib/libatopology.so.2.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libasound.so.2.0.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libasound.so.2.0.0-lib",
-    srcs = ["usr/lib/libasound.so.2.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-screensaver.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-screensaver.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libdrm_intel.so.1.0.0-lib",
-    srcs = ["usr/lib/libdrm_intel.so.1.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libpciaccess.so.0.11.1-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtbb.so.12.5-lib",
-    srcs = ["usr/lib/libtbb.so.12.5"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libharfbuzz-subset.so.0.40001.0-lib",
-    srcs = ["usr/lib/libharfbuzz-subset.so.0.40001.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libbtrfsutil.so.1.2.0-lib",
-    srcs = ["usr/lib/libbtrfsutil.so.1.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
-    srcs = ["usr/local/cuda-11.8/lib/libnppitc.so.11.8.0.86"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstwebrtc-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstwebrtc-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpcreposix.so.0.0.7-lib",
-    srcs = ["usr/lib/libpcreposix.so.0.0.7"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libpcre.so.1.2.13-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpanelw.so.5.9-lib",
-    srcs = ["usr/lib/libpanelw.so.5.9"],
-    deps = [
-        ":lib_libc.so.6-lib",
-        ":lib_libncursesw.so.5.9-lib",
-        ":lib_libtinfo.so.5.9-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libss.so.2.0-lib",
-    srcs = ["lib/libss.so.2.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libcom_err.so.2.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libip6tc.so.2.0.0-lib",
-    srcs = ["usr/lib/libip6tc.so.2.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libmpg123.so.0.46.7-lib",
-    srcs = ["usr/lib/libmpg123.so.0.46.7"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libtag_c.so.0.0.0-lib",
-    srcs = ["usr/lib/libtag_c.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_lib_libtag.so.1.18.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstbadaudio-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstbadaudio-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libxcb-xtest.so.0.0.0-lib",
-    srcs = ["usr/lib/libxcb-xtest.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libXau.so.6.0.0-lib",
-        ":usr_lib_libXdmcp.so.6.0.0-lib",
-        ":usr_lib_libxcb.so.1.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstwayland-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstwayland-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libvala-0.56.so.0.0.0-lib",
-    srcs = ["usr/lib/libvala-0.56.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libv4l2rds.so.0.0.0-lib",
-    srcs = ["usr/lib/libv4l2rds.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libXtst.so.6.1.0-lib",
-    srcs = ["usr/lib/libXtst.so.6.1.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libX11.so.6.4.0-lib",
-        ":usr_lib_libXext.so.6.4.0-lib",
-        ":usr_lib_libXi.so.6.1.0-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunwind-coredump.so.0.0.0-lib",
-    srcs = ["usr/lib/libunwind-coredump.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libip4tc.so.2.0.0-lib",
-    srcs = ["usr/lib/libip4tc.so.2.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libpulse-simple.so.0.1.1-lib",
-    srcs = ["usr/lib/libpulse-simple.so.0.1.1"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":usr_lib_libpulse.so.0.24.0-lib",
-        ":usr_lib_pulseaudio_libpulsecommon-15.0.so-lib",
     ],
 )
 
@@ -24872,6 +23614,18 @@ cc_library(
 )
 
 cc_library(
+    name = "usr_lib_libtbb.so.12.5-lib",
+    srcs = ["usr/lib/libtbb.so.12.5"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
     name = "usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
     srcs = ["usr/lib/libopencv_cudaarithm.so.4.5.5"],
     deps = [
@@ -24889,6 +23643,33 @@ cc_library(
         ":usr_local_cuda-11.8_lib_libnppig.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppitc.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcufft.so.10.9.0.58"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppist.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
@@ -24912,7 +23693,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
@@ -24920,6 +23700,20 @@ cc_library(
         ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppim.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppif.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppif.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
@@ -24940,6 +23734,20 @@ cc_library(
         ":usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppidei.so.11.8.0.86-lib",
         ":usr_local_cuda-11.8_lib_libnppist.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppicc.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppicc.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
     ],
 )
 
@@ -24969,6 +23777,7 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
+        ":usr_lib_libopencv_photo.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
 )
@@ -24980,7 +23789,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
@@ -25000,6 +23808,20 @@ cc_library(
         ":usr_lib_libprotobuf.so.30.0.6-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
         ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libprotobuf.so.30.0.6-lib",
+    srcs = ["usr/lib/libprotobuf.so.30.0.6"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
 )
 
@@ -25048,6 +23870,38 @@ cc_library(
         ":usr_lib_libstdc++.so.6.0.29-lib",
         ":usr_lib_libtiff.so.5.7.0-lib",
         ":usr_lib_libwebp.so.7.1.5-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtiff.so.5.7.0-lib",
+    srcs = ["usr/lib/libtiff.so.5.7.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libjpeg.so.62.3.0-lib",
+        ":usr_lib_liblzma.so.5.2.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libjpeg.so.62.3.0-lib",
+    srcs = ["usr/lib/libjpeg.so.62.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwebp.so.7.1.5-lib",
+    srcs = ["usr/lib/libwebp.so.7.1.5"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
     ],
 )
 
@@ -25169,6 +24023,7 @@ cc_library(
         ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
+        ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
         ":usr_lib_libopencv_features2d.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
@@ -25197,7 +24052,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
@@ -25233,13 +24087,83 @@ cc_library(
 )
 
 cc_library(
+    name = "usr_lib_libgphoto2_port.so.12.0.0-lib",
+    srcs = ["usr/lib/libgphoto2_port.so.12.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libltdl.so.7.3.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libltdl.so.7.3.2-lib",
+    srcs = ["usr/lib/libltdl.so.7.3.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgphoto2.so.6.1.0-lib",
+    srcs = ["usr/lib/libgphoto2.so.6.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libexif.so.12.3.4-lib",
+        ":usr_lib_libgphoto2_port.so.12.0.0-lib",
+        ":usr_lib_libltdl.so.7.3.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libexif.so.12.3.4-lib",
+    srcs = ["usr/lib/libexif.so.12.3.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstriff-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstriff-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgsttag-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstapp-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstapp-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
     name = "usr_lib_libopencv_cudalegacy.so.4.5.5-lib",
     srcs = ["usr/lib/libopencv_cudalegacy.so.4.5.5"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_calib3d.so.4.5.5-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
@@ -25317,7 +24241,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
@@ -25344,7 +24267,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libcairo.so.2.11600.0-lib",
         ":usr_lib_libgdk-3.so.0.2404.30-lib",
         ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
@@ -25355,6 +24277,187 @@ cc_library(
         ":usr_lib_libopencv_imgcodecs.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
+    srcs = ["usr/lib/libgdk_pixbuf-2.0.so.0.4200.10"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libjpeg.so.62.3.0-lib",
+        ":usr_lib_libpng16.so.16.39.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgdk-3.so.0.2404.30-lib",
+    srcs = ["usr/lib/libgdk-3.so.0.2404.30"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXcomposite.so.1.0.0-lib",
+        ":usr_lib_libXcursor.so.1.0.2-lib",
+        ":usr_lib_libXdamage.so.1.1.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXfixes.so.3.1.0-lib",
+        ":usr_lib_libXi.so.6.1.0-lib",
+        ":usr_lib_libXrandr.so.2.2.0-lib",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
+        ":usr_lib_libepoxy.so.0.0.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libfribidi.so.0.4.0-lib",
+        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
+        ":usr_lib_libwayland-egl.so.1.20.0-lib",
+        ":usr_lib_libxkbcommon.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libepoxy.so.0.0.0-lib",
+    srcs = ["usr/lib/libepoxy.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwayland-client.so.0.20.0-lib",
+    srcs = ["usr/lib/libwayland-client.so.0.20.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libffi.so.8.1.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwayland-cursor.so.0.20.0-lib",
+    srcs = ["usr/lib/libwayland-cursor.so.0.20.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXcomposite.so.1.0.0-lib",
+    srcs = ["usr/lib/libXcomposite.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXcursor.so.1.0.2-lib",
+    srcs = ["usr/lib/libXcursor.so.1.0.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXfixes.so.3.1.0-lib",
+        ":usr_lib_libXrender.so.1.3.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXrandr.so.2.2.0-lib",
+    srcs = ["usr/lib/libXrandr.so.2.2.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXrender.so.1.3.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcairo-gobject.so.2.11600.0-lib",
+    srcs = ["usr/lib/libcairo-gobject.so.2.11600.0"],
+    deps = [
+        ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libEGL.so.1.1.0-lib",
+        ":usr_lib_libGLESv2.so.2.1.0-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXrender.so.1.3.0-lib",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libpixman-1.so.0.40.0-lib",
+        ":usr_lib_libpng16.so.16.39.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":usr_lib_libxcb-render.so.0.0.0-lib",
+        ":usr_lib_libxcb-shm.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgtk-3.so.0.2404.30-lib",
+    srcs = ["usr/lib/libgtk-3.so.0.2404.30"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXcomposite.so.1.0.0-lib",
+        ":usr_lib_libXcursor.so.1.0.2-lib",
+        ":usr_lib_libXdamage.so.1.1.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXfixes.so.3.1.0-lib",
+        ":usr_lib_libXi.so.6.1.0-lib",
+        ":usr_lib_libXrandr.so.2.2.0-lib",
+        ":usr_lib_libatk-1.0.so.0.23809.1-lib",
+        ":usr_lib_libatk-bridge-2.0.so.0.0.0-lib",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
+        ":usr_lib_libepoxy.so.0.0.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libfribidi.so.0.4.0-lib",
+        ":usr_lib_libgdk-3.so.0.2404.30-lib",
+        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":usr_lib_libwayland-cursor.so.0.20.0-lib",
+        ":usr_lib_libwayland-egl.so.1.20.0-lib",
+        ":usr_lib_libxkbcommon.so.0.0.0-lib",
     ],
 )
 
@@ -25388,18 +24491,6 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libopencv_cudacodec.so.4.5.5-lib",
-    srcs = ["usr/lib/libopencv_cudacodec.so.4.5.5"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":usr_lib_libopencv_core.so.4.5.5-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
     name = "usr_lib_libopencv_superres.so.4.5.5-lib",
     srcs = ["usr/lib/libopencv_superres.so.4.5.5"],
     deps = [
@@ -25409,7 +24500,6 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
-        ":usr_lib_libopencv_cudacodec.so.4.5.5-lib",
         ":usr_lib_libopencv_cudafilters.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaimgproc.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaoptflow.so.4.5.5-lib",
@@ -25457,7 +24547,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_calib3d.so.4.5.5-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
@@ -25477,6 +24566,18 @@ cc_library(
         ":usr_lib_libglog.so.0.5.0-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libglog.so.0.5.0-lib",
+    srcs = ["usr/lib/libglog.so.0.5.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_lib_libunwind.so.8.0.1-lib",
     ],
 )
 
@@ -25633,7 +24734,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
     ],
@@ -25676,7 +24776,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_dnn.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
@@ -25840,7 +24939,6 @@ cc_library(
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_imgproc.so.4.5.5-lib",
         ":usr_lib_libstdc++.so.6.0.29-lib",
@@ -25908,12 +25006,255 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libtheora.so.0.3.10-lib",
-    srcs = ["usr/lib/libtheora.so.0.3.10"],
+    name = "usr_lib_libdvbv5.so.0.0.0-lib",
+    srcs = ["usr/lib/libdvbv5.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_libogg.so.0.8.5-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+        ":lib_libudev.so.1.7.3-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libudev.so.1.7.3-lib",
+    srcs = ["lib/libudev.so.1.7.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnvrtc.so.11.8.89-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnvrtc.so.11.8.89"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-composite.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-composite.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libmnl.so.0.2.0-lib",
+    srcs = ["usr/lib/libmnl.so.0.2.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXv.so.1.0.0-lib",
+    srcs = ["usr/lib/libXv.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libcufftw.so.10.9.0.58-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcufftw.so.10.9.0.58"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libcufft.so.10.9.0.58-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libck-connector.so.0.0.0-lib",
+    srcs = ["usr/lib/libck-connector.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libcudart.so.11.8.89-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcudart.so.11.8.89"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libprotobuf-lite.so.30.0.6-lib",
+    srcs = ["usr/lib/libprotobuf-lite.so.30.0.6"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicuio.so.70.1-lib",
+    srcs = ["usr/lib/libicuio.so.70.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libicudata.so.70.1-lib",
+        ":usr_lib_libicui18n.so.70.1-lib",
+        ":usr_lib_libicuuc.so.70.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicui18n.so.70.1-lib",
+    srcs = ["usr/lib/libicui18n.so.70.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libicudata.so.70.1-lib",
+        ":usr_lib_libicuuc.so.70.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXxf86vm.so.1.0.0-lib",
+    srcs = ["usr/lib/libXxf86vm.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-dri3.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-dri3.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libsbc.so.1.3.0-lib",
+    srcs = ["usr/lib/libsbc.so.1.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libe2p.so.2.3-lib",
+    srcs = ["lib/libe2p.so.2.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpulse-mainloop-glib.so.0.0.6-lib",
+    srcs = ["usr/lib/libpulse-mainloop-glib.so.0.0.6"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libpulse.so.0.24.0-lib",
+        ":usr_lib_pulseaudio_libpulsecommon-15.0.so-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-sync.so.1.0.0-lib",
+    srcs = ["usr/lib/libxcb-sync.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libout123.so.0.4.3-lib",
+    srcs = ["usr/lib/libout123.so.0.4.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libv4lconvert.so.0.0.0-lib",
+    srcs = ["usr/lib/libv4lconvert.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstwayland-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstwayland-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libnettle.so.8.4-lib",
+    srcs = ["usr/lib/libnettle.so.8.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
     ],
 )
 
@@ -25931,17 +25272,284 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libgirepository-1.0.so.1.0.0-lib",
-    srcs = ["usr/lib/libgirepository-1.0.so.1.0.0"],
+    name = "usr_lib_libgmp.so.10.4.1-lib",
+    srcs = ["usr/lib/libgmp.so.10.4.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtheora.so.0.3.10-lib",
+    srcs = ["usr/lib/libtheora.so.0.3.10"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libogg.so.0.8.5-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdrm_intel.so.1.0.0-lib",
+    srcs = ["usr/lib/libdrm_intel.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libpciaccess.so.0.11.1-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpciaccess.so.0.11.1-lib",
+    srcs = ["usr/lib/libpciaccess.so.0.11.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-dri2.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-dri2.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-damage.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-damage.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libFLAC++.so.6.3.0-lib",
+    srcs = ["usr/lib/libFLAC++.so.6.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libFLAC.so.8.3.0-lib",
+        ":usr_lib_libogg.so.0.8.5-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libip6tc.so.2.0.0-lib",
+    srcs = ["usr/lib/libip6tc.so.2.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpanel.so.5.9-lib",
+    srcs = ["usr/lib/libpanel.so.5.9"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libncurses.so.5.9-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libncurses.so.5.9-lib",
+    srcs = ["lib/libncurses.so.5.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libv4l1.so.0.0.0-lib",
+    srcs = ["usr/lib/libv4l1.so.0.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libv4l2.so.0.0.0-lib",
+        ":usr_lib_libv4lconvert.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libv4l2.so.0.0.0-lib",
+    srcs = ["usr/lib/libv4l2.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libv4lconvert.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcuda.so.1.1-lib",
+    srcs = ["usr/lib/libcuda.so.1.1"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libnvrm_gpu.so-lib",
+        ":usr_lib_libnvrm_host1x.so-lib",
+        ":usr_lib_libnvrm_mem.so-lib",
+        ":usr_lib_libnvrm_sync.so-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libnvrm_gpu.so-lib",
+    srcs = ["usr/lib/libnvrm_gpu.so"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":usr_lib_libnvos.so-lib",
+        ":usr_lib_libnvrm_mem.so-lib",
+        ":usr_lib_libnvrm_sync.so-lib",
+        ":usr_lib_libnvsocsys.so-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnppisu.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnppisu.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwayland-server.so.0.20.0-lib",
+    srcs = ["usr/lib/libwayland-server.so.0.20.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
         ":usr_lib_libffi.so.8.1.2-lib",
-        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunwind-setjmp.so.0.0.0-lib",
+    srcs = ["usr/lib/libunwind-setjmp.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":usr_lib_libunwind.so.8.0.1-lib",
+        ":usr_lib_libunwind-aarch64.so.8.0.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunwind-aarch64.so.8.0.1-lib",
+    srcs = ["usr/lib/libunwind-aarch64.so.8.0.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":usr_lib_libunwind.so.8.0.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libXtst.so.6.1.0-lib",
+    srcs = ["usr/lib/libXtst.so.6.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libX11.so.6.4.0-lib",
+        ":usr_lib_libXext.so.6.4.0-lib",
+        ":usr_lib_libXi.so.6.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwebpmux.so.3.0.10-lib",
+    srcs = ["usr/lib/libwebpmux.so.3.0.10"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libwebp.so.7.1.5-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libturbojpeg.so.0.2.0-lib",
+    srcs = ["usr/lib/libturbojpeg.so.0.2.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpcreposix.so.0.0.7-lib",
+    srcs = ["usr/lib/libpcreposix.so.0.0.7"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libpcre.so.1.2.13-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libX11-xcb.so.1.0.0-lib",
+    srcs = ["usr/lib/libX11-xcb.so.1.0.0"],
+    deps = [
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libkms.so.1.0.0-lib",
+    srcs = ["usr/lib/libkms.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-screensaver.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-screensaver.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
     ],
 )
 
@@ -25961,12 +25569,465 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libdrm_amdgpu.so.1.0.0-lib",
-    srcs = ["usr/lib/libdrm_amdgpu.so.1.0.0"],
+    name = "usr_lib_libavahi-glib.so.1.0.2-lib",
+    srcs = ["usr/lib/libavahi-glib.so.1.0.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libavahi-common.so.3.5.4-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libavahi-common.so.3.5.4-lib",
+    srcs = ["usr/lib/libavahi-common.so.3.5.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libavahi-client.so.3.2.9-lib",
+    srcs = ["usr/lib/libavahi-client.so.3.2.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libavahi-common.so.3.5.4-lib",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xf86dri.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xf86dri.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libical-glib.so.3.0.16-lib",
+    srcs = ["usr/lib/libical-glib.so.3.0.16"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libical.so.3.0.16-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libical.so.3.0.16-lib",
+    srcs = ["usr/lib/libical.so.3.0.16"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libicui18n.so.70.1-lib",
+        ":usr_lib_libicuuc.so.70.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpython3.10.so.1.0-lib",
+    srcs = ["usr/lib/libpython3.10.so.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libOpenGL.so.0.0.0-lib",
+    srcs = ["usr/lib/libOpenGL.so.0.0.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libcusparse.so.11.7.5.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcusparse.so.11.7.5.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtheoraenc.so.1.1.2-lib",
+    srcs = ["usr/lib/libtheoraenc.so.1.1.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libogg.so.0.8.5-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstnet-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstnet-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libsmartcols.so.1.1.0-lib",
+    srcs = ["lib/libsmartcols.so.1.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgthread-2.0.so.0.7200.3-lib",
+    srcs = ["usr/lib/libgthread-2.0.so.0.7200.3"],
+    deps = [
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libidn2.so.0.3.7-lib",
+    srcs = ["usr/lib/libidn2.so.0.3.7"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libunistring.so.2.2.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunistring.so.2.2.0-lib",
+    srcs = ["usr/lib/libunistring.so.2.2.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libform.so.5.9-lib",
+    srcs = ["usr/lib/libform.so.5.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libncurses.so.5.9-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libvala-0.56.so.0.0.0-lib",
+    srcs = ["usr/lib/libvala-0.56.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtheoradec.so.1.1.4-lib",
+    srcs = ["usr/lib/libtheoradec.so.1.1.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstrtsp-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxshmfence.so.1.0.0-lib",
+    srcs = ["usr/lib/libxshmfence.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstcodecparsers-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstcodecparsers-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstrtspserver-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstrtspserver-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstapp-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstnet-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstrtp-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstrtsp-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstsdp-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunwind-coredump.so.0.0.0-lib",
+    srcs = ["usr/lib/libunwind-coredump.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicalvcal.so.3.0.16-lib",
+    srcs = ["usr/lib/libicalvcal.so.3.0.16"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libical.so.3.0.16-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libicalss.so.3.0.16-lib",
+    srcs = ["usr/lib/libicalss.so.3.0.16"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libical.so.3.0.16-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libticw.so.5.9-lib",
+    srcs = ["usr/lib/libticw.so.5.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-randr.so.0.1.0-lib",
+    srcs = ["usr/lib/libxcb-randr.so.0.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libvorbisfile.so.3.3.8-lib",
+    srcs = ["usr/lib/libvorbisfile.so.3.3.8"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libogg.so.0.8.5-lib",
+        ":usr_lib_libvorbis.so.0.4.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libavahi-core.so.7.1.0-lib",
+    srcs = ["usr/lib/libavahi-core.so.7.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libavahi-common.so.3.5.4-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libmediactl.so.0.0.0-lib",
+    srcs = ["usr/lib/libmediactl.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libudev.so.1.7.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxtables.so.12.4.0-lib",
+    srcs = ["usr/lib/libxtables.so.12.4.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libip4tc.so.2.0.0-lib",
+    srcs = ["usr/lib/libip4tc.so.2.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libspeex.so.1.5.1-lib",
+    srcs = ["usr/lib/libspeex.so.1.5.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.8_lib_libnpps.so.11.8.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libnpps.so.11.8.0.86"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libnppc.so.11.8.0.86-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libnsl.so.3.0.0-lib",
+    srcs = ["usr/lib/libnsl.so.3.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libtirpc.so.3.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libdrm_omap.so.1.0.0-lib",
+    srcs = ["usr/lib/libdrm_omap.so.1.0.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
         ":usr_lib_tegra_libdrm.so.2-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libbtrfsutil.so.1.2.0-lib",
+    srcs = ["usr/lib/libbtrfsutil.so.1.2.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libmenu.so.5.9-lib",
+    srcs = ["usr/lib/libmenu.so.5.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libncurses.so.5.9-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libcap-ng.so.0.0.0-lib",
+    srcs = ["lib/libcap-ng.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstallocators-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstallocators-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpanelw.so.5.9-lib",
+    srcs = ["usr/lib/libpanelw.so.5.9"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libncursesw.so.5.9-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libsyn123.so.0.1.4-lib",
+    srcs = ["usr/lib/libsyn123.so.0.1.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libwebpdemux.so.2.0.11-lib",
+    srcs = ["usr/lib/libwebpdemux.so.2.0.11"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libwebp.so.7.1.5-lib",
     ],
 )
 
@@ -25981,53 +26042,135 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libtic.so.5.9-lib",
-    srcs = ["usr/lib/libtic.so.5.9"],
+    name = "usr_local_cuda-11.8_lib_libcufile.so.1.4.0-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcufile.so.1.4.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libnvidia-egl-wayland.so.1.1.9-lib",
+    srcs = ["usr/lib/libnvidia-egl-wayland.so.1.1.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":usr_lib_libwayland-server.so.0.20.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgnutls.so.30.32.0-lib",
+    srcs = ["usr/lib/libgnutls.so.30.32.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgmp.so.10.4.1-lib",
+        ":usr_lib_libhogweed.so.6.4-lib",
+        ":usr_lib_libidn2.so.0.3.7-lib",
+        ":usr_lib_libnettle.so.8.4-lib",
+        ":usr_lib_libunistring.so.2.2.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libhogweed.so.6.4-lib",
+    srcs = ["usr/lib/libhogweed.so.6.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgmp.so.10.4.1-lib",
+        ":usr_lib_libnettle.so.8.4-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libvulkan.so.1.3.204-lib",
+    srcs = ["usr/lib/libvulkan.so.1.3.204"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstbadaudio-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstbadaudio-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstaudio-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libnice.so.10.11.0-lib",
+    srcs = ["usr/lib/libnice.so.10.11.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgnutls.so.30.32.0-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgudev-1.0.so.0.3.0-lib",
+    srcs = ["usr/lib/libgudev-1.0.so.0.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libudev.so.1.7.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libformw.so.5.9-lib",
+    srcs = ["usr/lib/libformw.so.5.9"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libncursesw.so.5.9-lib",
         ":lib_libtinfo.so.5.9-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libgstinsertbin-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstinsertbin-1.0.so.0.2007.0"],
+    name = "usr_lib_libxcb-xfixes.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xfixes.so.0.0.0"],
     deps = [
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libtheoradec.so.1.1.4-lib",
-    srcs = ["usr/lib/libtheoradec.so.1.1.4"],
+    name = "usr_local_cuda-11.8_lib_libcurand.so.10.3.0.86-lib",
+    srcs = ["usr/local/cuda-11.8/lib/libcurand.so.10.3.0.86"],
     deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libgstcontroller-1.0.so.0.2007.0-lib",
-    srcs = ["usr/lib/libgstcontroller-1.0.so.0.2007.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
         ":lib_libm.so.6-lib",
-        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
-        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
-    ],
-)
-
-cc_library(
-    name = "lib_libcap-ng.so.0.0.0-lib",
-    srcs = ["lib/libcap-ng.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
     ],
 )
 
@@ -26056,8 +26199,8 @@ cc_library(
 )
 
 cc_library(
-    name = "lib_libsmartcols.so.1.1.0-lib",
-    srcs = ["lib/libsmartcols.so.1.1.0"],
+    name = "usr_lib_libseccomp.so.2.5.3-lib",
+    srcs = ["usr/lib/libseccomp.so.2.5.3"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -26065,50 +26208,38 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libsyn123.so.0.1.4-lib",
-    srcs = ["usr/lib/libsyn123.so.0.1.4"],
+    name = "usr_lib_libgstvulkan-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstvulkan-1.0.so.0.2007.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstbase-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstvideo-1.0.so.0.2007.0-lib",
+        ":usr_lib_libvulkan.so.1.3.204-lib",
+        ":usr_lib_libwayland-client.so.0.20.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+        ":usr_lib_libxkbcommon.so.0.0.0-lib",
+        ":usr_lib_libxkbcommon-x11.so.0.0.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libmenu.so.5.9-lib",
-    srcs = ["usr/lib/libmenu.so.5.9"],
+    name = "lib_libfdisk.so.1.1.0-lib",
+    srcs = ["lib/libfdisk.so.1.1.0"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libblkid.so.1.1.0-lib",
         ":lib_libc.so.6-lib",
-        ":lib_libncurses.so.5.9-lib",
-        ":lib_libtinfo.so.5.9-lib",
+        ":usr_lib_libuuid.so.1.3.0-lib",
     ],
 )
 
 cc_library(
-    name = "usr_lib_libdvbv5.so.0.0.0-lib",
-    srcs = ["usr/lib/libdvbv5.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_librt.so.1-lib",
-        ":lib_libudev.so.1.7.3-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libunwind-ptrace.so.0.0.0-lib",
-    srcs = ["usr/lib/libunwind-ptrace.so.0.0.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libticw.so.5.9-lib",
-    srcs = ["usr/lib/libticw.so.5.9"],
+    name = "usr_lib_libtic.so.5.9-lib",
+    srcs = ["usr/lib/libtic.so.5.9"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -26117,8 +26248,17 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libspeex.so.1.5.1-lib",
-    srcs = ["usr/lib/libspeex.so.1.5.1"],
+    name = "usr_lib_libgstsctp-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstsctp-1.0.so.0.2007.0"],
+    deps = [
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libspeexdsp.so.1.5.1-lib",
+    srcs = ["usr/lib/libspeexdsp.so.1.5.1"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
@@ -26127,12 +26267,56 @@ cc_library(
 )
 
 cc_library(
-    name = "usr_lib_libdrm_nouveau.so.2.0.0-lib",
-    srcs = ["usr/lib/libdrm_nouveau.so.2.0.0"],
+    name = "usr_lib_libdbus-glib-1.so.2.3.5-lib",
+    srcs = ["usr/lib/libdbus-glib-1.so.2.3.5"],
     deps = [
         ":lib_ld-linux-aarch64.so.1-lib",
         ":lib_libc.so.6-lib",
-        ":usr_lib_tegra_libdrm.so.2-lib",
+        ":usr_lib_libdbus-1.so.3.32.3-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libbluetooth.so.3.19.7-lib",
+    srcs = ["usr/lib/libbluetooth.so.3.19.7"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpulse-simple.so.0.1.1-lib",
+    srcs = ["usr/lib/libpulse-simple.so.0.1.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libpulse.so.0.24.0-lib",
+        ":usr_lib_pulseaudio_libpulsecommon-15.0.so-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libell.so.0.0.2-lib",
+    srcs = ["usr/lib/libell.so.0.0.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xv.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xv.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
     ],
 )
 
@@ -26175,6 +26359,490 @@ cc_library(
         ":usr_lib_libwayland-cursor.so.0.20.0-lib",
         ":usr_lib_libwayland-egl.so.1.20.0-lib",
         ":usr_lib_libxkbcommon.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libharfbuzz-gobject.so.0.40001.0-lib",
+    srcs = ["usr/lib/libharfbuzz-gobject.so.0.40001.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_liborc-test-0.4.so.0.32.0-lib",
+    srcs = ["usr/lib/liborc-test-0.4.so.0.32.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_liborc-0.4.so.0.32.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libunwind-ptrace.so.0.0.0-lib",
+    srcs = ["usr/lib/libunwind-ptrace.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libtag_c.so.0.0.0-lib",
+    srcs = ["usr/lib/libtag_c.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_lib_libtag.so.1.18.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_liblzo2.so.2.0.0-lib",
+    srcs = ["usr/lib/liblzo2.so.2.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpcrecpp.so.0.0.2-lib",
+    srcs = ["usr/lib/libpcrecpp.so.0.0.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libpcre.so.1.2.13-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libGLU.so.1.3.1-lib",
+    srcs = ["usr/lib/libGLU.so.1.3.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libGL.so.1.7.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstcheck-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstcheck-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgsttranscoder-1.0.so.0-lib",
+    srcs = ["usr/lib/libgsttranscoder-1.0.so.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstpbutils-1.0.so.0.2007.0-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-present.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-present.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xvmc.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xvmc.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libharfbuzz-subset.so.0.40001.0-lib",
+    srcs = ["usr/lib/libharfbuzz-subset.so.0.40001.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgirepository-1.0.so.1.0.0-lib",
+    srcs = ["usr/lib/libgirepository-1.0.so.1.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libffi.so.8.1.2-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libGLESv1_CM.so.1.2.0-lib",
+    srcs = ["usr/lib/libGLESv1_CM.so.1.2.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libGLdispatch.so.0.0.0-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libext2fs.so.2.4-lib",
+    srcs = ["lib/libext2fs.so.2.4"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libcom_err.so.2.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libmpg123.so.0.46.7-lib",
+    srcs = ["usr/lib/libmpg123.so.0.46.7"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstcontroller-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstcontroller-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xinerama.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-xinerama.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libgstmpegts-1.0.so.0.2007.0-lib",
+    srcs = ["usr/lib/libgstmpegts-1.0.so.0.2007.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgstreamer-1.0.so.0.2007.0-lib",
+    ],
+)
+
+cc_library(
+    name = "lib_libusb-1.0.so.0.3.0-lib",
+    srcs = ["lib/libusb-1.0.so.0.3.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libudev.so.1.7.3-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libpsx.so.2.66-lib",
+    srcs = ["usr/lib/libpsx.so.2.66"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libreadline.so.8.1-lib",
+    srcs = ["usr/lib/libreadline.so.8.1"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libtinfo.so.5.9-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_librsvg-2.so.2.48.0-lib",
+    srcs = ["usr/lib/librsvg-2.so.2.48.0"],
+    deps = [
+        ":lib_libc.so.6-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":usr_lib_libcairo.so.2.11600.0-lib",
+        ":usr_lib_libcairo-gobject.so.2.11600.0-lib",
+        ":usr_lib_libfontconfig.so.1.12.0-lib",
+        ":usr_lib_libfreetype.so.6.18.1-lib",
+        ":usr_lib_libgdk_pixbuf-2.0.so.0.4200.10-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libharfbuzz.so.0.40001.0-lib",
+        ":usr_lib_libpango-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangocairo-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpangoft2-1.0.so.0.5000.4-lib",
+        ":usr_lib_libpng16.so.16.39.0-lib",
+        ":usr_lib_libxml2.so.2.9.14-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libsoup-2.4.so.1.11.2-lib",
+    srcs = ["usr/lib/libsoup-2.4.so.1.11.2"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libgio-2.0.so.0.7200.3-lib",
+        ":usr_lib_libglib-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgmodule-2.0.so.0.7200.3-lib",
+        ":usr_lib_libgobject-2.0.so.0.7200.3-lib",
+        ":usr_lib_libpsl.so.5.3.3-lib",
+        ":usr_lib_libsqlite3.so.0.8.6-lib",
+        ":usr_lib_libxml2.so.2.9.14-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libprocps.so.8.0.3-lib",
+    srcs = ["usr/lib/libprocps.so.8.0.3"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libsystemd.so.0.33.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-dpms.so.0.0.0-lib",
+    srcs = ["usr/lib/libxcb-dpms.so.0.0.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libacl.so.1.1.2301-lib",
+    srcs = ["usr/lib/libacl.so.1.1.2301"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libattr.so.1.1.2501-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libxcb-xinput.so.0.1.0-lib",
+    srcs = ["usr/lib/libxcb-xinput.so.0.1.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":usr_lib_libXau.so.6.0.0-lib",
+        ":usr_lib_libXdmcp.so.6.0.0-lib",
+        ":usr_lib_libxcb.so.1.1.0-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_ops_train.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_ops_train.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_ops_infer.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_cnn_train.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_cnn_train.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libcudnn_cnn_infer.so.8.6.0-lib",
+        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+        ":usr_lib_libcudnn_ops_train.so.8.6.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_cnn_infer.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_cnn_infer.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":lib_libz.so.1.2.11-lib",
+        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_adv_train.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_adv_train.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libcudnn_adv_infer.so.8.6.0-lib",
+        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+        ":usr_lib_libcudnn_ops_train.so.8.6.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_libcudnn_adv_infer.so.8.6.0-lib",
+    srcs = ["usr/lib/libcudnn_adv_infer.so.8.6.0"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.4_lib_libnvblas.so.11.6.6.84-lib",
+    srcs = ["usr/local/cuda-11.4/lib/libnvblas.so.11.6.6.84"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_lib_libstdc++.so.6.0.29-lib",
+        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.4_lib_libcublasLt.so.11.6.6.84-lib",
+    srcs = ["usr/local/cuda-11.4/lib/libcublasLt.so.11.6.6.84"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+    ],
+)
+
+cc_library(
+    name = "usr_local_cuda-11.4_lib_libcublas.so.11.6.6.84-lib",
+    srcs = ["usr/local/cuda-11.4/lib/libcublas.so.11.6.6.84"],
+    deps = [
+        ":lib_ld-linux-aarch64.so.1-lib",
+        ":lib_libc.so.6-lib",
+        ":lib_libdl.so.2-lib",
+        ":lib_libgcc_s.so.1-lib",
+        ":lib_libm.so.6-lib",
+        ":lib_libpthread.so.0-lib",
+        ":lib_librt.so.1-lib",
+        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
     ],
 )
 
@@ -26368,157 +27036,6 @@ cc_library(
         ":lib_libm.so.6-lib",
         ":lib_libpthread.so.0-lib",
         ":lib_librt.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_ops_train.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_ops_train.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_ops_infer.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_cnn_train.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_cnn_train.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libcudnn_cnn_infer.so.8.6.0-lib",
-        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-        ":usr_lib_libcudnn_ops_train.so.8.6.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_cnn_infer.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_cnn_infer.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":lib_libz.so.1.2.11-lib",
-        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_adv_train.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_adv_train.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libcudnn_adv_infer.so.8.6.0-lib",
-        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-        ":usr_lib_libcudnn_ops_train.so.8.6.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_lib_libcudnn_adv_infer.so.8.6.0-lib",
-    srcs = ["usr/lib/libcudnn_adv_infer.so.8.6.0"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libcudnn_ops_infer.so.8.6.0-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.4_lib_libnvblas.so.11.6.6.84-lib",
-    srcs = ["usr/local/cuda-11.4/lib/libnvblas.so.11.6.6.84"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_lib_libstdc++.so.6.0.29-lib",
-        ":usr_local_cuda-11.8_lib_libcublas.so.11.11.3.6-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.4_lib_libcublasLt.so.11.6.6.84-lib",
-    srcs = ["usr/local/cuda-11.4/lib/libcublasLt.so.11.6.6.84"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-    ],
-)
-
-cc_library(
-    name = "usr_local_cuda-11.4_lib_libcublas.so.11.6.6.84-lib",
-    srcs = ["usr/local/cuda-11.4/lib/libcublas.so.11.6.6.84"],
-    deps = [
-        ":lib_ld-linux-aarch64.so.1-lib",
-        ":lib_libc.so.6-lib",
-        ":lib_libdl.so.2-lib",
-        ":lib_libgcc_s.so.1-lib",
-        ":lib_libm.so.6-lib",
-        ":lib_libpthread.so.0-lib",
-        ":lib_librt.so.1-lib",
-        ":usr_local_cuda-11.8_lib_libcublasLt.so.11.11.3.6-lib",
     ],
 )
 
@@ -27366,7 +27883,6 @@ cc_library(
         ":usr_lib_libopencv_core.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaarithm.so.4.5.5-lib",
         ":usr_lib_libopencv_cudabgsegm.so.4.5.5-lib",
-        ":usr_lib_libopencv_cudacodec.so.4.5.5-lib",
         ":usr_lib_libopencv_cudafeatures2d.so.4.5.5-lib",
         ":usr_lib_libopencv_cudafilters.so.4.5.5-lib",
         ":usr_lib_libopencv_cudaimgproc.so.4.5.5-lib",

@@ -465,8 +465,8 @@ http_archive(
 http_archive(
     name = "arm64_yocto_sysroot",
     build_file = "@//:compilers/orin_debian_rootfs.BUILD",
-    sha256 = "cca7404f1750e443547c35e8e8665e003927398c66101bc33073809f5c66dc2c",
-    url = "https://software.frc971.org/Build-Dependencies/2024-09-22-arm64-yocto-orin-sysroot.tar.zst",
+    sha256 = "96174ee9a27330ebd0a50fba6d50fe83f004c830bfd239d39197d227a3192a80",
+    url = "https://software.frc971.org/Build-Dependencies/2025-02-03-arm64-yocto-orin-sysroot.tar.zst",
 )
 
 # Generated with:
