@@ -147,6 +147,8 @@ aos_config(
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_status_fbs",
+        ":autonomous_init_fbs",
+        "//frc971/queues:gyro_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//frc971/input:aos_config"],

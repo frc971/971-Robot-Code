@@ -158,6 +158,7 @@ aos_config(
         "//frc971/control_loops/swerve:swerve_drivetrain_can_position_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_goal_fbs",
         "//frc971/control_loops/swerve:swerve_drivetrain_position_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_status_fbs",
         "//y2024_bot3/control_loops/superstructure:superstructure_output_fbs",
         "//frc971/control_loops/drivetrain:rio_localizer_inputs_fbs",
         "//y2024_bot3/control_loops/superstructure:superstructure_can_position_fbs",
