@@ -1,10 +1,10 @@
 include "frc971/vision/calibration.fbs";
-include "frc971/vision/target_map.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
 include "frc971/math/matrix.fbs";
 include "frc971/wpilib/swerve/swerve_constants.fbs";
 include "frc971/control_loops/swerve/swerve_zeroing.fbs";
+include "frc971/vision/target_map_field.fbs";
 include "frc971/input/swerve_input_config.fbs";
 
 namespace y2025;
@@ -65,7 +65,7 @@ table VelocityControllerWeights {
 
 // Common table for constants unrelated to the robot
 table Common {
-  target_map:frc971.vision.TargetMap (id: 0);
+  target_map:frc971.vision.TargetMapField (id: 0);
   swerve_positions_constants:frc971.wpilib.swerve.SwervePositionConstants (id: 1);
   current_limits:CurrentLimits (id: 2);
   translation_module_ratio:double (id: 3);

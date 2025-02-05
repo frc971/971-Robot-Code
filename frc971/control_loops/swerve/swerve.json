@@ -32,6 +32,10 @@
         {
             "name": "/drivetrain",
             "type": "frc971.control_loops.swerve.AutonomousInit"
+        },
+        {
+            "name": "/localizer",
+            "type": "frc971.control_loops.swerve.LocalizerState"
         }
     ],
     "imports": [

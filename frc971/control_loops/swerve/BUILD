@@ -19,6 +19,11 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
+    name = "swerve_localizer_state_fbs",
+    srcs = ["swerve_localizer_state.fbs"],
+)
+
+static_flatbuffer(
     name = "swerve_drivetrain_goal_fbs",
     srcs = ["swerve_drivetrain_goal.fbs"],
     deps = [
@@ -144,6 +149,7 @@ aos_config(
     flatbuffers = [
         ":swerve_drivetrain_goal_fbs",
         ":swerve_drivetrain_output_fbs",
+        ":swerve_localizer_state_fbs",
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_status_fbs",
@@ -569,6 +575,7 @@ cc_library(
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_position_fbs",
         ":swerve_drivetrain_status_fbs",
+        ":swerve_localizer_state_fbs",
         ":swerve_zeroing_fbs",
         "//aos/events:event_loop",
         "//frc971/math:flatbuffers_matrix",
@@ -602,6 +609,7 @@ cc_library(
         ":swerve_trajectory_fbs",
         "//aos/events:event_loop",
         "//frc971/input:joystick_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//frc971/math:flatbuffers_matrix",
     ],
 )

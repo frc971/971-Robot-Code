@@ -1,0 +1,13 @@
+namespace frc971.control_loops.swerve;
+
+table LocalizerState {
+  x: double (id: 0);
+  y: double (id: 1);
+  theta: double (id: 2);
+  // These are pretty unused but exposed for now so we get more insight into the kalman filter.
+  vx: double (id: 3);
+  vy: double (id: 4);
+  omega: double (id: 5);
+}
+
+root_type LocalizerState;

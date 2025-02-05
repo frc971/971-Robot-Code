@@ -3,6 +3,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/swerve/simplified_dynamics.h"
 #include "frc971/control_loops/swerve/swerve_trajectory_static.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/math/flatbuffers_matrix.h"
 
 // We are using a PID controller with only the P (proportional) part
@@ -45,25 +46,28 @@ AutonomousController::AutonomousController(
                  << "' not found in callbacks.";
     }
   }
-  {
-    auto builder = autonomous_init_sender_.MakeStaticBuilder();
-    builder->set_x(trajectory_.message()
-                       .discretized_trajectory()
-                       ->Get(0)
-                       ->position()
-                       ->x());
-    builder->set_y(trajectory_.message()
-                       .discretized_trajectory()
-                       ->Get(0)
-                       ->position()
-                       ->y());
-    builder->set_theta(trajectory_.message()
-                           .discretized_trajectory()
-                           ->Get(0)
-                           ->position()
-                           ->theta());
-    builder.CheckOk(builder.Send());
-  }
+
+  event_loop_->MakeWatcher("/aos", [this](const aos::RobotState &state) {
+    if (state.user_button()) {
+      auto builder = autonomous_init_sender_.MakeStaticBuilder();
+      builder->set_x(trajectory_.message()
+                         .discretized_trajectory()
+                         ->Get(0)
+                         ->position()
+                         ->x());
+      builder->set_y(trajectory_.message()
+                         .discretized_trajectory()
+                         ->Get(0)
+                         ->position()
+                         ->y());
+      builder->set_theta(trajectory_.message()
+                             .discretized_trajectory()
+                             ->Get(0)
+                             ->position()
+                             ->theta());
+      builder.CheckOk(builder.Send());
+    }
+  });
 
   const auto timer = event_loop_->AddTimer([this]() {
     joystick_state_fetcher_.Fetch();

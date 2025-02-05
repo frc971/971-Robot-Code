@@ -47,7 +47,7 @@ class AutonomousController {
 
   std::vector<Action> actions_;
 
-  bool completed_;
+  bool completed_ = false;
 
   aos::EventLoop *event_loop_;
 };

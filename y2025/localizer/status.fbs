@@ -1,0 +1,34 @@
+namespace y2025.localizer;
+
+enum RejectionReason: uint8 {
+  MESSAGE_BRIDGE_DISCONNECTED = 0,
+  IMAGE_FROM_THE_FUTURE = 1,
+  INVALID_TAG_ID = 2,
+  HIGH_POSE_ERROR = 3,
+  HIGH_POSE_ERROR_RATIO = 4,
+}
+
+table RejectionCount {
+  error: RejectionReason (id: 0);
+  count: int (id: 1);
+}
+
+table CameraStats {
+  // The name here is just /{node_name}/camera{number}
+  total_accepted:int (id: 0);
+  total_candidates:int (id: 1);
+  rejections: [RejectionCount] (id: 2);
+}
+
+table Stats {
+  orin1_camera0: CameraStats (id: 0);
+  orin1_camera1: CameraStats (id: 1);
+  imu_camera0: CameraStats (id: 2);
+  imu_camera1: CameraStats (id: 3);
+}
+
+table Status {
+  stats: Stats (id: 0);
+}
+
+root_type Status;

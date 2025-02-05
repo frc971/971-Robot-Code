@@ -1,4 +1,5 @@
 "common": {
+  "target_map": {% include 'y2025/vision/maps/target_map.json' %},
   "swerve_positions_constants": {
     "relative_encoder_scale": {{ 2.0 * 3.14 / 4096 }},
     "absolute_encoder_scale": {{ 2.0 * 3.14}}

@@ -154,7 +154,7 @@ void SwerveControlLoops::RunIteration(
     CHECK_NE(goal->has_linear_velocity_goal(), goal->has_joystick_goal());
     if (goal->has_linear_velocity_goal()) {
       NaiveEstimator::State goal_state =
-          ToEigenOrDie<NaiveEstimator::States::kNumPositionStates, 1>(
+          ToEigenOrDie<NaiveEstimator::States::kNumVelocityStates, 1>(
               *goal->linear_velocity_goal()->state())
               .cast<Scalar>();
       controller_result = velocity_controller_.RunRawController(
@@ -277,6 +277,12 @@ void SwerveControlLoops::RunIteration(
     }
 
     imu_zeroer_.PopulateStatus(status->add_imu_zeroer());
+
+    status->set_monotonic_timestamp_ns(
+        event_loop()
+            ->context()
+            .monotonic_event_time.time_since_epoch()
+            .count());
 
     // Ignore the return value of Send
     status_builder->CheckOk(status_builder->Send());

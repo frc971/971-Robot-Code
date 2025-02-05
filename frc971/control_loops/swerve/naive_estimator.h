@@ -7,6 +7,7 @@
 #include "frc971/control_loops/swerve/swerve_drivetrain_can_position_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_position_generated.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_status_static.h"
+#include "frc971/control_loops/swerve/swerve_localizer_state_generated.h"
 #include "frc971/control_loops/swerve/swerve_zeroing_static.h"
 #include "frc971/zeroing/continuous_absolute_encoder.h"
 
@@ -27,7 +28,7 @@ class NaiveEstimator {
   using Dynamics = SimplifiedDynamics<Scalar>;
   using Parameters = Dynamics::Parameters;
   using ModuleParams = Dynamics::ModuleParams;
-  using State = Dynamics::PositionState<Scalar>;
+  using State = Dynamics::VelocityState<Scalar>;
   using States = Dynamics::States;
   NaiveEstimator(aos::EventLoop *event_loop,
                  const SwerveZeroing *zeroing_params, const Parameters &params);
@@ -38,12 +39,6 @@ class NaiveEstimator {
                Scalar accel_y);
 
   void PopulateStatus(NaiveEstimatorStatusStatic *fbs) const;
-
-  // pose_confidence is a measure of how accurate the position estimation is.
-  // It ranges from 0 (The position could be literally anywhere) to 1 (I know
-  // the position perfectly)
-  void AcceptRobotPositionEstimation(Scalar robot_x, Scalar robot_y,
-                                     Scalar robot_yaw, Scalar pose_confidence);
 
  private:
   // Tracks the drive velocity, in m/s, of each module.
@@ -60,9 +55,9 @@ class NaiveEstimator {
   // When the Update() method was last called.
   std::optional<aos::monotonic_clock::time_point> last_update_;
 
-  aos::Fetcher<AutonomousInit> autonomous_init_fetcher_;
+  aos::Fetcher<LocalizerState> localizer_state_fetcher_;
 
-  bool autonomous_initialized_ = false;
+  bool initial_theta_set_ = false;
 };
 }  // namespace frc971::control_loops::swerve
 #endif  // FRC971_CONTROL_LOOPS_SWERVE_NAIVE_ESTIMATOR_H_

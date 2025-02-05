@@ -18,3 +18,15 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "kf",
+    srcs = ["kf.cc"],
+    hdrs = ["kf.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops:c2d",
+        "@com_google_absl//absl/log",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)

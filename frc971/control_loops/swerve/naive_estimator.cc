@@ -17,8 +17,8 @@ NaiveEstimator::NaiveEstimator(aos::EventLoop *event_loop,
                    aos::UnpackFlatbuffer(zeroing_params->back_right())}},
       state_(State::Zero()),
       params_(params),
-      autonomous_init_fetcher_(
-          event_loop->MakeFetcher<AutonomousInit>("/drivetrain")) {
+      localizer_state_fetcher_(
+          event_loop->MakeFetcher<LocalizerState>("/localizer")) {
   velocities_.fill(0);
   last_drive_positions_.fill(0);
 }
@@ -27,14 +27,6 @@ NaiveEstimator::State NaiveEstimator::Update(
     aos::monotonic_clock::time_point now, const Position *position,
     const CanPosition *can_position, Scalar yaw_rate, Scalar accel_x,
     Scalar accel_y) {
-  autonomous_init_fetcher_.Fetch();
-  if (!autonomous_initialized_ && autonomous_init_fetcher_.get() != nullptr) {
-    state_(States::kX) = autonomous_init_fetcher_->x();
-    state_(States::kY) = autonomous_init_fetcher_->y();
-    state_(States::kTheta) = autonomous_init_fetcher_->theta();
-
-    autonomous_initialized_ = true;
-  }
   Eigen::Vector2d last_velocity{state_(States::kVx), state_(States::kVy)};
 
   bool first_iteration = false;
@@ -118,11 +110,17 @@ NaiveEstimator::State NaiveEstimator::Update(
       params_.accel_weight * accel_based_velocity;
 
   state_(States::kOmega) = yaw_rate;
-  state_(States::kTheta) += yaw_rate * dt;
   state_(States::kVx) = averaged_velocity.x();
   state_(States::kVy) = averaged_velocity.y();
-  state_(States::kX) += averaged_velocity.x() * dt;
-  state_(States::kY) += averaged_velocity.y() * dt;
+  if (!initial_theta_set_) {
+    localizer_state_fetcher_.Fetch();
+    if (localizer_state_fetcher_.get() != nullptr) {
+      state_(States::kTheta) = localizer_state_fetcher_->theta();
+      initial_theta_set_ = true;
+    }
+  }
+
+  state_(States::kTheta) += state_(States::kOmega) * dt;
 
   last_update_ = now;
   last_drive_update_ = drive_now;
@@ -137,8 +135,6 @@ void NaiveEstimator::PopulateStatus(NaiveEstimatorStatusStatic *fbs) const {
   for (size_t module = 0; module < 4; ++module) {
     zeroing_[module].GetEstimatorState(estimator_states->emplace_back());
   }
-  fbs->set_x(state_(States::kX));
-  fbs->set_y(state_(States::kY));
   fbs->set_yaw(state_(States::kTheta));
   fbs->set_omega(state_(States::kOmega));
   fbs->set_vx(state_(States::kVx));
@@ -149,15 +145,4 @@ void NaiveEstimator::PopulateStatus(NaiveEstimatorStatusStatic *fbs) const {
                                                          velocities_.end()));
 }
 
-void NaiveEstimator::AcceptRobotPositionEstimation(Scalar robot_x,
-                                                   Scalar robot_y,
-                                                   Scalar robot_yaw,
-                                                   Scalar pose_confidence) {
-  state_(States::kX) =
-      (1 - pose_confidence) * state_(States::kX) + pose_confidence * robot_x;
-  state_(States::kY) =
-      (1 - pose_confidence) * state_(States::kY) + pose_confidence * robot_y;
-  state_(States::kTheta) = (1 - pose_confidence) * state_(States::kTheta) +
-                           pose_confidence * robot_yaw;
-}
 }  // namespace frc971::control_loops::swerve
