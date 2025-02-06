@@ -314,9 +314,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         9, false, "Drivetrain Bus", &canivore_signals_registry,
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
+    std::shared_ptr<TalonFX> end_effector = std::make_shared<TalonFX>(
+        11, true, "rio", &rio_signal_registry,
+        current_limits->end_effector_stator_current_limit(),
+        current_limits->end_effector_supply_current_limit());
 
     canivore_talons.push_back(elevator_one);
     canivore_talons.push_back(elevator_two);
+    rio_talons.push_back(end_effector);
 
     std::shared_ptr<TalonFX> pivot =
         std::make_shared<TalonFX>(1, true, "rio", &rio_signal_registry,
@@ -374,7 +379,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talons,
         [&elevator_one, &elevator_two, &pivot, &climber_one, &climber_two,
-         &superstructure_rio_position_sender,
+         &end_effector, &superstructure_rio_position_sender,
          &robot_constants](ctre::phoenix::StatusCode status) {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_rio_builder =
@@ -382,6 +387,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           pivot->SerializePosition(superstructure_rio_builder->add_pivot(),
                                    constants::Values::kPivotOutputRatio);
+          // TODO add real value
+          end_effector->SerializePosition(
+              superstructure_rio_builder->add_end_effector(), 1);
           climber_one->SerializePosition(
               superstructure_rio_builder->add_climber_one(),
               constants::Values::kClimberOutputRatio);
@@ -417,10 +425,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.climber_voltage());
               talonfx_map.find("climber_two")
                   ->second->WriteVoltage(output.climber_voltage());
+              talonfx_map.find("end_effector")
+                  ->second->WriteVoltage(output.end_effector_voltage());
             });
 
     can_superstructure_writer.add_talonfx("elevator_one", elevator_one);
     can_superstructure_writer.add_talonfx("elevator_two", elevator_two);
+    can_superstructure_writer.add_talonfx("end_effector", end_effector);
     can_superstructure_writer.add_talonfx("pivot", pivot);
     can_superstructure_writer.add_talonfx("climber_one", climber_one);
     can_superstructure_writer.add_talonfx("climber_two", climber_two);
