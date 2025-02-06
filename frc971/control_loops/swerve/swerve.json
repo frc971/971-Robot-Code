@@ -36,6 +36,14 @@
         {
             "name": "/localizer",
             "type": "frc971.control_loops.swerve.LocalizerState"
+        },
+        {
+            "name": "/autonomous_auto_align",
+            "type": "frc971.control_loops.swerve.Goal"
+        },
+        {
+            "name": "/autonomous_auto_align",
+            "type": "frc971.control_loops.swerve.PositionGoal"
         }
     ],
     "imports": [

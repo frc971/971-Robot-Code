@@ -26,7 +26,10 @@ AutoAlign::AutoAlign(aos::EventLoop *event_loop)
               "/autonomous")),
       swerve_drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
-              "/swerve")) {}
+              "/swerve")),
+      position_goal_fetcher_(
+          event_loop->MakeFetcher<frc971::control_loops::swerve::PositionGoal>(
+              "/autonomous_auto_align")) {}
 
 void AutoAlign::Iterate() {
   auto builder = swerve_goal_sender_.MakeStaticBuilder();
@@ -48,7 +51,14 @@ void AutoAlign::Iterate() {
   double theta = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
                        double>::States::kTheta);
 
-  // TODO: Set goal from fbs?
+  // check if there's a new goal
+  position_goal_fetcher_.Fetch();
+  if (position_goal_fetcher_.get() != nullptr) {
+    goal_x_ = position_goal_fetcher_.get()->x();
+    goal_y_ = position_goal_fetcher_.get()->y();
+    goal_theta_ = position_goal_fetcher_.get()->theta();
+  }
+
   const double x_goal = goal_x_;
   const double y_goal = goal_y_;
   const double theta_goal = goal_theta_;
@@ -102,10 +112,4 @@ void AutoAlign::Iterate() {
   joystick_goal->set_omega(goal_omega);
 
   builder.CheckOk(builder.Send());
-}
-
-void AutoAlign::setGoal(double x, double y, double theta) {
-  goal_x_ = x;
-  goal_y_ = y;
-  goal_theta_ = theta;
 }
