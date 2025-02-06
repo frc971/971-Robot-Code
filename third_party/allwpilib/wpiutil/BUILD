@@ -13,6 +13,7 @@ cc_library(
         "src/main/native/cpp/fs.cpp",
         "src/main/native/cpp/MappedFileRegion.cpp",
         "src/main/native/cpp/SafeThread.cpp",
+        "src/main/native/cpp/string.cpp",
     ],
     hdrs = glob(
         [
