@@ -24,7 +24,7 @@
 
 using y2025::control_loops::CreateWeights;
 
-ABSL_FLAG(int32_t, team, 9971, "Team number to use for logfile replay.");
+ABSL_FLAG(int32_t, team, 971, "Team number to use for logfile replay.");
 ABSL_FLAG(std::string, config, "y2025/aos_config.json",
           "Name of the config file to replay using.");
 ABSL_FLAG(std::string, constants_path, "y2025/constants/constants.json",
@@ -83,6 +83,8 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.swerve.Output");
   reader.RemapLoggedChannel("/imu/drivetrain",
                             "frc971.control_loops.swerve.Status");
+  reader.RemapLoggedChannel("/imu/autonomous_auto_align",
+                            "frc971.control_loops.swerve.Goal");
 
   aos::SimulatedEventLoopFactory factory(reader.configuration());
 
