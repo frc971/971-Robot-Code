@@ -196,7 +196,7 @@ flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
                                                                1.0},
     const double thickness = 5,
     const foxglove::PointsAnnotationType line_type =
-        foxglove::PointsAnnotationType::POINTS);
+        foxglove::PointsAnnotationType::LINE_LOOP);
 
 // Creates a PointsAnnotation to build up ImageAnnotations with different
 // types
@@ -208,7 +208,7 @@ flatbuffers::Offset<foxglove::PointsAnnotation> BuildPointsAnnotation(
                                                                1.0},
     const double thickness = 5,
     const foxglove::PointsAnnotationType line_type =
-        foxglove::PointsAnnotationType::POINTS);
+        foxglove::PointsAnnotationType::LINE_LOOP);
 
 }  // namespace frc971::vision
 
