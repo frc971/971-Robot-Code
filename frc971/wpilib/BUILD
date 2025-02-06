@@ -510,6 +510,7 @@ cc_library(
         "//third_party:phoenix6",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@ctre_phoenix6_api_cpp_headers//:api-cpp",
     ],
 )
 

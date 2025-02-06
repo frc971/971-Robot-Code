@@ -475,6 +475,7 @@ cc_library(
         "//frc971/control_loops:control_loop",
         "//frc971/zeroing",
         "//frc971/zeroing:pot_and_index",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
