@@ -108,10 +108,11 @@ struct QuadBoundaryPoint {
   }
 
   // Returns the un-decimated x and y positions.
-  __forceinline__ __host__ __device__ uint32_t x() const {
+  // TODO - this can be a uint16_t?
+  __forceinline__ __host__ __device__ uint16_t x() const {
     return static_cast<int32_t>(base_x() * 2) + dx();
   }
-  __forceinline__ __host__ __device__ uint32_t y() const {
+  __forceinline__ __host__ __device__ uint16_t y() const {
     return static_cast<int32_t>(base_y() * 2) + dy();
   }
 
