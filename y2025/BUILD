@@ -207,6 +207,7 @@ cc_library(
         "//y2025/control_loops/drivetrain:rotation_plants",
         "//y2025/control_loops/superstructure/elevator:elevator_plants",
         "//y2025/control_loops/superstructure/pivot:pivot_plants",
+        "//y2025/control_loops/superstructure/wrist:wrist_plants",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",

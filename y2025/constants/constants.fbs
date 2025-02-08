@@ -22,15 +22,25 @@ table ElevatorSetPoints {
   score_l4:double (id: 5);
 }
 
+table PivotSetPoints {
+  neutral:double (id: 0);
+  score:double (id: 1);
+  intake:double (id: 2);
+}
+
+table WristSetPoints {
+  neutral: double (id: 0);
+  intake: double (id: 1);
+  score: double (id: 2);
+}
+
 table PotAndAbsEncoderConstants {
   zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
   potentiometer_offset:double (id: 1);
 }
 
-table PivotSetPoints {
-  neutral:double (id: 0);
-  score:double (id: 1);
-  intake:double (id: 2);
+table AbsEncoderConstants {
+  zeroing_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
 }
 
 table RobotConstants {
@@ -39,6 +49,7 @@ table RobotConstants {
   climber_constants:PotAndAbsEncoderConstants (id: 2);
   input_config: frc971.input.InputConfig (id: 3);
   swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 4);
+  wrist_constants:AbsEncoderConstants (id: 5);
 }
 
 table EndEffectorVoltages {
@@ -77,6 +88,8 @@ table Common {
   climber_voltage:ClimberVoltage(id: 9);
   weights: VelocityControllerWeights (id: 10);
   rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 11);
+  wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);
+  wrist_set_points:WristSetPoints(id: 13);
 }
 
 table Constants {
@@ -96,6 +109,8 @@ table CurrentLimits {
   end_effector_supply_current_limit:double (id: 7);
   climber_stator_current_limit:double (id: 8);
   climber_supply_current_limit:double (id: 9);
+  wrist_stator_current_limit:double (id: 10);
+  wrist_supply_current_limit:double (id: 11);
 }
 
 root_type Constants;

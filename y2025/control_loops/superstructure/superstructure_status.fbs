@@ -15,6 +15,12 @@ enum ClimberStatus : ubyte {
   RETRACTING = 2,
 }
 
+enum WristStatus : ubyte {
+  NEUTRAL = 0,
+  INTAKE = 1,
+  SCORE = 2,
+}
+
 table Status {
     // All subsystems know their location.
     zeroed:bool (id: 0);

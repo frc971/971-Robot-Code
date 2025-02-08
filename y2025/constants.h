@@ -14,6 +14,7 @@
 #include "y2025/control_loops/drivetrain/rotation_plant.h"
 #include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2025/control_loops/superstructure/pivot/pivot_plant.h"
+#include "y2025/control_loops/superstructure/wrist/wrist_plant.h"
 
 namespace y2025::constants {
 
@@ -81,6 +82,12 @@ struct Values {
     double potentiometer_offset;
   };
 
+  struct AbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+  };
+
   static constexpr double kPivotOutputRatio =
       control_loops::superstructure::pivot::kOutputRatio;
 
@@ -101,6 +108,18 @@ struct Values {
     return control_loops::superstructure::pivot::kFreeSpeed / (2.0 * M_PI) *
            control_loops::superstructure::pivot::kOutputRatio /
            kPivotEncoderRatio() * kPivotEncoderCountsPerRevolution();
+  }
+
+  // Wrist
+  // TODO Set wrist constants
+  static constexpr double kWristOutputRatio =
+      control_loops::superstructure::wrist::kOutputRatio;
+  static constexpr double kWristEncoderCountsPerRevolution() { return 4096.0; }
+  static constexpr double kWristEncoderRatio() { return 1.0; }
+  static constexpr double kMaxWristEncoderPulsesPerSecond() {
+    return control_loops::superstructure::wrist::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::wrist::kOutputRatio /
+           kWristEncoderRatio() * kWristEncoderCountsPerRevolution();
   }
   // TODO add a real value here
   static constexpr double kClimberOutputRatio = 1;
