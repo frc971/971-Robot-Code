@@ -244,6 +244,78 @@ class TestDebugCli(unittest.TestCase):
             Rank3: (string) (len=3) "303"
             }"""), stdout)
 
+    def test_submit_and_request_driver_ranking_2025(self):
+        self.start_servers(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "comp_code": "2020fake",
+            "match_number": 1,
+            "team_number": "123B",
+            "score": 3,
+        })
+        exit_code, _, stderr = run_debug_cli(
+            ["-submitDriverRanking2025", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        json_path = write_json_request({
+            "comp_code": "2020fake",
+            "match_number": 12,
+            "team_number": "123B",
+            "score": 1,
+        })
+        exit_code, _, stderr = run_debug_cli(
+            ["-submitDriverRanking2025", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({
+            "comp_code": "2020fake",
+        })
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAveragedDriverRankings2025", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(
+            textwrap.dedent("""\
+            {
+            CompCode: (string) (len=8) "2020fake",
+            TeamNumber: (string) (len=4) "123B",
+            Score: (float32) 2
+            }"""), stdout)
+
+    def test_submit_and_request_human_ranking_2025(self):
+        self.start_servers(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "comp_code": "2020fake",
+            "match_number": 2,
+            "team_number": "408",
+            "score": 3,
+        })
+        exit_code, _, stderr = run_debug_cli(
+            ["-submitHumanRanking2025", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({
+            "comp_code": "2020fake",
+        })
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAveragedHumanRankings2025", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(
+            textwrap.dedent("""\
+            {
+            CompCode: (string) (len=8) "2020fake",
+            TeamNumber: (string) (len=3) "408",
+            Score: (float32) 3
+            }"""), stdout)
+
     def test_request_all_matches(self):
         self.start_servers()
 
