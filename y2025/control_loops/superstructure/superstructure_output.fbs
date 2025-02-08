@@ -5,7 +5,7 @@ table Output {
     pivot_voltage:double (id: 1);
     end_effector_voltage:double (id: 2);
     climber_voltage:double (id: 3);
-    wrist:double (id: 4);
+    wrist_voltage:double (id: 4);
 }
 
 root_type Output;

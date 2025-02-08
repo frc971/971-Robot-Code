@@ -14,9 +14,12 @@
     "end_effector_stator_current_limit": 100,
     "end_effector_supply_current_limit": 20,
     "climber_stator_current_limit": 100,
-    "climber_supply_current_limit": 50
+    "climber_supply_current_limit": 50,
+    "wrist_stator_current_limit": 100,
+    "wrist_supply_current_limit": 50
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
+  // TODO Change these constants
   "pivot": {
     "zeroing_voltage": 2.0,
     "operating_voltage": 8.0,
@@ -35,6 +38,26 @@
         "upper": {{ 2 * 3.1415 / 3 }}
     },
     "loop": {% include 'y2025/control_loops/superstructure/pivot/integral_pivot_plant.json' %}
+  },
+  // TODO change these constants for y2025 bot
+  "wrist": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 0.5,
+      "max_acceleration": 5.0
+    },
+    "range": {
+        "lower_hard": -0.10,
+        "upper_hard": 4.90,
+        "lower": 0.0,
+        "upper": 4.0
+    },
+    "loop": {% include 'y2025/control_loops/superstructure/wrist/integral_wrist_plant.json' %}
   },
   "pivot_set_points": {
     "neutral": {{ -3.1415 / 4.0 }},
@@ -90,6 +113,11 @@
     "score_l2": 0.2,
     "score_l3": 0.3,
     "score_l4": 0.25
+  },
+  "wrist_set_points": {
+    "neutral": 0.16,
+    "intake": 0.17,
+    "score": 0.20
   },
   //TODO: Update these voltages
   "end_effector_voltages": {

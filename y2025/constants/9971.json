@@ -1,5 +1,6 @@
 {% from 'y2025/constants/common.jinja2' import elevator_zero %}
 {% from 'y2025/constants/common.jinja2' import pivot_zero %}
+{% from 'y2025/constants/common.jinja2' import wrist_zero %}
 
 {
   "cameras": [
@@ -23,6 +24,15 @@
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
       "potentiometer_offset": {{ 5.249596184591311 }}
+    },
+    // TODO change these constants for y2025 bot
+    "wrist_constants":{
+      {% set _ = wrist_zero.update(
+          {
+              "measured_absolute_position" : 0.17940018799940982
+          }
+      ) %}
+      "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}
     },
     "input_config": {
       "use_redundant_joysticks": true,

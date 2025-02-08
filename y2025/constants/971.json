@@ -1,5 +1,6 @@
 {% from 'y2025/constants/common.jinja2' import elevator_zero %}
 {% from 'y2025/constants/common.jinja2' import pivot_zero %}
+{% from 'y2025/constants/common.jinja2' import wrist_zero %}
 {% from 'y2025/constants/common.jinja2' import front_left_zero, front_right_zero, back_left_zero, back_right_zero, pi %}
 
 {
@@ -35,6 +36,15 @@
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
       "potentiometer_offset": {{ 0.002987694833262111 + 1.7365426706906293 + 0.1433391135374452 - 3.7664252126154008 - 4.910277834208133 + 13.58573292540177 - 1.3332404391391635}}
+    },
+    // TODO change these constants for y2025 bot
+    "wrist_constants":{
+    {% set _ = wrist_zero.update(
+          {
+              "measured_absolute_position" : 0.17940018799940982
+          }
+      ) %}
+      "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}
     },
     "swerve_zeroing": {
       {% set _ = front_left_zero.update(
