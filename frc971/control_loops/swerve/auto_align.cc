@@ -1,13 +1,5 @@
 #include "auto_align.h"
 
-#include <math.h>
-
-#include "absl/flags/flag.h"
-
-#include "frc971/control_loops/swerve/simplified_dynamics.h"
-#include "frc971/control_loops/swerve/swerve_trajectory_static.h"
-#include "frc971/math/flatbuffers_matrix.h"
-
 using frc971::control_loops::swerve::AutoAlign;
 
 // TODO Move these constants to a json or something
@@ -34,8 +26,7 @@ AutoAlign::AutoAlign(aos::EventLoop *event_loop)
               "/autonomous")),
       swerve_drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
-              "/drivetrain")),
-      event_loop_(event_loop) {}
+              "/swerve")) {}
 
 void AutoAlign::Iterate() {
   auto builder = swerve_goal_sender_.MakeStaticBuilder();
