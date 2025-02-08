@@ -6,7 +6,297 @@
 
    The global frame as the origin at the center of the field, positive X points
    at the red driver's station, and positive Z points straight up.
+
+   Use tag 3 from 2025 for reference for the default orientation. The y axis is
+   pointing down for reference, x right, and z into the april tag. The order of
+   rotations is x, y, z and are made with respect to the rotated coordinate system.
    */
     "target_poses": [
+        {
+            "id": 1,
+            "position": {
+                "x": 7.922573,
+                "y": -3.369965,
+                "z": 1.485901
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 144.011392,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 2,
+            "position": {
+                "x": 7.922573,
+                "y": 3.369965,
+                "z": 1.485868
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 35.988608,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 3,
+            "position": {
+                "x": 2.786682,
+                "y": 4.029583,
+                "z": 1.298576
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 4,
+            "position": {
+                "x": 0.502261,
+                "y": 2.111375,
+                "z": 1.867449
+            },
+            "orientation": {
+                "x": 90.0,
+                "y": -60.0,
+                "z": 90.0
+            }
+        },
+        {
+            "id": 5,
+            "position": {
+                "x": 0.502261,
+                "y": -2.111375,
+                "z": 1.867449
+            },
+            "orientation": {
+                "x": 90.0,
+                "y": -60.0,
+                "z": 90.0
+            }
+        },
+        {
+            "id": 6,
+            "position": {
+                "x": 4.700644,
+                "y": -0.720,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -30.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 7,
+            "position": {
+                "x": 5.116461,
+                "y": 0.000000,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -90.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 8,
+            "position": {
+                "x": 4.700605,
+                "y": 0.720239,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -150.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 9,
+            "position": {
+                "x": 3.868931,
+                "y": 0.720216,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 150.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 10,
+            "position": {
+                "x": 3.453114,
+                "y": -0.000046,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 90.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 11,
+            "position": {
+                "x": 3.868971,
+                "y": -0.720285,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 30.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 12,
+            "position": {
+                "x": -7.922573,
+                "y": -3.369965,
+                "z": 1.485901
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -144.011392,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 13,
+            "position": {
+                "x": -7.922573,
+                "y": 3.369965,
+                "z": 1.485901
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -35.988608,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 14,
+            "position": {
+                "x": -0.502769,
+                "y": 2.111883,
+                "z": 1.867449
+            },
+            "orientation": {
+                "x": 90.0,
+                "y": 60.0,
+                "z": -90.0
+            }
+        },
+        {
+            "id": 15,
+            "position": {
+                "x": -0.502769,
+                "y": -2.110867,
+                "z": 1.867449
+            },
+            "orientation": {
+                "x": 90.0,
+                "y": 60.0,
+                "z": -90.0
+            }
+        },
+        {
+            "id": 16,
+            "position": {
+                "x": -2.786682,
+                "y": -4.029583,
+                "z": 1.298576
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 180.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 17,
+            "position": {
+                "x": -4.700605,
+                "y": -0.720239,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 30.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 18,
+            "position": {
+                "x": -5.116461,
+                "y": -0.000000,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 90.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 19,
+            "position": {
+                "x": -4.700644,
+                "y": 0.720262,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 150.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 20,
+            "position": {
+                "x": -3.868971,
+                "y": 0.720285,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -150.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 21,
+            "position": {
+                "x": -3.453114,
+                "y": 0.000046,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -90.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 22,
+            "position": {
+                "x": -3.868931,
+                "y": -0.720216,
+                "z": 0.307976
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": -30.0,
+                "z": 0.0
+            }
+        },
     ]
 }

@@ -222,6 +222,13 @@ static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
+static_flatbuffer(
+    name = "target_map_field_fbs",
+    srcs = ["target_map_field.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "target_mapper",
     srcs = ["target_mapper.cc"],
@@ -491,6 +498,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/vision:target_map_fbs",
+        "//frc971/vision:target_map_field_fbs",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

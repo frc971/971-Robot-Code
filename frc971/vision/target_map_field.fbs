@@ -1,0 +1,39 @@
+namespace frc971.vision;
+
+table PositionField {
+  x:double (id: 0);
+  y:double (id: 1);
+  z:double (id: 2);
+}
+
+table EulerAngle {
+  x:double (id: 0);
+  y:double (id: 1);
+  z:double (id: 2);
+}
+
+// Represents 3d pose of an april tag on the field.
+table TargetPoseFieldFbs {
+  // AprilTag ID of this target
+  id:uint64 (id: 0);
+
+  // Pose of target relative to either the field origin or camera.
+  // To get the pose of the target, do:
+  // Translation3d(position.x(), position.y(), position.z()) *
+  // Quaterniond(orientation.w(), orientation.x(), orientation.y(), orientation.z())
+  position:PositionField (id: 1);
+  orientation:EulerAngle (id: 2);
+}
+
+// Map of all target poses on a field.
+// There are two possible uses for this:
+// 1. Static april tag poses on the field solved for by TargetMapper.
+// 2. List of detected april poses relative to the camera.
+table TargetMapField {
+  target_poses:[TargetPoseFieldFbs] (id: 0);
+
+  // Unique name of the field (for use case 1.)
+  field_name:string (id: 1);
+}
+
+root_type TargetMapField;
