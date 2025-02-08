@@ -3,7 +3,20 @@
 
 {
   "cameras": [
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-971-1_cam-24-06_2025-02-02_13-10-10.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-971-0_cam-24-08_2025-02-02_13-10-31.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-0_cam-24-12_2025-02-02_13-08-57.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-1_cam-24-09_2025-02-02_12-54-52.json' %}
+    }
   ],
+
   "robot": {
     "elevator_constants": {
       {% set _ = elevator_zero.update(
