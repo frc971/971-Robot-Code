@@ -9,6 +9,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting"
@@ -2074,6 +2075,107 @@ func TestDeleteFromStats2024(t *testing.T) {
 	}
 }
 
+func TestDeleteFromNotesData2025(t *testing.T) {
+	mockClock := MockClock{now: time.Now()}
+	database := MockDatabase{
+		notes2025: []db.NotesData2025{
+			{
+				CompCode:             "code2024",
+				TeamNumber:           "13",
+				MatchNumber:          5,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "abs",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    true,
+				CoralHpIntake:        false,
+				AlgaeGroundIntake:    false,
+				SolidAlgaeShooting:   true,
+				SketchyAlgaeShooting: true,
+				SolidCoralShooting:   true,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         true,
+				Penalties:            false,
+				GoodDefense:          false,
+				BadDefense:           false,
+				EasilyDefended:       true,
+				NoShow:               false,
+			},
+			{
+				CompCode:             "code2024",
+				TeamNumber:           "123B",
+				MatchNumber:          5,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "notes",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    false,
+				CoralHpIntake:        true,
+				AlgaeGroundIntake:    false,
+				SolidAlgaeShooting:   true,
+				SketchyAlgaeShooting: false,
+				SolidCoralShooting:   false,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         true,
+				Penalties:            false,
+				GoodDefense:          false,
+				BadDefense:           false,
+				EasilyDefended:       true,
+				NoShow:               false,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&delete_notes_2025.DeleteNotes2025T{
+		CompCode:    "code2024",
+		CompLevel:   "qm",
+		MatchNumber: 5,
+		SetNumber:   1,
+		TeamNumber:  "123B",
+	}).Pack(builder))
+
+	_, err := debug.DeleteNotes2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to delete from data scouting 2024", err)
+	}
+
+	expectedNotes := []db.NotesData2025{
+		{
+			CompCode:             "code2024",
+			TeamNumber:           "13",
+			MatchNumber:          5,
+			SetNumber:            1,
+			CompLevel:            "qm",
+			Notes:                "abs",
+			GoodDriving:          true,
+			BadDriving:           false,
+			CoralGroundIntake:    true,
+			CoralHpIntake:        false,
+			AlgaeGroundIntake:    false,
+			SolidAlgaeShooting:   true,
+			SketchyAlgaeShooting: true,
+			SolidCoralShooting:   true,
+			SketchyCoralShooting: false,
+			ShuffleCoral:         true,
+			Penalties:            false,
+			GoodDefense:          false,
+			BadDefense:           false,
+			EasilyDefended:       true,
+			NoShow:               false,
+		},
+	}
+	if !reflect.DeepEqual(expectedNotes, database.notes2025) {
+		t.Fatal("Expected ", expectedNotes, ", but got:", database.notes2025)
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -2291,6 +2393,20 @@ func (database *MockDatabase) DeleteFromStats2024(compLevel_ string, matchNumber
 			stat.TeamNumber == teamNumber_ {
 			// Match found, remove the element from the array.
 			database.stats2024 = append(database.stats2024[:i], database.stats2024[i+1:]...)
+		}
+	}
+	return nil
+}
+
+func (database *MockDatabase) DeleteFromNotesData2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	for i, stat := range database.notes2025 {
+		if stat.CompCode == compCode_ &&
+			stat.CompLevel == compLevel_ &&
+			stat.MatchNumber == matchNumber_ &&
+			stat.SetNumber == setNumber_ &&
+			stat.TeamNumber == teamNumber_ {
+			// Match found, remove the element from the array.
+			database.notes2025 = append(database.notes2025[:i], database.notes2025[i+1:]...)
 		}
 	}
 	return nil

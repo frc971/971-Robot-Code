@@ -888,6 +888,38 @@ func TestDeleteFromActions(t *testing.T) {
 	}
 }
 
+func TestDeleteFromNotesData2025(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	startingNotes := []NotesData2025{
+		NotesData2025{CompCode: "2025temp", TeamNumber: "1234", MatchNumber: 5, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: false, BadDriving: true, CoralGroundIntake: true, CoralHpIntake: false, AlgaeGroundIntake: false, SolidAlgaeShooting: false, SketchyAlgaeShooting: true, SolidCoralShooting: true, ShuffleCoral: true, SketchyCoralShooting: false, Penalties: true, GoodDefense: false, BadDefense: true, EasilyDefended: true, NoShow: false},
+		NotesData2025{CompCode: "2025temp", TeamNumber: "291", MatchNumber: 6, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: true, CoralGroundIntake: true, CoralHpIntake: false, AlgaeGroundIntake: false, SolidAlgaeShooting: false, SketchyAlgaeShooting: true, SolidCoralShooting: true, ShuffleCoral: false, SketchyCoralShooting: false, Penalties: true, GoodDefense: true, BadDefense: true, EasilyDefended: true, NoShow: true},
+		NotesData2025{CompCode: "2025temp", TeamNumber: "1234", MatchNumber: 7, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: false, CoralGroundIntake: false, CoralHpIntake: true, AlgaeGroundIntake: false, SolidAlgaeShooting: true, SketchyAlgaeShooting: true, SolidCoralShooting: true, ShuffleCoral: true, SketchyCoralShooting: false, Penalties: false, GoodDefense: true, BadDefense: false, EasilyDefended: false, NoShow: true},
+		NotesData2025{CompCode: "2025temp", TeamNumber: "62A", MatchNumber: 10, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: true, CoralGroundIntake: true, CoralHpIntake: false, AlgaeGroundIntake: false, SolidAlgaeShooting: true, SketchyAlgaeShooting: false, SolidCoralShooting: true, ShuffleCoral: false, SketchyCoralShooting: true, Penalties: false, GoodDefense: false, BadDefense: false, EasilyDefended: true, NoShow: false},
+	}
+
+	correct := []NotesData2025{
+		NotesData2025{ID: 2, CompCode: "2025temp", TeamNumber: "291", MatchNumber: 6, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: true, CoralGroundIntake: true, CoralHpIntake: false, AlgaeGroundIntake: false, SolidAlgaeShooting: false, SketchyAlgaeShooting: true, SolidCoralShooting: true, ShuffleCoral: false, SketchyCoralShooting: false, Penalties: true, GoodDefense: true, BadDefense: true, EasilyDefended: true, NoShow: true},
+		NotesData2025{ID: 3, CompCode: "2025temp", TeamNumber: "1234", MatchNumber: 7, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: false, CoralGroundIntake: false, CoralHpIntake: true, AlgaeGroundIntake: false, SolidAlgaeShooting: true, SketchyAlgaeShooting: true, SolidCoralShooting: true, ShuffleCoral: true, SketchyCoralShooting: false, Penalties: false, GoodDefense: true, BadDefense: false, EasilyDefended: false, NoShow: true},
+		NotesData2025{ID: 4, CompCode: "2025temp", TeamNumber: "62A", MatchNumber: 10, SetNumber: 1, CompLevel: "quals", Notes: "Note 1", GoodDriving: true, BadDriving: true, CoralGroundIntake: true, CoralHpIntake: false, AlgaeGroundIntake: false, SolidAlgaeShooting: true, SketchyAlgaeShooting: false, SolidCoralShooting: true, ShuffleCoral: false, SketchyCoralShooting: true, Penalties: false, GoodDefense: false, BadDefense: false, EasilyDefended: true, NoShow: false},
+	}
+
+	for _, notes := range startingNotes {
+		err := fixture.db.AddNotes2025(notes)
+		check(t, err, "Failed to add notes")
+	}
+
+	err := fixture.db.DeleteFromNotesData2025("2025temp", "quals", 5, 1, "1234")
+
+	got, err := fixture.db.ReturnAllNotes2025("2025temp")
+	check(t, err, "Failed ReturnAllNotes2025()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestQueryShiftDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()

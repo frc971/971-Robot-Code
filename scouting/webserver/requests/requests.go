@@ -15,6 +15,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
@@ -116,6 +118,8 @@ type SubmitHumanRanking2025 = submit_human_ranking_2025.SubmitHumanRanking2025
 type SubmitHumanRanking2025ResponseT = submit_human_ranking_2025_response.SubmitHumanRanking2025ResponseT
 type Delete2024DataScouting = delete_2024_data_scouting.Delete2024DataScouting
 type Delete2024DataScoutingResponseT = delete_2024_data_scouting_response.Delete2024DataScoutingResponseT
+type DeleteNotes2025 = delete_notes_2025.DeleteNotes2025
+type DeleteNotes2025ResponseT = delete_notes_2025_response.DeleteNotes2025ResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -148,6 +152,7 @@ type Database interface {
 	AddDriverRanking2025(db.DriverRanking2025) error
 	AddHumanRanking2025(db.HumanRanking2025) error
 	DeleteFromStats2024(string, int32, int32, string) error
+	DeleteFromNotesData2025(string, string, int32, int32, string) error
 	DeleteFromActions(string, int32, int32, string) error
 }
 
@@ -1829,6 +1834,40 @@ func (handler Delete2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 	w.Write(builder.FinishedBytes())
 }
 
+type DeleteNotes2025Handler struct {
+	db Database
+}
+
+func (handler DeleteNotes2025Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "DeleteNotes2025", delete_notes_2025.GetRootAsDeleteNotes2025)
+	if !success {
+		return
+	}
+
+	err = handler.db.DeleteFromNotesData2025(
+		string(request.CompCode()),
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from notes 2025: %v", err))
+		return
+	}
+
+	var response DeleteNotes2025ResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clock) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
@@ -1855,4 +1894,5 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking_2025", SubmitDriverRanking2025Handler{db})
 	scoutingServer.Handle("/requests/submit/submit_human_ranking_2025", SubmitHumanRanking2025Handler{db})
 	scoutingServer.Handle("/requests/delete/delete_2024_data_scouting", Delete2024DataScoutingHandler{db})
+	scoutingServer.Handle("/requests/delete/delete_notes_2025", DeleteNotes2025Handler{db})
 }

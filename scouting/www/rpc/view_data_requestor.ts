@@ -1,11 +1,11 @@
 import {Injectable} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {RequestAllNotes} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_generated';
+import {RequestAllNotes2025} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_2025_generated';
 import {
-  Note,
-  RequestAllNotesResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_response_generated';
+  Note2025,
+  RequestAllNotes2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_2025_response_generated';
 import {RequestAveragedDriverRankings2025} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_generated';
 import {
   DriverRanking2025,
@@ -52,21 +52,43 @@ export class ViewDataRequestor {
   }
 
   // Returns all notes from the database.
-  async fetchNoteList(): Promise<Note[]> {
-    let fbBuffer = await this.fetchFromServer(
-      RequestAllNotes.startRequestAllNotes,
-      RequestAllNotes.endRequestAllNotes,
-      '/requests/request/all_notes'
+  async fetchNote2025List(comp_code: string): Promise<Note2025[]> {
+    const builder = new Builder();
+
+    builder.finish(
+      RequestAllNotes2025.createRequestAllNotes2025(
+        builder,
+        builder.createString(comp_code)
+      )
     );
-    const parsedResponse =
-      RequestAllNotesResponse.getRootAsRequestAllNotesResponse(fbBuffer);
-    // Convert the flatbuffer list into an array. That's more useful.
-    const noteList = [];
-    for (let i = 0; i < parsedResponse.noteListLength(); i++) {
-      noteList.push(parsedResponse.noteList(i));
+
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/request/all_notes_2025', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    const resBuffer = await res.arrayBuffer();
+    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+
+    if (!res.ok) {
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      throw `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
     }
-    return noteList;
+
+    const parsedResponse =
+      RequestAllNotes2025Response.getRootAsRequestAllNotes2025Response(
+        fbBuffer
+      );
+    // Convert the flatbuffer list into an array. That's more useful.
+    const note2025List = [];
+    for (let i = 0; i < parsedResponse.note2025ListLength(); i++) {
+      note2025List.push(parsedResponse.note2025List(i));
+    }
+    return note2025List;
   }
+
   // Returns driver ranking entries from the database.
   async fetchDriverRanking2025List(
     comp_code: string

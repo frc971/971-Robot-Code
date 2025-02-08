@@ -324,12 +324,16 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for first team.
-    cy.get('#team-key-1').should('have.text', '1234');
+    cy.get('#team-key-1').should(
+      'have.text',
+      ' Team: 1234, Comp Code: 2025camb '
+    );
     setInputTo('#text-input-1', 'Good Driving');
     cy.get('#good_driving_0').click();
 
     // Navigate to add team selection and add another team.
     clickButton('Add team');
+    setInputTo('#comp_code_selection', '2025camb');
     setInputTo('#team_number_notes', '1235');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);
@@ -337,9 +341,12 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for second team.
-    cy.get('#team-key-2').should('have.text', '1235');
-    setInputTo('#text-input-2', 'Bad Driving');
-    cy.get('#bad_driving_1').click();
+    cy.get('#team-key-2').should(
+      'have.text',
+      ' Team: 1235, Comp Code: 2025camb '
+    );
+    setInputTo('#text-input-2', 'Solid Algae Shooting');
+    cy.get('#solid_algae_shooting_1').click();
 
     // Submit Notes.
     clickButton('Submit');
@@ -352,6 +359,7 @@ describe('Scouting app tests', () => {
     headerShouldBe('Notes');
 
     // Add first team.
+    setInputTo('#comp_code_selection', '2025camb');
     setInputTo('#team_number_notes', '1234');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);
@@ -360,6 +368,7 @@ describe('Scouting app tests', () => {
 
     // Add second team.
     clickButton('Add team');
+    setInputTo('#comp_code_selection', '2025camb');
     setInputTo('#team_number_notes', '1235');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);

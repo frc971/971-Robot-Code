@@ -11,6 +11,19 @@
       <input [(ngModel)]="teamNumber" type="text" id="team_number_notes" />
     </div>
     <div class="row">
+      <label for="comp_code_collection">Comp Code</label>
+      <select
+        name="comp_code_selection"
+        id="comp_code_selection"
+        [(ngModel)]="compCode"
+      >
+        <option value="none">N/A</option>
+        <option value="2025camb">Pinnacles</option>
+        <option value="2025cave">Ventura</option>
+        <option value="2025cafr">Central Valley</option>
+      </select>
+    </div>
+    <div class="row">
       <label for="match_number_notes">Match Number</label>
       <input
         [(ngModel)]="matchNumber"
@@ -54,7 +67,11 @@
               <!--X Symbol-->
             </button>
           </div>
-          <div><h3 id="team-key-{{i+1}}">{{team.teamNumber}}</h3></div>
+          <div>
+            <h4 id="team-key-{{i+1}}">
+              Team: {{team.teamNumber}}, Comp Code: {{team.compCode}}
+            </h4>
+          </div>
         </div>
         <div class="">
           <!--
@@ -73,11 +90,10 @@
           ></textarea>
         </div>
         <!--Key Word Checkboxes-->
-        <!--Row 1 (Prevent Overflow on mobile by splitting checkboxes into 2 rows)-->
         <!--Slice KEYWORD_CHECKBOX_LABELS using https://angular.io/api/common/SlicePipe-->
-        <div class="d-flex flex-row justify-content-around">
+        <div class="d-flex flex-row justify-content-around flex-wrap">
           <div
-            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:0:((Object.keys(KEYWORD_CHECKBOX_LABELS).length)/2); let k = index"
+            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS); let k = index"
           >
             <div class="form-check">
               <input
@@ -90,29 +106,6 @@
               <label
                 class="form-check-label"
                 for="{{KEYWORD_CHECKBOX_LABELS[key]}}_{{i}}"
-              >
-                {{KEYWORD_CHECKBOX_LABELS[key]}}
-              </label>
-              <br />
-            </div>
-          </div>
-        </div>
-        <!--Row 2 (Prevent Overflow on mobile by splitting checkboxes into 2 rows)-->
-        <div class="d-flex flex-row justify-content-around">
-          <div
-            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:4:(Object.keys(KEYWORD_CHECKBOX_LABELS).length); let k = index"
-          >
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                [(ngModel)]="newData[i]['keywordsData'][key]"
-                type="checkbox"
-                id="{{labelToId(KEYWORD_CHECKBOX_LABELS[key])}}"
-                name="{{KEYWORD_CHECKBOX_LABELS[key]}}"
-              />
-              <label
-                class="form-check-label"
-                for="{{KEYWORD_CHECKBOX_LABELS[key]}}"
               >
                 {{KEYWORD_CHECKBOX_LABELS[key]}}
               </label>

@@ -88,13 +88,16 @@
       </thead>
       <tbody>
         <tr *ngFor="let note of noteList; index as i;">
-          <th scope="row">{{note.team()}}</th>
+          <th scope="row">{{note.teamNumber()}}</th>
           <th scope="row">{{note.matchNumber()}}</th>
           <td>{{note.notes()}}</td>
           <td>{{parseKeywords(note)}}</td>
           <!-- Delete Icon. -->
           <td>
-            <button class="btn btn-danger" (click)="deleteNoteData()">
+            <button
+              class="btn btn-danger"
+              (click)="deleteNotes2025(note.compCode(), note.compLevel(), note.matchNumber(), note.setNumber(), note.teamNumber())"
+            >
               <i class="bi bi-trash"></i>
             </button>
           </td>

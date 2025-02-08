@@ -338,6 +338,14 @@ func (database *Database) DeleteFromStats2025(compCode_ string, compLevel_ strin
 	return result.Error
 }
 
+func (database *Database) DeleteFromNotesData2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	var notes2025 []NotesData2025
+	result := database.
+		Where("comp_code = ? AND comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compCode_, compLevel_, matchNumber_, setNumber_, teamNumber_).
+		Delete(&notes2025)
+	return result.Error
+}
+
 func (database *Database) DeleteFromActions(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	var actions []Action
 	result := database.
@@ -629,12 +637,12 @@ func (database *Database) QueryDriverRanking(MatchNumber int) ([]DriverRankingDa
 
 func (database *Database) QueryDriverRanking2025(CompCode string) ([]DriverRanking2025, error) {
 	var data []DriverRanking2025
-	result := database.Where("comp_code = ?", CompCode).Order("team_number").Find(&data)
+	result := database.Where("comp_code = ?", CompCode).Order("team_number").Order("match_number").Find(&data)
 	return data, result.Error
 }
 
 func (database *Database) QueryHumanRanking2025(CompCode string) ([]HumanRanking2025, error) {
 	var data []HumanRanking2025
-	result := database.Where("comp_code = ?", CompCode).Order("team_number").Find(&data)
+	result := database.Where("comp_code = ?", CompCode).Order("team_number").Order("match_number").Find(&data)
 	return data, result.Error
 }
