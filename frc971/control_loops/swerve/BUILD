@@ -170,6 +170,24 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "auto_align",
+    srcs = ["auto_align.cc"],
+    hdrs = [
+        "auto_align.h",
+    ],
+    deps = [
+        ":autonomous_init_fbs",
+        ":simplified_dynamics",
+        ":swerve_drivetrain_goal_fbs",
+        ":swerve_drivetrain_status_fbs",
+        ":swerve_trajectory_fbs",
+        "//aos/events:event_loop",
+        "//frc971/input:joystick_state_fbs",
+        "//frc971/math:flatbuffers_matrix",
+    ],
+)
+
 cc_binary(
     name = "generate_physics",
     srcs = [
