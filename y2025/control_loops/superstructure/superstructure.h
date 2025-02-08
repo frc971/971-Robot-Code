@@ -24,12 +24,17 @@ class Superstructure
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+  using AbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
   const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
   const PotAndAbsoluteEncoderSubsystem &pivot() const { return pivot_; }
+  const AbsoluteEncoderSubsystem &wrist() const { return wrist_; }
 
  protected:
   virtual void RunIteration(const Goal *goal, const Position *position,
@@ -42,6 +47,7 @@ class Superstructure
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem pivot_;
+  AbsoluteEncoderSubsystem wrist_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
