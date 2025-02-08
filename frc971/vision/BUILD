@@ -525,3 +525,18 @@ cc_library(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_binary(
+    name = "visualize_tag_positions",
+    srcs = ["visualize_tag_positions.cc"],
+    data = ["//y2025/vision/maps"],
+    deps = [
+        ":target_map_field_fbs",
+        ":target_map_utils",
+        "//aos:json_to_flatbuffer",
+        "//third_party:opencv",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
