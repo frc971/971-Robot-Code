@@ -1,0 +1,8 @@
+namespace scouting.webserver.requests;
+
+table SubmitNotes2025Response {
+  // empty response
+}
+
+root_type SubmitNotes2025Response;
+

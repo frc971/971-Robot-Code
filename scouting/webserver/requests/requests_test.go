@@ -16,6 +16,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
@@ -25,6 +27,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
@@ -35,6 +38,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -528,6 +532,75 @@ func TestSubmitNotes(t *testing.T) {
 	}
 }
 
+func TestSubmitNotes2025(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_notes_2025.SubmitNotes2025T{
+		CompCode:             "apc",
+		TeamNumber:           "971",
+		MatchNumber:          16,
+		SetNumber:            1,
+		CompLevel:            "qm",
+		Notes:                "Note for scouting.",
+		GoodDriving:          true,
+		BadDriving:           false,
+		CoralGroundIntake:    false,
+		CoralHpIntake:        true,
+		AlgaeGroundIntake:    false,
+		SolidAlgaeShooting:   true,
+		SketchyAlgaeShooting: false,
+		SolidCoralShooting:   true,
+		SketchyCoralShooting: false,
+		ShuffleCoral:         true,
+		Penalties:            false,
+		GoodDefense:          true,
+		BadDefense:           true,
+		EasilyDefended:       false,
+		NoShow:               false,
+	}).Pack(builder))
+
+	_, err := debug.SubmitNotes2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to submit notes 2025: ", err)
+	}
+
+	expected := []db.NotesData2025{
+		{
+			CompCode:             "apc",
+			TeamNumber:           "971",
+			MatchNumber:          16,
+			SetNumber:            1,
+			CompLevel:            "qm",
+			Notes:                "Note for scouting.",
+			GoodDriving:          true,
+			BadDriving:           false,
+			CoralGroundIntake:    false,
+			CoralHpIntake:        true,
+			AlgaeGroundIntake:    false,
+			SolidAlgaeShooting:   true,
+			SketchyAlgaeShooting: false,
+			SolidCoralShooting:   true,
+			SketchyCoralShooting: false,
+			ShuffleCoral:         true,
+			Penalties:            false,
+			GoodDefense:          true,
+			BadDefense:           true,
+			EasilyDefended:       false,
+			NoShow:               false,
+		},
+	}
+
+	if !reflect.DeepEqual(database.notes2025, expected) {
+		t.Fatal("Submitted notes did not match", expected, database.notes2025)
+	}
+}
+
 // Validates that we can request names of peoples who are currently scouting the same team.
 func TestRequestCurrentScouting(t *testing.T) {
 	database := MockDatabase{}
@@ -634,6 +707,53 @@ func TestRequestNotes(t *testing.T) {
 
 	if response.Notes[0].Data != "Notes" {
 		t.Fatal("requested notes did not match", response)
+	}
+}
+
+func TestRequestNotes2025(t *testing.T) {
+	database := MockDatabase{
+		notes2025: []db.NotesData2025{{
+			CompCode:             "cave",
+			TeamNumber:           "184",
+			MatchNumber:          4,
+			SetNumber:            1,
+			CompLevel:            "qm",
+			Notes:                "Notes",
+			GoodDriving:          true,
+			BadDriving:           false,
+			CoralGroundIntake:    false,
+			CoralHpIntake:        true,
+			AlgaeGroundIntake:    true,
+			SolidAlgaeShooting:   false,
+			SketchyAlgaeShooting: false,
+			SolidCoralShooting:   true,
+			SketchyCoralShooting: false,
+			ShuffleCoral:         false,
+			Penalties:            false,
+			GoodDefense:          true,
+			BadDefense:           true,
+			EasilyDefended:       true,
+			NoShow:               false,
+		}},
+	}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_notes_2025_for_team.RequestNotes2025ForTeamT{
+		CompCode:   "cave",
+		TeamNumber: "184",
+	}).Pack(builder))
+	response, err := debug.RequestNotes2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to submit notes 2025: ", err)
+	}
+
+	if response.Notes2025[0].Data != "Notes" {
+		t.Fatal("requested notes 2025 did not match", response)
 	}
 }
 
@@ -1260,6 +1380,132 @@ func TestRequestAllNotes(t *testing.T) {
 	}
 }
 
+// Validates that we can request all notes 2025.
+func TestRequestAllNotes2025(t *testing.T) {
+	db := MockDatabase{
+		notes2025: []db.NotesData2025{
+			{
+				CompCode:             "camp",
+				TeamNumber:           "123B",
+				MatchNumber:          5,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "abs",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    true,
+				CoralHpIntake:        false,
+				AlgaeGroundIntake:    true,
+				SolidAlgaeShooting:   true,
+				SketchyAlgaeShooting: true,
+				SolidCoralShooting:   false,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         true,
+				Penalties:            false,
+				GoodDefense:          false,
+				BadDefense:           true,
+				EasilyDefended:       true,
+				NoShow:               false,
+			},
+			{
+				CompCode:             "camp",
+				TeamNumber:           "123B",
+				MatchNumber:          10,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "abs",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    true,
+				CoralHpIntake:        true,
+				AlgaeGroundIntake:    false,
+				SolidAlgaeShooting:   false,
+				SketchyAlgaeShooting: true,
+				SolidCoralShooting:   true,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         false,
+				Penalties:            false,
+				GoodDefense:          true,
+				BadDefense:           true,
+				EasilyDefended:       false,
+				NoShow:               true,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_all_notes_2025.RequestAllNotes2025T{CompCode: "camp"}).Pack(builder))
+
+	response, err := debug.RequestAllNotes2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to request all notes 2025: ", err)
+	}
+
+	expected := request_all_notes_2025_response.RequestAllNotes2025ResponseT{
+		Note2025List: []*request_all_notes_2025_response.Note2025T{
+			{
+				CompCode:             "camp",
+				TeamNumber:           "123B",
+				MatchNumber:          5,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "abs",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    true,
+				CoralHpIntake:        false,
+				AlgaeGroundIntake:    true,
+				SolidAlgaeShooting:   true,
+				SketchyAlgaeShooting: true,
+				SolidCoralShooting:   false,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         true,
+				Penalties:            false,
+				GoodDefense:          false,
+				BadDefense:           true,
+				EasilyDefended:       true,
+				NoShow:               false,
+			},
+			{
+				CompCode:             "camp",
+				TeamNumber:           "123B",
+				MatchNumber:          10,
+				SetNumber:            1,
+				CompLevel:            "qm",
+				Notes:                "abs",
+				GoodDriving:          true,
+				BadDriving:           false,
+				CoralGroundIntake:    true,
+				CoralHpIntake:        true,
+				AlgaeGroundIntake:    false,
+				SolidAlgaeShooting:   false,
+				SketchyAlgaeShooting: true,
+				SolidCoralShooting:   true,
+				SketchyCoralShooting: false,
+				ShuffleCoral:         false,
+				Penalties:            false,
+				GoodDefense:          true,
+				BadDefense:           true,
+				EasilyDefended:       false,
+				NoShow:               true,
+			},
+		},
+	}
+	if len(expected.Note2025List) != len(response.Note2025List) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, note := range expected.Note2025List {
+		if !reflect.DeepEqual(*note, *response.Note2025List[i]) {
+			t.Fatal("Expected for note", i, ":", *note, ", but got:", *response.Note2025List[i])
+		}
+	}
+}
+
 func TestAddingActions2024(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
@@ -1446,6 +1692,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 type MockDatabase struct {
 	matches             []db.TeamMatch
 	notes               []db.NotesData
+	notes2025           []db.NotesData2025
 	shiftSchedule       []db.Shift
 	driver_ranking      []db.DriverRankingData
 	stats2024           []db.Stats2024
@@ -1492,13 +1739,38 @@ func (database *MockDatabase) QueryNotes(requestedTeam string) ([]string, error)
 	return results, nil
 }
 
+func (database *MockDatabase) QueryNotes2025(compCode string, requestedTeam string) ([]string, error) {
+	var results []string
+	for _, data := range database.notes2025 {
+		if data.CompCode == compCode && data.TeamNumber == requestedTeam {
+			results = append(results, data.Notes)
+		}
+	}
+	return results, nil
+}
+
 func (database *MockDatabase) AddNotes(data db.NotesData) error {
 	database.notes = append(database.notes, data)
 	return nil
 }
 
+func (database *MockDatabase) AddNotes2025(data db.NotesData2025) error {
+	database.notes2025 = append(database.notes2025, data)
+	return nil
+}
+
 func (database *MockDatabase) ReturnAllNotes() ([]db.NotesData, error) {
 	return database.notes, nil
+}
+
+func (database *MockDatabase) ReturnAllNotes2025(compCode string) ([]db.NotesData2025, error) {
+	var results []db.NotesData2025
+	for _, data := range database.notes2025 {
+		if data.CompCode == compCode {
+			results = append(results, data)
+		}
+	}
+	return results, nil
 }
 
 func (database *MockDatabase) AddToShift(data db.Shift) error {

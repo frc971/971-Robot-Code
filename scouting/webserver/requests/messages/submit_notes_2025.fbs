@@ -1,0 +1,27 @@
+namespace scouting.webserver.requests;
+
+table SubmitNotes2025 {
+  comp_code: string(id: 0);
+  team_number:string (id: 1);
+  match_number:int (id: 2);
+  set_number:int (id: 3);
+  comp_level: string (id:4);
+  notes:string (id: 5);
+  good_driving:bool (id: 6);
+  bad_driving:bool (id: 7);
+  coral_ground_intake:bool (id: 8);
+  coral_hp_intake:bool (id: 9);
+  algae_ground_intake:bool (id: 10);
+  solid_algae_shooting:bool (id: 11);
+  sketchy_algae_shooting:bool (id: 12);
+  solid_coral_shooting:bool (id: 13);
+  sketchy_coral_shooting:bool (id: 14);
+  shuffle_coral:bool (id: 15);
+  penalties:bool (id: 16);
+  good_defense:bool (id: 17);
+  bad_defense:bool (id: 18);
+  easily_defended:bool (id: 19);
+  no_show:bool (id: 20);
+}
+
+root_type SubmitNotes2025;

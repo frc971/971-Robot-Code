@@ -87,12 +87,16 @@ func main() {
 		"If specified, parse the file as a submitDriverRanking JSON request.")
 	submitNotesPtr := flag.String("submitNotes", "",
 		"If specified, parse the file as a submitNotes JSON request.")
+	submitNotes2025Ptr := flag.String("submitNotes2025", "",
+		"If specified, parse the file as a submitNotes2025 JSON request.")
 	requestAllMatchesPtr := flag.String("requestAllMatches", "",
 		"If specified, parse the file as a RequestAllMatches JSON request.")
 	requestAllDriverRankingsPtr := flag.String("requestAllDriverRankings", "",
 		"If specified, parse the file as a requestAllDriverRankings JSON request.")
 	requestAllNotesPtr := flag.String("requestAllNotes", "",
 		"If specified, parse the file as a requestAllNotes JSON request.")
+	requestAllNotes2025Ptr := flag.String("requestAllNotes2025", "",
+		"If specified, parse the file as a requestAllNotes2025 JSON request.")
 	requestCurrentScoutingPtr := flag.String("requestCurrentScouting", "",
 		"If specified, parse the file as a requestCurrentScouting JSON request.")
 	flag.Parse()
@@ -109,6 +113,12 @@ func main() {
 		*submitNotesPtr,
 		*addressPtr,
 		debug.SubmitNotes)
+	maybePerformRequest(
+		"submitNotes2025",
+		"scouting/webserver/requests/messages/submit_notes_2025.fbs",
+		*submitNotes2025Ptr,
+		*addressPtr,
+		debug.SubmitNotes2025)
 
 	maybePerformRequest(
 		"submitDriverRanking",
@@ -137,6 +147,13 @@ func main() {
 		*requestAllNotesPtr,
 		*addressPtr,
 		debug.RequestAllNotes)
+
+	maybePerformRequest(
+		"requestAllNotes2025",
+		"scouting/webserver/requests/messages/request_all_notes_2025.fbs",
+		*requestAllNotes2025Ptr,
+		*addressPtr,
+		debug.RequestAllNotes2025)
 
 	maybePerformRequest(
 		"requestCurrentScouting",

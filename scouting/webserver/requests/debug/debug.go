@@ -14,11 +14,13 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
@@ -26,6 +28,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
@@ -155,6 +158,18 @@ func RequestNotes(server string, requestBytes []byte, userName string) (*request
 		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse, DefaultUsername)
 }
 
+func SubmitNotes2025(server string, requestBytes []byte, userName string) (*submit_notes_2025_response.SubmitNotes2025ResponseT, error) {
+	return sendMessage[submit_notes_2025_response.SubmitNotes2025ResponseT](
+		server+"/requests/submit/submit_notes_2025", requestBytes,
+		submit_notes_2025_response.GetRootAsSubmitNotes2025Response, DefaultUsername)
+}
+
+func RequestNotes2025(server string, requestBytes []byte, userName string) (*request_notes_2025_for_team_response.RequestNotes2025ForTeamResponseT, error) {
+	return sendMessage[request_notes_2025_for_team_response.RequestNotes2025ForTeamResponseT](
+		server+"/requests/request/notes_2025_for_team", requestBytes,
+		request_notes_2025_for_team_response.GetRootAsRequestNotes2025ForTeamResponse, DefaultUsername)
+}
+
 func RequestPitImages(server string, requestBytes []byte, userName string) (*request_pit_images_response.RequestPitImagesResponseT, error) {
 	return sendMessage[request_pit_images_response.RequestPitImagesResponseT](
 		server+"/requests/request/pit_images", requestBytes,
@@ -171,6 +186,12 @@ func RequestAllNotes(server string, requestBytes []byte, userName string) (*requ
 	return sendMessage[request_all_notes_response.RequestAllNotesResponseT](
 		server+"/requests/request/all_notes", requestBytes,
 		request_all_notes_response.GetRootAsRequestAllNotesResponse, DefaultUsername)
+}
+
+func RequestAllNotes2025(server string, requestBytes []byte, userName string) (*request_all_notes_2025_response.RequestAllNotes2025ResponseT, error) {
+	return sendMessage[request_all_notes_2025_response.RequestAllNotes2025ResponseT](
+		server+"/requests/request/all_notes_2025", requestBytes,
+		request_all_notes_2025_response.GetRootAsRequestAllNotes2025Response, DefaultUsername)
 }
 
 func RequestShiftSchedule(server string, requestBytes []byte, userName string) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {
