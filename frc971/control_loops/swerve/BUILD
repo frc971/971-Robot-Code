@@ -94,6 +94,7 @@ cc_library(
     hdrs = ["swerve_control_loops.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":auto_align",
         ":inverse_kinematics",
         ":linear_velocity_controller",
         ":naive_estimator",

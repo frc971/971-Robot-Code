@@ -18,7 +18,7 @@ class AutoAlignSimulator {
       : dt_(std::chrono::milliseconds(5)),
         swerve_goal_fetcher_(
             event_loop->MakeFetcher<frc971::control_loops::swerve::Goal>(
-                "/autonomous")),
+                "/autonomous_auto_align")),
         swerve_drivetrain_status_sender_(
             event_loop->MakeSender<frc971::control_loops::swerve::Status>(
                 "/swerve")),

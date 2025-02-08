@@ -301,6 +301,7 @@ TEST_F(SwerveControlLoopTest, SwerveModulesDontMove) {
     joystick_goal_builder.add_vx(0.0);
     joystick_goal_builder.add_vy(0.0);
     joystick_goal_builder.add_omega(0.0);
+    joystick_goal_builder.add_auto_align(false);
     auto joystick_goal_offset = joystick_goal_builder.Finish();
 
     SwerveModuleGoal::Builder swerve_module_builder =

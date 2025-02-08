@@ -6,6 +6,7 @@
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/control_loops/profiled_subsystem_static.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/control_loops/swerve/auto_align.h"
 #include "frc971/control_loops/swerve/inverse_kinematics.h"
 #include "frc971/control_loops/swerve/linear_velocity_controller.h"
 #include "frc971/control_loops/swerve/naive_estimator.h"
@@ -61,12 +62,14 @@ class SwerveControlLoops
   aos::Fetcher<CanPosition> can_position_fetcher_;
   aos::Fetcher<frc971::sensors::GyroReading> gyro_fetcher_;
   aos::Fetcher<Goal> auto_goal_fetcher_;
+  aos::Fetcher<Goal> auto_align_goal_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<frc971::IMUValuesBatch> imu_fetcher_;
   std::optional<double> yaw_gyro_zero_;
   zeroing::Averager<double, 200> yaw_gyro_zeroer_;
   frc971::zeroing::ImuZeroer imu_zeroer_;
   NaiveEstimator naive_estimator_;
+  AutoAlign auto_align_;
   LinearVelocityController velocity_controller_;
   struct JoystickHeadingGoal {
     Scalar heading;

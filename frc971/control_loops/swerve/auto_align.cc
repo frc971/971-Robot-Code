@@ -23,7 +23,7 @@ constexpr double limit_goal_omega(double goal, double limit) {
 AutoAlign::AutoAlign(aos::EventLoop *event_loop)
     : swerve_goal_sender_(
           event_loop->MakeSender<frc971::control_loops::swerve::GoalStatic>(
-              "/autonomous")),
+              "/autonomous_auto_align")),
       swerve_drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
               "/swerve")),
