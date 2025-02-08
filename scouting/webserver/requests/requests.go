@@ -1552,6 +1552,10 @@ func (handler RequestAveragedHumanRankings2025Handler) ServeHTTP(w http.Response
 		})
 	}
 
+	sort.Slice(response.Rankings2025List, func(i, j int) bool {
+		return response.Rankings2025List[i].TeamNumber < response.Rankings2025List[j].TeamNumber
+	})
+
 	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
@@ -1612,6 +1616,10 @@ func (handler RequestAveragedDriverRankings2025Handler) ServeHTTP(w http.Respons
 			Score:      score,
 		})
 	}
+
+	sort.Slice(response.Rankings2025List, func(i, j int) bool {
+		return response.Rankings2025List[i].TeamNumber < response.Rankings2025List[j].TeamNumber
+	})
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&response).Pack(builder))
