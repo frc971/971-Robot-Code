@@ -1,0 +1,52 @@
+namespace scouting.webserver.requests;
+
+table Stats2025 {
+  team_number:string (id: 0);
+  match_number:int (id: 1);
+  set_number:int (id: 19);
+  comp_level:string (id: 20);
+  comp_code:string (id: 23);
+
+  starting_quadrant:int (id: 2);
+  processor_auto:int (id:3);
+  net_auto:int (id:4);
+  mobility_auto: bool (id: 5);
+  coral_dropped_auto:int (id: 6);
+  algae_dropped_auto:int (id: 7);
+  coral_missed_auto:int (id: 8);
+  algae_missed_auto:int (id: 9);
+  l1_auto:int (id: 10);
+  l2_auto:int (id: 11);
+  l3_auto:int (id: 12);
+  l4_auto:int (id: 13);
+
+  // Teleop
+  l1_teleop:int (id: 26);
+  l2_teleop:int (id: 27);
+  l3_teleop:int (id: 28);
+  l4_teleop:int (id: 29);
+  processor_teleop:int (id: 30);
+  net_teleop:int (id: 31);
+  coral_dropped_teleop:int (id: 32);
+  algae_dropped_teleop:int (id: 33);
+  coral_missed_teleop:int (id: 34);
+  algae_missed_teleop:int (id: 35);
+
+  // Time in nanoseconds.
+  avg_cycle: int64 (id:14);
+  park: bool (id:15);
+  shallow_cage: bool (id:16);
+  deep_cage: bool (id:17);
+  buddie_climb: bool (id:18);
+  robot_died: bool (id:22);
+  no_show: bool (id:25);
+
+  collected_by:string (id:21);
+  comp_type:string (id:24);
+}
+
+table Request2025DataScoutingResponse {
+    stats_list:[Stats2025] (id:0);
+}
+
+root_type Request2025DataScoutingResponse;

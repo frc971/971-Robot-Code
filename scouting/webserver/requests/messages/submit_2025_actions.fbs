@@ -1,0 +1,91 @@
+namespace scouting.webserver.requests;
+
+table StartMatchAction {
+    position:int (id:0);
+}
+
+enum ScoreType: short {
+    kL1,
+    kL2,
+    kL3,
+    kL4,
+    kPROCESSOR,
+    kNET,
+    kDROPPED,
+}
+
+table NoShowAction {}
+
+table MobilityAction {
+    mobility:bool (id:0);
+}
+
+table PickupCoralAction {
+    auto:bool (id:0);
+}
+
+table PlaceCoralAction {
+    score_type:ScoreType (id:0);
+    auto:bool (id:1);
+}
+
+table PickupAlgaeAction {
+    auto:bool (id:0);
+}
+
+table PlaceAlgaeAction {
+    score_type:ScoreType (id:0);
+    auto:bool (id:1);
+}
+
+table RobotDeathAction {
+    robot_dead:bool (id:0);
+}
+
+enum CageType: short {
+    kSHALLOW_CAGE,
+    kDEEP_CAGE,
+    kPARK,
+    kBUDDIE,
+    kMISSING,
+}
+
+table EndMatchAction {
+    cage_type:CageType (id:0);
+}
+
+table EndAutoPhaseAction {
+}
+
+table EndTeleopPhaseAction {
+}
+
+union ActionType {
+    MobilityAction,
+    NoShowAction,
+    StartMatchAction,
+    EndAutoPhaseAction,
+    PickupCoralAction,
+    PlaceCoralAction,
+    PickupAlgaeAction,
+    PlaceAlgaeAction,
+    RobotDeathAction,
+    EndTeleopPhaseAction,
+    EndMatchAction
+}
+
+table Action {
+    timestamp:int64 (id:0);
+    action_taken:ActionType (id:2);
+}
+
+table Submit2025Actions {
+    team_number:string (id: 0);
+    match_number:int (id: 1);
+    set_number:int (id: 2);
+    comp_level:string (id: 3);
+    actions_list:[Action] (id:4);
+
+    comp_type:string (id: 5);
+    comp_code:string (id: 6);
+}

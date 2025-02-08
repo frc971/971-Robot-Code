@@ -11,6 +11,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
@@ -34,6 +36,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
@@ -472,6 +475,301 @@ func TestConvertActionsToStat2024(t *testing.T) {
 		Speaker: 0, Amp: 0, SpeakerAmplified: 1, Shuttled: 1, OutOfField: 0,
 		NotesDropped: 1, Penalties: 5, TrapNote: false, Spotlight: false, AvgCycle: 950,
 		Park: false, OnStage: false, Harmony: true, RobotDied: true, NoShow: true, CollectedBy: "",
+	}
+
+	if expected != response {
+		t.Fatal("Expected ", expected, ", but got ", response)
+	}
+}
+
+func TestRequest2025DataScouting(t *testing.T) {
+	db := MockDatabase{
+		stats2025: []db.Stats2025{
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "687",
+				MatchNumber: 6, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+				ProcessorAuto: 1, NetAuto: 2, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
+				AlgaeMissedTeleop: 0, L1Teleop: 4, L2Teleop: 5, L3Teleop: 1, L4Teleop: 0,
+				ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "john",
+			},
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "943",
+				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				ProcessorAuto: 3, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 3, L2Teleop: 2, L3Teleop: 3, L4Teleop: 1,
+				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
+				RobotDied: false, NoShow: false, CollectedBy: "steve",
+			},
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "134",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+				ProcessorAuto: 2, NetAuto: 0, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 2, L2Teleop: 3, L3Teleop: 0, L4Teleop: 1,
+				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "terry",
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&db, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_2025_data_scouting.Request2025DataScoutingT{}).Pack(builder))
+
+	response, err := debug.Request2025DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to request all matches: ", err)
+	}
+
+	expected := request_2025_data_scouting_response.Request2025DataScoutingResponseT{
+		StatsList: []*request_2025_data_scouting_response.Stats2025T{
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "687",
+				MatchNumber: 6, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+				ProcessorAuto: 1, NetAuto: 2, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
+				AlgaeMissedTeleop: 0, L1Teleop: 4, L2Teleop: 5, L3Teleop: 1, L4Teleop: 0,
+				ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "john",
+			},
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "943",
+				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				ProcessorAuto: 3, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 3, L2Teleop: 2, L3Teleop: 3, L4Teleop: 1,
+				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
+				RobotDied: false, NoShow: false, CollectedBy: "steve",
+			},
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "134",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+				ProcessorAuto: 2, NetAuto: 0, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 2, L2Teleop: 3, L3Teleop: 0, L4Teleop: 1,
+				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "terry",
+			},
+		},
+	}
+	if len(expected.StatsList) != len(response.StatsList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.StatsList {
+		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
+			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
+		}
+	}
+}
+
+func TestConvertActionsToStat2025(t *testing.T) {
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_2025_actions.Submit2025ActionsT{
+		TeamNumber:  "8098",
+		MatchNumber: 3,
+		SetNumber:   1,
+		CompLevel:   "quals",
+		CompCode:    "fakeCompCode",
+		ActionsList: []*submit_2025_actions.ActionT{
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypeStartMatchAction,
+					Value: &submit_2025_actions.StartMatchActionT{
+						Position: 1,
+					},
+				},
+				Timestamp: 0,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type:  submit_2025_actions.ActionTypeNoShowAction,
+					Value: &submit_2025_actions.NoShowActionT{},
+				},
+				Timestamp: 200,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupCoralAction,
+					Value: &submit_2025_actions.PickupCoralActionT{
+						Auto: true,
+					},
+				},
+				Timestamp: 800,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceCoralAction,
+					Value: &submit_2025_actions.PlaceCoralActionT{
+						ScoreType: submit_2025_actions.ScoreTypekL1,
+						Auto:      true,
+					},
+				},
+				Timestamp: 2000,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupAlgaeAction,
+					Value: &submit_2025_actions.PickupAlgaeActionT{
+						Auto: true,
+					},
+				},
+				Timestamp: 2000,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceAlgaeAction,
+					Value: &submit_2025_actions.PlaceAlgaeActionT{
+						ScoreType: submit_2025_actions.ScoreTypekNET,
+						Auto:      true,
+					},
+				},
+				Timestamp: 2000,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypeMobilityAction,
+					Value: &submit_2025_actions.MobilityActionT{
+						Mobility: true,
+					},
+				},
+				Timestamp: 2200,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupAlgaeAction,
+					Value: &submit_2025_actions.PickupAlgaeActionT{
+						Auto: false,
+					},
+				},
+				Timestamp: 2800,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupCoralAction,
+					Value: &submit_2025_actions.PickupCoralActionT{
+						Auto: false,
+					},
+				},
+				Timestamp: 3100,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceAlgaeAction,
+					Value: &submit_2025_actions.PlaceAlgaeActionT{
+						ScoreType: submit_2025_actions.ScoreTypekNET,
+						Auto:      false,
+					},
+				},
+				Timestamp: 3200,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceCoralAction,
+					Value: &submit_2025_actions.PlaceCoralActionT{
+						ScoreType: submit_2025_actions.ScoreTypekL2,
+						Auto:      false,
+					},
+				},
+				Timestamp: 3300,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupCoralAction,
+					Value: &submit_2025_actions.PickupCoralActionT{
+						Auto: false,
+					},
+				},
+				Timestamp: 3350,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceCoralAction,
+					Value: &submit_2025_actions.PlaceCoralActionT{
+						ScoreType: submit_2025_actions.ScoreTypekL3,
+						Auto:      false,
+					},
+				},
+				Timestamp: 3450,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypeRobotDeathAction,
+					Value: &submit_2025_actions.RobotDeathActionT{
+						RobotDead: true,
+					},
+				},
+				Timestamp: 3500,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypeRobotDeathAction,
+					Value: &submit_2025_actions.RobotDeathActionT{
+						RobotDead: false,
+					},
+				},
+				Timestamp: 3550,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupAlgaeAction,
+					Value: &submit_2025_actions.PickupAlgaeActionT{
+						Auto: false,
+					},
+				},
+				Timestamp: 3650,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceAlgaeAction,
+					Value: &submit_2025_actions.PlaceAlgaeActionT{
+						ScoreType: submit_2025_actions.ScoreTypekDROPPED,
+						Auto:      false,
+					},
+				},
+				Timestamp: 3900,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypeEndMatchAction,
+					Value: &submit_2025_actions.EndMatchActionT{
+						CageType: submit_2025_actions.CageTypekDEEP_CAGE,
+					},
+				},
+				Timestamp: 4200,
+			},
+		},
+		CompType: "Regular",
+	}).Pack(builder))
+
+	submit2025Actions := submit_2025_actions.GetRootAsSubmit2025Actions(builder.FinishedBytes(), 0)
+	response, err := ConvertActionsToStat2025(submit2025Actions)
+
+	if err != nil {
+		t.Fatal("Failed to convert actions to stats: ", err)
+	}
+
+	expected := db.Stats2025{
+		CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "8098",
+		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+		ProcessorAuto: 0, NetAuto: 1, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+		CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+		ProcessorTeleop: 0, NetTeleop: 1, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
+		AlgaeMissedTeleop: 0, L1Teleop: 0, L2Teleop: 1, L3Teleop: 1, L4Teleop: 0,
+		ShallowCage: false, DeepCage: true, AvgCycle: 290, Park: false, BuddieClimb: false,
+		RobotDied: true, NoShow: true, CollectedBy: "",
 	}
 
 	if expected != response {
@@ -1591,6 +1889,96 @@ func TestAddingActions2024(t *testing.T) {
 	}
 }
 
+func TestAddingActions2025(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	mockClock := MockClock{now: time.Now()}
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_2025_actions.Submit2025ActionsT{
+		TeamNumber:  "4752",
+		MatchNumber: 2,
+		SetNumber:   1,
+		CompLevel:   "quals",
+		CompCode:    "fakeCompCode",
+		ActionsList: []*submit_2025_actions.ActionT{
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePickupCoralAction,
+					Value: &submit_2025_actions.PickupCoralActionT{
+						Auto: true,
+					},
+				},
+				Timestamp: 1800,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePlaceCoralAction,
+					Value: &submit_2025_actions.PlaceCoralActionT{
+						ScoreType: submit_2025_actions.ScoreTypekL1,
+						Auto:      false,
+					},
+				},
+				Timestamp: 2500,
+			},
+		},
+		CompType: "Prescouting",
+	}).Pack(builder))
+
+	_, err := debug.Submit2025Actions("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to submit actions: ", err)
+	}
+
+	expectedActions := []db.Action{
+		{
+			CompCode:        "fakeCompCode",
+			CompType:        "Prescouting",
+			TeamNumber:      "4752",
+			MatchNumber:     2,
+			SetNumber:       1,
+			CompLevel:       "quals",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       1800,
+		},
+		{
+			CompCode:        "fakeCompCode",
+			CompType:        "Prescouting",
+			TeamNumber:      "4752",
+			MatchNumber:     2,
+			SetNumber:       1,
+			CompLevel:       "quals",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       2500,
+		},
+	}
+
+	expectedStats := []db.Stats2025{
+		db.Stats2025{
+			CompCode: "fakeCompCode", CompType: "Prescouting", TeamNumber: "4752",
+			MatchNumber: 2, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 0,
+			ProcessorAuto: 0, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+			CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: false, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+			ProcessorTeleop: 0, NetTeleop: 0, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0,
+			AlgaeMissedTeleop: 0, L1Teleop: 1, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
+			ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+			RobotDied: false, NoShow: false, CollectedBy: "debug_cli",
+		},
+	}
+
+	if !reflect.DeepEqual(expectedActions, database.actions) {
+		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
+	}
+	if !reflect.DeepEqual(expectedStats, database.stats2025) {
+		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2025)
+	}
+}
+
 // Validates that we can delete 2024 stats.
 func TestDeleteFromStats2024(t *testing.T) {
 	mockClock := MockClock{now: time.Now()}
@@ -1696,6 +2084,7 @@ type MockDatabase struct {
 	shiftSchedule       []db.Shift
 	driver_ranking      []db.DriverRankingData
 	stats2024           []db.Stats2024
+	stats2025           []db.Stats2025
 	actions             []db.Action
 	images              []db.PitImage
 	driver_ranking_2025 []db.DriverRanking2025
@@ -1711,6 +2100,10 @@ func (database *MockDatabase) AddToStats2024(stats2024 db.Stats2024) error {
 	database.stats2024 = append(database.stats2024, stats2024)
 	return nil
 }
+func (database *MockDatabase) AddToStats2025(stats2025 db.Stats2025) error {
+	database.stats2025 = append(database.stats2025, stats2025)
+	return nil
+}
 func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
 }
@@ -1719,10 +2112,24 @@ func (database *MockDatabase) ReturnStats2024() ([]db.Stats2024, error) {
 	return database.stats2024, nil
 }
 
+func (database *MockDatabase) ReturnStats2025() ([]db.Stats2025, error) {
+	return database.stats2025, nil
+}
+
 func (database *MockDatabase) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2024, error) {
 	var results []db.Stats2024
 	for _, stats := range database.stats2024 {
 		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel && stats.CompType == compType {
+			results = append(results, stats)
+		}
+	}
+	return results, nil
+}
+
+func (database *MockDatabase) ReturnStats2025ForTeam(compCode string, teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2025, error) {
+	var results []db.Stats2025
+	for _, stats := range database.stats2025 {
+		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel && stats.CompType == compType && stats.CompCode == compCode {
 			results = append(results, stats)
 		}
 	}
