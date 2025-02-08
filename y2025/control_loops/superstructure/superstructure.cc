@@ -30,9 +30,11 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       elevator_(
           robot_constants_->common()->elevator(),
           robot_constants_->robot()->elevator_constants()->zeroing_constants()),
-      pivot_(
-          robot_constants_->common()->pivot(),
-          robot_constants_->robot()->pivot_constants()->zeroing_constants()) {
+      pivot_(robot_constants_->common()->pivot(),
+             robot_constants_->robot()->pivot_constants()->zeroing_constants()),
+      wrist_(
+          robot_constants_->common()->wrist(),
+          robot_constants_->robot()->wrist_constants()->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -44,6 +46,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     elevator_.Reset();
     pivot_.Reset();
+    wrist_.Reset();
   }
   OutputT output_struct;
 
@@ -181,18 +184,59 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
   output_struct.climber_voltage = climber_voltage;
 
+  aos::fbs::FixedStackAllocator<aos::fbs::Builder<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
+      wrist_goal_buffer;
+
+  aos::fbs::Builder<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic>
+      wrist_goal_builder(&wrist_goal_buffer);
+
+  double wrist_position =
+      robot_constants_->common()->wrist_set_points()->neutral();
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->wrist_goal()) {
+      case (WristGoal::NEUTRAL):
+        break;
+      case (WristGoal::INTAKE):
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->intake();
+        break;
+      case (WristGoal::SCORE):
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->score();
+        break;
+    }
+  }
+
+  PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(wrist_goal_builder.get(),
+                                                      wrist_position);
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *wrist_goal = &wrist_goal_builder->AsFlatbuffer();
+
+  const flatbuffers::Offset<
+      frc971::control_loops::AbsoluteEncoderProfiledJointStatus>
+      wrist_status_offset = wrist_.Iterate(
+          wrist_goal, position->wrist(),
+          output != nullptr ? &(output_struct.wrist_voltage) : nullptr,
+          status->fbb());
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = elevator_.zeroed() && pivot_.zeroed();
-  const bool estopped = elevator_.estopped() || pivot_.estopped();
+  const bool zeroed = elevator_.zeroed() && pivot_.zeroed() && wrist_.zeroed();
+  const bool estopped =
+      elevator_.estopped() || pivot_.estopped() || wrist_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
   status_builder.add_elevator(elevator_status_offset);
+  status_builder.add_wrist(wrist_status_offset);
   status_builder.add_pivot(pivot_status_offset);
   status_builder.add_end_effector_state(end_effector_status);
 
