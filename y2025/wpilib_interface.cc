@@ -77,7 +77,8 @@ namespace {
 constexpr double kMaxFastEncoderPulsesPerSecond =
     std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond(),
               Values::kMaxElevatorEncoderPulsesPerSecond(),
-              Values::kMaxPivotEncoderPulsesPerSecond()});
+              Values::kMaxPivotEncoderPulsesPerSecond(),
+              Values::kMaxWristEncoderPulsesPerSecond()});
 
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
@@ -133,12 +134,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    robot_constants_->robot()
                        ->elevator_constants()
                        ->potentiometer_offset());
-
       CopyPosition(
           pivot_sensors_, builder->add_pivot(),
           Values::kPivotEncoderCountsPerRevolution(),
           Values::kPivotEncoderRatio(), pivot_pot_translate, false,
           robot_constants_->robot()->pivot_constants()->potentiometer_offset());
+
+      CopyPosition(wrist_encoder_, builder->add_wrist(),
+                   Values::kWristEncoderCountsPerRevolution(),
+                   Values::kWristEncoderRatio(), true /* wrist flipped */);
       builder.CheckOk(builder.Send());
     }
 
@@ -207,6 +211,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     elevator_sensors_.set_potentiometer(::std::move(potentiometer));
   }
 
+  void set_wrist(::std::unique_ptr<frc::Encoder> encoder,
+                 ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    fast_encoder_filter_.Add(encoder.get());
+    wrist_encoder_.set_encoder(::std::move(encoder));
+    wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
  private:
   const Constants *robot_constants_;
 
@@ -220,6 +231,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer elevator_sensors_;
   frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer pivot_sensors_;
+
+  frc971::wpilib::AbsoluteEncoder wrist_encoder_;
 
   aos::Sender<frc971::control_loops::swerve::PositionStatic>
       drivetrain_position_sender_;
@@ -278,7 +291,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                make_unique<frc::AnalogInput>(0));
     sensor_reader.set_pivot(make_encoder(1), make_unique<frc::DigitalInput>(1),
                             make_unique<frc::AnalogInput>(1));
-    // Todo: Set the roborio ports
+    sensor_reader.set_wrist(make_encoder(4), make_unique<frc::DigitalInput>(4));
+    // TODO: Set the roborio ports
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -346,6 +360,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     rio_talons.push_back(climber_one);
     rio_talons.push_back(climber_two);
 
+    std::shared_ptr<TalonFX> wrist =
+        std::make_shared<TalonFX>(12, true, "rio", &rio_signal_registry,
+                                  current_limits->wrist_stator_current_limit(),
+                                  current_limits->wrist_supply_current_limit());
+    rio_talons.push_back(wrist);
+
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(canivore_signals_registry),
         canivore_talons,
@@ -378,9 +398,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader rio_can_sensor_reader(
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talons,
-        [&elevator_one, &elevator_two, &pivot, &climber_one, &climber_two,
-         &end_effector, &superstructure_rio_position_sender,
-         &robot_constants](ctre::phoenix::StatusCode status) {
+        [&pivot, &climber_one, &climber_two, &end_effector,
+         &superstructure_rio_position_sender,
+         &wrist](ctre::phoenix::StatusCode status) {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_rio_builder =
                   superstructure_rio_position_sender.MakeStaticBuilder();
@@ -396,6 +416,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           climber_two->SerializePosition(
               superstructure_rio_builder->add_climber_two(),
               constants::Values::kClimberOutputRatio);
+
+          wrist->SerializePosition(superstructure_rio_builder->add_wrist(),
+                                   constants::Values::kWristOutputRatio);
 
           superstructure_rio_builder->set_status(static_cast<int>(status));
           superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
@@ -427,6 +450,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.climber_voltage());
               talonfx_map.find("end_effector")
                   ->second->WriteVoltage(output.end_effector_voltage());
+              talonfx_map.find("wrist")->second->WriteVoltage(
+                  output.wrist_voltage());
             });
 
     can_superstructure_writer.add_talonfx("elevator_one", elevator_one);
@@ -435,6 +460,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("pivot", pivot);
     can_superstructure_writer.add_talonfx("climber_one", climber_one);
     can_superstructure_writer.add_talonfx("climber_two", climber_two);
+    can_superstructure_writer.add_talonfx("wrist", wrist);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_superstructure_writer](
