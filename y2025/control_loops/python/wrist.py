@@ -17,17 +17,17 @@ except gflags.DuplicateFlagError:
 kWrist = angular_system.AngularSystemParams(
     name="Wrist",
     motor=control_loop.KrakenFOC(),
-    G=(6.0 / 48.0) * (20.0 / 100.0) * (18.0 / 24.0) * (24.0 / 44.0),
+    G=(12 / 30) * (14 / 42) * (15 / 56),  # motor to output
     # Use parallel axis theorem to get the moment of inertia around
     # the joint (I = I_cm + mh^2 = 0.001877 + 0.8332 * 0.0407162^2)
-    J=0.003258,
+    J=0.0263663657,  # Calculated with onshape
     q_pos=0.80,
     q_vel=80.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
     kalman_q_voltage=0.5,
     kalman_r_position=0.05,
-    radius=5.71 * 0.0254,
+    radius=2.321 * 0.0254,
 )
 
 
