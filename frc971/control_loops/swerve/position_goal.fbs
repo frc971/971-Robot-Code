@@ -1,0 +1,9 @@
+namespace frc971.control_loops.swerve;
+
+table PositionGoal {
+    x: double (id: 0);
+    y: double (id: 1);
+    theta: double (id: 2);
+}
+
+root_type PositionGoal;

@@ -9,6 +9,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "frc971/control_loops/control_loop_test.h"
+#include "frc971/control_loops/swerve/position_goal_static.h"
 
 namespace frc971::control_loops::swerve::test {
 class AutoAlignSimulator {
@@ -21,6 +22,10 @@ class AutoAlignSimulator {
         swerve_drivetrain_status_sender_(
             event_loop->MakeSender<frc971::control_loops::swerve::Status>(
                 "/swerve")),
+        position_goal_sender_(
+            event_loop
+                ->MakeSender<frc971::control_loops::swerve::PositionGoalStatic>(
+                    "/autonomous_auto_align")),
         auto_align_(event_loop) {
     phased_loop_handle_ = event_loop->AddPhasedLoop(
         [this](int) {
@@ -84,12 +89,17 @@ class AutoAlignSimulator {
     robot_x_ += joystick_goal->vx();
     robot_y_ += joystick_goal->vy();
     robot_theta_ += joystick_goal->omega();
-    LOG(INFO) << "vx: " << joystick_goal->vx() << "vy: " << joystick_goal->vy()
-              << "omega: " << joystick_goal->omega();
+    VLOG(1) << "vx: " << joystick_goal->vx() << "vy: " << joystick_goal->vy()
+            << "omega: " << joystick_goal->omega();
   }
 
   void setGoal(double x, double y, double theta) {
-    auto_align_.setGoal(x, y, theta);
+    auto position_goal_builder = position_goal_sender_.MakeStaticBuilder();
+
+    position_goal_builder->set_x(x);
+    position_goal_builder->set_y(y);
+    position_goal_builder->set_theta(theta);
+    position_goal_builder.CheckOk(position_goal_builder.Send());
   }
 
   double robot_x() { return robot_x_; }
@@ -108,6 +118,8 @@ class AutoAlignSimulator {
   ::aos::Fetcher<frc971::control_loops::swerve::Goal> swerve_goal_fetcher_;
   ::aos::Sender<frc971::control_loops::swerve::Status>
       swerve_drivetrain_status_sender_;
+  ::aos::Sender<frc971::control_loops::swerve::PositionGoalStatic>
+      position_goal_sender_;
   AutoAlign auto_align_;
 };
 }  // namespace frc971::control_loops::swerve::test

@@ -69,6 +69,11 @@ static_flatbuffer(
     srcs = ["autonomous_init.fbs"],
 )
 
+static_flatbuffer(
+    name = "position_goal_fbs",
+    srcs = ["position_goal.fbs"],
+)
+
 py_binary(
     name = "simulation",
     srcs = [
@@ -154,6 +159,7 @@ aos_config(
         ":swerve_drivetrain_can_position_fbs",
         ":swerve_drivetrain_status_fbs",
         ":autonomous_init_fbs",
+        ":position_goal_fbs",
         "//frc971/queues:gyro_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
@@ -181,10 +187,10 @@ cc_library(
     ],
     deps = [
         ":autonomous_init_fbs",
+        ":position_goal_fbs",
         ":simplified_dynamics",
         ":swerve_drivetrain_goal_fbs",
         ":swerve_drivetrain_status_fbs",
-        ":swerve_trajectory_fbs",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
@@ -507,6 +513,7 @@ cc_test(
     name = "auto_align_test",
     srcs = ["auto_align_test.cc"],
     deps = [
+        ":position_goal_fbs",
         "//aos/events:event_loop",
         "//aos/testing:googletest",
         "//frc971/control_loops:control_loop_test",
