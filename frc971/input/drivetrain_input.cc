@@ -127,7 +127,6 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
   const double vx = swerve_goals.vx;
   const double vy = swerve_goals.vy;
   const double omega = swerve_goals.omega;
-  const bool auto_align = swerve_goals.auto_align;
 
   auto builder = goal_sender_.MakeStaticBuilder();
 
@@ -136,7 +135,7 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
   joystick_goal->set_vx(vx);
   joystick_goal->set_vy(vy);
   joystick_goal->set_omega(omega);
-  joystick_goal->set_auto_align(auto_align);
+  joystick_goal->set_auto_align(auto_align_);
 
   builder.CheckOk(builder.Send());
 }
@@ -146,8 +145,8 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // Swerve Controller
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
-  const JoystickAxis kVxAxis(2, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
-  const ButtonLocation kAutoAlignButton(0, 0);
+  const JoystickAxis kVxAxis(1, 1), kVyAxis(1, 2), kOmegaAxis(1, 5);
+  const ButtonLocation kAutoAlignButton(1, 1);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
       new SwerveDrivetrainInputReader(event_loop, swerve_config, kVxAxis,
@@ -179,18 +178,19 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   const double speed =
       kVelScale * aos::Deadband(std::hypot(pow(raw_vx, 3), pow(raw_vy, 3)),
                                 kMovementDeadband, 1.0);
+
   const double theta = std::atan2(raw_vy, raw_vx);
 
-  const double vx = speed * std::cos(theta);
+  const double vx = -speed * std::cos(theta);
   const double vy = speed * std::sin(theta);
 
-  bool auto_align = false;
-
   if (data.PosEdge(auto_align_button_)) {
-    auto_align = true;
+    auto_align_ = true;
+  } else if (data.NegEdge(auto_align_button_)) {
+    auto_align_ = false;
   }
 
-  return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega, auto_align};
+  return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega};
 }
 
 DrivetrainInputReader::WheelAndThrottle

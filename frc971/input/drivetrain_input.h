@@ -193,7 +193,6 @@ class SwerveDrivetrainInputReader {
     double vx;
     double vy;
     double omega;
-    bool auto_align;
   };
 
  private:
@@ -220,6 +219,8 @@ class SwerveDrivetrainInputReader {
   double wheel_multiplier_ = 0.5;
 
   const SwerveConfig swerve_config_;
+
+  bool auto_align_ = false;
 };
 
 // Implements DrivetrainInputReader for the original steering wheel.
