@@ -35,11 +35,13 @@
         },
         {
             "name": "/localizer",
-            "type": "frc971.control_loops.swerve.LocalizerState"
+            "type": "frc971.control_loops.swerve.LocalizerState",
+            "frequency": 200
         },
         {
             "name": "/autonomous_auto_align",
-            "type": "frc971.control_loops.swerve.Goal"
+            "type": "frc971.control_loops.swerve.Goal",
+            "frequency": 200
         },
         {
             "name": "/autonomous_auto_align",

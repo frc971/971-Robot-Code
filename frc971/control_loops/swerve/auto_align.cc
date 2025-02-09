@@ -3,12 +3,12 @@
 using frc971::control_loops::swerve::AutoAlign;
 
 // TODO Move these constants to a json or something
-ABSL_FLAG(double, kPVx, 1.0, "Gain for x position error");
-ABSL_FLAG(double, kPVy, 1.0, "Gain for y position error");
-ABSL_FLAG(double, kPVtheta, 1.0, "Gain for theta position error");
+ABSL_FLAG(double, kPVx, 4.0, "Gain for x position error");
+ABSL_FLAG(double, kPVy, 4.0, "Gain for y position error");
+ABSL_FLAG(double, kPVtheta, 4.0, "Gain for theta position error");
 
-ABSL_FLAG(double, kVelLimit, 1.0, "Velocity Limit");
-ABSL_FLAG(double, kOmegaLimit, 1.0, "Omega Limit");
+ABSL_FLAG(double, kVelLimit, 3.0, "Velocity Limit");
+ABSL_FLAG(double, kOmegaLimit, 3.0, "Omega Limit");
 
 ABSL_FLAG(double, kXOffset, 0.0, "X Offset");
 ABSL_FLAG(double, kYOffset, 0.0, "Y Offset");
@@ -24,32 +24,24 @@ AutoAlign::AutoAlign(aos::EventLoop *event_loop)
     : swerve_goal_sender_(
           event_loop->MakeSender<frc971::control_loops::swerve::GoalStatic>(
               "/autonomous_auto_align")),
-      swerve_drivetrain_status_fetcher_(
-          event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
-              "/swerve")),
       position_goal_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::swerve::PositionGoal>(
-              "/autonomous_auto_align")) {}
+              "/autonomous_auto_align")),
+      localizer_state_fetcher_(
+          event_loop
+              ->MakeFetcher<frc971::control_loops::swerve::LocalizerState>(
+                  "/localizer")) {}
 
 void AutoAlign::Iterate() {
   auto builder = swerve_goal_sender_.MakeStaticBuilder();
-  swerve_drivetrain_status_fetcher_.Fetch();
-  // converts between frc971.fbs.Matrix and Eigen::Matrix
-  constexpr size_t num_position_states =
-      frc971::control_loops::swerve::SimplifiedDynamics<
-          double>::States::kNumPositionStates;
-  Eigen::Matrix<double, num_position_states, 1> x_hat =
-      ToEigenOrDie<num_position_states, 1>(
-          *swerve_drivetrain_status_fetcher_.get()
-               ->naive_estimator()
-               ->position_state());
+  localizer_state_fetcher_.Fetch();
+  if (localizer_state_fetcher_.get() == nullptr) {
+    return;
+  }
 
-  double x = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kX);
-  double y = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kY);
-  double theta = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
-                       double>::States::kTheta);
+  double x = localizer_state_fetcher_->x();
+  double y = localizer_state_fetcher_->y();
+  double theta = localizer_state_fetcher_->theta();
 
   // check if there's a new goal
   position_goal_fetcher_.Fetch();
@@ -66,7 +58,7 @@ void AutoAlign::Iterate() {
   const double kVelocityLimit = absl::GetFlag(FLAGS_kVelLimit);
   const double kOmegaLimit = absl::GetFlag(FLAGS_kOmegaLimit);
 
-  const double kThreshold = 0.01;
+  const double kThreshold = 0.005;
 
   double x_error = x_goal - x + absl::GetFlag(FLAGS_kXOffset);
   double y_error = y_goal - y + absl::GetFlag(FLAGS_kYOffset);

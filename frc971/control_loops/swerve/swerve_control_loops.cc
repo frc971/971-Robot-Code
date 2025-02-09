@@ -178,6 +178,7 @@ void SwerveControlLoops::RunIteration(
       auto_align_goal_fetcher_.Fetch();
       if (goal->joystick_goal()->auto_align()) {
         auto_align_.Iterate();
+        auto_align_goal_fetcher_.Fetch();
         kinematics_state(NaiveEstimator::States::kVx) =
             auto_align_goal_fetcher_.get()->joystick_goal()->vx();
         kinematics_state(NaiveEstimator::States::kVy) =

@@ -19,13 +19,14 @@ class AutoAlignSimulator {
         swerve_goal_fetcher_(
             event_loop->MakeFetcher<frc971::control_loops::swerve::Goal>(
                 "/autonomous_auto_align")),
-        swerve_drivetrain_status_sender_(
-            event_loop->MakeSender<frc971::control_loops::swerve::Status>(
-                "/swerve")),
         position_goal_sender_(
             event_loop
                 ->MakeSender<frc971::control_loops::swerve::PositionGoalStatic>(
                     "/autonomous_auto_align")),
+        localizer_state_sender_(
+            event_loop
+                ->MakeSender<frc971::control_loops::swerve::LocalizerState>(
+                    "/localizer")),
         auto_align_(event_loop) {
     phased_loop_handle_ = event_loop->AddPhasedLoop(
         [this](int) {
@@ -43,54 +44,30 @@ class AutoAlignSimulator {
   }
 
   void SendMessage() {
-    ::aos::Sender<frc971::control_loops::swerve::Status>::Builder
-        swerve_drivetrain_status =
-            swerve_drivetrain_status_sender_.MakeBuilder();
+    ::aos::Sender<frc971::control_loops::swerve::LocalizerState>::Builder
+        localizer_state = localizer_state_sender_.MakeBuilder();
 
-    constexpr size_t num_position_states =
-        frc971::control_loops::swerve::SimplifiedDynamics<
-            double>::States::kNumPositionStates;
+    LocalizerState::Builder localizer_state_builder =
+        localizer_state.MakeBuilder<LocalizerState>();
 
-    std::vector<double> raw_data(num_position_states, 0);
-    raw_data[frc971::control_loops::swerve::SimplifiedDynamics<
-        double>::States::kX] = robot_x_;
-    raw_data[frc971::control_loops::swerve::SimplifiedDynamics<
-        double>::States::kY] = robot_y_;
-    raw_data[frc971::control_loops::swerve::SimplifiedDynamics<
-        double>::States::kTheta] = robot_theta_;
+    localizer_state_builder.add_x(robot_x_);
+    localizer_state_builder.add_y(robot_y_);
+    localizer_state_builder.add_theta(robot_theta_);
 
-    auto data = swerve_drivetrain_status.fbb()->CreateVector(raw_data);
-
-    frc971::fbs::Matrix::Builder position_state_builder(
-        *swerve_drivetrain_status.fbb());
-    position_state_builder.add_rows(num_position_states);
-    position_state_builder.add_cols(1);
-    position_state_builder.add_data(data);
-
-    auto position_state_offset = position_state_builder.Finish();
-
-    frc971::control_loops::swerve::NaiveEstimatorStatus::Builder
-        naive_estimator_builder(*swerve_drivetrain_status.fbb());
-    naive_estimator_builder.add_position_state(position_state_offset);
-    auto naive_estimator_offset = naive_estimator_builder.Finish();
-
-    frc971::control_loops::swerve::Status::Builder status_builder(
-        *swerve_drivetrain_status.fbb());
-    status_builder.add_naive_estimator(naive_estimator_offset);
-
-    CHECK_EQ(swerve_drivetrain_status.Send(status_builder.Finish()),
-             aos::RawSender::Error::kOk);
+    EXPECT_EQ(localizer_state.Send(localizer_state_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   void Simulate() {
-    swerve_goal_fetcher_.Fetch();
+    CHECK(swerve_goal_fetcher_.Fetch()) << "swerve_goal_fetcher_ is nullptr!";
     const frc971::control_loops::swerve::JoystickGoal *joystick_goal =
         swerve_goal_fetcher_.get()->joystick_goal();
-    robot_x_ += joystick_goal->vx();
-    robot_y_ += joystick_goal->vy();
-    robot_theta_ += joystick_goal->omega();
-    VLOG(1) << "vx: " << joystick_goal->vx() << "vy: " << joystick_goal->vy()
-            << "omega: " << joystick_goal->omega();
+    std::chrono::duration<double, std::ratio<1, 1>> dt_sec = dt_;
+    robot_x_ += joystick_goal->vx() * dt_sec.count();
+    robot_y_ += joystick_goal->vy() * dt_sec.count();
+    robot_theta_ += joystick_goal->omega() * dt_sec.count();
+    LOG(INFO) << "vx: " << joystick_goal->vx() << "vy: " << joystick_goal->vy()
+              << "omega: " << joystick_goal->omega();
   }
 
   void setGoal(double x, double y, double theta) {
@@ -116,10 +93,10 @@ class AutoAlignSimulator {
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
   ::aos::Fetcher<frc971::control_loops::swerve::Goal> swerve_goal_fetcher_;
-  ::aos::Sender<frc971::control_loops::swerve::Status>
-      swerve_drivetrain_status_sender_;
   ::aos::Sender<frc971::control_loops::swerve::PositionGoalStatic>
       position_goal_sender_;
+  aos::Sender<frc971::control_loops::swerve::LocalizerState>
+      localizer_state_sender_;
   AutoAlign auto_align_;
 };
 }  // namespace frc971::control_loops::swerve::test
@@ -140,7 +117,7 @@ class AutoAlignTest : public frc971::testing::ControlLoopTest {
   }
 
   void VerifyNearGoal() {
-    constexpr double kEps = 0.003;
+    constexpr double kEps = 0.005;
     EXPECT_NEAR(simulator_.robot_x(), goal_x_, kEps);
     EXPECT_NEAR(simulator_.robot_y(), goal_y_, kEps);
     EXPECT_NEAR(simulator_.robot_theta(), goal_theta_, kEps);
@@ -158,6 +135,6 @@ class AutoAlignTest : public frc971::testing::ControlLoopTest {
 
 TEST_F(AutoAlignTest, AlignToDesiredState) {
   setGoal(15.0, -5.0, M_PI / 2);
-  RunFor(std::chrono::seconds(1));
+  RunFor(std::chrono::seconds(7));
   VerifyNearGoal();
 }
