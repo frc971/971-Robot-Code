@@ -132,6 +132,30 @@ class DMAEncoderAndPotentiometer : public DMAEncoder {
   DISALLOW_COPY_AND_ASSIGN(DMAEncoderAndPotentiometer);
 };
 
+class DMAAbsoluteEncoder {
+ public:
+  void set_absolute_pwm(::std::unique_ptr<frc::DigitalInput> input) {
+    duty_cycle_input_ = ::std::move(input);
+    duty_cycle_reader_.set_input(duty_cycle_input_.get());
+  }
+
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    encoder_ = ::std::move(encoder);
+  }
+
+  double ReadAbsoluteEncoder() const {
+    return duty_cycle_reader_.last_width() / duty_cycle_reader_.last_period();
+  }
+  int32_t ReadRelativeEncoder() const { return encoder_->GetRaw(); }
+
+  DMAPulseWidthReader &reader() { return duty_cycle_reader_; }
+
+ private:
+  DMAPulseWidthReader duty_cycle_reader_;
+  ::std::unique_ptr<::frc::DigitalInput> duty_cycle_input_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+};
+
 // Class to read duty cycle of an input.  This is tuned for the CTRE encoder's
 // absolute position output.
 class DutyCycleReader {
