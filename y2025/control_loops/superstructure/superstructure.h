@@ -10,12 +10,16 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2025/constants.h"
 #include "y2025/constants/constants_generated.h"
+#include "y2025/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2025::control_loops::superstructure {
+
+// TODO add real value
+static constexpr double kEndEffectorMotorTorqueThreshold = 100;
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -31,6 +35,8 @@ class Superstructure
 
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
+
+  bool GetIntakeComplete();
 
   const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
   const PotAndAbsoluteEncoderSubsystem &pivot() const { return pivot_; }
@@ -48,8 +54,10 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem pivot_;
   AbsoluteEncoderSubsystem wrist_;
+  aos::Fetcher<CANPosition> rio_can_position_fetcher_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
+  bool intake_complete_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

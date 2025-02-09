@@ -1,5 +1,15 @@
 {
   "channel_storage_duration": 10000000000,
+  "channels": [
+    {
+      "name": "/superstructure",
+      "type": "y2025.control_loops.superstructure.CANPosition",
+      "source_node": "roborio",
+      "frequency": 220,
+      "num_senders": 2,
+      "max_size": 1024
+    }
+  ],
   "maps": [
     {
       "match": {

@@ -168,15 +168,10 @@ class SuperstructureSimulation {
     Position::Builder position_builder = builder.MakeBuilder<Position>();
     position_builder.add_pivot(pivot_offset);
     position_builder.add_elevator(elevator_offset);
-    position_builder.add_end_effector_beam_break(end_effector_beam_break_);
     position_builder.add_wrist(wrist_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
-  }
-
-  void set_end_effector_beam_break(bool triggered) {
-    end_effector_beam_break_ = triggered;
   }
 
  private:
@@ -192,8 +187,6 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator elevator_;
   PotAndAbsoluteEncoderSimulator pivot_;
   AbsoluteEncoderSimulator wrist_;
-
-  bool end_effector_beam_break_ = false;
 
   bool first_ = true;
 };
@@ -256,7 +249,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case EndEffectorGoal::NEUTRAL:
         break;
       case EndEffectorGoal::INTAKE:
-        if (!superstructure_position_fetcher_->end_effector_beam_break()) {
+        if (!superstructure_.GetIntakeComplete()) {
           expected_end_effector_status = EndEffectorStatus::INTAKING;
           expected_end_effector_voltage = simulated_robot_constants_->common()
                                               ->end_effector_voltages()
@@ -657,8 +650,6 @@ TEST_F(SuperstructureTest, EndEffectorTest) {
 
   VerifyNearGoal();
 
-  superstructure_plant_.set_end_effector_beam_break(true);
-
   RunFor(chrono::seconds(1));
 
   VerifyNearGoal();
@@ -669,6 +660,34 @@ TEST_F(SuperstructureTest, EndEffectorTest) {
     goal_builder.add_end_effector_goal(EndEffectorGoal::SPIT);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_end_effector_goal(EndEffectorGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_can_position_sender_.MakeBuilder();
+    frc971::control_loops::CANTalonFX::Builder talon_builder =
+        builder.MakeBuilder<frc971::control_loops::CANTalonFX>();
+    talon_builder.add_torque_current(1000);
+    auto talon_torque_offset = talon_builder.Finish();
+    CANPosition::Builder can_builder = builder.MakeBuilder<CANPosition>();
+    can_builder.add_end_effector(talon_torque_offset);
+
+    ASSERT_EQ(builder.Send(can_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(1));

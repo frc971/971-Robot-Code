@@ -34,7 +34,9 @@ table Status {
 
     end_effector_state:EndEffectorStatus (id: 4);
 
-    wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 5);
+    intake_complete:bool (id: 5);
+
+    wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 6);
 }
 
 root_type Status;

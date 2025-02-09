@@ -32,11 +32,14 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           robot_constants_->robot()->elevator_constants()->zeroing_constants()),
       pivot_(robot_constants_->common()->pivot(),
              robot_constants_->robot()->pivot_constants()->zeroing_constants()),
-      wrist_(
-          robot_constants_->common()->wrist(),
-          robot_constants_->robot()->wrist_constants()->zeroing_constants()) {
+      wrist_(robot_constants_->common()->wrist(),
+             robot_constants_->robot()->wrist_constants()->zeroing_constants()),
+      rio_can_position_fetcher_(
+          event_loop->MakeFetcher<CANPosition>("/superstructure/rio")) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
+
+bool Superstructure::GetIntakeComplete() { return intake_complete_; }
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
@@ -55,6 +58,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     alliance_ = joystick_state_fetcher_->alliance();
   }
 
+  if (rio_can_position_fetcher_.Fetch()) {
+    intake_complete_ =
+        rio_can_position_fetcher_.get()->end_effector()->torque_current() >
+        kEndEffectorMotorTorqueThreshold;
+  }
+
   double end_effector_voltage = 0.0;
   EndEffectorStatus end_effector_status = EndEffectorStatus::NEUTRAL;
 
@@ -63,17 +72,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case EndEffectorGoal::NEUTRAL:
         break;
       case EndEffectorGoal::INTAKE:
-        // If the beambreak is not being activated then we intake
-        if (!position->end_effector_beam_break()) {
+        if (!intake_complete_) {
           end_effector_status = EndEffectorStatus::INTAKING;
           end_effector_voltage =
               robot_constants_->common()->end_effector_voltages()->intake();
+        } else {
+          // TODO figure out if we need to apply reverse voltage to get
+          // algae in the right position
+          end_effector_status = EndEffectorStatus::NEUTRAL;
+          end_effector_voltage = 0.0;
         }
         break;
       case EndEffectorGoal::SPIT:
         end_effector_status = EndEffectorStatus::SPITTING;
         end_effector_voltage =
             robot_constants_->common()->end_effector_voltages()->spit();
+        intake_complete_ = false;
         break;
     }
   }
@@ -239,6 +253,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_wrist(wrist_status_offset);
   status_builder.add_pivot(pivot_status_offset);
   status_builder.add_end_effector_state(end_effector_status);
+  status_builder.add_intake_complete(intake_complete_);
 
   (void)status->Send(status_builder.Finish());
 }
