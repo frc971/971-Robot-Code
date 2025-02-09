@@ -176,6 +176,9 @@ cc_library(
     hdrs = [
         "auto_align.h",
     ],
+    data = [
+        ":aos_config",
+    ],
     deps = [
         ":autonomous_init_fbs",
         ":simplified_dynamics",
@@ -183,8 +186,11 @@ cc_library(
         ":swerve_drivetrain_status_fbs",
         ":swerve_trajectory_fbs",
         "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
         "//frc971/input:joystick_state_fbs",
         "//frc971/math:flatbuffers_matrix",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -494,6 +500,18 @@ cc_test(
     deps = [
         ":linearized_controller",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
+    name = "auto_align_test",
+    srcs = ["auto_align_test.cc"],
+    deps = [
+        "//aos/events:event_loop",
+        "//aos/testing:googletest",
+        "//frc971/control_loops:control_loop_test",
+        "//frc971/control_loops/swerve:auto_align",
+        "//frc971/input:joystick_state_fbs",
     ],
 )
 
