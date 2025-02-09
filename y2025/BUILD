@@ -310,6 +310,7 @@ cc_binary(
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/control_loops/swerve:swerve_localizer_state_fbs",
         "//frc971/input:action_joystick_input",
         "//frc971/input:drivetrain_input",
         "//frc971/input:joystick_input",
@@ -317,6 +318,7 @@ cc_binary(
         "//frc971/input:swerve_joystick_input",
         "//y2025/control_loops/superstructure:superstructure_goal_fbs",
         "//y2025/control_loops/superstructure:superstructure_status_fbs",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

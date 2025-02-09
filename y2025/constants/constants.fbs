@@ -86,6 +86,11 @@ table VelocityControllerWeights {
   drive_current_r: double (id: 6);
 }
 
+table Location {
+  x: double (id: 0);
+  y: double (id: 1);
+}
+
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMapField (id: 0);
@@ -104,6 +109,8 @@ table Common {
   wrist_set_points:WristSetPoints(id: 13);
   reef_apriltag_ids: [int] (id: 14);
   end_effector_idling_voltage: double (id: 15);
+  reef_locations: [Location] (id: 16);
+  HP_locations: [Location] (id: 17);
 }
 
 table Constants {
