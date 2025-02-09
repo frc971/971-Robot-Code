@@ -32,6 +32,8 @@ table Stats2025 {
   coral_missed_teleop:int (id: 34);
   algae_missed_teleop:int (id: 35);
 
+  penalties:int (id: 36);
+
   // Time in nanoseconds.
   avg_cycle: int64 (id:14);
   park: bool (id:15);

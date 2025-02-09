@@ -726,7 +726,7 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 		ProcessorTeleop: 0, NetTeleop: 0, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0, AlgaeMissedTeleop: 0,
 		L1Teleop: 0, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
-		ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, CollectedBy: "",
+		Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, CollectedBy: "",
 	}
 	// Loop over all actions.
 	for i := 0; i < submit2025Actions.ActionsListLength(); i++ {
@@ -749,6 +749,11 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			if mobilityAction.Mobility() {
 				stat.MobilityAuto = true
 			}
+		} else if action_type == submit_2025_actions.ActionTypePenaltyAction {
+			var penaltyAction submit_2025_actions.PenaltyAction
+			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.Penalties += penaltyAction.Penalties()
+
 		} else if action_type == submit_2025_actions.ActionTypeRobotDeathAction {
 			var robotDeathAction submit_2025_actions.RobotDeathAction
 			robotDeathAction.Init(actionTable.Bytes, actionTable.Pos)
@@ -1007,6 +1012,7 @@ func (handler request2025DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			L2Teleop:           stat.L2Teleop,
 			L3Teleop:           stat.L3Teleop,
 			L4Teleop:           stat.L4Teleop,
+			Penalties:          stat.Penalties,
 			AvgCycle:           stat.AvgCycle,
 			Park:               stat.Park,
 			ShallowCage:        stat.ShallowCage,

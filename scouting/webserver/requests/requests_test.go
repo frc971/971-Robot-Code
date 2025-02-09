@@ -492,7 +492,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
 				AlgaeMissedTeleop: 0, L1Teleop: 4, L2Teleop: 5, L3Teleop: 1, L4Teleop: 0,
-				ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				Penalties: 1, ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
 				RobotDied: false, NoShow: false, CollectedBy: "john",
 			},
 			{
@@ -502,7 +502,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
 				AlgaeMissedTeleop: 0, L1Teleop: 3, L2Teleop: 2, L3Teleop: 3, L4Teleop: 1,
-				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
+				Penalties: 0, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
 				RobotDied: false, NoShow: false, CollectedBy: "steve",
 			},
 			{
@@ -512,7 +512,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
 				AlgaeMissedTeleop: 0, L1Teleop: 2, L2Teleop: 3, L3Teleop: 0, L4Teleop: 1,
-				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				Penalties: 2, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
 				RobotDied: false, NoShow: false, CollectedBy: "terry",
 			},
 		},
@@ -540,7 +540,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
 				AlgaeMissedTeleop: 0, L1Teleop: 4, L2Teleop: 5, L3Teleop: 1, L4Teleop: 0,
-				ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				Penalties: 1, ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
 				RobotDied: false, NoShow: false, CollectedBy: "john",
 			},
 			{
@@ -550,7 +550,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
 				AlgaeMissedTeleop: 0, L1Teleop: 3, L2Teleop: 2, L3Teleop: 3, L4Teleop: 1,
-				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
+				Penalties: 0, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: true,
 				RobotDied: false, NoShow: false, CollectedBy: "steve",
 			},
 			{
@@ -560,7 +560,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
 				AlgaeMissedTeleop: 0, L1Teleop: 2, L2Teleop: 3, L3Teleop: 0, L4Teleop: 1,
-				ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				Penalties: 2, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
 				RobotDied: false, NoShow: false, CollectedBy: "terry",
 			},
 		},
@@ -617,7 +617,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 						Auto:      true,
 					},
 				},
-				Timestamp: 2000,
+				Timestamp: 1000,
 			},
 			{
 				ActionTaken: &submit_2025_actions.ActionTypeT{
@@ -626,7 +626,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 						Auto: true,
 					},
 				},
-				Timestamp: 2000,
+				Timestamp: 1200,
 			},
 			{
 				ActionTaken: &submit_2025_actions.ActionTypeT{
@@ -636,7 +636,16 @@ func TestConvertActionsToStat2025(t *testing.T) {
 						Auto:      true,
 					},
 				},
-				Timestamp: 2000,
+				Timestamp: 1300,
+			},
+			{
+				ActionTaken: &submit_2025_actions.ActionTypeT{
+					Type: submit_2025_actions.ActionTypePenaltyAction,
+					Value: &submit_2025_actions.PenaltyActionT{
+						Penalties: 3,
+					},
+				},
+				Timestamp: 1600,
 			},
 			{
 				ActionTaken: &submit_2025_actions.ActionTypeT{
@@ -768,7 +777,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 		CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 		ProcessorTeleop: 0, NetTeleop: 1, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
 		AlgaeMissedTeleop: 0, L1Teleop: 0, L2Teleop: 1, L3Teleop: 1, L4Teleop: 0,
-		ShallowCage: false, DeepCage: true, AvgCycle: 290, Park: false, BuddieClimb: false,
+		Penalties: 3, ShallowCage: false, DeepCage: true, AvgCycle: 490, Park: false, BuddieClimb: false,
 		RobotDied: true, NoShow: true, CollectedBy: "",
 	}
 
@@ -1966,7 +1975,7 @@ func TestAddingActions2025(t *testing.T) {
 			CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: false, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 			ProcessorTeleop: 0, NetTeleop: 0, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0,
 			AlgaeMissedTeleop: 0, L1Teleop: 1, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
-			ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+			Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
 			RobotDied: false, NoShow: false, CollectedBy: "debug_cli",
 		},
 	}

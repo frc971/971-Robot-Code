@@ -94,6 +94,7 @@ type Stats2025 struct {
 	ProcessorTeleop, NetTeleop               int32
 	CoralDroppedTeleop, AlgaeDroppedTeleop   int32
 	CoralMissedTeleop, AlgaeMissedTeleop     int32
+	Penalties                                int32
 	AvgCycle                                 int64
 	RobotDied                                bool
 	Park, ShallowCage, DeepCage, BuddieClimb bool
