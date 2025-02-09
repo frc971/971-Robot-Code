@@ -23,11 +23,14 @@ SwerveControlLoops::SwerveControlLoops(
       gyro_fetcher_(event_loop->TryMakeFetcher<::frc971::sensors::GyroReading>(
           "/drivetrain")),
       auto_goal_fetcher_(event_loop->MakeFetcher<Goal>("/autonomous")),
+      auto_align_goal_fetcher_(
+          event_loop->MakeFetcher<Goal>("/autonomous_auto_align")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       imu_fetcher_(
           event_loop->TryMakeFetcher<::frc971::IMUValuesBatch>("/localizer")),
       naive_estimator_(event_loop, zeroing_params, params),
+      auto_align_(event_loop),
       velocity_controller_(
           LinearVelocityController::MakeParameters(lvc_weights, params),
           params),
@@ -169,11 +172,25 @@ void SwerveControlLoops::RunIteration(
             .last_time = now};
       }
       NaiveEstimator::State kinematics_state = current_state.value();
-      kinematics_state(NaiveEstimator::States::kVx) =
-          goal->joystick_goal()->vx();
-      kinematics_state(NaiveEstimator::States::kVy) =
-          goal->joystick_goal()->vy();
-      const Scalar goal_omega = goal->joystick_goal()->omega();
+
+      Scalar goal_omega = 0;
+
+      auto_align_goal_fetcher_.Fetch();
+      if (goal->joystick_goal()->auto_align()) {
+        auto_align_.Iterate();
+        kinematics_state(NaiveEstimator::States::kVx) =
+            auto_align_goal_fetcher_.get()->joystick_goal()->vx();
+        kinematics_state(NaiveEstimator::States::kVy) =
+            auto_align_goal_fetcher_.get()->joystick_goal()->vy();
+        goal_omega = auto_align_goal_fetcher_.get()->joystick_goal()->omega();
+      } else {
+        kinematics_state(NaiveEstimator::States::kVx) =
+            goal->joystick_goal()->vx();
+        kinematics_state(NaiveEstimator::States::kVy) =
+            goal->joystick_goal()->vy();
+        goal_omega = goal->joystick_goal()->omega();
+      }
+
       const Scalar current_omega =
           kinematics_state(NaiveEstimator::States::kOmega);
       const Scalar current_theta =
