@@ -123,6 +123,22 @@ class SensorReader {
                                    encoder_ratio * (2.0 * M_PI));
   }
 
+  void CopyPosition(const ::frc971::wpilib::DMAAbsoluteEncoder &encoder,
+                    ::frc971::AbsolutePositionStatic *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.ReadRelativeEncoder(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
+
+    position->set_absolute_encoder((reverse
+                                        ? (1.0 - encoder.ReadAbsoluteEncoder())
+                                        : encoder.ReadAbsoluteEncoder()) *
+                                   encoder_ratio * (2.0 * M_PI));
+  }
+
   // Copies an AbsoluteEncoderAndPotentiometer to an AbsoluteAndAbsolutePosition
   // with the correct unit and direction changes.
   void CopyPosition(const ::frc971::wpilib::AbsoluteAndAbsoluteEncoder &encoder,
