@@ -219,6 +219,23 @@ cc_library(
 )
 
 cc_binary(
+    name = "auto_align_updater",
+    srcs = ["auto_align_updater.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops/swerve:position_goal_fbs",
+        "//frc971/control_loops/swerve:swerve_localizer_state_fbs",
+        "//frc971/vision:target_map_utils",
+        "//y2025/constants:constants_fbs",
+        "//y2025/localizer",
+    ],
+)
+
+cc_binary(
     name = "wpilib_interface",
     srcs = [
         "wpilib_interface.cc",
