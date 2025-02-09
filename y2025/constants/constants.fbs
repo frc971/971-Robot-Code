@@ -90,6 +90,7 @@ table Common {
   rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 11);
   wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);
   wrist_set_points:WristSetPoints(id: 13);
+  reef_apriltag_ids: [int] (id: 14);
 }
 
 table Constants {
