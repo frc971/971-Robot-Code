@@ -116,6 +116,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     AddToDMA(&imu_yaw_rate_reader_);
     AddToDMA(&elevator_sensors_.reader());
     AddToDMA(&pivot_sensors_.reader());
+    AddToDMA(&wrist_encoder_.reader());
   }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
@@ -143,6 +144,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
                    Values::kWristEncoderRatio(), true /* wrist flipped */);
+
       builder.CheckOk(builder.Send());
     }
 
@@ -232,7 +234,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer elevator_sensors_;
   frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer pivot_sensors_;
 
-  frc971::wpilib::AbsoluteEncoder wrist_encoder_;
+  frc971::wpilib::DMAAbsoluteEncoder wrist_encoder_;
 
   aos::Sender<frc971::control_loops::swerve::PositionStatic>
       drivetrain_position_sender_;
@@ -291,7 +293,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                make_unique<frc::AnalogInput>(0));
     sensor_reader.set_pivot(make_encoder(1), make_unique<frc::DigitalInput>(1),
                             make_unique<frc::AnalogInput>(1));
-    sensor_reader.set_wrist(make_encoder(4), make_unique<frc::DigitalInput>(4));
+    sensor_reader.set_wrist(make_unique<frc::Encoder>(7, 6),
+                            make_unique<frc::DigitalInput>(8));
     // TODO: Set the roborio ports
 
     AddLoop(&sensor_reader_event_loop);
@@ -329,7 +332,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->elevator_stator_current_limit(),
         current_limits->elevator_supply_current_limit());
     std::shared_ptr<TalonFX> end_effector = std::make_shared<TalonFX>(
-        11, true, "rio", &rio_signal_registry,
+        12, false, "rio", &rio_signal_registry,
         current_limits->end_effector_stator_current_limit(),
         current_limits->end_effector_supply_current_limit());
 
@@ -349,11 +352,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                 "/superstructure/canivore");
 
     std::shared_ptr<TalonFX> climber_one = std::make_shared<TalonFX>(
-        11, true, "rio", &rio_signal_registry,
+        3, true, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
     std::shared_ptr<TalonFX> climber_two = std::make_shared<TalonFX>(
-        12, true, "rio", &rio_signal_registry,
+        10, true, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
 
@@ -361,7 +364,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     rio_talons.push_back(climber_two);
 
     std::shared_ptr<TalonFX> wrist =
-        std::make_shared<TalonFX>(12, true, "rio", &rio_signal_registry,
+        std::make_shared<TalonFX>(13, false, "rio", &rio_signal_registry,
                                   current_limits->wrist_stator_current_limit(),
                                   current_limits->wrist_supply_current_limit());
     rio_talons.push_back(wrist);
