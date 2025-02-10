@@ -3,6 +3,7 @@
 
 #include "frc971/control_loops/catapult/catapult.h"
 #include "frc971/control_loops/catapult/catapult_goal_static.h"
+#include "frc971/control_loops/debouncer.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "frc971/shooter_interpolation/interpolation.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
@@ -16,39 +17,6 @@
 #include "y2024/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2024::control_loops::superstructure {
-
-class Debouncer {
- public:
-  Debouncer(std::chrono::nanoseconds rising_delay,
-            std::chrono::nanoseconds falling_delay)
-      : rising_delay_(rising_delay), falling_delay_(falling_delay) {}
-
-  void Update(bool state, aos::monotonic_clock::time_point now) {
-    if (state_transition_ != state) {
-      transition_time_ = now;
-      state_transition_ = state;
-    }
-
-    if (state != output_state_) {
-      if (state) {
-        output_state_ = now > transition_time_ + rising_delay_;
-      } else {
-        output_state_ = !(now > transition_time_ + falling_delay_);
-      }
-    }
-  }
-
-  bool state() const { return output_state_; }
-
- private:
-  const std::chrono::nanoseconds rising_delay_;
-  const std::chrono::nanoseconds falling_delay_;
-
-  bool state_transition_ = false;
-  bool output_state_ = false;
-  aos::monotonic_clock::time_point transition_time_ =
-      aos::monotonic_clock::min_time;
-};
 
 // The shooter class will control the various subsystems involved in the
 // shooter- the turret, altitude, and catapult.
@@ -155,7 +123,7 @@ class Shooter {
       y2024::constants::Values::ShotParams>
       interpolation_table_shuttle_;
 
-  Debouncer debouncer_;
+  frc971::control_loops::Debouncer debouncer_;
 
   uint32_t shot_count_ = 0;
 };

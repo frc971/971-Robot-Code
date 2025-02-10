@@ -808,3 +808,12 @@ cc_library(
         "//frc971/math:flatbuffers_matrix",
     ],
 )
+
+cc_library(
+    name = "debouncer",
+    srcs = ["debouncer.cc"],
+    hdrs = ["debouncer.h"],
+    deps = [
+        "//aos/time",
+    ],
+)
