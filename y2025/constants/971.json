@@ -22,26 +22,26 @@
     "elevator_constants": {
       {% set _ = elevator_zero.update(
           {
-              "measured_absolute_position" : 0.12246672251851798
+              "measured_absolute_position" : 0.10402706027206399
           }
       ) %}
       "zeroing_constants": {{ elevator_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ -0.00028883892916312884  - 0.04629819407715449 + 0.0074791000854042555 - 0.03975947596142273}}
+      "potentiometer_offset": {{ -0.00028883892916312884  - 0.04629819407715449 + 0.0074791000854042555 - 0.03975947596142273 - 0.16094136466559758 - 0.013866609736448814 - 0.03795152930451685 - 0.006824145824788667 - 0.04417871161051617}}
     },
     "pivot_constants": {
       {% set _ = pivot_zero.update(
           {
-              "measured_absolute_position" : 0.5409832484268653
+              "measured_absolute_position" : 0.4304190692868255
           }
       ) %}
       "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 0.002987694833262111 + 1.7365426706906293 + 0.1433391135374452 - 3.7664252126154008 - 4.910277834208133 + 13.58573292540177 - 1.3332404391391635}}
+      "potentiometer_offset": {{ 0.002987694833262111 + 1.7365426706906293 + 0.1433391135374452 - 3.7664252126154008 - 4.910277834208133 + 13.58573292540177 - 1.3332404391391635 + 0.1079978145201296}}
     },
     // TODO change these constants for y2025 bot
     "wrist_constants":{
     {% set _ = wrist_zero.update(
           {
-              "measured_absolute_position" : 0.17940018799940982
+              "measured_absolute_position" : 5.982980680107959
           }
       ) %}
       "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}

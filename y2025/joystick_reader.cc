@@ -42,16 +42,22 @@ namespace superstructure = y2025::control_loops::superstructure;
 
 namespace swerve = frc971::control_loops::swerve;
 
-const ButtonLocation kElevatorL4(1, 6);
-const ButtonLocation kElevatorL3(2, 7);
-const ButtonLocation kElevatorL2(2, 8);
-const ButtonLocation kElevatorL1(1, 7);
-const ButtonLocation kElevatorIntake(1, 8);
+const ButtonLocation kL4(6, 6);
+const ButtonLocation kL3(6, 7);
+const ButtonLocation kL2(6, 8);
+const ButtonLocation kL1(2, 8);
+const ButtonLocation kHumanPlayer(5, 11);
 
-const ButtonLocation kPivotScore(1, 5);
+const ButtonLocation kBack(3, 7);
 
-const ButtonLocation kEndEffectorIntake(2, 3);
-const ButtonLocation kEndEffectorSpit(2, 4);
+const ButtonLocation kEndEffectorIntake(6, 2);
+const ButtonLocation kEndEffectorSpit(6, 5);
+
+using y2025::control_loops::superstructure::ElevatorGoal;
+using y2025::control_loops::superstructure::EndEffectorGoal;
+using y2025::control_loops::superstructure::PivotGoal;
+using y2025::control_loops::superstructure::RobotSide;
+using y2025::control_loops::superstructure::WristGoal;
 
 class Reader : public ::frc971::input::SwerveJoystickInput {
  public:
@@ -84,31 +90,47 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();
 
-    if (data.IsPressed(kElevatorL4)) {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::SCORE_L4);
-    } else {
-      superstructure_goal_builder->set_elevator_goal(
-          superstructure::ElevatorGoal::NEUTRAL);
-    }
+    superstructure_goal_builder->set_elevator_goal(ElevatorGoal::NEUTRAL);
+    superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);
+    superstructure_goal_builder->set_wrist_goal(WristGoal::NEUTRAL);
 
-    if (data.IsPressed(kPivotScore)) {
-      superstructure_goal_builder->set_pivot_goal(
-          superstructure::PivotGoal::SCORE);
-    } else {
-      superstructure_goal_builder->set_pivot_goal(
-          superstructure::PivotGoal::NEUTRAL);
+    if (data.IsPressed(kL4)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L4);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L4);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L4);
+    } else if (data.IsPressed(kL3)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L3);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L3);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L3);
+    } else if (data.IsPressed(kL2)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L2);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L2);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L2);
+    } else if (data.IsPressed(kL1)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
+    } else if (data.IsPressed(kHumanPlayer)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE);
     }
 
     if (data.IsPressed(kEndEffectorSpit)) {
+      superstructure_goal_builder->set_end_effector_goal(EndEffectorGoal::SPIT);
+    } else if (data.IsPressed(kEndEffectorIntake) ||
+               data.IsPressed(kHumanPlayer)) {
       superstructure_goal_builder->set_end_effector_goal(
-          superstructure::EndEffectorGoal::SPIT);
-    } else if (data.IsPressed(kEndEffectorIntake)) {
-      superstructure_goal_builder->set_end_effector_goal(
-          superstructure::EndEffectorGoal::INTAKE);
+          EndEffectorGoal::INTAKE);
     } else {
       superstructure_goal_builder->set_end_effector_goal(
-          superstructure::EndEffectorGoal::NEUTRAL);
+          EndEffectorGoal::NEUTRAL);
+    }
+
+    if (data.IsPressed(kBack)) {
+      superstructure_goal_builder->set_robot_side(RobotSide::BACK);
+    } else {
+      superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());

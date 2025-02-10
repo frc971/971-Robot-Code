@@ -19,8 +19,11 @@ enum ElevatorGoal : ubyte {
 
 enum PivotGoal : ubyte {
     NEUTRAL = 0,
-    SCORE = 1,
-    INTAKE = 2,
+    INTAKE = 1,
+    SCORE_L1 = 2,
+    SCORE_L2 = 3,
+    SCORE_L3 = 4,
+    SCORE_L4 = 5,
 }
 
 enum ClimberGoal : ubyte {
@@ -32,7 +35,18 @@ enum ClimberGoal : ubyte {
 enum WristGoal : ubyte {
   NEUTRAL = 0,
   INTAKE = 1,
-  SCORE = 2,
+  SCORE_L1 = 2,
+  SCORE_L2 = 3,
+  SCORE_L3 = 4,
+  SCORE_L4 = 5,
+}
+
+// This could be a boolean but making it an enum makes it clearer in the logs.
+// All setpoints are assumed to be made with the front side, and then are
+// mirrored for the wrist and pivot on the back side.
+enum RobotSide : ubyte {
+  FRONT = 0,
+  BACK = 1,
 }
 
 table Goal {
@@ -41,6 +55,7 @@ table Goal {
    end_effector_goal:EndEffectorGoal (id: 2);
    climber_goal:ClimberGoal (id: 3);
    wrist_goal:WristGoal (id: 4);
+   robot_side: RobotSide (id: 5);
 }
 
 root_type Goal;
