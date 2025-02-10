@@ -20,6 +20,10 @@ table MobilityAction {
     mobility:bool (id:0);
 }
 
+table PenaltyAction {
+    penalties: int (id:0);
+}
+
 table PickupCoralAction {
     auto:bool (id:0);
 }
@@ -69,6 +73,7 @@ union ActionType {
     PlaceCoralAction,
     PickupAlgaeAction,
     PlaceAlgaeAction,
+    PenaltyAction,
     RobotDeathAction,
     EndTeleopPhaseAction,
     EndMatchAction

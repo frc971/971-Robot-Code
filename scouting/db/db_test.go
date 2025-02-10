@@ -250,7 +250,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 1, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: true, NoShow: false, CollectedBy: "jimmy",
 		},
 		Stats2025{
@@ -264,7 +264,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 2, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: true, NoShow: false, CollectedBy: "frank",
 		},
 		Stats2025{
@@ -278,7 +278,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: false,
+			Penalties: 0, AvgCycle: 0, RobotDied: false,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false,
 		},
 		Stats2025{
@@ -291,7 +291,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 1,
 			CoralDroppedTeleop: 3, AlgaeDroppedTeleop: 2,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: false,
+			Penalties: 1, AvgCycle: 0, RobotDied: false,
 			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "maddie",
 		},
 		Stats2025{
@@ -305,7 +305,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 4, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
 		},
 		Stats2025{
@@ -319,7 +319,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 0, NetTeleop: 0,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0,
 			CoralMissedTeleop: 0, AlgaeMissedTeleop: 0,
-			AvgCycle: 0, RobotDied: false,
+			Penalties: 0, AvgCycle: 0, RobotDied: false,
 			Park: false, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "georgia",
 		},
 		Stats2025{
@@ -333,7 +333,7 @@ func TestAddToStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 2, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "fiona",
 		},
 	}
@@ -415,7 +415,7 @@ func TestInsertPracticeMatchStats2025(t *testing.T) {
 		ProcessorTeleop: 2, NetTeleop: 3,
 		CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 3,
 		CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-		AvgCycle: 0, RobotDied: true,
+		Penalties: 2, AvgCycle: 0, RobotDied: true,
 		Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
 	}
 
@@ -451,7 +451,7 @@ func TestQueryingStats2025ByTeam(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 4, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 0, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "emma",
 		},
 		Stats2025{
@@ -466,7 +466,7 @@ func TestQueryingStats2025ByTeam(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 1, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
 		},
 		Stats2025{
@@ -481,7 +481,7 @@ func TestQueryingStats2025ByTeam(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 3,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 2, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "danny",
 		},
 	}
@@ -706,7 +706,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 0, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "bailey",
 		},
 		Stats2025{
@@ -721,7 +721,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 3, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 1, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "kate",
 		},
 		Stats2025{
@@ -736,7 +736,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 2, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: false, DeepCage: true, BuddieClimb: false, NoShow: false, CollectedBy: "tyler",
 		},
 		Stats2025{
@@ -751,7 +751,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 3,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 4,
 			CoralMissedTeleop: 1, AlgaeMissedTeleop: 0,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 3, AvgCycle: 0, RobotDied: true,
 			Park: false, ShallowCage: true, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "max",
 		},
 	}
@@ -769,7 +769,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 0, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "bailey",
 		},
 	}
@@ -1195,7 +1195,7 @@ func TestReturnStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 0, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "henry",
 		},
 		Stats2025{
@@ -1210,7 +1210,7 @@ func TestReturnStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 1, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "jordan",
 		},
 		Stats2025{
@@ -1225,7 +1225,7 @@ func TestReturnStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 1, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "emma",
 		},
 		Stats2025{
@@ -1240,7 +1240,7 @@ func TestReturnStats2025DB(t *testing.T) {
 			ProcessorTeleop: 2, NetTeleop: 4,
 			CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 3,
 			CoralMissedTeleop: 2, AlgaeMissedTeleop: 1,
-			AvgCycle: 0, RobotDied: true,
+			Penalties: 4, AvgCycle: 0, RobotDied: true,
 			Park: true, ShallowCage: false, DeepCage: false, BuddieClimb: false, NoShow: false, CollectedBy: "harry",
 		},
 	}
