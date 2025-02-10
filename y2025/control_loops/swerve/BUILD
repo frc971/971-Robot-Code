@@ -18,7 +18,9 @@ cc_binary(
 cc_library(
     name = "parameters",
     hdrs = ["parameters.h"],
+    visibility = ["//visibility:public"],
     deps = [
+        "//frc971/control_loops/swerve:linear_velocity_controller",
         "//frc971/control_loops/swerve:simplified_dynamics",
         "//y2025:constants",
     ],

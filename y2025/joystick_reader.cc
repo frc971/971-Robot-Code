@@ -42,10 +42,14 @@ namespace superstructure = y2025::control_loops::superstructure;
 
 namespace swerve = frc971::control_loops::swerve;
 
-const ButtonLocation kL4(6, 6);
-const ButtonLocation kL3(6, 7);
-const ButtonLocation kL2(6, 8);
+const ButtonLocation kLeftL4(6, 6);
+const ButtonLocation kRightL4(6, 6);
+const ButtonLocation kLeftL3(6, 7);
+const ButtonLocation kRightL3(6, 7);
+const ButtonLocation kLeftL2(6, 8);
+const ButtonLocation kRightL2(6, 8);
 const ButtonLocation kL1(2, 8);
+
 const ButtonLocation kHumanPlayer(5, 11);
 
 const ButtonLocation kBack(3, 7);
@@ -56,6 +60,7 @@ const ButtonLocation kEndEffectorSpit(6, 5);
 const ButtonLocation kClimb(1, 2);
 const ButtonLocation kRetract(1, 3);
 
+using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
 using y2025::control_loops::superstructure::ElevatorGoal;
 using y2025::control_loops::superstructure::EndEffectorGoal;
@@ -98,15 +103,15 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);
     superstructure_goal_builder->set_wrist_goal(WristGoal::NEUTRAL);
 
-    if (data.IsPressed(kL4)) {
+    if (data.IsPressed(kLeftL4) || data.IsPressed(kRightL4)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L4);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L4);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L4);
-    } else if (data.IsPressed(kL3)) {
+    } else if (data.IsPressed(kLeftL3) || data.IsPressed(kRightL3)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L3);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L3);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L3);
-    } else if (data.IsPressed(kL2)) {
+    } else if (data.IsPressed(kLeftL2) || data.IsPressed(kRightL2)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L2);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L2);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L2);
@@ -118,6 +123,15 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE);
       superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE);
+    }
+
+    if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||
+        data.IsPressed(kLeftL4)) {
+      superstructure_goal_builder->set_auto_align_direction(
+          AutoAlignDirection::LEFT);
+    } else {
+      superstructure_goal_builder->set_auto_align_direction(
+          AutoAlignDirection::RIGHT);
     }
 
     if (data.IsPressed(kEndEffectorSpit)) {

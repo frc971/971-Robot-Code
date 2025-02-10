@@ -163,11 +163,22 @@
       ]
     },
     {
-      "name": "/superstructure",
+      "name": "/roborio/superstructure",
       "type": "y2025.control_loops.superstructure.Goal",
       "source_node": "roborio",
       "frequency": 250,
-      "max_size": 512
+      "max_size": 512,
+        "logger": "LOCAL_AND_REMOTE_LOGGER",
+        "logger_nodes": [
+            "imu"
+        ],
+        "destination_nodes": [
+            {
+                "name": "imu",
+                "priority": 5,
+                "time_to_live": 50000000
+            }
+        ]
     },
     {
       "name": "/roborio/drivetrain",
@@ -395,6 +406,16 @@
         },
         "rename": {
             "name": "/roborio/drivetrain"
+        }
+    },
+    {
+        "match": {
+            "name": "/superstructure",
+            "type": "y2025.control_loops.superstructure.Goal",
+            "source_node": "roborio"
+        },
+        "rename": {
+            "name": "/roborio/superstructure"
         }
     },
     {
