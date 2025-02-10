@@ -91,6 +91,7 @@ table Common {
   wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);
   wrist_set_points:WristSetPoints(id: 13);
   reef_apriltag_ids: [int] (id: 14);
+  end_effector_idling_voltage: double (id: 15);
 }
 
 table Constants {
