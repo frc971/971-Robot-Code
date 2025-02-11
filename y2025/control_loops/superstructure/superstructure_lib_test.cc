@@ -313,8 +313,17 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     switch (superstructure_goal_fetcher_->pivot_goal()) {
       case PivotGoal::NEUTRAL:
         break;
-      case PivotGoal::SCORE:
-        pivot_set_point = pivot_positions->score();
+      case PivotGoal::SCORE_L1:
+        pivot_set_point = pivot_positions->score_l1();
+        break;
+      case PivotGoal::SCORE_L2:
+        pivot_set_point = pivot_positions->score_l2();
+        break;
+      case PivotGoal::SCORE_L3:
+        pivot_set_point = pivot_positions->score_l3();
+        break;
+      case PivotGoal::SCORE_L4:
+        pivot_set_point = pivot_positions->score_l4();
         break;
       case PivotGoal::INTAKE:
         pivot_set_point = pivot_positions->intake();
@@ -331,8 +340,17 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case WristGoal::INTAKE:
         wrist_set_point = wrist_positions->intake();
         break;
-      case WristGoal::SCORE:
-        wrist_set_point = wrist_positions->score();
+      case WristGoal::SCORE_L1:
+        wrist_set_point = wrist_positions->score_l1();
+        break;
+      case WristGoal::SCORE_L2:
+        wrist_set_point = wrist_positions->score_l2();
+        break;
+      case WristGoal::SCORE_L3:
+        wrist_set_point = wrist_positions->score_l3();
+        break;
+      case WristGoal::SCORE_L4:
+        wrist_set_point = wrist_positions->score_l4();
         break;
       case WristGoal::NEUTRAL:
         wrist_set_point = wrist_positions->neutral();
@@ -573,7 +591,7 @@ TEST_F(SuperstructureTest, WristPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_wrist_goal(WristGoal::SCORE);
+    goal_builder.add_wrist_goal(WristGoal::SCORE_L2);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -601,7 +619,7 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_pivot_goal(PivotGoal::SCORE);
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L2);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -715,9 +733,9 @@ TEST_F(SuperstructureTest, PivotAndElevatorAndWristPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_pivot_goal(PivotGoal::SCORE);
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L1);
     goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L1);
-    goal_builder.add_wrist_goal(WristGoal::SCORE);
+    goal_builder.add_wrist_goal(WristGoal::SCORE_L1);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

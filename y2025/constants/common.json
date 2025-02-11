@@ -12,24 +12,24 @@
     "pivot_stator_current_limit": 100,
     "pivot_supply_current_limit": 50,
     "end_effector_stator_current_limit": 100,
-    "end_effector_supply_current_limit": 20,
+    "end_effector_supply_current_limit": 50,
     "climber_stator_current_limit": 100,
     "climber_supply_current_limit": 50,
-    "wrist_stator_current_limit": 100,
-    "wrist_supply_current_limit": 50
+    "wrist_stator_current_limit": 50,
+    "wrist_supply_current_limit": 25
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
   // TODO Change these constants
   "pivot": {
-    "zeroing_voltage": 2.0,
-    "operating_voltage": 8.0,
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
     "zeroing_profile_params": {
       "max_velocity": 1.0,
       "max_acceleration": 2.0
     },
     "default_profile_params":{
-      "max_velocity": 6.0,
-      "max_acceleration": 20.0
+      "max_velocity": 5.0,
+      "max_acceleration": 15.0
     },
     "range": {
         "lower_hard": {{ 2 * -3.1415 / 3 }},
@@ -48,32 +48,35 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 0.5,
-      "max_acceleration": 5.0
+      "max_velocity": 4.0,
+      "max_acceleration": 20.0
     },
     "range": {
-        "lower_hard": -0.10,
-        "upper_hard": 4.90,
-        "lower": 0.0,
-        "upper": 4.0
+        "lower_hard": -1.99,
+        "upper_hard": 1.99,
+        "lower": -1.99,
+        "upper": 1.99
     },
     "loop": {% include 'y2025/control_loops/superstructure/wrist/integral_wrist_plant.json' %}
   },
   "pivot_set_points": {
-    "neutral": {{ -3.1415 / 4.0 }},
-    "score": 0.7446929224249587,
-    "intake": 1.2
+    "neutral": 0.0,
+    "intake": 0.37077661143778057,
+    "score_l1": 1.7075907465341582,
+    "score_l2": 0.5219419749131439,
+    "score_l3": 0.5070111526590233,
+    "score_l4": 0.1837414374557519
   },
   "elevator": {
     "zeroing_voltage": 2.0,
-    "operating_voltage": 4.0,
+    "operating_voltage": 6.0,
     "zeroing_profile_params": {
       "max_velocity": 1,
       "max_acceleration": 2.0
     },
     "default_profile_params":{
       "max_velocity": 4.0,
-      "max_acceleration": 10.0
+      "max_acceleration": 2.0
     },
     "range": {
         "lower_hard": 0.0,
@@ -107,22 +110,25 @@
     "loop": {% include 'y2025/control_loops/drivetrain/integral_rotation_plant.json' %}
   },
   "elevator_set_points": {
-    "neutral": 0.17,
-    "intake": 0.1,
+    "neutral": 0.1,
+    "intake": 0.070,
     "score_l1": 0.1,
-    "score_l2": 0.2,
-    "score_l3": 0.3,
-    "score_l4": 0.25
+    "score_l2": 0.2536288119439328,
+    "score_l3": 0.44330811871516285,
+    "score_l4": 0.6604849337710404
   },
   "wrist_set_points": {
-    "neutral": 0.16,
-    "intake": 0.17,
-    "score": 0.20
+    "neutral": 0.0,
+    "intake": 0.599456198488985,
+    "score_l1": 0.28238478159332714,
+    "score_l2": 1.8021837477031248,
+    "score_l3": 1.8017453309487887,
+    "score_l4": 1.7549875319983683
   },
   //TODO: Update these voltages
   "end_effector_voltages": {
-    "spit": -1.0,
-    "intake": 1.0
+    "spit": -12.0,
+    "intake": 12.0
   },
   "weights": {
     "thetas_q": 1.0,

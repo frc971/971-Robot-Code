@@ -160,16 +160,33 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     switch (unsafe_goal->pivot_goal()) {
       case PivotGoal::NEUTRAL:
         break;
-      case PivotGoal::SCORE:
-        pivot_position =
-            robot_constants_->common()->pivot_set_points()->score();
-        break;
       case PivotGoal::INTAKE:
         pivot_position =
             robot_constants_->common()->pivot_set_points()->intake();
         break;
+      case PivotGoal::SCORE_L1:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->score_l1();
+        break;
+      case PivotGoal::SCORE_L2:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->score_l2();
+        break;
+      case PivotGoal::SCORE_L3:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->score_l3();
+        break;
+      case PivotGoal::SCORE_L4:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->score_l4();
+        break;
     }
   }
+
+  if (unsafe_goal != nullptr && unsafe_goal->robot_side() == RobotSide::BACK) {
+    pivot_position *= -1;
+  }
+
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(pivot_goal_builder.get(),
                                                       pivot_position);
 
@@ -217,11 +234,27 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         wrist_position =
             robot_constants_->common()->wrist_set_points()->intake();
         break;
-      case (WristGoal::SCORE):
+      case WristGoal::SCORE_L1:
         wrist_position =
-            robot_constants_->common()->wrist_set_points()->score();
+            robot_constants_->common()->wrist_set_points()->score_l1();
+        break;
+      case WristGoal::SCORE_L2:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->score_l2();
+        break;
+      case WristGoal::SCORE_L3:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->score_l3();
+        break;
+      case WristGoal::SCORE_L4:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->score_l4();
         break;
     }
+  }
+
+  if (unsafe_goal != nullptr && unsafe_goal->robot_side() == RobotSide::BACK) {
+    wrist_position *= -1;
   }
 
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(wrist_goal_builder.get(),
