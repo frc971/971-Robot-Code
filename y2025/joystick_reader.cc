@@ -43,16 +43,16 @@ namespace superstructure = y2025::control_loops::superstructure;
 namespace swerve = frc971::control_loops::swerve;
 
 const ButtonLocation kLeftL4(6, 6);
-const ButtonLocation kRightL4(6, 6);
+const ButtonLocation kRightL4(3, 6);
 const ButtonLocation kLeftL3(6, 7);
-const ButtonLocation kRightL3(6, 7);
+const ButtonLocation kRightL3(3, 7);
 const ButtonLocation kLeftL2(6, 8);
-const ButtonLocation kRightL2(6, 8);
-const ButtonLocation kL1(2, 8);
+const ButtonLocation kRightL2(3, 8);
+const ButtonLocation kL1(6, 11);
 
-const ButtonLocation kHumanPlayer(5, 11);
+const ButtonLocation kHumanPlayer(6, 10);
 
-const ButtonLocation kBack(3, 7);
+const ButtonLocation kBack(6, 1);
 
 const ButtonLocation kEndEffectorIntake(6, 2);
 const ButtonLocation kEndEffectorSpit(6, 5);
