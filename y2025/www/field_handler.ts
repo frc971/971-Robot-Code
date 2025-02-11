@@ -9,6 +9,7 @@ import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/
 import {Position as SuperstructurePosition} from  '../control_loops/superstructure/superstructure_position_generated'
 import {Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
+import {LocalizerState} from '../../frc971/control_loops/swerve/swerve_localizer_state_generated'
 
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
@@ -17,7 +18,7 @@ import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 const FIELD_SIDE_Y = FIELD_WIDTH / 2;
 const FIELD_EDGE_X = FIELD_LENGTH / 2;
 
-const ROBOT_WIDTH = 29 * IN_TO_M;
+const ROBOT_WIDTH = 32 * IN_TO_M;
 const ROBOT_LENGTH = 32 * IN_TO_M;
 
 const CAMERA_COLORS = ['#ff00ff', '#ffff00', '#00ffff', '#ffa500'];
@@ -25,8 +26,9 @@ const CAMERAS = [];
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private superstructureStatus: SuperstructureStatus|null = null;
-  private superstructurePosition: SuperstructurePosition|null = null;
+  // private superstructureStatus: SuperstructureStatus|null = null;
+  // private superstructurePosition: SuperstructurePosition|null = null;
+  private localizerState: LocalizerState|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
@@ -56,7 +58,7 @@ export class FieldHandler {
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
 
-    this.fieldImage.src = '2024.png';
+    this.fieldImage.src = '2025.png';
 
     // Construct a table header.
     {
@@ -108,15 +110,9 @@ export class FieldHandler {
       }
 
       this.connection.addHandler(
-        '/superstructure', "y2025.control_loops.superstructure.Status",
-        (data) => {
-          this.handleSuperstructureStatus(data)
-          });
-      this.connection.addHandler(
-        '/superstructure', "y2025.control_loops.superstructure.Positon",
-        (data) => {
-          this.handleSuperstructurePosition(data)
-          });
+        '/localizer', 'frc971.control_loops.swerve.LocalizerState', (data) => {
+          this.handleLocalizerState(data);
+        });
       this.connection.addHandler(
         '/aos', 'aos.message_bridge.ServerStatistics',
         (data) => {this.handleServerStatistics(data)});
@@ -132,14 +128,9 @@ export class FieldHandler {
         .innerHTML = targetMap.rejections().toString();
   }
 
-  private handleSuperstructureStatus(data: Uint8Array): void {
+  private handleLocalizerState(data: Uint8Array): void {
 	  const fbBuffer = new ByteBuffer(data);
-	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
-  }
-
-  private handleSuperstructurePosition(data: Uint8Array): void {
-	  const fbBuffer = new ByteBuffer(data);
-	  this.superstructurePosition = SuperstructurePosition.getRootAsPosition(fbBuffer);
+	  this.localizerState = LocalizerState.getRootAsLocalizerState(fbBuffer);
   }
 
   private populateNodeConnections(nodeName: string): void {
@@ -306,6 +297,18 @@ export class FieldHandler {
     this.drawField();
 
     window.requestAnimationFrame(() => this.draw());
+    if (this.localizerState) {
+      this.drawRobot(
+          this.localizerState.x(), this.localizerState.y(),
+          this.localizerState.theta());
+      this.x.textContent = this.localizerState.x().toString();
+      this.y.textContent = this.localizerState.y().toString();
+      this.theta.textContent = this.localizerState.theta().toString();
+    } else {
+      this.x.textContent = "NA";
+      this.y.textContent = "NA";
+      this.theta.textContent = "NA";
+    }
   }
 
   reset(): void {

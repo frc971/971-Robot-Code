@@ -1,4 +1,5 @@
 load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
@@ -21,6 +22,13 @@ static_flatbuffer(
 static_flatbuffer(
     name = "swerve_localizer_state_fbs",
     srcs = ["swerve_localizer_state.fbs"],
+)
+
+flatbuffer_ts_library(
+    name = "swerve_localizer_state_ts_fbs",
+    srcs = [
+        "swerve_localizer_state.fbs",
+    ],
 )
 
 static_flatbuffer(
@@ -190,7 +198,9 @@ cc_library(
         ":position_goal_fbs",
         ":simplified_dynamics",
         ":swerve_drivetrain_goal_fbs",
+        ":swerve_drivetrain_status_fbs",
         ":swerve_localizer_state_fbs",
+        ":swerve_trajectory_fbs",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
