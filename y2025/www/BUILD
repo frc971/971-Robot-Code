@@ -7,15 +7,15 @@ filegroup(
         "**/*.html",
         "**/*.css",
         "**/*.png",
-    ]) + ["2024_bot3.png"],
+    ]) + ["2025.png"],
     visibility = ["//visibility:public"],
 )
 
 genrule(
-    name = "2024_bot3_field_png",
-    srcs = ["//third_party/y2024/field:pictures"],
-    outs = ["2024_bot3.png"],
-    cmd = "cp third_party/y2024/field/2024.png $@",
+    name = "2025_field_png",
+    srcs = ["//third_party/y2025/field:pictures"],
+    outs = ["2025.png"],
+    cmd = "cp third_party/y2025/field/2025.png $@",
 )
 
 ts_project(
@@ -37,6 +37,7 @@ ts_project(
         "//frc971/control_loops/drivetrain:drivetrain_position_ts_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_ts_fbs",
+        "//frc971/control_loops/swerve:swerve_localizer_state_ts_fbs",
         "//frc971/vision:target_map_ts_fbs",
         "//y2025/control_loops/superstructure:superstructure_position_ts_fbs",
         "//y2025/control_loops/superstructure:superstructure_status_ts_fbs",
