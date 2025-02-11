@@ -126,9 +126,8 @@ Localizer::Localizer(aos::EventLoop *event_loop)
           const std::optional<aos::monotonic_clock::duration> clock_offset =
               utils_.ClockOffset(channel->source_node()->string_view());
           if (!clock_offset.has_value()) {
-            LOG(INFO)
-                << "Rejecting image due to disconnected message bridge at "
-                << event_loop_->monotonic_now();
+            VLOG(1) << "Rejecting image due to disconnected message bridge at "
+                    << event_loop_->monotonic_now();
 
             cameras_.at(camera_index)
                 .rejection_counter.IncrementError(
@@ -141,10 +140,10 @@ Localizer::Localizer(aos::EventLoop *event_loop)
               clock_offset.value());
 
           if (orin_capture_time > event_loop_->context().monotonic_event_time) {
-            LOG(INFO) << "Rejecting image due to being from future at "
-                      << event_loop_->monotonic_now() << " with timestamp of "
-                      << orin_capture_time << " and event time pf "
-                      << event_loop_->context().monotonic_event_time;
+            VLOG(1) << "Rejecting image due to being from future at "
+                    << event_loop_->monotonic_now() << " with timestamp of "
+                    << orin_capture_time << " and event time pf "
+                    << event_loop_->context().monotonic_event_time;
 
             cameras_.at(camera_index)
                 .rejection_counter.IncrementError(
@@ -173,7 +172,10 @@ Localizer::Localizer(aos::EventLoop *event_loop)
       });
 
   event_loop->AddPhasedLoop(
-      [this](int) { SendOutput(localizer_state_sender_.MakeStaticBuilder()); },
+      [this](int) {
+        SendOutput(localizer_state_sender_.MakeStaticBuilder());
+        SendStatus();
+      },
       std::chrono::milliseconds(10));
 
   // TODO(max): This was taken from last year, we should probably fix it.
@@ -269,7 +271,7 @@ void Localizer::HandleSwerveStatus(
   std::chrono::duration<double, std::ratio<1, 1>> dt_sec = dt;
 
   estimated_pose_(PoseIdx::kX) += x_hat.value()(States::kVx) * dt_sec.count();
-  estimated_pose_(PoseIdx::kY) -= x_hat.value()(States::kVy) * dt_sec.count();
+  estimated_pose_(PoseIdx::kY) += x_hat.value()(States::kVy) * dt_sec.count();
   estimated_pose_(PoseIdx::kTheta) +=
       x_hat.value()(States::kOmega) * dt_sec.count();
 
