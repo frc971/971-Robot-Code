@@ -569,7 +569,7 @@ TEST_F(SuperstructureTest, ElevatorPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(1));
+  RunFor(chrono::seconds(3));
 
   VerifyNearGoal();
 }

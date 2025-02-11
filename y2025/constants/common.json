@@ -59,14 +59,7 @@
     },
     "loop": {% include 'y2025/control_loops/superstructure/wrist/integral_wrist_plant.json' %}
   },
-  "pivot_set_points": {
-    "neutral": 0.0,
-    "intake": 0.37077661143778057,
-    "score_l1": 1.7075907465341582,
-    "score_l2": 0.5219419749131439,
-    "score_l3": 0.5070111526590233,
-    "score_l4": 0.1837414374557519
-  },
+
   "elevator": {
     "zeroing_voltage": 2.0,
     "operating_voltage": 6.0,
@@ -79,10 +72,10 @@
       "max_acceleration": 2.0
     },
     "range": {
-        "lower_hard": 0.0,
-        "upper_hard": 0.6811428748966724,
+        "lower_hard": -0.001,
+        "upper_hard": 1.39,
         "lower": 0.0,
-        "upper": 0.675
+        "upper": 1.39
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
   },
@@ -110,20 +103,28 @@
     "loop": {% include 'y2025/control_loops/drivetrain/integral_rotation_plant.json' %}
   },
   "elevator_set_points": {
-    "neutral": 0.1,
-    "intake": 0.070,
-    "score_l1": 0.1,
-    "score_l2": 0.2536288119439328,
-    "score_l3": 0.44330811871516285,
-    "score_l4": 0.6604849337710404
+    "neutral": 0.05,
+    "intake": 0.18220963342833937,
+    "score_l1": 0.0,
+    "score_l2": 0.15,
+    "score_l3": {{ 0.15 + 15.87 * 0.0254 }},
+    "score_l4": 1.3712316453231945
+  },
+  "pivot_set_points": {
+    "neutral": 0.0,
+    "intake": 0.47924198590999334,
+    "score_l1": {{ 3.14 / 4.0 }},
+    "score_l2": 0.4609734355461903,
+    "score_l3": 0.4609734355461903,
+    "score_l4": 0.3355121620157867
   },
   "wrist_set_points": {
     "neutral": 0.0,
-    "intake": 0.599456198488985,
-    "score_l1": 0.28238478159332714,
-    "score_l2": 1.8021837477031248,
-    "score_l3": 1.8017453309487887,
-    "score_l4": 1.7549875319983683
+    "intake": 0.5599718623892103,
+    "score_l1": 0.0,
+    "score_l2": 0.9267393224481775,
+    "score_l3": 0.97,
+    "score_l4": 1.7169708502340164
   },
   //TODO: Update these voltages
   "end_effector_voltages": {
@@ -133,13 +134,13 @@
   "weights": {
     "thetas_q": 1.0,
     "omegas_q": 1e-4,
-    "vel_q": 10.0,
-    "theta_q": 7000.0,
+    "vel_q": 30.0,
+    "theta_q": 8000.0,
     "omega_q": 7.0,
     "steer_current_r": 1e-5,
     "drive_current_r": 1e-3
   },
   "reef_apriltag_ids": [6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22],
-  "end_effector_idling_voltage": 6.0
+  "end_effector_idling_voltage": 3.0
 }
 
