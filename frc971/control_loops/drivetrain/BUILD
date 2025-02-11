@@ -515,6 +515,7 @@ cc_test(
     srcs = [
         "drivetrain_lib_test.cc",
     ],
+    args = ["--allow_duplicate_samples=true"],
     data = [":simulation_config"],
     defines =
         cpu_select({

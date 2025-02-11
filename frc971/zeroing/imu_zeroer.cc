@@ -1,5 +1,11 @@
 #include "frc971/zeroing/imu_zeroer.h"
 
+ABSL_FLAG(bool, allow_duplicate_samples, false,
+          "Allow repeated identical imu measurements?");
+ABSL_FLAG(size_t, sample_duplication_threshold, 100,
+          "Threshold for the amount of repeated identical imu measurements we "
+          "accept before faulting");
+
 namespace frc971::zeroing {
 
 namespace {
@@ -26,7 +32,11 @@ bool ReadingHasFaults(const IMUValues &values) {
 }  // namespace
 
 ImuZeroer::ImuZeroer(FaultBehavior fault_behavior, double gyro_max_variation)
-    : fault_behavior_(fault_behavior), gyro_max_variation_(gyro_max_variation) {
+    : fault_behavior_(fault_behavior),
+      gyro_max_variation_(gyro_max_variation),
+      sample_duplication_threshold_(
+          absl::GetFlag(FLAGS_sample_duplication_threshold)),
+      allow_duplicate_samples_(absl::GetFlag(FLAGS_allow_duplicate_samples)) {
   gyro_average_.setZero();
   last_gyro_sample_.setZero();
   last_accel_sample_.setZero();
@@ -77,11 +87,23 @@ bool ImuZeroer::InsertMeasurement(const IMUValues &values) {
   if (fault_behavior_ == FaultBehavior::kTemporary) {
     reading_faulted_ = false;
   }
+
+  last_last_gyro_sample_ = last_gyro_sample_;
+  last_last_accel_sample_ = last_accel_sample_;
+
   last_gyro_sample_ << values.gyro_x(), values.gyro_y(), values.gyro_z();
   gyro_averager_.AddData(last_gyro_sample_);
   last_accel_sample_ << values.accelerometer_x(), values.accelerometer_y(),
       values.accelerometer_z();
   accel_averager_.AddData(last_accel_sample_);
+
+  if (last_last_accel_sample_ == last_accel_sample_ &&
+      last_gyro_sample_ == last_last_gyro_sample_) {
+    ++sample_duplicate_count_;
+  } else {
+    sample_duplicate_count_ = 0;
+  }
+
   return true;
 }
 
@@ -99,9 +121,12 @@ void ImuZeroer::ProcessMeasurements() {
       }
       if (num_zeroes_ > 0) {
         // If we got a new zero and it is substantially different from the
-        // original zero, fault.
-        if ((current_gyro_average - gyro_average_).norm() >
-            kGyroFaultVariation) {
+        // original zero, or if we got too many duplicate readings in a row,
+        // fault.
+        if (((current_gyro_average - gyro_average_).norm() >
+             kGyroFaultVariation) ||
+            (sample_duplicate_count_ > sample_duplication_threshold_ &&
+             !allow_duplicate_samples_)) {
           zeroing_faulted_ = true;
         } else if (fault_behavior_ == FaultBehavior::kTemporary) {
           zeroing_faulted_ = false;

@@ -47,6 +47,7 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/wpilib:imu_fbs",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@org_tuxfamily_eigen//:eigen",

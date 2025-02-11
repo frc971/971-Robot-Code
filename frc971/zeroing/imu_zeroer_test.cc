@@ -38,6 +38,37 @@ aos::FlatbufferDetachedBuffer<IMUValues> MakeMeasurement(
   return fbb.Release();
 }
 
+/**
+ * @brief Adds noisy IMU measurements to the zeroer.
+ *
+ * Varies gyro and accel values linearly from -range/2 to +range/2 over
+ * a set number of iterations. Each measurement is sent to the zeroer using
+ * MakeMeasurement. Used because our zeroer intentionally faults on receiving
+ * exactly identical data too many times in a row.
+ *
+ * @param zeroer ImuZeroer to process measurements.
+ * @param gyro Base gyroscope measurement.
+ * @param accel Base accelerometer measurement.
+ * @param range Range of noise variation.
+ * @param faulted Marks measurements as faulted.
+ * @param iterations Number of measurements to make.
+ */
+void MakeNoisyMeasurements(ImuZeroer &zeroer, const Eigen::Vector3d &gyro,
+                           const Eigen::Vector3d &accel, double range,
+                           bool faulted = false,
+                           size_t iterations = kMinSamplesToZero) {
+  for (size_t ii = 0; ii < iterations; ++ii) {
+    const double offset =
+        (static_cast<double>(ii) / (iterations - 1) - 0.5) * range;
+    zeroer.InsertAndProcessMeasurement(
+        MakeMeasurement(
+            {gyro.x() + offset, gyro.y() + offset, gyro.z() + offset},
+            {accel.x() + offset, accel.y() + offset, accel.z() + offset},
+            faulted)
+            .message());
+  }
+}
+
 // Tests that when we initialize everything is in a sane state.
 TEST(ImuZeroerTest, InitializeUnzeroed) {
   ImuZeroer zeroer;
@@ -61,35 +92,35 @@ TEST(ImuZeroerTest, InitializeUnzeroed) {
   ASSERT_EQ(6.0, zeroer.ZeroedAccel().value().z());
 }
 
-// Tests that we zero if we receive a bunch of identical measurements.
-TEST(ImuZeroerTest, ZeroOnConstantData) {
+// Tests that we zero if we receive a bunch of nearly identical measurements.
+// We add a small amount of noise because our zeroer intentionally faults on
+// receiving exactly identical data too many times in a row.
+TEST(ImuZeroerTest, ZeroOnNearlyConstantData) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
-  for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
-    zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01, 0.02, 0.03}, {4, 5, 6}).message());
-  }
+  MakeNoisyMeasurements(zeroer, {0.01, 0.02, 0.03}, {4, 5, 6}, 0.0001);
   ASSERT_TRUE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
   // Gyro should be zeroed to {1, 2, 3}.
-  ASSERT_FLOAT_EQ(0.01, zeroer.GyroOffset().x());
-  ASSERT_FLOAT_EQ(0.02, zeroer.GyroOffset().y());
-  ASSERT_FLOAT_EQ(0.03, zeroer.GyroOffset().z());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().x());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().y());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().z());
+  constexpr double kEps = 0.0001;
+  ASSERT_NEAR(0.01, zeroer.GyroOffset().x(), kEps);
+  ASSERT_NEAR(0.02, zeroer.GyroOffset().y(), kEps);
+  ASSERT_NEAR(0.03, zeroer.GyroOffset().z(), kEps);
+  ASSERT_NEAR(0.0, zeroer.ZeroedGyro().value().x(), kEps);
+  ASSERT_NEAR(0.0, zeroer.ZeroedGyro().value().y(), kEps);
+  ASSERT_NEAR(0.0, zeroer.ZeroedGyro().value().z(), kEps);
   // Accelerometer readings should not be affected.
-  ASSERT_EQ(4.0, zeroer.ZeroedAccel().value().x());
-  ASSERT_EQ(5.0, zeroer.ZeroedAccel().value().y());
-  ASSERT_EQ(6.0, zeroer.ZeroedAccel().value().z());
+  ASSERT_NEAR(4.0, zeroer.ZeroedAccel().value().x(), kEps);
+  ASSERT_NEAR(5.0, zeroer.ZeroedAccel().value().y(), kEps);
+  ASSERT_NEAR(6.0, zeroer.ZeroedAccel().value().z(), kEps);
   // If we get another measurement offset by {1, 1, 1} we should read the result
   // as {1, 1, 1}.
   zeroer.InsertAndProcessMeasurement(
       MakeMeasurement({0.02, 0.03, 0.04}, {0, 0, 0}).message());
   ASSERT_FALSE(zeroer.Faulted());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().x());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().y());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().z());
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().x(), kEps);
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().y(), kEps);
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().z(), kEps);
 }
 
 // Tests that we do not zero if the gyro is producing particularly high
@@ -98,8 +129,12 @@ TEST(ImuZeroerTest, NoZeroOnHighMagnitudeGyro) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
   for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
+    const double offset =
+        (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 0.0001;
     zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.1, 0.2, 0.3}, {4, 5, 6}).message());
+        MakeMeasurement({0.1 + offset, 0.2 + offset, 0.3 + offset},
+                        {4 + offset, 5 + offset, 6 + offset})
+            .message());
     ASSERT_FALSE(zeroer.Zeroed());
   }
   ASSERT_FALSE(zeroer.Faulted());
@@ -110,14 +145,7 @@ TEST(ImuZeroerTest, NoZeroOnHighMagnitudeGyro) {
 TEST(ImuZeroerTest, ZeroOnLowNoiseData) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
-  for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
-    const double offset =
-        (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 0.001;
-    zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01 + offset, 0.02 + offset, 0.03 + offset},
-                        {4 + offset, 5 + offset, 6 + offset})
-            .message());
-  }
+  MakeNoisyMeasurements(zeroer, {0.01, 0.02, 0.03}, {4, 5, 6}, 0.001);
   ASSERT_TRUE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
   ASSERT_NEAR(0.01, zeroer.GyroOffset().x(), 1e-3);
@@ -140,15 +168,7 @@ TEST(ImuZeroerTest, ZeroOnLowNoiseData) {
 TEST(ImuZeroerTest, NoZeroOnHighNoiseData) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
-  for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
-    ASSERT_FALSE(zeroer.Zeroed());
-    const double offset =
-        (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 1.0;
-    zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01 + offset, 0.02 + offset, 0.03 + offset},
-                        {4 + offset, 5 + offset, 6 + offset})
-            .message());
-  }
+  MakeNoisyMeasurements(zeroer, {0.01, 0.02, 0.03}, {4, 5, 6}, 1.0);
   ASSERT_FALSE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
 }
@@ -158,35 +178,48 @@ TEST(ImuZeroerTest, NoZeroOnHighNoiseData) {
 TEST(ImuZeroerTest, FaultOnNewZero) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
-  for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
-    zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01, 0.02, 0.03}, {4, 5, 6}).message());
-  }
+  MakeNoisyMeasurements(zeroer, {0.01, 0.02, 0.03}, {4, 5, 6}, 0.0001);
   ASSERT_TRUE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted())
       << "We should not fault until we complete a second cycle of zeroing.";
+
   for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
+    const double offset =
+        (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 0.0001;
     zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01, -0.05, 0.03}, {4, 5, 6}).message());
+        MakeMeasurement({0.01 + offset, -0.05 + offset, 0.03 + offset},
+                        {4 + offset, 5 + offset, 6 + offset})
+            .message());
+
+    if (ii ==
+        ImuZeroer::kSamplesToAverage + ImuZeroer::kSamplesToAverage / 40) {
+      ASSERT_TRUE(zeroer.Faulted());
+      ASSERT_FALSE(zeroer.Zeroed());
+    }
   }
-  ASSERT_TRUE(zeroer.Faulted());
-  ASSERT_FALSE(zeroer.Zeroed());
+  ASSERT_FALSE(zeroer.Faulted());
+  ASSERT_TRUE(zeroer.Zeroed());
 }
 
 // Tests that we do not fault if the zero only changes by a small amount.
 TEST(ImuZeroerTest, NoFaultOnSimilarZero) {
   ImuZeroer zeroer;
   ASSERT_FALSE(zeroer.Zeroed());
+  MakeNoisyMeasurements(zeroer, {0.01, 0.02, 0.03}, {4, 5, 6}, 0.0001);
+  ASSERT_TRUE(zeroer.Zeroed());
+  MakeNoisyMeasurements(zeroer, {0.01, 0.0201, 0.03}, {4, 5, 6}, 0.0001);
+  ASSERT_FALSE(zeroer.Faulted());
+}
+
+TEST(ImuZeroerTest, FaultOnManyIdenticalReadings) {
+  ImuZeroer zeroer;
+  ASSERT_FALSE(zeroer.Zeroed());
   for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
     zeroer.InsertAndProcessMeasurement(
         MakeMeasurement({0.01, 0.02, 0.03}, {4, 5, 6}).message());
   }
-  ASSERT_TRUE(zeroer.Zeroed());
-  for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
-    zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01, 0.020001, 0.03}, {4, 5, 6}).message());
-  }
-  ASSERT_FALSE(zeroer.Faulted());
+  ASSERT_FALSE(zeroer.Zeroed());
+  ASSERT_TRUE(zeroer.Faulted());
 }
 
 // Tests that we fault on a bad diagnostic.

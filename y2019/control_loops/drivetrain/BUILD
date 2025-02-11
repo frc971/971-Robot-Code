@@ -223,6 +223,7 @@ aos_config(
 cc_test(
     name = "localized_drivetrain_test",
     srcs = ["localized_drivetrain_test.cc"],
+    args = ["--allow_duplicate_samples=true"],
     data = [":simulation_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
