@@ -63,7 +63,7 @@ table EndEffectorVoltages {
   intake:double (id: 1);
 }
 
-table ClimberVoltage {
+table ClimberCurrent {
   climb:double (id: 0);
   retract:double (id: 1);
   input_config: frc971.input.InputConfig (id: 2);
@@ -91,7 +91,7 @@ table Common {
   elevator_set_points:ElevatorSetPoints (id: 6);
   pivot_set_points:PivotSetPoints (id: 7);
   end_effector_voltages:EndEffectorVoltages (id: 8);
-  climber_voltage:ClimberVoltage(id: 9);
+  climber_current:ClimberCurrent(id: 9);
   weights: VelocityControllerWeights (id: 10);
   rotation:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 11);
   wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);

@@ -360,23 +360,23 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     EXPECT_NEAR(wrist_set_point,
                 superstructure_status_fetcher_->wrist()->position(), kEpsWrist);
 
-    double climber_expected_voltage = 0.0;
+    double climber_expected_current = 0.0;
 
     switch (superstructure_goal_fetcher_->climber_goal()) {
       case ClimberGoal::NEUTRAL:
         break;
       case ClimberGoal::CLIMB:
-        climber_expected_voltage =
-            simulated_robot_constants_->common()->climber_voltage()->climb();
+        climber_expected_current =
+            simulated_robot_constants_->common()->climber_current()->climb();
         break;
       case ClimberGoal::RETRACT:
-        climber_expected_voltage =
-            simulated_robot_constants_->common()->climber_voltage()->retract();
+        climber_expected_current =
+            simulated_robot_constants_->common()->climber_current()->retract();
         break;
     }
 
-    ASSERT_TRUE(climber_expected_voltage ==
-                superstructure_output_fetcher_->climber_voltage());
+    ASSERT_TRUE(climber_expected_current ==
+                superstructure_output_fetcher_->climber_current());
 
     ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 

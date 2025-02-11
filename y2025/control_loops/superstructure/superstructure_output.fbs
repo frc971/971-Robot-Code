@@ -4,7 +4,7 @@ table Output {
     elevator_voltage:double (id: 0);
     pivot_voltage:double (id: 1);
     end_effector_voltage:double (id: 2);
-    climber_voltage:double (id: 3);
+    climber_current:double (id: 3);
     wrist_voltage:double (id: 4);
 }
 
