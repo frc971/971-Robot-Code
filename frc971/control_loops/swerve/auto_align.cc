@@ -3,9 +3,9 @@
 using frc971::control_loops::swerve::AutoAlign;
 
 // TODO Move these constants to a json or something
-ABSL_FLAG(double, kPVx, 4.0, "Gain for x position error");
-ABSL_FLAG(double, kPVy, 4.0, "Gain for y position error");
-ABSL_FLAG(double, kPVtheta, 4.0, "Gain for theta position error");
+ABSL_FLAG(double, kPVx, 8.0, "Gain for x position error");
+ABSL_FLAG(double, kPVy, 8.0, "Gain for y position error");
+ABSL_FLAG(double, kPVtheta, 8.0, "Gain for theta position error");
 
 ABSL_FLAG(double, kVelLimit, 3.0, "Velocity Limit");
 ABSL_FLAG(double, kOmegaLimit, 3.0, "Omega Limit");
