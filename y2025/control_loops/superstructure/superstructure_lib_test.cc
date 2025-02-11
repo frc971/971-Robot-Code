@@ -243,7 +243,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     superstructure_output_fetcher_.Fetch();
     superstructure_position_fetcher_.Fetch();
 
-    double expected_end_effector_voltage = 0.0;
+    double expected_end_effector_voltage =
+        simulated_robot_constants_->common()->end_effector_idling_voltage();
     EndEffectorStatus expected_end_effector_status = EndEffectorStatus::NEUTRAL;
     switch (superstructure_goal_fetcher_->end_effector_goal()) {
       case EndEffectorGoal::NEUTRAL:

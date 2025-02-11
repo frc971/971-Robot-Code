@@ -64,7 +64,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         kEndEffectorMotorTorqueThreshold;
   }
 
-  double end_effector_voltage = 0.0;
+  double end_effector_voltage =
+      robot_constants_->common()->end_effector_idling_voltage();
   EndEffectorStatus end_effector_status = EndEffectorStatus::NEUTRAL;
 
   if (unsafe_goal != nullptr) {
@@ -77,10 +78,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           end_effector_voltage =
               robot_constants_->common()->end_effector_voltages()->intake();
         } else {
-          // TODO figure out if we need to apply reverse voltage to get
-          // algae in the right position
           end_effector_status = EndEffectorStatus::NEUTRAL;
-          end_effector_voltage = 0.0;
+          end_effector_voltage =
+              robot_constants_->common()->end_effector_idling_voltage();
         }
         break;
       case EndEffectorGoal::SPIT:
