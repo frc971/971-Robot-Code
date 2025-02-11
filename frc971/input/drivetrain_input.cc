@@ -163,9 +163,10 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   constexpr double kVelScale = 12.0;
   constexpr double kOmegaScale = 20.0;
 
-  const double omega = -kOmegaScale * aos::Deadband(-data.GetAxis(omega_axis_),
-                                                    kRotationDeadband, 1.0) +
-                       swerve_config_.omega_offset;
+  const double omega =
+      -kOmegaScale * aos::Deadband(pow(data.GetAxis(omega_axis_), 3),
+                                   kRotationDeadband, 1.0) +
+      swerve_config_.omega_offset;
 
   const double raw_vx =
       -data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
