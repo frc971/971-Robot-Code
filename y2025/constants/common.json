@@ -12,7 +12,7 @@
     "pivot_stator_current_limit": 100,
     "pivot_supply_current_limit": 50,
     "end_effector_stator_current_limit": 60,
-    "end_effector_supply_current_limit": 50,
+    "end_effector_supply_current_limit": 25,
     "climber_stator_current_limit": 100,
     "climber_supply_current_limit": 60,
     "wrist_stator_current_limit": 50,
@@ -104,7 +104,7 @@
   },
   "elevator_set_points": {
     "neutral": 0.05,
-    "intake": 0.18220963342833937,
+    "intake": 0.22220963342833937,
     "score_l1": 0.0,
     "score_l2": 0.15,
     "score_l3": {{ 0.15 + 15.87 * 0.0254 }},
@@ -123,7 +123,7 @@
     "intake": 0.5599718623892103,
     "score_l1": 0.0,
     "score_l2": 0.9267393224481775,
-    "score_l3": 0.97,
+    "score_l3": 1.02,
     "score_l4": 1.7169708502340164
   },
   //TODO: Update these voltages
@@ -134,13 +134,13 @@
   "weights": {
     "thetas_q": 1.0,
     "omegas_q": 1e-4,
-    "vel_q": 30.0,
-    "theta_q": 8000.0,
+    "vel_q": 20.0,
+    "theta_q": 7000.0,
     "omega_q": 7.0,
     "steer_current_r": 1e-5,
     "drive_current_r": 1e-3
   },
   "reef_apriltag_ids": [6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22],
-  "end_effector_idling_voltage": 3.0
+  "end_effector_idling_voltage": 6.0
 }
 
