@@ -50,21 +50,24 @@ AutonomousController::AutonomousController(
   event_loop_->MakeWatcher("/aos", [this](const aos::RobotState &state) {
     if (state.user_button()) {
       auto builder = autonomous_init_sender_.MakeStaticBuilder();
-      builder->set_x(trajectory_.message()
-                         .discretized_trajectory()
-                         ->Get(0)
-                         ->position()
-                         ->x());
+      const double flip_mult = flipped_ ? -1.0 : 1.0;
+      builder->set_x(flip_mult * trajectory_.message()
+                                     .discretized_trajectory()
+                                     ->Get(0)
+                                     ->position()
+                                     ->x());
       builder->set_y(trajectory_.message()
                          .discretized_trajectory()
                          ->Get(0)
                          ->position()
                          ->y());
-      builder->set_theta(trajectory_.message()
-                             .discretized_trajectory()
-                             ->Get(0)
-                             ->position()
-                             ->theta());
+      const double theta_trajectory = trajectory_.message()
+                                          .discretized_trajectory()
+                                          ->Get(0)
+                                          ->position()
+                                          ->theta();
+      builder->set_theta(flipped_ ? std::numbers::pi - theta_trajectory
+                                  : theta_trajectory);
       builder.CheckOk(builder.Send());
     }
   });
@@ -75,6 +78,13 @@ AutonomousController::AutonomousController(
       VLOG(1) << "Autonomous " << joystick_state_fetcher_->autonomous();
       VLOG(1) << "Enabled " << joystick_state_fetcher_->enabled();
     }
+
+    if (joystick_state_fetcher_->alliance() == aos::Alliance::kRed) {
+      flipped_ = true;
+    } else if (joystick_state_fetcher_->alliance() == aos::Alliance::kBlue) {
+      flipped_ = false;
+    }
+
     if (trajectory_index_) {
       size_t index = trajectory_index_.value();
 
@@ -142,9 +152,12 @@ void AutonomousController::Iterate() {
 
   double kThreshold = 0.005;
 
-  double x_error = x - trajectory_point->position()->x();
+  const double flip_mult = flipped_ ? -1.0 : 1.0;
+  double x_error = x - flip_mult * trajectory_point->position()->x();
   double y_error = y - trajectory_point->position()->y();
-  double theta_error = theta - trajectory_point->position()->theta();
+  const double theta_trajectory = trajectory_point->position()->theta();
+  double theta_error = theta - (flipped_ ? std::numbers::pi - theta_trajectory
+                                         : theta_trajectory);
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
@@ -160,11 +173,11 @@ void AutonomousController::Iterate() {
   VLOG(1) << "y error: " << y_error;
   VLOG(1) << "theta error: " << theta_error;
 
-  double goal_vx = trajectory_point->velocity()->x() -
+  double goal_vx = flip_mult * trajectory_point->velocity()->x() -
                    absl::GetFlag(FLAGS_kPositionGain) * x_error;
   double goal_vy = trajectory_point->velocity()->y() -
                    absl::GetFlag(FLAGS_kPositionGain) * y_error;
-  double goal_omega = trajectory_point->velocity()->theta() -
+  double goal_omega = flip_mult * trajectory_point->velocity()->theta() -
                       absl::GetFlag(FLAGS_kRotationGain) * theta_error;
 
   auto joystick_goal = builder->add_joystick_goal();
