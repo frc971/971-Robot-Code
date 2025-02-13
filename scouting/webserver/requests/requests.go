@@ -15,6 +15,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2025_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2025_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
@@ -118,6 +120,8 @@ type SubmitHumanRanking2025 = submit_human_ranking_2025.SubmitHumanRanking2025
 type SubmitHumanRanking2025ResponseT = submit_human_ranking_2025_response.SubmitHumanRanking2025ResponseT
 type Delete2024DataScouting = delete_2024_data_scouting.Delete2024DataScouting
 type Delete2024DataScoutingResponseT = delete_2024_data_scouting_response.Delete2024DataScoutingResponseT
+type Delete2025DataScouting = delete_2025_data_scouting.Delete2025DataScouting
+type Delete2025DataScoutingResponseT = delete_2025_data_scouting_response.Delete2025DataScoutingResponseT
 type DeleteNotes2025 = delete_notes_2025.DeleteNotes2025
 type DeleteNotes2025ResponseT = delete_notes_2025_response.DeleteNotes2025ResponseT
 
@@ -125,10 +129,12 @@ type DeleteNotes2025ResponseT = delete_notes_2025_response.DeleteNotes2025Respon
 // We use an interface here because it makes unit testing easier.
 type Database interface {
 	AddToMatch(db.TeamMatch) error
+	AddToMatch2025(db.TeamMatch2025) error
 	AddToShift(db.Shift) error
 	AddToStats2024(db.Stats2024) error
 	AddToStats2025(db.Stats2025) error
 	ReturnMatches() ([]db.TeamMatch, error)
+	ReturnMatches2025() ([]db.TeamMatch2025, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllNotes2025(string) ([]db.NotesData2025, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
@@ -142,6 +148,7 @@ type Database interface {
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
 	QueryNotes2025(compCode string, teamNumber string) ([]string, error)
+	QueryStats2025(compCode string) ([]db.Stats2025, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
 	ReturnPitImages() ([]db.PitImage, error)
 	AddNotes(db.NotesData) error
@@ -152,8 +159,10 @@ type Database interface {
 	AddDriverRanking2025(db.DriverRanking2025) error
 	AddHumanRanking2025(db.HumanRanking2025) error
 	DeleteFromStats2024(string, int32, int32, string) error
+	DeleteFromStats2025(string, string, int32, int32, string) error
 	DeleteFromNotesData2025(string, string, int32, int32, string) error
 	DeleteFromActions(string, int32, int32, string) error
+	DeleteFromActions2025(string, string, int32, int32, string) error
 }
 
 type Clock interface {
@@ -235,6 +244,7 @@ type requestAllMatchesHandler struct {
 // corresponds to which old match structure object.
 type MatchAssemblyKey struct {
 	MatchNumber int32
+	CompCode    string
 	SetNumber   int32
 	CompLevel   string
 }
@@ -249,8 +259,8 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 }
 
 func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
-	stats, err := handler.db.ReturnStats2024ForTeam(
-		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, "Regular")
+	stats, err := handler.db.ReturnStats2025ForTeam(
+		key.CompCode, teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, "Regular")
 	if err != nil {
 		return false, err
 	}
@@ -269,7 +279,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	matches, err := handler.db.ReturnMatches()
+	matches, err := handler.db.ReturnMatches2025()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
 		return
@@ -278,7 +288,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	assembledMatches := map[MatchAssemblyKey]request_all_matches_response.MatchT{}
 
 	for _, match := range matches {
-		key := MatchAssemblyKey{match.MatchNumber, match.SetNumber, match.CompLevel}
+		key := MatchAssemblyKey{match.MatchNumber, match.CompCode, match.SetNumber, match.CompLevel}
 
 		// Retrieve the converted match structure we have assembled so
 		// far. If we haven't started assembling one yet, then start a
@@ -287,6 +297,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		if !ok {
 			entry = request_all_matches_response.MatchT{
 				MatchNumber: match.MatchNumber,
+				CompCode:    match.CompCode,
 				SetNumber:   match.SetNumber,
 				CompLevel:   match.CompLevel,
 				DataScouted: &request_all_matches_response.ScoutedLevelT{},
@@ -812,6 +823,12 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && !auto {
 				stat.CoralDroppedTeleop += 1
 				count_in_cycle = false
+			} else if score_type == submit_2025_actions.ScoreTypekMISSED && auto {
+				stat.CoralMissedAuto += 1
+				count_in_cycle = false
+			} else if score_type == submit_2025_actions.ScoreTypekMISSED && !auto {
+				stat.CoralMissedTeleop += 1
+				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
@@ -868,6 +885,12 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && !auto {
 				stat.AlgaeDroppedTeleop += 1
+				count_in_cycle = false
+			} else if score_type == submit_2025_actions.ScoreTypekMISSED && auto {
+				stat.AlgaeMissedAuto += 1
+				count_in_cycle = false
+			} else if score_type == submit_2025_actions.ScoreTypekMISSED && !auto {
+				stat.AlgaeMissedTeleop += 1
 				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
@@ -976,12 +999,12 @@ func (handler request2025DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 		return
 	}
 
-	_, success := parseRequest(w, requestBytes, "Request2025DataScouting", request_2025_data_scouting.GetRootAsRequest2025DataScouting)
+	request, success := parseRequest(w, requestBytes, "Request2025DataScouting", request_2025_data_scouting.GetRootAsRequest2025DataScouting)
 	if !success {
 		return
 	}
 
-	stats, err := handler.db.ReturnStats2025()
+	stats, err := handler.db.QueryStats2025(string(request.CompCode()))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
 		return
@@ -1641,10 +1664,6 @@ type submit2024ActionsHandler struct {
 	db Database
 }
 
-type submit2025ActionsHandler struct {
-	db Database
-}
-
 func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get the username of the person submitting the data.
 	username := parseUsername(req)
@@ -1718,6 +1737,10 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	w.Write(builder.FinishedBytes())
 
 	log.Println("Successfully added stats from", username)
+}
+
+type submit2025ActionsHandler struct {
+	db Database
 }
 
 func (handler submit2025ActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -1840,6 +1863,52 @@ func (handler Delete2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 	w.Write(builder.FinishedBytes())
 }
 
+type Delete2025DataScoutingHandler struct {
+	db Database
+}
+
+func (handler Delete2025DataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "Delete2025DataScouting", delete_2025_data_scouting.GetRootAsDelete2025DataScouting)
+	if !success {
+		return
+	}
+
+	err = handler.db.DeleteFromStats2025(
+		string(request.CompCode()),
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from stats2025: %v", err))
+		return
+	}
+
+	err = handler.db.DeleteFromActions2025(
+		string(request.CompCode()),
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from actions: %v", err))
+		return
+	}
+
+	var response Delete2025DataScoutingResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type DeleteNotes2025Handler struct {
 	db Database
 }
@@ -1900,5 +1969,6 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking_2025", SubmitDriverRanking2025Handler{db})
 	scoutingServer.Handle("/requests/submit/submit_human_ranking_2025", SubmitHumanRanking2025Handler{db})
 	scoutingServer.Handle("/requests/delete/delete_2024_data_scouting", Delete2024DataScoutingHandler{db})
+	scoutingServer.Handle("/requests/delete/delete_2025_data_scouting", Delete2025DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/delete/delete_notes_2025", DeleteNotes2025Handler{db})
 }

@@ -24,10 +24,10 @@
       <a
         class="dropdown-item"
         href="#"
-        (click)="switchDataSource('Stats2024')"
+        (click)="switchDataSource('Stats2025')"
         id="stats_source_dropdown"
       >
-        Stats2024
+        Stats2025
       </a>
     </li>
     <li>
@@ -105,8 +105,8 @@
       </tbody>
     </table>
   </div>
-  <!-- Stats2024 Data Display. -->
-  <div *ngSwitchCase="'Stats2024'">
+  <!-- Stats2025 Data Display. -->
+  <div *ngSwitchCase="'Stats2025'">
     <table class="table">
       <thead>
         <tr>
@@ -121,22 +121,24 @@
           </th>
           <th scope="col">Team</th>
           <th scope="col">Comp Level</th>
+          <th scope="col">Comp Code</th>
           <th scope="col">Scout</th>
           <th scope="col"></th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let stat2024 of statList; index as i;">
-          <th scope="row">{{stat2024.matchNumber()}}</th>
-          <td>{{stat2024.teamNumber()}}</td>
-          <td>{{COMP_LEVEL_LABELS[stat2024.compLevel()]}}</td>
-          <td>{{stat2024.collectedBy()}}</td>
+        <tr *ngFor="let stat2025 of statList; index as i;">
+          <th scope="row">{{stat2025.matchNumber()}}</th>
+          <td>{{stat2025.teamNumber()}}</td>
+          <td>{{COMP_LEVEL_LABELS[stat2025.compLevel()]}}</td>
+          <td>{{stat2025.compCode()}}</td>
+          <td>{{stat2025.collectedBy()}}</td>
           <!-- Delete Icon. -->
           <td>
             <button
               class="btn btn-danger"
               id="delete_button_{{i}}"
-              (click)="delete2024DataScouting(stat2024.compLevel(), stat2024.matchNumber(), stat2024.setNumber(), stat2024.teamNumber())"
+              (click)="delete2025DataScouting(stat2025.compCode(), stat2025.compLevel(), stat2025.matchNumber(), stat2025.setNumber(), stat2025.teamNumber())"
             >
               <i class="bi bi-trash"></i>
             </button>

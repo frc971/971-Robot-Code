@@ -23,6 +23,7 @@ table Match {
 
     // Tells you how completely we've data scouted this match.
     data_scouted: ScoutedLevel (id: 9);
+    comp_code:string (id: 10);
 }
 
 table RequestAllMatchesResponse  {

@@ -10,9 +10,9 @@ import {
   RequestAveragedHumanRankings2025Response,
 } from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
 import {
-  Stats2024,
-  Request2024DataScoutingResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_2024_data_scouting_response_generated';
+  Stats2025,
+  Request2025DataScoutingResponse,
+} from '@org_frc971/scouting/webserver/requests/messages/request_2025_data_scouting_response_generated';
 
 import {
   PitImage,
@@ -23,8 +23,8 @@ import {
   Note2025,
   RequestAllNotes2025Response,
 } from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_2025_response_generated';
-import {Delete2024DataScouting} from '@org_frc971/scouting/webserver/requests/messages/delete_2024_data_scouting_generated';
-import {Delete2024DataScoutingResponse} from '@org_frc971/scouting/webserver/requests/messages/delete_2024_data_scouting_response_generated';
+import {Delete2025DataScouting} from '@org_frc971/scouting/webserver/requests/messages/delete_2025_data_scouting_generated';
+import {Delete2025DataScoutingResponse} from '@org_frc971/scouting/webserver/requests/messages/delete_2025_data_scouting_response_generated';
 import {DeleteNotes2025} from '@org_frc971/scouting/webserver/requests/messages/delete_notes_2025_generated';
 import {DeleteNotes2025Response} from '@org_frc971/scouting/webserver/requests/messages/delete_notes_2025_response_generated';
 
@@ -35,7 +35,7 @@ import {
 
 type Source =
   | 'Notes'
-  | 'Stats2024'
+  | 'Stats2025'
   | 'PitImages'
   | 'DriverRanking'
   | 'HumanRanking';
@@ -64,7 +64,7 @@ export class ViewComponent {
   // the user when fetching data.
   progressMessage: string = '';
   errorMessage: string = '';
-  compCode: string = '2025camb';
+  compCode: string = '2016nytr';
 
   // The current data source being displayed.
   currentSource: Source = 'Notes';
@@ -79,7 +79,7 @@ export class ViewComponent {
   driverRankingList: DriverRanking2025[] = [];
   humanRankingList: HumanRanking2025[] = [];
   pitImageList: PitImage[][] = [];
-  statList: Stats2024[] = [];
+  statList: Stats2025[] = [];
 
   // Fetch notes on initialization.
   ngOnInit() {
@@ -158,8 +158,8 @@ export class ViewComponent {
         this.fetchNotes2025();
       }
 
-      case 'Stats2024': {
-        this.fetchStats2024();
+      case 'Stats2025': {
+        this.fetchStats2025();
       }
 
       case 'PitImages': {
@@ -211,7 +211,8 @@ export class ViewComponent {
   }
 
   // Gets called when a user clicks the delete icon.
-  async delete2024DataScouting(
+  async delete2025DataScouting(
+    compCode: string,
     compLevel: string,
     matchNumber: number,
     setNumber: number,
@@ -221,17 +222,19 @@ export class ViewComponent {
       'block_alerts'
     ) as HTMLInputElement;
     if (block_alerts.checked || window.confirm('Actually delete data?')) {
-      await this.requestDelete2024DataScouting(
+      await this.requestDelete2025DataScouting(
+        compCode,
         compLevel,
         matchNumber,
         setNumber,
         teamNumber
       );
-      await this.fetchStats2024();
+      await this.fetchStats2025();
     }
   }
 
-  async requestDelete2024DataScouting(
+  async requestDelete2025DataScouting(
+    compCode: string,
     compLevel: string,
     matchNumber: number,
     setNumber: number,
@@ -240,20 +243,22 @@ export class ViewComponent {
     this.progressMessage = 'Deleting data. Please be patient.';
     const builder = new Builder();
     const compLevelData = builder.createString(compLevel);
+    const compCodeData = builder.createString(compCode);
     const teamNumberData = builder.createString(teamNumber);
 
     builder.finish(
-      Delete2024DataScouting.createDelete2024DataScouting(
+      Delete2025DataScouting.createDelete2025DataScouting(
         builder,
         compLevelData,
         matchNumber,
         setNumber,
-        teamNumberData
+        teamNumberData,
+        compCodeData
       )
     );
 
     const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/delete/delete_2024_data_scouting', {
+    const res = await fetch('/requests/delete/delete_2025_data_scouting', {
       method: 'POST',
       body: buffer,
     });
@@ -372,12 +377,14 @@ export class ViewComponent {
   }
 
   // Fetch all data scouting (stats) data and store in statList.
-  async fetchStats2024() {
+  async fetchStats2025() {
     this.progressMessage = 'Fetching stats list. Please be patient.';
     this.errorMessage = '';
 
     try {
-      this.statList = await this.viewDataRequestor.fetchStats2024List();
+      this.statList = await this.viewDataRequestor.fetchStats2025List(
+        this.compCode
+      );
       this.progressMessage = 'Successfully fetched stats list.';
     } catch (e) {
       this.errorMessage = e;

@@ -16,16 +16,20 @@ import {
   NoShowActionT,
   NoShowAction,
   ScoreType,
-  StageType,
-  Submit2024Actions,
+  CageType,
+  Submit2025Actions,
   MobilityAction,
   MobilityActionT,
   PenaltyAction,
   PenaltyActionT,
-  PickupNoteAction,
-  PickupNoteActionT,
-  PlaceNoteAction,
-  PlaceNoteActionT,
+  PickupCoralAction,
+  PickupCoralActionT,
+  PickupAlgaeAction,
+  PickupAlgaeActionT,
+  PlaceCoralAction,
+  PlaceCoralActionT,
+  PlaceAlgaeAction,
+  PlaceAlgaeActionT,
   RobotDeathAction,
   RobotDeathActionT,
   EndMatchAction,
@@ -33,7 +37,7 @@ import {
   ActionType,
   Action,
   ActionT,
-} from '@org_frc971/scouting/webserver/requests/messages/submit_2024_actions_generated';
+} from '@org_frc971/scouting/webserver/requests/messages/submit_2025_actions_generated';
 import {Match} from '@org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 import {
   MatchListRequestor,
@@ -48,7 +52,8 @@ type Section =
   | 'Team Selection'
   | 'Init'
   | 'Pickup'
-  | 'Place'
+  | 'Place Coral'
+  | 'Place Algae'
   | 'Endgame'
   | 'Dead'
   | 'Review and Submit'
@@ -96,20 +101,23 @@ export class EntryComponent implements OnInit {
   readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
   readonly QR_CODE_PIECE_SIZES = QR_CODE_PIECE_SIZES;
   readonly ScoreType = ScoreType;
-  readonly StageType = StageType;
+  readonly CageType = CageType;
   readonly ActionT = ActionT;
   readonly ActionType = ActionType;
   readonly NoShowActionT = NoShowActionT;
   readonly StartMatchActionT = StartMatchActionT;
   readonly MobilityActionT = MobilityActionT;
-  readonly PickupNoteActionT = PickupNoteActionT;
-  readonly PlaceNoteActionT = PlaceNoteActionT;
+  readonly PickupCoralActionT = PickupCoralActionT;
+  readonly PlaceCoralActionT = PlaceCoralActionT;
+  readonly PickupAlgaeActionT = PickupAlgaeActionT;
+  readonly PlaceAlgaeActionT = PlaceAlgaeActionT;
   readonly RobotDeathActionT = RobotDeathActionT;
   readonly PenaltyActionT = PenaltyActionT;
   readonly EndMatchActionT = EndMatchActionT;
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
+  @Input() compCode: string = '2016nytr';
   @Input() teamNumber: string = '1';
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
@@ -127,11 +135,12 @@ export class EntryComponent implements OnInit {
   successMessage: string = '';
   autoPhase: boolean = true;
   mobilityCompleted: boolean = false;
+  hasPickedUpCoral: boolean = false;
+  hasPickedUpAlgae: boolean = false;
+
   // TODO(phil): Come up with a better name here.
   selectedValue = 0;
-  endGameAction: StageType = StageType.kMISSING;
-  noteIsTrapped: boolean = false;
-  endGameSpotlight: boolean = false;
+  endGameAction: CageType = CageType.kMISSING;
 
   nextTeamNumber = '';
 
@@ -324,14 +333,20 @@ export class EntryComponent implements OnInit {
           this.autoPhase = true;
           this.section = 'Init';
           break;
-        case ActionType.PickupNoteAction:
-          this.section = 'Pickup';
+        case ActionType.PickupCoralAction:
+          this.hasPickedUpCoral = false;
+          break;
+        case ActionType.PickupAlgaeAction:
+          this.hasPickedUpAlgae = false;
           break;
         case ActionType.EndTeleopPhaseAction:
           this.section = 'Pickup';
           break;
-        case ActionType.PlaceNoteAction:
-          this.section = 'Place';
+        case ActionType.PlaceCoralAction:
+          this.section = 'Place Coral';
+          break;
+        case ActionType.PlaceAlgaeAction:
+          this.section = 'Place Algae';
           break;
         case ActionType.EndMatchAction:
           this.section = 'Endgame';
@@ -360,8 +375,8 @@ export class EntryComponent implements OnInit {
     return ScoreType[scoreType];
   }
 
-  stringifyStageType(stageType: StageType): String {
-    return StageType[stageType];
+  stringifyCageType(cageType: CageType): String {
+    return CageType[cageType];
   }
 
   changeSectionTo(target: Section) {
@@ -400,19 +415,21 @@ export class EntryComponent implements OnInit {
     const teamNumberFb = builder.createString(this.teamNumber);
     const compLevelFb = builder.createString(this.compLevel);
     const compTypeFb = builder.createString(this.compType);
+    const compCodeFb = builder.createString(this.compCode);
 
-    const actionsVector = Submit2024Actions.createActionsListVector(
+    const actionsVector = Submit2025Actions.createActionsListVector(
       builder,
       actionOffsets
     );
-    Submit2024Actions.startSubmit2024Actions(builder);
-    Submit2024Actions.addTeamNumber(builder, teamNumberFb);
-    Submit2024Actions.addMatchNumber(builder, this.matchNumber);
-    Submit2024Actions.addSetNumber(builder, this.setNumber);
-    Submit2024Actions.addCompLevel(builder, compLevelFb);
-    Submit2024Actions.addActionsList(builder, actionsVector);
-    Submit2024Actions.addCompType(builder, compTypeFb);
-    builder.finish(Submit2024Actions.endSubmit2024Actions(builder));
+    Submit2025Actions.startSubmit2025Actions(builder);
+    Submit2025Actions.addTeamNumber(builder, teamNumberFb);
+    Submit2025Actions.addMatchNumber(builder, this.matchNumber);
+    Submit2025Actions.addSetNumber(builder, this.setNumber);
+    Submit2025Actions.addCompLevel(builder, compLevelFb);
+    Submit2025Actions.addActionsList(builder, actionsVector);
+    Submit2025Actions.addCompType(builder, compTypeFb);
+    Submit2025Actions.addCompCode(builder, compCodeFb);
+    builder.finish(Submit2025Actions.endSubmit2025Actions(builder));
 
     return builder.asUint8Array();
   }
@@ -448,7 +465,7 @@ export class EntryComponent implements OnInit {
     this.qrCodeValueIndex = 0;
   }
 
-  async submit2024Actions() {
+  async submit2025Actions() {
     const res = await this.actionsSubmitter.submit(this.createActionsBuffer());
 
     if (res.ok) {

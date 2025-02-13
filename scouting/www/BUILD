@@ -51,14 +51,14 @@ assemble_static_files(
         "_static_files/authorize/index.html",
         ":ngsw.json",
         ":ngsw-worker.js",
-        "//third_party/y2024/field:pictures",
+        "//third_party/y2025/field:pictures",
     ],
     app_files = ":app",
     replace_prefixes = {
         "_static_files": "",
         "prod": "",
         "dev": "",
-        "third_party/y2024": "pictures",
+        "third_party/y2025": "pictures",
     },
     tags = [
         "no-remote-cache",

@@ -7,7 +7,7 @@ export class ActionsSubmitter {
 
   async submit(actionBuffer: Uint8Array): Promise<Response> {
     return this.requestAuthorizer.submit(
-      '/requests/submit/submit_2024_actions',
+      '/requests/submit/submit_2025_actions',
       actionBuffer
     );
   }

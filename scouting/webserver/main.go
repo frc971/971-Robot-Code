@@ -66,6 +66,14 @@ func getDefaultBlueAllianceConfig() string {
 	return "scouting_config.json"
 }
 
+// Stores the TBA API key to access the API.
+type scrapingConfig struct {
+	ApiKey    string `json:"api_key"`
+	BaseUrl   string `json:"base_url"`
+	Year      int32  `json:"year"`
+	EventCode string `json:"event_code"`
+}
+
 func main() {
 	portPtr := flag.Int("port", getDefaultPort(), "The port number to bind to.")
 	dirPtr := flag.String("directory", ".", "The directory to serve at /.")
@@ -141,9 +149,23 @@ func main() {
 	// Since Go doesn't support default arguments, we use 0 and "" to
 	// indicate that we want to source the values from the config.
 
+	if *blueAllianceConfigPtr == "" {
+		*blueAllianceConfigPtr = os.Getenv("BUILD_WORKSPACE_DIRECTORY") + "/scouting_config.json"
+	}
+
+	content, err := ioutil.ReadFile(*blueAllianceConfigPtr)
+	if err != nil {
+		log.Fatal(fmt.Sprint("Failed to open config at ", *blueAllianceConfigPtr, ": ", err))
+	}
+	// Parses the JSON parameters into a struct.
+	var config scrapingConfig
+	if err := json.Unmarshal([]byte(content), &config); err != nil {
+		log.Fatal(fmt.Sprint("Failed to parse config at ", *blueAllianceConfigPtr, ": ", err))
+	}
+
 	matchListScraper := background_task.New(10 * time.Minute)
 	matchListScraper.Start(func() {
-		match_list.GetMatchList(database, 0, "", *blueAllianceConfigPtr)
+		match_list.GetMatchList(database, config.Year, config.EventCode, *blueAllianceConfigPtr)
 	})
 
 	rankingsScraper := background_task.New(10 * time.Minute)

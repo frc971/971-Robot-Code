@@ -11,6 +11,19 @@
     class="container-fluid"
   >
     <div class="row">
+      <label for="comp_code_collection">Comp Code</label>
+      <select
+        name="comp_code_selection"
+        id="comp_code_selection"
+        [(ngModel)]="compCode"
+      >
+        <option value="0">N/A</option>
+        <option value="2025camb">Pinnacles</option>
+        <option value="2025cave">Ventura</option>
+        <option value="2025cafr">Central Valley</option>
+      </select>
+    </div>
+    <div class="row">
       <label for="match_number">Match Number</label>
       <input
         [(ngModel)]="matchNumber"
@@ -96,11 +109,11 @@
     <h2>Select Starting Position</h2>
     <img
       id="field_starting_positions_image"
-      src="/sha256/bb83d2c976c1496bb470371821d1d1882d6baf31178009a6f6cba579880c6a03/pictures/field/2024_field.png"
+      src="/sha256/b3ad87fed6cf55b1569b041ebb415959b2cf3c5942af1f931c8ece876f545c20/pictures/field/2025_field.png"
       alt="Starting Positions Image"
       class="img-fluid"
     />
-    <div *ngFor="let i of [1, 2, 3, 4]">
+    <div *ngFor="let i of [1, 2, 3]">
       <label>
         <input
           type="radio"
@@ -150,10 +163,32 @@
         DEAD
       </button>
       <button
+        *ngIf="!hasPickedUpCoral"
         class="btn btn-warning"
-        (click)="changeSectionTo('Place'); actionHelper.addPickupNoteAction({auto: autoPhase});"
+        (click)="actionHelper.addPickupCoralAction({auto: autoPhase}); hasPickedUpCoral = true;"
       >
-        NOTE
+        PICKUP CORAL
+      </button>
+      <button
+        *ngIf="hasPickedUpCoral"
+        class="btn btn-warning"
+        (click)="changeSectionTo('Place Coral');"
+      >
+        SCORE CORAL
+      </button>
+      <button
+        *ngIf="!hasPickedUpAlgae"
+        class="btn btn-success"
+        (click)="actionHelper.addPickupAlgaeAction({auto: autoPhase}); hasPickedUpAlgae = true;"
+      >
+        PICKUP ALGAE
+      </button>
+      <button
+        *ngIf="hasPickedUpAlgae"
+        class="btn btn-success"
+        (click)="changeSectionTo('Place Algae');"
+      >
+        SCORE ALGAE
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
@@ -196,7 +231,7 @@
       </button>
     </div>
   </div>
-  <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
+  <div *ngSwitchCase="'Place Coral'" id="PlaceCoral" class="container-fluid">
     <h6 class="text-muted">
       Last Action: {{ActionType[actionList[actionList.length -
       1].actionTakenType]}}
@@ -215,67 +250,146 @@
       >
         DEAD
       </button>
-      <div class="half-button-container">
+      <div class="d-grid gap-1" style="padding: 0">
         <button
-          class="btn btn-info half-button"
-          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kDROPPED});"
+          class="btn btn-info"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpCoral = false;"
         >
-          Dropped
+          Dropped Coral
         </button>
-        <button
-          class="btn btn-info half-button"
-          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kOUT_OF_FIELD});"
-        >
-          Out Of Field
-        </button>
-      </div>
-      <div
-        *ngIf="!autoPhase"
-        class="d-grid gap-1"
-        style="padding: 0; margin: 0"
-      >
-        <div class="half-button-container">
-          <button
-            class="btn btn-success half-button"
-            (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP});"
+        <div class="d-grid gap-1" style="padding: 0; margin: 0">
+          <div
+            style="
+              display: flex-wrap;
+              padding: 0;
+              justify-content: center;
+              text-align: center;
+              align-content: center;
+              margin: 0;
+            "
           >
-            AMP
-          </button>
-
-          <button
-            class="btn btn-warning half-button"
-            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSHUTTLED});"
-          >
-            SHUTTLED
-          </button>
-          <button
-            class="btn btn-success half-button"
-            (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER});"
-          >
-            SPEAKER
-          </button>
-          <button
-            class="btn btn-warning half-button"
-            (click)="changeSectionTo('Pickup');  actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER_AMPLIFIED});"
-          >
-            SPEAKER AMPLIFIED
-          </button>
+            <button
+              class="btn btn-warning"
+              (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL1}); hasPickedUpCoral = false;"
+              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+            >
+              L1
+            </button>
+            <button
+              class="btn btn-warning"
+              (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL2}); hasPickedUpCoral = false;"
+              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+            >
+              L2
+            </button>
+            <button
+              class="btn btn-warning"
+              (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL3}); hasPickedUpCoral = false;"
+              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+            >
+              L3
+            </button>
+            <button
+              class="btn btn-warning"
+              (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL4}); hasPickedUpCoral = false;"
+              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+            >
+              L4
+            </button>
+          </div>
         </div>
+        <button
+          class="btn btn-danger"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kMISSED}); hasPickedUpCoral = false;"
+        >
+          Missed
+        </button>
+        <button
+          *ngIf="autoPhase && !mobilityCompleted"
+          class="btn btn-light"
+          (click)="actionHelper.addMobilityAction({mobility: true});"
+        >
+          Mobility
+        </button>
       </div>
-
+      <div style="display: flex">
+        <h5>Penalties :</h5>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-right: 15px"
+          (click)="removePenalty()"
+        >
+          -
+        </button>
+        <p>{{this.penalties}}</p>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-left: 15px"
+          (click)="addPenalty()"
+        >
+          +
+        </button>
+      </div>
       <button
+        class="btn btn-primary"
         *ngIf="autoPhase"
-        class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kAMP});"
+        (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
       >
-        AMP
+        Start Teleop
       </button>
       <button
-        *ngIf="autoPhase"
-        class="btn btn-warning"
-        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceNoteAction({auto: autoPhase, scoreType: ScoreType.kSPEAKER});"
+        *ngIf="!autoPhase"
+        class="btn btn-primary"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
       >
-        SPEAKER
+        Endgame
+      </button>
+    </div>
+  </div>
+  <div *ngSwitchCase="'Place Algae'" id="PlaceAlgae" class="container-fluid">
+    <h6 class="text-muted">
+      Last Action: {{ActionType[actionList[actionList.length -
+      1].actionTakenType]}}
+    </h6>
+    <!--
+      Decrease distance between buttons during auto to make space for auto balancing
+      selection and keep all buttons visible without scrolling on most devices.
+    -->
+    <div
+      [ngClass]="{'d-grid': true, 'gap-4': autoPhase === true, 'gap-3': autoPhase === false}"
+    >
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
+      >
+        DEAD
+      </button>
+      <button
+        class="btn btn-info"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpAlgae = false;"
+      >
+        Dropped Algae
+      </button>
+      <div class="half-button-container">
+        <button
+          class="btn btn-success half-button"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kPROCESSOR}); hasPickedUpAlgae = false;"
+        >
+          Processor
+        </button>
+        <button
+          class="btn btn-warning half-button"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kNET}); hasPickedUpAlgae = false;"
+        >
+          Net
+        </button>
+      </div>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kMISSED}); hasPickedUpAlgae = false;"
+      >
+        Missed
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
@@ -336,19 +450,19 @@
           <input
             type="radio"
             name="endgameaction"
-            [value]="StageType.kPARK"
+            [value]="CageType.kSHALLOW_CAGE"
             [(ngModel)]="endGameAction"
           />
-          Park
+          Shallow Cage
         </label>
         <label>
           <input
             type="radio"
             name="endgameaction"
-            [value]="StageType.kON_STAGE"
+            [value]="CageType.kDEEP_CAGE"
             [(ngModel)]="endGameAction"
           />
-          On Stage
+          Deep Cage
         </label>
       </div>
       <div class="button_row">
@@ -356,34 +470,30 @@
           <input
             type="radio"
             name="endgameaction"
-            [value]="StageType.kHARMONY"
+            [value]="CageType.kBUDDIE"
             [(ngModel)]="endGameAction"
           />
-          Harmony
+          Buddy Climb
         </label>
         <label>
           <input
             type="radio"
             name="endgameaction"
-            [value]="StageType.kMISSING"
+            [value]="CageType.kPARK"
+            [(ngModel)]="endGameAction"
+          />
+          Parked
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="endgameaction"
+            [value]="CageType.kMISSING"
             [(ngModel)]="endGameAction"
           />
           N/A
         </label>
       </div>
-      <label>
-        <input type="checkbox" name="trapnote" [(ngModel)]="noteIsTrapped" />
-        Trap Note
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="spotlight"
-          [(ngModel)]="endGameSpotlight"
-        />
-        Spotlight
-      </label>
-
       <div style="display: flex">
         <h5>Penalties :</h5>
         <button
@@ -405,7 +515,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-primary"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({cageType: endGameAction});"
       >
         End Match
       </button>
@@ -441,7 +551,7 @@
       </button>
       <button
         class="btn btn-primary"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({stageType: endGameAction, trapNote: noteIsTrapped, spotlight: endGameSpotlight});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({cageType: endGameAction});"
       >
         End Match
       </button>
@@ -457,12 +567,19 @@
               Started match at position {{(action.actionTaken | cast:
               StartMatchActionT).position}}
             </span>
-            <span *ngSwitchCase="ActionType.PickupNoteAction">
-              Picked up Note
+            <span *ngSwitchCase="ActionType.PickupCoralAction">
+              Picked up Coral
             </span>
-            <span *ngSwitchCase="ActionType.PlaceNoteAction">
+            <span *ngSwitchCase="ActionType.PickupAlgaeAction">
+              Picked up Algae
+            </span>
+            <span *ngSwitchCase="ActionType.PlaceCoralAction">
               Placed at {{stringifyScoreType((action.actionTaken | cast:
-              PlaceNoteActionT).scoreType)}}
+              PlaceCoralActionT).scoreType)}}
+            </span>
+            <span *ngSwitchCase="ActionType.PlaceAlgaeAction">
+              Placed at {{stringifyScoreType((action.actionTaken | cast:
+              PlaceAlgaeActionT).scoreType)}}
             </span>
             <span *ngSwitchCase="ActionType.EndAutoPhaseAction">
               Ended auto phase
@@ -471,11 +588,8 @@
               Ended teleop phase
             </span>
             <span *ngSwitchCase="ActionType.EndMatchAction">
-              Ended Match; stageType: {{stringifyStageType((action.actionTaken |
-              cast: EndMatchActionT).stageType)}}, trapNote:
-              {{(action.actionTaken | cast: EndMatchActionT).trapNote}},
-              spotlight: {{(action.actionTaken | cast:
-              EndMatchActionT).spotlight}}
+              Ended Match; cageType: {{stringifyCageType((action.actionTaken |
+              cast: EndMatchActionT).cageType)}}
             </span>
             <span *ngSwitchCase="ActionType.RobotDeathAction">
               Robot dead: {{(action.actionTaken | cast:
@@ -500,7 +614,7 @@
       <button class="btn btn-info" (click)="changeSectionTo('QR Code');">
         Create QR Code
       </button>
-      <button class="btn btn-warning" (click)="submit2024Actions();">
+      <button class="btn btn-warning" (click)="submit2025Actions();">
         Submit
       </button>
     </div>

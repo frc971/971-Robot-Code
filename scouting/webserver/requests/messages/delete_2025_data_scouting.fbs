@@ -1,0 +1,11 @@
+namespace scouting.webserver.requests;
+
+table Delete2025DataScouting {
+    comp_level:string (id: 0);
+    match_number:int (id: 1);
+    set_number:int (id: 2);
+    team_number:string (id: 3);
+    comp_code:string (id: 4);
+}
+
+root_type Delete2025DataScouting;

@@ -25,7 +25,7 @@ export class DriverRankingComponent {
   rankings: number[] = [1, 1, 1];
 
   match_number: number = 1;
-  comp_code: string = '2025camb';
+  comp_code: string = '2016nytr';
 
   errorMessage = '';
 
@@ -111,7 +111,7 @@ export class DriverRankingComponent {
       this.human_player_ranking = 1;
       this.rankings = [1, 1, 1];
       this.human_player_team = '971';
-      this.comp_code = '2025camb';
+      this.comp_code = '0';
       this.errorMessage = '';
     }
   }
