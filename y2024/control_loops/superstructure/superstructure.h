@@ -89,9 +89,7 @@ class Superstructure
 
   PotAndAbsoluteEncoderSubsystem extend_;
 
-  Debouncer extend_debouncer_;
-
-  Debouncer transfer_debouncer_;
+  frc971::control_loops::Debouncer extend_debouncer_, transfer_debouncer_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
