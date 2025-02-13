@@ -10,94 +10,11 @@ from frc971.control_loops.swerve.dynamics_constants import *
 # Note: this physics needs to match the symengine code.  We have tests that
 # confirm they match in all the cases we care about.
 
-CoefficientsType = namedtuple('CoefficientsType', [
-    'Cx',
-    'Cy',
-    'rw',
-    'm',
-    'J',
-    'Gd1',
-    'rs',
-    'rp',
-    'Gd2',
-    'rb1',
-    'rb2',
-    'Gd3',
-    'Gd',
-    'Js',
-    'Gs',
-    'wb',
-    'Jdm',
-    'Jsm',
-    'Kts',
-    'Ktd',
-    'robot_width',
-    'caster',
-    'contact_patch_length',
-])
+CoefficientsType = namedtuple('CoefficientsType', JAX_CONSTANTS.keys())
 
 
-def Coefficients(
-    Cx: float = 25.0 * 9.8 / 4.0 / 0.05,
-    Cy: float = 5 * 9.8 / 0.05 / 4.0,
-    rw: float = 2 * 0.0254,
-
-    # base is 20 kg without battery
-    m: float = 48.40,
-    J: float = 6.0,
-    Gd1: float = 12.0 / 42.0,
-    rs: float = 28.0 / 20.0 / 2.0,
-    rp: float = 18.0 / 20.0 / 2.0,
-
-    # 15 / 45 bevel ratio, calculated using python script ported over to
-    # GetBevelPitchRadius(double)
-    # TODO(Justin): Use the function instead of computed constantss
-    rb1: float = 0.3805473,
-    rb2: float = 1.14164,
-    Js: float = 0.001,
-    Gs: float = 35.0 / 468.0,
-    wb: float = 0.725,
-    drive_motor=KrakenFOC(),
-    steer_motor=KrakenFOC(),
-    robot_width: float = 24.75 * 0.0254,
-    caster: float = 0.01,
-    contact_patch_length: float = 0.02,
-) -> CoefficientsType:
-
-    Gd2 = rs / rp
-    Gd3 = rb1 / rb2
-    Gd = Gd1 * Gd2 * Gd3
-
-    Jdm = drive_motor.motor_inertia
-    Jsm = steer_motor.motor_inertia
-    Kts = steer_motor.Kt
-    Ktd = drive_motor.Kt
-
-    return CoefficientsType(
-        Cx=Cx,
-        Cy=Cy,
-        rw=rw,
-        m=m,
-        J=J,
-        Gd1=Gd1,
-        rs=rs,
-        rp=rp,
-        Gd2=Gd2,
-        rb1=rb1,
-        rb2=rb2,
-        Gd3=Gd3,
-        Gd=Gd,
-        Js=Js,
-        Gs=Gs,
-        wb=wb,
-        Jdm=Jdm,
-        Jsm=Jsm,
-        Kts=Kts,
-        Ktd=Ktd,
-        robot_width=robot_width,
-        caster=caster,
-        contact_patch_length=contact_patch_length,
-    )
+def Coefficients() -> CoefficientsType:
+    return CoefficientsType(**JAX_CONSTANTS)
 
 
 def R(theta):

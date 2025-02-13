@@ -579,8 +579,40 @@ class SwerveSimulation {
     result_py.emplace_back("");
 
     WriteConstants(&result_py);
+    WriteJaxConstants(&result_py);
 
     aos::util::WriteStringToFileOrDie(path, absl::StrJoin(result_py, "\n"));
+  }
+
+  void WriteJaxConstants(std::vector<std::string> *result_py) {
+    result_py->emplace_back("JAX_CONSTANTS = {");
+    result_py->emplace_back(absl::Substitute("    'Cx': $0,", ccode(*Cx_)));
+    result_py->emplace_back(absl::Substitute("    'Cy': $0,", ccode(*Cy_)));
+    result_py->emplace_back(absl::Substitute("    'rw': $0,", ccode(*rw_)));
+    result_py->emplace_back(absl::Substitute("    'm': $0,", ccode(*m_)));
+    result_py->emplace_back(absl::Substitute("    'J': $0,", ccode(*J_)));
+    result_py->emplace_back(absl::Substitute("    'Gd1': $0,", ccode(*Gd1_)));
+    result_py->emplace_back(absl::Substitute("    'rs': $0,", ccode(*rs_)));
+    result_py->emplace_back(absl::Substitute("    'rp': $0,", ccode(*rp_)));
+    result_py->emplace_back(absl::Substitute("    'Gd2': $0,", ccode(*Gd2_)));
+    result_py->emplace_back(absl::Substitute("    'rb1': $0,", ccode(*rb1_)));
+    result_py->emplace_back(absl::Substitute("    'rb2': $0,", ccode(*rb2_)));
+    result_py->emplace_back(absl::Substitute("    'Gd3': $0,", ccode(*Gd3_)));
+    result_py->emplace_back(absl::Substitute("    'Gd': $0,", ccode(*Gd_)));
+    result_py->emplace_back(absl::Substitute("    'Js': $0,", ccode(*Js_)));
+    result_py->emplace_back(absl::Substitute("    'Gs': $0,", ccode(*Gs_)));
+    result_py->emplace_back(absl::Substitute("    'wb': $0,", ccode(*wb_)));
+    result_py->emplace_back(absl::Substitute("    'Jdm': $0,", ccode(*Jdm_)));
+    result_py->emplace_back(absl::Substitute("    'Jsm': $0,", ccode(*Jsm_)));
+    result_py->emplace_back(absl::Substitute("    'Kts': $0,", ccode(*Kts_)));
+    result_py->emplace_back(absl::Substitute("    'Ktd': $0,", ccode(*Ktd_)));
+    result_py->emplace_back(
+        absl::Substitute("    'robot_width': $0,", ccode(*robot_width_)));
+    result_py->emplace_back(
+        absl::Substitute("    'caster': $0,", ccode(*caster_)));
+    result_py->emplace_back(absl::Substitute("    'contact_patch_length': $0,",
+                                             ccode(*contact_patch_length_)));
+    result_py->emplace_back("}");
   }
 
   void WriteConstants(std::vector<std::string> *result_py) {
