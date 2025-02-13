@@ -199,21 +199,21 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.pivot_voltage) : nullptr,
           status->fbb());
 
-  double climber_voltage = 0.0;
+  double climber_current = 0.0;
   if (unsafe_goal != nullptr) {
     switch (unsafe_goal->climber_goal()) {
       case (ClimberGoal::NEUTRAL):
         break;
       case (ClimberGoal::CLIMB):
-        climber_voltage =
-            robot_constants_->common()->climber_voltage()->climb();
+        climber_current =
+            robot_constants_->common()->climber_current()->climb();
         break;
       case (ClimberGoal::RETRACT):
-        climber_voltage =
-            robot_constants_->common()->climber_voltage()->retract();
+        climber_current =
+            robot_constants_->common()->climber_current()->retract();
     }
   }
-  output_struct.climber_voltage = climber_voltage;
+  output_struct.climber_current = climber_current;
 
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::

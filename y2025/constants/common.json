@@ -11,10 +11,10 @@
     "elevator_supply_current_limit": 50,
     "pivot_stator_current_limit": 100,
     "pivot_supply_current_limit": 50,
-    "end_effector_stator_current_limit": 100,
+    "end_effector_stator_current_limit": 60,
     "end_effector_supply_current_limit": 50,
     "climber_stator_current_limit": 100,
-    "climber_supply_current_limit": 50,
+    "climber_supply_current_limit": 60,
     "wrist_stator_current_limit": 50,
     "wrist_supply_current_limit": 25
   },
@@ -79,9 +79,9 @@
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
   },
-  "climber_voltage": {
-    "climb": 8.0,
-    "retract": -8.0
+  "climber_current": {
+    "climb": 60.0,
+    "retract": -4.0
   },
   "rotation": {
     "zeroing_voltage": 3.0,

@@ -53,6 +53,10 @@ const ButtonLocation kBack(3, 7);
 const ButtonLocation kEndEffectorIntake(6, 2);
 const ButtonLocation kEndEffectorSpit(6, 5);
 
+const ButtonLocation kClimb(1, 2);
+const ButtonLocation kRetract(1, 3);
+
+using y2025::control_loops::superstructure::ClimberGoal;
 using y2025::control_loops::superstructure::ElevatorGoal;
 using y2025::control_loops::superstructure::EndEffectorGoal;
 using y2025::control_loops::superstructure::PivotGoal;
@@ -131,6 +135,14 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_robot_side(RobotSide::BACK);
     } else {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
+    }
+
+    if (data.IsPressed(kClimb)) {
+      superstructure_goal_builder->set_climber_goal(ClimberGoal::CLIMB);
+    } else if (data.IsPressed(kRetract)) {
+      superstructure_goal_builder->set_climber_goal(ClimberGoal::RETRACT);
+    } else {
+      superstructure_goal_builder->set_climber_goal(ClimberGoal::NEUTRAL);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
