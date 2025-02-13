@@ -1,12 +1,12 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, vision_weight, 0.7,
+ABSL_FLAG(double, vision_weight, 0.01,
           "How much to weigh the vision detection vs the velocity based pose "
           "estimation.");
-ABSL_FLAG(double, distance_threshold, 4.0,
+ABSL_FLAG(double, distance_threshold, 3.0,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
-ABSL_FLAG(bool, do_moving_average, true,
+ABSL_FLAG(bool, do_moving_average, false,
           "If true, use a moving average of previous samples.");
 
 namespace y2025::localizer {
@@ -136,15 +136,13 @@ void WeightedAverageLocalizer::SendOutput(
     // Vector with x, y, sin(theta), cos(theta) for the moving average.
     Eigen::Matrix<double, 4, 1> accumulated_pose =
         Eigen::Matrix<double, 4, 1>::Zero();
-    std::accumulate(previous_samples_.begin(), previous_samples_.end(),
-                    accumulated_pose,
-                    [](Eigen::Matrix<double, 4, 1> pose, XYThetaPose sample) {
-                      pose(0) += sample(PoseIdx::kX);
-                      pose(1) += sample(PoseIdx::kY);
-                      pose(2) += sin(sample(PoseIdx::kTheta));
-                      pose(3) += cos(sample(PoseIdx::kTheta));
-                      return pose;
-                    });
+
+    for (size_t i = 0; i < previous_samples_.size(); i++) {
+      accumulated_pose(0) += previous_samples_.at(i)(PoseIdx::kX);
+      accumulated_pose(1) += previous_samples_.at(i)(PoseIdx::kY);
+      accumulated_pose(2) += sin(previous_samples_.at(i)(PoseIdx::kY));
+      accumulated_pose(3) += cos(previous_samples_.at(i)(PoseIdx::kX));
+    }
     size_t num_captured_samples_ = previous_samples_.size();
 
     estimated_pose_ << accumulated_pose(0) / num_captured_samples_,
