@@ -157,6 +157,7 @@ class WeightedAverageLocalizer : Localizer {
  private:
   std::map<uint64_t, DetectionInfo> detected_pose_;
   std::vector<XYThetaPose> previous_samples_;
+  bool first_it_ = true;
 };
 
 class KalmanFilterLocalizer : Localizer {

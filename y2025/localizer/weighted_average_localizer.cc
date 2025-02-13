@@ -1,13 +1,17 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, vision_weight, 0.01,
+ABSL_FLAG(double, vision_weight, 0.4,
           "How much to weigh the vision detection vs the velocity based pose "
           "estimation.");
 ABSL_FLAG(double, distance_threshold, 3.0,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
-ABSL_FLAG(bool, do_moving_average, false,
+ABSL_FLAG(bool, do_moving_average, true,
           "If true, use a moving average of previous samples.");
+ABSL_FLAG(
+    double, moving_average_factor, 1,
+    "Scales up the moving average accumulation. Increasing this number "
+    "increases the weight of the most recent sample in the moving average.");
 
 namespace y2025::localizer {
 WeightedAverageLocalizer::WeightedAverageLocalizer(aos::EventLoop *event_loop)
@@ -138,16 +142,38 @@ void WeightedAverageLocalizer::SendOutput(
         Eigen::Matrix<double, 4, 1>::Zero();
 
     for (size_t i = 0; i < previous_samples_.size(); i++) {
-      accumulated_pose(0) += previous_samples_.at(i)(PoseIdx::kX);
-      accumulated_pose(1) += previous_samples_.at(i)(PoseIdx::kY);
-      accumulated_pose(2) += sin(previous_samples_.at(i)(PoseIdx::kY));
-      accumulated_pose(3) += cos(previous_samples_.at(i)(PoseIdx::kX));
+      if (i == 0) {
+        accumulated_pose(0) += absl::GetFlag(FLAGS_moving_average_factor) *
+                               previous_samples_.at(i)(PoseIdx::kX);
+        accumulated_pose(1) += absl::GetFlag(FLAGS_moving_average_factor) *
+                               previous_samples_.at(i)(PoseIdx::kY);
+        accumulated_pose(2) += absl::GetFlag(FLAGS_moving_average_factor) *
+                               sin(previous_samples_.at(i)(PoseIdx::kTheta));
+        accumulated_pose(3) += absl::GetFlag(FLAGS_moving_average_factor) *
+                               cos(previous_samples_.at(i)(PoseIdx::kTheta));
+      } else {
+        accumulated_pose(0) += previous_samples_.at(i)(PoseIdx::kX);
+        accumulated_pose(1) += previous_samples_.at(i)(PoseIdx::kY);
+        accumulated_pose(2) += sin(previous_samples_.at(i)(PoseIdx::kTheta));
+        accumulated_pose(3) += cos(previous_samples_.at(i)(PoseIdx::kTheta));
+      }
     }
-    size_t num_captured_samples_ = previous_samples_.size();
+    size_t num_captured_samples_ = previous_samples_.size() - 1 +
+                                   absl::GetFlag(FLAGS_moving_average_factor);
 
     estimated_pose_ << accumulated_pose(0) / num_captured_samples_,
         accumulated_pose(1) / num_captured_samples_,
         atan2(accumulated_pose(2), accumulated_pose(3));
+  }
+
+  if (first_it_) {
+    state_builder->set_x(average_detected_pose(PoseIdx::kX));
+    state_builder->set_y(average_detected_pose(PoseIdx::kY));
+    state_builder->set_theta(average_detected_pose(PoseIdx::kTheta));
+
+    state_builder.CheckOk(state_builder.Send());
+    first_it_ = false;
+    return;
   }
 
   state_builder->set_x(final_robot_pose(PoseIdx::kX));
