@@ -149,6 +149,7 @@ cc_library(
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
+    args = ["--allow_duplicate_samples=true"],
     data = ["//y2023:aos_config"],
     deps = [
         ":localizer",

@@ -3,9 +3,15 @@
 
 #include <optional>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+
 #include "frc971/control_loops/drivetrain/drivetrain_status_static.h"
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/zeroing/averager.h"
+
+ABSL_DECLARE_FLAG(bool, allow_duplicate_samples);
+ABSL_DECLARE_FLAG(size_t, sample_duplication_threshold);
 
 namespace frc971::zeroing {
 
@@ -35,7 +41,7 @@ class ImuZeroer {
   // These values are currently based on looking at results from the ADIS16448.
   static constexpr double kGyroMaxVariation = 0.02;  // rad / sec
 
-  explicit ImuZeroer(FaultBehavior fault_behavior = FaultBehavior::kLatch,
+  explicit ImuZeroer(FaultBehavior fault_behavior = FaultBehavior::kTemporary,
                      double gyro_max_variation = kGyroMaxVariation);
   bool Zeroed() const;
   bool Faulted() const;
@@ -77,6 +83,8 @@ class ImuZeroer {
   Eigen::Vector3d gyro_average_;
   Eigen::Vector3d last_gyro_sample_;
   Eigen::Vector3d last_accel_sample_;
+  Eigen::Vector3d last_last_gyro_sample_;
+  Eigen::Vector3d last_last_accel_sample_;
 
   const FaultBehavior fault_behavior_;
   const double gyro_max_variation_;
@@ -85,6 +93,10 @@ class ImuZeroer {
 
   size_t good_iters_ = 0;
   size_t num_zeroes_ = 0;
+  size_t sample_duplicate_count_ = 0;
+
+  const size_t sample_duplication_threshold_;
+  const bool allow_duplicate_samples_;
 };
 
 }  // namespace frc971::zeroing

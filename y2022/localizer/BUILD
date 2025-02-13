@@ -118,6 +118,7 @@ cc_binary(
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
+    args = ["--allow_duplicate_samples=true"],
     data = [
         "//y2022:aos_config",
     ],
