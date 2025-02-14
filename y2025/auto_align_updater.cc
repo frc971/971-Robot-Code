@@ -9,10 +9,18 @@
 #include "frc971/control_loops/swerve/position_goal_static.h"
 #include "frc971/control_loops/swerve/swerve_localizer_state_generated.h"
 #include "frc971/vision/target_map_utils.h"
+#include "y2025/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2025/control_loops/swerve/parameters.h"
 #include "y2025/localizer/localizer.h"
 
 ABSL_FLAG(std::string, config, "aos_config.json",
           "Path to the config file to use.");
+
+// Distance to offset the robots position past the auto align goal tangent to
+// the tag.
+constexpr double kTangentOffset = 0.5;
+// DIstance to offset the robots position normal to the tag (left/right).
+constexpr double kNormalOffset = 0.5;
 
 using frc971::control_loops::Pose;
 using y2025::Constants;
@@ -44,15 +52,23 @@ class AutoAlignUpdater {
         position_goal_sender_(
             event_loop_
                 ->MakeSender<frc971::control_loops::swerve::PositionGoalStatic>(
-                    "/autonomous_auto_align")) {
+                    "/autonomous_auto_align")),
+        goal_fetcher_(
+            event_loop_
+                ->MakeFetcher<y2025::control_loops::superstructure::Goal>(
+                    "/roborio/superstructure")) {
     for (int id :
          *constants_fetcher_.constants().common()->reef_apriltag_ids()) {
       const Pose target_pose = Pose(target_poses_.at(id));
       Pose auto_align_pose = Pose(target_pose);
-      (*auto_align_pose.mutable_pos())(0) -=
-          0.5 * cos(auto_align_pose.abs_theta());
+      (*auto_align_pose.mutable_pos())(0) +=
+          ((y2025::control_loops::kSideLength / 2) + kTangentOffset) *
+          sin(auto_align_pose.abs_theta());
       (*auto_align_pose.mutable_pos())(1) -=
-          0.5 * sin(auto_align_pose.abs_theta());
+          ((y2025::control_loops::kSideLength / 2) + kTangentOffset) *
+          cos(auto_align_pose.abs_theta());
+
+      auto_align_pose.set_theta(auto_align_pose.abs_theta() - M_PI / 2.0);
 
       reef_locations_.emplace(id, auto_align_pose);
     }
@@ -60,16 +76,20 @@ class AutoAlignUpdater {
     event_loop_->MakeWatcher(
         "/localizer",
         [this](const frc971::control_loops::swerve::LocalizerState &state) {
+          goal_fetcher_.Fetch();
+          if (goal_fetcher_.get() == nullptr) {
+            return;
+          }
           int closest_id =
               constants_fetcher_.constants().common()->reef_apriltag_ids()->Get(
                   0);
 
-          Eigen::Matrix<double, 3, 1> robot_pos =
+          Eigen::Matrix<double, 3, 1> robot_xyz =
               Eigen::Matrix<double, 3, 1>::Zero();
 
-          robot_pos << state.x(), state.y(), 0.0;
+          robot_xyz << state.x(), state.y(), 0.0;
 
-          Pose robot_pose(robot_pos, state.theta());
+          Pose robot_pose(robot_xyz, state.theta());
 
           for (const auto &[id, pose] : reef_locations_) {
             if (pose.Rebase(&robot_pose).xy_norm() <
@@ -81,8 +101,20 @@ class AutoAlignUpdater {
 
           Pose final_pose = reef_locations_.at(closest_id);
 
-          builder->set_x(final_pose.abs_pos()(0));
-          builder->set_y(final_pose.abs_pos()(1));
+          double offset =
+              (goal_fetcher_->auto_align_direction() ==
+               y2025::control_loops::superstructure::AutoAlignDirection::LEFT)
+                  ? kNormalOffset
+                  : -kNormalOffset;
+
+          double goal_x = final_pose.abs_pos()(0) +
+                          offset * sin(state.theta() + M_PI / 2.0);
+          double goal_y = final_pose.abs_pos()(1) +
+                          offset * cos(state.theta() + M_PI / 2.0);
+
+          builder->set_x(goal_x);
+          builder->set_y(goal_y);
+
           builder->set_theta(final_pose.abs_theta());
 
           builder.CheckOk(builder.Send());
@@ -96,6 +128,7 @@ class AutoAlignUpdater {
   const std::map<uint64_t, Localizer::Transform> target_poses_;
   aos::Sender<frc971::control_loops::swerve::PositionGoalStatic>
       position_goal_sender_;
+  aos::Fetcher<y2025::control_loops::superstructure::Goal> goal_fetcher_;
   std::map<int, frc971::control_loops::Pose> reef_locations_;
 };
 

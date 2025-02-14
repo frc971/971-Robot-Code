@@ -1,3 +1,4 @@
+#include "frc971/control_loops/swerve/linear_velocity_controller.h"
 #include "frc971/control_loops/swerve/simplified_dynamics.h"
 #include "y2025/constants.h"
 
@@ -5,6 +6,7 @@ namespace y2025::control_loops {
 
 using frc971::control_loops::swerve::LinearVelocityController;
 
+constexpr double kSideLength = 0.635;
 LinearVelocityController::ControllerWeights CreateWeights(
     const y2025::VelocityControllerWeights *weights) {
   return LinearVelocityController::ControllerWeights{
@@ -33,7 +35,6 @@ MakeSwerveParameters() {
             .extra_steer_inertia = 0.01};
   };
 
-  constexpr Scalar kSideLength = 0.635;
   return {
       .mass = 35,
       .moment_of_inertia = 2.63,

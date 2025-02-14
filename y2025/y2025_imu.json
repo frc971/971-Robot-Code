@@ -41,6 +41,13 @@
       "num_senders": 10
     },
     {
+      "name": "/imu/autonomous_auto_align",
+      "type": "frc971.control_loops.swerve.PositionGoal",
+      "source_node": "imu",
+      "frequency": 250,
+      "num_senders": 10
+    },
+    {
       "name": "/imu/localizer",
       "type": "frc971.control_loops.swerve.LocalizerState",
       "source_node": "imu",
@@ -67,7 +74,7 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 30,
-      "max_size": 10912
+      "max_size": 11376
     },
     {
       "name": "/imu/drivetrain",
@@ -552,6 +559,13 @@
       ]
     },
     {
+      "name": "auto_align_updater",
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
         "name": "swerve_control_loops",
         "args": [
             "--nodie_on_malloc"
@@ -701,6 +715,16 @@
       "match": {
         "name": "/autonomous_auto_align",
         "type": "frc971.control_loops.swerve.Goal",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name":"/imu/autonomous_auto_align"
+      }
+    },
+    {
+      "match": {
+        "name": "/autonomous_auto_align",
+        "type": "frc971.control_loops.swerve.PositionGoal",
         "source_node": "imu"
       },
       "rename": {
