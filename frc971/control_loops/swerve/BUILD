@@ -658,6 +658,7 @@ cc_library(
         ":simplified_dynamics",
         ":swerve_drivetrain_goal_fbs",
         ":swerve_drivetrain_status_fbs",
+        ":swerve_localizer_state_fbs",
         ":swerve_trajectory_fbs",
         "//aos/events:event_loop",
         "//frc971/input:joystick_state_fbs",

@@ -7,7 +7,7 @@
 #include "frc971/math/flatbuffers_matrix.h"
 
 // We are using a PID controller with only the P (proportional) part
-ABSL_FLAG(double, kPositionGain, 0.5, "Proportional gain for positional error");
+ABSL_FLAG(double, kPositionGain, 2.0, "Proportional gain for positional error");
 ABSL_FLAG(double, kRotationGain, 0.5, "Proportional gain for rotational error");
 
 using frc971::control_loops::swerve::AutonomousController;
@@ -29,9 +29,10 @@ AutonomousController::AutonomousController(
                   "/drivetrain")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/roborio/aos")),
-      swerve_drivetrain_status_fetcher_(
-          event_loop->MakeFetcher<frc971::control_loops::swerve::Status>(
-              "/drivetrain")),
+      localizer_state_fetcher_(
+          event_loop
+              ->MakeFetcher<frc971::control_loops::swerve::LocalizerState>(
+                  "/localizer")),
       event_loop_(event_loop) {
   completed_ = false;
   // setup callbacks
@@ -132,23 +133,11 @@ void AutonomousController::Iterate() {
   auto trajectory_point = trajectory_.message().discretized_trajectory()->Get(
       trajectory_index_.value());
 
-  constexpr size_t num_position_states =
-      frc971::control_loops::swerve::SimplifiedDynamics<
-          double>::States::kNumPositionStates;
-  Eigen::Matrix<double, num_position_states, 1> x_hat;
+  localizer_state_fetcher_.Fetch();
 
-  swerve_drivetrain_status_fetcher_.Fetch();
-  x_hat = ToEigenOrDie<num_position_states, 1>(
-      *swerve_drivetrain_status_fetcher_.get()
-           ->naive_estimator()
-           ->position_state());
-
-  double x = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kX);
-  double y = x_hat(
-      frc971::control_loops::swerve::SimplifiedDynamics<double>::States::kY);
-  double theta = x_hat(frc971::control_loops::swerve::SimplifiedDynamics<
-                       double>::States::kTheta);
+  double x = localizer_state_fetcher_->x();
+  double y = localizer_state_fetcher_->y();
+  double theta = localizer_state_fetcher_->theta();
 
   double kThreshold = 0.005;
 
