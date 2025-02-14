@@ -18,6 +18,9 @@ elif [[ "$(hostname)" == "orin-"* ]]; then
   # We have systemd configured to handle restarting, so just exec.
   export PATH="/home/pi/bin:${PATH}"
 
+  # tensorrt does some weird stuff with shared libraries and this fixes it?
+  ldconfig
+
   # Turn the fans up.
   echo 255 > /sys/devices/platform/pwm-fan/hwmon/hwmon?/pwm1
 

@@ -46,15 +46,15 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools/platforms/hardware:roborio": [
-          "@ctre_phoenix6_api_cpp_headers//:api-cpp",
-          "@ctre_phoenix6_api_cpp_athena//:api-cpp",
-          "@ctre_phoenix6_tools_athena//:tools",
-          "@ctre_phoenix6_tools_headers//:tools",
-          "//third_party:wpilib"
+            "//third_party:wpilib",
+            "@ctre_phoenix6_api_cpp_athena//:api-cpp",
+            "@ctre_phoenix6_api_cpp_headers//:api-cpp",
+            "@ctre_phoenix6_tools_athena//:tools",
+            "@ctre_phoenix6_tools_headers//:tools",
         ],
         "@platforms//cpu:arm64": [
-          "@ctre_phoenix6_arm64//:headers",
-          "@ctre_phoenix6_arm64//:shared_libraries_lib",
+            "@ctre_phoenix6_arm64//:headers",
+            "@ctre_phoenix6_arm64//:shared_libraries_lib",
         ],
         "//conditions:default": [":unavailable"],
     }),
@@ -65,7 +65,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@opencv_k8//:opencv"],
-        "//tools:cpu_arm64": ["@arm64_yocto_sysroot//:opencv4"],
+        "//tools:cpu_arm64": ["@arm64_yocto_sysroot//:opencv"],
         "//conditions:default": [":unavailable"],
     }),
 )
