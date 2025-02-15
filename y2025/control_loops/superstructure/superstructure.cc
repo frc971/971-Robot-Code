@@ -130,6 +130,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         elevator_position =
             robot_constants_->common()->elevator_set_points()->score_l4();
         break;
+      case ElevatorGoal::ALGAE_L2:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->algae_l2();
+        break;
+      case ElevatorGoal::ALGAE_L3:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->algae_l3();
+        break;
     }
   }
 
@@ -179,6 +187,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case PivotGoal::SCORE_L4:
         pivot_position =
             robot_constants_->common()->pivot_set_points()->score_l4();
+        break;
+      case PivotGoal::ALGAE_L2:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->algae_l2();
+        break;
+      case PivotGoal::ALGAE_L3:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->algae_l3();
         break;
     }
   }
@@ -249,6 +265,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case WristGoal::SCORE_L4:
         wrist_position =
             robot_constants_->common()->wrist_set_points()->score_l4();
+        break;
+      case WristGoal::ALGAE_L2:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->algae_l2();
+        break;
+      case WristGoal::ALGAE_L3:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->algae_l3();
         break;
     }
   }
