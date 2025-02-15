@@ -34,7 +34,7 @@ ABSL_FLAG(int32_t, colorformat, NVBUF_COLOR_FORMAT_NV16,
           "Mode to use.  Don't change unless you know what you are doing.");
 ABSL_FLAG(int32_t, camera, 0, "Camera number");
 ABSL_FLAG(int32_t, mode, 0, "Mode number to use.");
-ABSL_FLAG(int32_t, exposure, 100, "Exposure number to use.");
+ABSL_FLAG(int32_t, exposure, 500, "Exposure number to use.");
 ABSL_FLAG(int32_t, gain, 5, "gain number to use.");
 ABSL_FLAG(int32_t, width, 1456, "Image width");
 ABSL_FLAG(int32_t, height, 1088, "Image height");
