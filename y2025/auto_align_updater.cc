@@ -18,7 +18,7 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 
 // Distance to offset the robots position past the auto align goal tangent to
 // the tag.
-constexpr double kTangentOffset = 0.5;
+constexpr double kTangentOffset = 1.0;
 // DIstance to offset the robots position normal to the tag (left/right).
 constexpr double kNormalOffset = 0.5;
 
@@ -108,9 +108,9 @@ class AutoAlignUpdater {
                   : -kNormalOffset;
 
           double goal_x = final_pose.abs_pos()(0) +
-                          offset * sin(state.theta() + M_PI / 2.0);
+                          offset * sin(final_pose.abs_theta() + M_PI / 2.0);
           double goal_y = final_pose.abs_pos()(1) +
-                          offset * cos(state.theta() + M_PI / 2.0);
+                          offset * cos(final_pose.abs_theta() + M_PI / 2.0);
 
           builder->set_x(goal_x);
           builder->set_y(goal_y);
