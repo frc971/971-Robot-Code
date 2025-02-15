@@ -1,12 +1,12 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, vision_weight, 0.4,
+ABSL_FLAG(double, vision_weight, 0.01,
           "How much to weigh the vision detection vs the velocity based pose "
           "estimation.");
 ABSL_FLAG(double, distance_threshold, 3.0,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
-ABSL_FLAG(bool, do_moving_average, true,
+ABSL_FLAG(bool, do_moving_average, false,
           "If true, use a moving average of previous samples.");
 ABSL_FLAG(
     double, moving_average_factor, 1,
@@ -15,7 +15,9 @@ ABSL_FLAG(
 
 namespace y2025::localizer {
 WeightedAverageLocalizer::WeightedAverageLocalizer(aos::EventLoop *event_loop)
-    : Localizer(event_loop) {}
+    : Localizer(event_loop) {
+  start_time_ = event_loop->context().monotonic_event_time;
+}
 
 void WeightedAverageLocalizer::HandleDetectedRobotPose(
     XYThetaPose pose, double distance_to_robot, uint64_t target_id,
@@ -125,6 +127,11 @@ void WeightedAverageLocalizer::SendOutput(
         average_detected_pose(PoseIdx::kY) * vision_weight +
             estimated_pose_(PoseIdx::kY) * (1 - vision_weight),
         atan2(yaw_vector(1), yaw_vector(0));
+  }
+
+  if ((estimated_pose_ - final_robot_pose).norm() > 0.3 &&
+      (event_loop_->context().monotonic_event_time - start_time_) >=
+          std::chrono::seconds(2)) {
   }
 
   estimated_pose_ = final_robot_pose;
