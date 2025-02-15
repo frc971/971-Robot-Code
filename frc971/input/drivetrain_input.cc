@@ -132,8 +132,8 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
 
   auto joystick_goal = builder->add_joystick_goal();
 
-  joystick_goal->set_vx(vx);
-  joystick_goal->set_vy(vy);
+  joystick_goal->set_vx(vy);
+  joystick_goal->set_vy(vx);
   joystick_goal->set_omega(omega);
   joystick_goal->set_auto_align(auto_align_);
 
@@ -169,7 +169,7 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
       swerve_config_.omega_offset;
 
   const double raw_vx =
-      -data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
+      data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
 
   const double raw_vy =
       -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
