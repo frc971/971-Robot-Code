@@ -40,7 +40,6 @@ genrule(
         "trajectory.bfbs",
     ],
     cmd = "$(location //frc971/control_loops/swerve:gen_trajectory_flatbuffer) $(SRCS) $(OUTS)",
-    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     tools = [
         "//frc971/control_loops/swerve:gen_trajectory_flatbuffer",
     ],
