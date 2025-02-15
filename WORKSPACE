@@ -716,9 +716,9 @@ cc_library(
             ],
 )
 """,
-    sha256 = "3ec0ba599a7d24625c8589dc28253da3133bc66b3faef09fdaab84039685d10b",
+    sha256 = "d301be39a7c7585742146682327c4e208f38686aff5e94b87b85cbc914cd73d5",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.1/api-cpp-25.2.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.2/api-cpp-25.2.2-headers.zip",
     ],
 )
 
@@ -740,9 +740,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "c06c7ec9ab654e6aa2f35562a8d0673aecf559745f7e6d1793e5f35962d5c9bb",
+    sha256 = "79fb7009820c5488f188c91bb70288c078cea018b29f236349bc387367ffec84",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.1/api-cpp-25.2.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.2/api-cpp-25.2.2-linuxathena.zip",
     ],
 )
 
@@ -755,9 +755,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/phoenix/**/*.hpp', 'ctre/phoenix6/**/*.hpp']),
 )
 """,
-    sha256 = "838d80bc409b48c7c04a6aab19398fe09cdbcaa4d219038578bd7e449e9c801a",
+    sha256 = "6045d3283bfa7ebba611f902230449906de9ac0d642e6aa18e35686c423810f4",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.1/tools-25.2.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.2/tools-25.2.2-headers.zip",
     ],
 )
 
@@ -779,9 +779,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "95f113516cbf65887736e220050711f6d0e535d6eb21e43342f1fbd029b08032",
+    sha256 = "ed3715c40807f25bf36d4da905efcf82d72077f0069282d10d7cf11937f37b0a",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.1/tools-25.2.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.2/tools-25.2.2-linuxathena.zip",
     ],
 )
 
@@ -864,6 +864,7 @@ cc_library(
     ],
 )
 
+# Downloaded from: https://deb.ctr-electronics.com/libs/2025/packages/phoenix6/25.2.2/phoenix6_25.2.2_arm64.deb
 http_archive(
     name = "ctre_phoenix6_arm64",
     build_file_content = """
@@ -902,9 +903,9 @@ cc_library(
     ],
 )
 """,
-    sha256 = "4d5bc2df72ff62ad92ea4b5fc2a4fa9ab3cb61e7329356dfc13e122964388dad",
+    sha256 = "74f6e4d1b5947087dee0c9e92047fa2c97312afe69731567b9e8b09199714e24",
     urls = [
-        "https://software.frc971.org/Build-Dependencies/phoenix6_25.2.1_arm64_2025.01.20.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/phoenix6_25.2.2_arm64.tar.gz",
     ],
 )
 
