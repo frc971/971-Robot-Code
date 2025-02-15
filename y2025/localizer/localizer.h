@@ -157,6 +157,7 @@ class WeightedAverageLocalizer : Localizer {
  private:
   std::map<uint64_t, DetectionInfo> detected_pose_;
   std::vector<XYThetaPose> previous_samples_;
+  aos::monotonic_clock::time_point start_time_;
   bool first_it_ = true;
 };
 
