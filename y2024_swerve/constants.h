@@ -28,8 +28,10 @@ struct Values {
     return 9.0 / 24.0 * 14.0 / 72.0;
   }
 
+  static constexpr double kWheelRadius = 2.0 * 0.0254;
+
   static constexpr double kTranslationModuleRatio() {
-    return 1.0 / 6.75 * 2.0 * .0254;
+    return 1.0 / 6.75 * kWheelRadius;
   }
 
   static constexpr double kMaxDrivetrainEncoderPulsesPerSecond() {

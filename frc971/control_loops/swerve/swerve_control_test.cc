@@ -37,6 +37,7 @@ MakeSwerveParameters() {
                      .steer_ratio = (1.0 / 12.1),
                      .drive_ratio = (12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) *
                                     1.8 * 0.0254,
+                     .wheel_radius = 1.8 * 0.0254,
                      .extra_steer_inertia = 0.01};
   };
 

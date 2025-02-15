@@ -50,6 +50,8 @@ class SimplifiedDynamics {
     Scalar steer_ratio;
     // meters of driving = drive_ratio * radians of motor shaft
     Scalar drive_ratio;
+    // radius of wheel
+    Scalar wheel_radius;
     // A number to add to the steer module inertia (beyond just the rotor
     // inertia of the motor). In practice this may end up just serving as a bit
     // of a drag term (or be unused entirely), as we don't currently believe the
