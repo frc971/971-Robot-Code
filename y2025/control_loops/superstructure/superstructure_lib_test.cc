@@ -301,6 +301,16 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                                          ->elevator_set_points()
                                          ->score_l4();
         break;
+      case ElevatorGoal::ALGAE_L2:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->algae_l2();
+        break;
+      case ElevatorGoal::ALGAE_L3:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->algae_l3();
+        break;
     }
 
     EXPECT_NEAR(elevator_expected_position,
@@ -329,6 +339,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::INTAKE:
         pivot_set_point = pivot_positions->intake();
         break;
+      case PivotGoal::ALGAE_L2:
+        pivot_set_point = pivot_positions->algae_l2();
+        break;
+      case PivotGoal::ALGAE_L3:
+        pivot_set_point = pivot_positions->algae_l3();
+        break;
     }
     EXPECT_NEAR(pivot_set_point,
                 superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
@@ -355,6 +371,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         break;
       case WristGoal::NEUTRAL:
         wrist_set_point = wrist_positions->neutral();
+        break;
+      case WristGoal::ALGAE_L2:
+        wrist_set_point = wrist_positions->algae_l2();
+        break;
+      case WristGoal::ALGAE_L3:
+        wrist_set_point = wrist_positions->algae_l3();
         break;
     }
     EXPECT_NEAR(wrist_set_point,
@@ -572,6 +594,30 @@ TEST_F(SuperstructureTest, ElevatorPositionTest) {
   RunFor(chrono::seconds(3));
 
   VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::ALGAE_L2);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_elevator_goal(ElevatorGoal::ALGAE_L3);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
 }
 
 TEST_F(SuperstructureTest, WristPositionTest) {
@@ -593,6 +639,30 @@ TEST_F(SuperstructureTest, WristPositionTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_wrist_goal(WristGoal::SCORE_L2);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_wrist_goal(WristGoal::ALGAE_L2);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_wrist_goal(WristGoal::ALGAE_L3);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -633,6 +703,30 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_pivot_goal(PivotGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::ALGAE_L2);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::ALGAE_L3);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
