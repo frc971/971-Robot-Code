@@ -51,6 +51,7 @@ robot_downloader(
         "//aos/starter:irq_affinity",
         "//aos/util:foxglove_websocket",
         "//frc971/orin:hardware_monitor",
+        "//frc971/orin:argus_camera",
         "//frc971/vision:intrinsics_calibration",
         "//aos/util:filesystem_monitor",
         "//y2025/vision:viewer",
