@@ -12,15 +12,21 @@ const MATCH_TYPE_ORDERING = ['qm', 'ef', 'qf', 'sf', 'f'];
 
 @Injectable({providedIn: 'root'})
 export class MatchListRequestor {
-  async fetchMatchList(): Promise<Match[]> {
+  async fetchMatchList(comp_code: string): Promise<Match[]> {
     const builder = new Builder();
-    RequestAllMatches.startRequestAllMatches(builder);
-    builder.finish(RequestAllMatches.endRequestAllMatches(builder));
+
+    builder.finish(
+      RequestAllMatches.createRequestAllMatches(
+        builder,
+        builder.createString(comp_code)
+      )
+    );
     const buffer = builder.asUint8Array();
     const res = await fetch('/requests/request/all_matches', {
       method: 'POST',
       body: buffer,
     });
+
     if (res.ok) {
       const resBuffer = await res.arrayBuffer();
       const u8Buffer = new Uint8Array(resBuffer);

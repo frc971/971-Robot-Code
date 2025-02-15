@@ -1,38 +1,52 @@
 <div class="header">
   <h2>Matches</h2>
 </div>
+<div id="team_selection" class="container-fluid">
+  <div class="row">
+    <label for="comp_code_collection">Comp Code</label>
+    <select
+      name="comp_code_selection"
+      id="comp_code_selection"
+      [(ngModel)]="compCode"
+    >
+      <option value="2016nytr">N/A</option>
+      <option value="2025camb">Pinnacles</option>
+      <option value="2025cave">Ventura</option>
+      <option value="2025cafr">Central Valley</option>
+    </select>
+  </div>
+  <label>
+    <input type="checkbox" [(ngModel)]="hideCompletedMatches" />
+    Hide completed matches
+  </label>
 
-<label>
-  <input type="checkbox" [(ngModel)]="hideCompletedMatches" />
-  Hide completed matches
-</label>
-
-<div class="container-fluid">
-  <div
-    *ngFor="let match of matchList; index as i"
-    [ngClass]="'row ' + getRowClass(match)"
-  >
-    <span class="badge bg-secondary rounded-left">
-      {{ displayMatchNumber(match) }}
-    </span>
-    <div class="match-row">
-      <button
-        *ngFor="let team of teamsInMatch(match);"
-        (click)="setTeamInMatch({
+  <div class="container-fluid">
+    <div
+      *ngFor="let match of matchList; index as i"
+      [ngClass]="'row ' + getRowClass(match)"
+    >
+      <span class="badge bg-secondary rounded-left">
+        {{ displayMatchNumber(match) }}
+      </span>
+      <div class="match-row">
+        <button
+          *ngFor="let team of teamsInMatch(match);"
+          (click)="setTeamInMatch({
             teamNumber: team.teamNumber,
             matchNumber: match.matchNumber(),
             setNumber: match.setNumber(),
             compLevel: validateCompLevel(match.compLevel()),
             })"
-        class="match-item"
-        [ngClass]="team.color"
-        [disabled]="team.disabled"
-      >
-        {{ team.teamNumber }}
-      </button>
+          class="match-item"
+          [ngClass]="team.color"
+          [disabled]="team.disabled"
+        >
+          {{ team.teamNumber }}
+        </button>
+      </div>
     </div>
-  </div>
 
-  <span class="progress_message" role="alert">{{ progressMessage }}</span>
-  <span class="error_message" role="alert">{{ errorMessage }}</span>
+    <span class="progress_message" role="alert">{{ progressMessage }}</span>
+    <span class="error_message" role="alert">{{ errorMessage }}</span>
+  </div>
 </div>

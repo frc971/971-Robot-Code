@@ -184,7 +184,7 @@ func TestRequestAllMatches2025(t *testing.T) {
 	defer scoutingServer.Stop()
 
 	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_all_matches.RequestAllMatchesT{}).Pack(builder))
+	builder.Finish((&request_all_matches.RequestAllMatchesT{CompCode: "fakeCompCode"}).Pack(builder))
 
 	response, err := debug.RequestAllMatches("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
@@ -2334,8 +2334,14 @@ func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
 }
 
-func (database *MockDatabase) ReturnMatches2025() ([]db.TeamMatch2025, error) {
-	return database.matches2025, nil
+func (database *MockDatabase) ReturnMatches2025(compCode string) ([]db.TeamMatch2025, error) {
+	var results []db.TeamMatch2025
+	for _, match := range database.matches2025 {
+		if match.CompCode == compCode {
+			results = append(results, match)
+		}
+	}
+	return results, nil
 }
 
 func (database *MockDatabase) ReturnStats2024() ([]db.Stats2024, error) {

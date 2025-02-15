@@ -376,9 +376,11 @@ func (database *Database) ReturnMatches() ([]TeamMatch, error) {
 	return matches, result.Error
 }
 
-func (database *Database) ReturnMatches2025() ([]TeamMatch2025, error) {
+func (database *Database) ReturnMatches2025(compCode_ string) ([]TeamMatch2025, error) {
 	var matches []TeamMatch2025
-	result := database.Find(&matches)
+	result := database.
+		Where("comp_code = $1", compCode_).Order("match_number").Order("team_number").
+		Find(&matches)
 	return matches, result.Error
 }
 

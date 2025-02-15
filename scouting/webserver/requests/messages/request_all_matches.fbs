@@ -1,6 +1,7 @@
 namespace scouting.webserver.requests;
 
 table RequestAllMatches {
+	comp_code:string (id:0);
 }
 
 root_type RequestAllMatches;

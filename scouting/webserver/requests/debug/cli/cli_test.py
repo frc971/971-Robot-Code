@@ -69,7 +69,9 @@ class TestDebugCli(unittest.TestCase):
         self.servers.start(8080, year=year, event_code=event_code)
 
         expected_num_matches = find_num_matches_for_event(year, event_code)
-        json_path = write_json_request({})
+        json_path = write_json_request({
+            "comp_code": "2016nytr",
+        })
 
         # Wait until the match list is imported. This is done automatically
         # when the web server starts up.
@@ -97,7 +99,7 @@ class TestDebugCli(unittest.TestCase):
             time.sleep(0.25)
 
     def test_request_current_scouting(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({"team_number": "971"})
@@ -106,7 +108,7 @@ class TestDebugCli(unittest.TestCase):
         self.assertEqual(exit_code, 0, stderr)
 
     def test_submit_and_request_notes(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
@@ -150,11 +152,11 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_submit_and_request_notes_2025(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "comp_code": "2020mttd",
+            "comp_code": "2016nytr",
             "team_number": "100",
             "match_number": 3,
             "set_number": 1,
@@ -182,7 +184,7 @@ class TestDebugCli(unittest.TestCase):
         # Now request the data back with zero indentation. That let's us
         # validate the data easily.
         json_path = write_json_request({
-            "comp_code": "2020mttd",
+            "comp_code": "2016nytr",
         })
         exit_code, stdout, stderr = run_debug_cli(
             ["-requestAllNotes2025", json_path, "-indent="])
@@ -191,7 +193,7 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn(
             textwrap.dedent("""\
             {
-            CompCode: (string) (len=8) "2020mttd",
+            CompCode: (string) (len=8) "2016nytr",
             TeamNumber: (string) (len=3) "100",
             MatchNumber: (int32) 3,
             SetNumber: (int32) 1,
@@ -215,7 +217,7 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
@@ -245,11 +247,11 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking_2025(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "comp_code": "2020fake",
+            "comp_code": "2016nytr",
             "match_number": 1,
             "team_number": "123B",
             "score": 3,
@@ -259,7 +261,7 @@ class TestDebugCli(unittest.TestCase):
         self.assertEqual(exit_code, 0, stderr)
 
         json_path = write_json_request({
-            "comp_code": "2020fake",
+            "comp_code": "2016nytr",
             "match_number": 12,
             "team_number": "123B",
             "score": 1,
@@ -271,7 +273,7 @@ class TestDebugCli(unittest.TestCase):
         # Now request the data back with zero indentation. That let's us
         # validate the data easily.
         json_path = write_json_request({
-            "comp_code": "2020fake",
+            "comp_code": "2016nytr",
         })
         exit_code, stdout, stderr = run_debug_cli(
             ["-requestAveragedDriverRankings2025", json_path, "-indent="])
@@ -280,17 +282,17 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn(
             textwrap.dedent("""\
             {
-            CompCode: (string) (len=8) "2020fake",
+            CompCode: (string) (len=8) "2016nytr",
             TeamNumber: (string) (len=4) "123B",
             Score: (float32) 2
             }"""), stdout)
 
     def test_submit_and_request_human_ranking_2025(self):
-        self.start_servers(year=2020, event_code="fake")
+        self.start_servers(year=2016, event_code="nytr")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "comp_code": "2020fake",
+            "comp_code": "2016nytr",
             "match_number": 2,
             "team_number": "408",
             "score": 3,
@@ -302,7 +304,7 @@ class TestDebugCli(unittest.TestCase):
         # Now request the data back with zero indentation. That let's us
         # validate the data easily.
         json_path = write_json_request({
-            "comp_code": "2020fake",
+            "comp_code": "2016nytr",
         })
         exit_code, stdout, stderr = run_debug_cli(
             ["-requestAveragedHumanRankings2025", json_path, "-indent="])
@@ -311,7 +313,7 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn(
             textwrap.dedent("""\
             {
-            CompCode: (string) (len=8) "2020fake",
+            CompCode: (string) (len=8) "2016nytr",
             TeamNumber: (string) (len=3) "408",
             Score: (float32) 3
             }"""), stdout)
@@ -319,8 +321,10 @@ class TestDebugCli(unittest.TestCase):
     def test_request_all_matches(self):
         self.start_servers()
 
-        # RequestAllMatches has no fields.
-        json_path = write_json_request({})
+        json_path = write_json_request({
+            "comp_code": "2016nytr",
+        })
+
         exit_code, stdout, stderr = run_debug_cli(
             ["-requestAllMatches", json_path])
 

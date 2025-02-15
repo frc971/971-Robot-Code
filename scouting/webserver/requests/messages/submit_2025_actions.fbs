@@ -62,6 +62,12 @@ table EndMatchAction {
 table EndAutoPhaseAction {
 }
 
+table ScoreCoralAction {
+}
+
+table ScoreAlgaeAction {
+}
+
 table EndTeleopPhaseAction {
 }
 
@@ -71,8 +77,10 @@ union ActionType {
     StartMatchAction,
     EndAutoPhaseAction,
     PickupCoralAction,
+    ScoreCoralAction,
     PlaceCoralAction,
     PickupAlgaeAction,
+    ScoreAlgaeAction,
     PlaceAlgaeAction,
     PenaltyAction,
     RobotDeathAction,

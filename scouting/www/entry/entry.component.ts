@@ -23,9 +23,13 @@ import {
   PenaltyAction,
   PenaltyActionT,
   PickupCoralAction,
+  ScoreCoralAction,
   PickupCoralActionT,
+  ScoreCoralActionT,
   PickupAlgaeAction,
+  ScoreAlgaeAction,
   PickupAlgaeActionT,
+  ScoreAlgaeActionT,
   PlaceCoralAction,
   PlaceCoralActionT,
   PlaceAlgaeAction,
@@ -108,8 +112,10 @@ export class EntryComponent implements OnInit {
   readonly StartMatchActionT = StartMatchActionT;
   readonly MobilityActionT = MobilityActionT;
   readonly PickupCoralActionT = PickupCoralActionT;
+  readonly ScoreCoralActionT = ScoreCoralActionT;
   readonly PlaceCoralActionT = PlaceCoralActionT;
   readonly PickupAlgaeActionT = PickupAlgaeActionT;
+  readonly ScireAlgaeActionT = ScoreAlgaeActionT;
   readonly PlaceAlgaeActionT = PlaceAlgaeActionT;
   readonly RobotDeathActionT = RobotDeathActionT;
   readonly PenaltyActionT = PenaltyActionT;
@@ -195,7 +201,9 @@ export class EntryComponent implements OnInit {
     this.errorMessage = '';
 
     try {
-      this.matchList = await this.matchListRequestor.fetchMatchList();
+      this.matchList = await this.matchListRequestor.fetchMatchList(
+        this.compCode
+      );
       this.progressMessage = 'Successfully fetched match list.';
     } catch (e) {
       this.errorMessage = e;
@@ -338,6 +346,12 @@ export class EntryComponent implements OnInit {
           break;
         case ActionType.PickupAlgaeAction:
           this.hasPickedUpAlgae = false;
+          break;
+        case ActionType.ScoreCoralAction:
+          this.section = 'Pickup';
+          break;
+        case ActionType.ScoreAlgaeAction:
+          this.section = 'Pickup';
           break;
         case ActionType.EndTeleopPhaseAction:
           this.section = 'Pickup';

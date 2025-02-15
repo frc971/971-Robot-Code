@@ -1,250 +1,270 @@
 <h2>View Data</h2>
-<!-- Drop down to select data type. -->
-<div class="dropdown">
-  <button
-    class="btn btn-secondary dropdown-toggle"
-    type="button"
-    data-bs-toggle="dropdown"
-    aria-expanded="false"
-  >
-    {{currentSource}}
-  </button>
-  <ul class="dropdown-menu">
-    <li>
-      <a
-        class="dropdown-item"
-        href="#"
-        (click)="switchDataSource('Notes')"
-        id="notes_source_dropdown"
-      >
-        Notes
-      </a>
-    </li>
-    <li>
-      <a
-        class="dropdown-item"
-        href="#"
-        (click)="switchDataSource('Stats2025')"
-        id="stats_source_dropdown"
-      >
-        Stats2025
-      </a>
-    </li>
-    <li>
-      <a
-        class="dropdown-item"
-        href="#"
-        (click)="switchDataSource('PitImages')"
-        id="pit_images_source_dropdown"
-      >
-        PitImages
-      </a>
-    </li>
-    <li>
-      <a
-        class="dropdown-item"
-        href="#"
-        (click)="switchDataSource('DriverRanking')"
-        id="driver_ranking_source_dropdown"
-      >
-        Driver Ranking
-      </a>
-    </li>
-    <li>
-      <a
-        class="dropdown-item"
-        href="#"
-        (click)="switchDataSource('HumanRanking')"
-        id="human_ranking_source_dropdown"
-      >
-        Human Ranking
-      </a>
-    </li>
-  </ul>
-</div>
-<h4>{{errorMessage}}</h4>
-<h4>{{progressMessage}}</h4>
+<div id="team_selection" class="container-fluid">
+  <div class="row">
+    <label for="comp_code_collection">Comp Code</label>
+    <select
+      name="comp_code_selection"
+      id="comp_code_selection"
+      [(ngModel)]="compCode"
+    >
+      <option value="2016nytr">N/A</option>
+      <option value="2025camb">Pinnacles</option>
+      <option value="2025cave">Ventura</option>
+      <option value="2025cafr">Central Valley</option>
+    </select>
+  </div>
+  <!-- Drop down to select data type. -->
+  <div class="dropdown">
+    <button
+      class="btn btn-secondary dropdown-toggle"
+      type="button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    >
+      {{currentSource}}
+    </button>
+    <ul class="dropdown-menu">
+      <li>
+        <a
+          class="dropdown-item"
+          href="#"
+          (click)="switchDataSource('Notes')"
+          id="notes_source_dropdown"
+        >
+          Notes
+        </a>
+      </li>
+      <li>
+        <a
+          class="dropdown-item"
+          href="#"
+          (click)="switchDataSource('Stats2025')"
+          id="stats_source_dropdown"
+        >
+          Stats2025
+        </a>
+      </li>
+      <li>
+        <a
+          class="dropdown-item"
+          href="#"
+          (click)="switchDataSource('PitImages')"
+          id="pit_images_source_dropdown"
+        >
+          PitImages
+        </a>
+      </li>
+      <li>
+        <a
+          class="dropdown-item"
+          href="#"
+          (click)="switchDataSource('DriverRanking')"
+          id="driver_ranking_source_dropdown"
+        >
+          Driver Ranking
+        </a>
+      </li>
+      <li>
+        <a
+          class="dropdown-item"
+          href="#"
+          (click)="switchDataSource('HumanRanking')"
+          id="human_ranking_source_dropdown"
+        >
+          Human Ranking
+        </a>
+      </li>
+    </ul>
+  </div>
+  <h4>{{errorMessage}}</h4>
+  <h4>{{progressMessage}}</h4>
 
-<ng-container [ngSwitch]="currentSource">
-  <!-- Notes Data Display. -->
-  <div *ngSwitchCase="'Notes'">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Team</div>
-            <div class="align-self-center" *ngIf="ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-up"></i>
-            </div>
-            <div class="align-self-center" *ngIf="!ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-down"></i>
-            </div>
-          </th>
-          <th scope="col">Match</th>
-          <th scope="col">Notes</th>
-          <th scope="col">Keywords</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let note of noteList; index as i;">
-          <th scope="row">{{note.teamNumber()}}</th>
-          <th scope="row">{{note.matchNumber()}}</th>
-          <td>{{note.notes()}}</td>
-          <td>{{parseKeywords(note)}}</td>
-          <!-- Delete Icon. -->
-          <td>
-            <button
-              class="btn btn-danger"
-              (click)="deleteNotes2025(note.compCode(), note.compLevel(), note.matchNumber(), note.setNumber(), note.teamNumber())"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <!-- Stats2025 Data Display. -->
-  <div *ngSwitchCase="'Stats2025'">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Match</div>
-            <div class="align-self-center" *ngIf="ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-up"></i>
-            </div>
-            <div class="align-self-center" *ngIf="!ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-down"></i>
-            </div>
-          </th>
-          <th scope="col">Team</th>
-          <th scope="col">Comp Level</th>
-          <th scope="col">Comp Code</th>
-          <th scope="col">Scout</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let stat2025 of statList; index as i;">
-          <th scope="row">{{stat2025.matchNumber()}}</th>
-          <td>{{stat2025.teamNumber()}}</td>
-          <td>{{COMP_LEVEL_LABELS[stat2025.compLevel()]}}</td>
-          <td>{{stat2025.compCode()}}</td>
-          <td>{{stat2025.collectedBy()}}</td>
-          <!-- Delete Icon. -->
-          <td>
-            <button
-              class="btn btn-danger"
-              id="delete_button_{{i}}"
-              (click)="delete2025DataScouting(stat2025.compCode(), stat2025.compLevel(), stat2025.matchNumber(), stat2025.setNumber(), stat2025.teamNumber())"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <!-- Pit Images Data Display. -->
-  <div *ngSwitchCase="'PitImages'">
-    <table class="table collapse-border">
-      <thead>
-        <tr>
-          <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Team</div>
-            <div class="align-self-center" *ngIf="ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-up"></i>
-            </div>
-            <div class="align-self-center" *ngIf="!ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-down"></i>
-            </div>
-          </th>
-          <th scope="col" style="max-width: 200px; max-height: 200px">
-            Image(s)
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let pitImageArr of pitImageList">
-          <th scope="row" class="align-text">
-            {{pitImageArr[0].teamNumber()}}
-          </th>
-          <td style="display: flex">
-            <div *ngFor="let pitImage of pitImageArr" class="align-images">
-              <img
-                src="/sha256/{{ pitImage.checkSum() }}/{{ pitImage.imagePath() }}"
-                style="max-width: 50px; max-height: 50px; padding: 0; margin: 0"
-              />
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <!-- Driver Ranking Data Display. -->
-  <div *ngSwitchCase="'DriverRanking'">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Team</div>
-            <div class="align-self-center" *ngIf="ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-up"></i>
-            </div>
-            <div class="align-self-center" *ngIf="!ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-down"></i>
-            </div>
-          </th>
-          <th scope="col">Avg Score</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let ranking of driverRankingList; index as i;">
-          <th scope="row">{{ranking.teamNumber()}}</th>
-          <td>{{ranking.score().toFixed(2)}}</td>
-          <!-- Delete Icon.
-          <td>
-            <button class="btn btn-danger" (click)="deleteDriverRankingData()">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td> -->
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <!-- Human Ranking Data Display. -->
-  <div *ngSwitchCase="'HumanRanking'">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="d-flex flex-row">
-            <div class="align-self-center">Team</div>
-            <div class="align-self-center" *ngIf="ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-up"></i>
-            </div>
-            <div class="align-self-center" *ngIf="!ascendingSort">
-              <i (click)="sortData()" class="bi bi-caret-down"></i>
-            </div>
-          </th>
-          <th scope="col">Avg Score</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let ranking of humanRankingList; index as i;">
-          <th scope="row">{{ranking.teamNumber()}}</th>
-          <td>{{ranking.score().toFixed(2)}}</td>
-          <!-- Delete Icon.
+  <ng-container [ngSwitch]="currentSource">
+    <!-- Notes Data Display. -->
+    <div *ngSwitchCase="'Notes'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" class="d-flex flex-row">
+              <div class="align-self-center">Team</div>
+              <div class="align-self-center" *ngIf="ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-up"></i>
+              </div>
+              <div class="align-self-center" *ngIf="!ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-down"></i>
+              </div>
+            </th>
+            <th scope="col">Match</th>
+            <th scope="col">Notes</th>
+            <th scope="col">Keywords</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let note of noteList; index as i;">
+            <th scope="row">{{note.teamNumber()}}</th>
+            <th scope="row">{{note.matchNumber()}}</th>
+            <td>{{note.notes()}}</td>
+            <td>{{parseKeywords(note)}}</td>
+            <!-- Delete Icon. -->
+            <td>
+              <button
+                class="btn btn-danger"
+                (click)="deleteNotes2025(note.compCode(), note.compLevel(), note.matchNumber(), note.setNumber(), note.teamNumber())"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Stats2025 Data Display. -->
+    <div *ngSwitchCase="'Stats2025'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" class="d-flex flex-row">
+              <div class="align-self-center">Match</div>
+              <div class="align-self-center" *ngIf="ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-up"></i>
+              </div>
+              <div class="align-self-center" *ngIf="!ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-down"></i>
+              </div>
+            </th>
+            <th scope="col">Team</th>
+            <th scope="col">Comp Level</th>
+            <th scope="col">Comp Code</th>
+            <th scope="col">Scout</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stat2025 of statList; index as i;">
+            <th scope="row">{{stat2025.matchNumber()}}</th>
+            <td>{{stat2025.teamNumber()}}</td>
+            <td>{{COMP_LEVEL_LABELS[stat2025.compLevel()]}}</td>
+            <td>{{stat2025.compCode()}}</td>
+            <td>{{stat2025.collectedBy()}}</td>
+            <!-- Delete Icon. -->
+            <td>
+              <button
+                class="btn btn-danger"
+                id="delete_button_{{i}}"
+                (click)="delete2025DataScouting(stat2025.compCode(), stat2025.compLevel(), stat2025.matchNumber(), stat2025.setNumber(), stat2025.teamNumber())"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Pit Images Data Display. -->
+    <div *ngSwitchCase="'PitImages'">
+      <table class="table collapse-border">
+        <thead>
+          <tr>
+            <th scope="col" class="d-flex flex-row">
+              <div class="align-self-center">Team</div>
+              <div class="align-self-center" *ngIf="ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-up"></i>
+              </div>
+              <div class="align-self-center" *ngIf="!ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-down"></i>
+              </div>
+            </th>
+            <th scope="col" style="max-width: 200px; max-height: 200px">
+              Image(s)
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pitImageArr of pitImageList">
+            <th scope="row" class="align-text">
+              {{pitImageArr[0].teamNumber()}}
+            </th>
+            <td style="display: flex">
+              <div *ngFor="let pitImage of pitImageArr" class="align-images">
+                <img
+                  src="/sha256/{{ pitImage.checkSum() }}/{{ pitImage.imagePath() }}"
+                  style="
+                    max-width: 50px;
+                    max-height: 50px;
+                    padding: 0;
+                    margin: 0;
+                  "
+                />
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Driver Ranking Data Display. -->
+    <div *ngSwitchCase="'DriverRanking'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" class="d-flex flex-row">
+              <div class="align-self-center">Team</div>
+              <div class="align-self-center" *ngIf="ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-up"></i>
+              </div>
+              <div class="align-self-center" *ngIf="!ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-down"></i>
+              </div>
+            </th>
+            <th scope="col">Avg Score</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ranking of driverRankingList; index as i;">
+            <th scope="row">{{ranking.teamNumber()}}</th>
+            <td>{{ranking.score().toFixed(2)}}</td>
+            <!-- Delete Icon.
           <td>
             <button class="btn btn-danger" (click)="deleteDriverRankingData()">
               <i class="bi bi-trash"></i>
             </button>
           </td> -->
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</ng-container>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Human Ranking Data Display. -->
+    <div *ngSwitchCase="'HumanRanking'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" class="d-flex flex-row">
+              <div class="align-self-center">Team</div>
+              <div class="align-self-center" *ngIf="ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-up"></i>
+              </div>
+              <div class="align-self-center" *ngIf="!ascendingSort">
+                <i (click)="sortData()" class="bi bi-caret-down"></i>
+              </div>
+            </th>
+            <th scope="col">Avg Score</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ranking of humanRankingList; index as i;">
+            <th scope="row">{{ranking.teamNumber()}}</th>
+            <td>{{ranking.score().toFixed(2)}}</td>
+            <!-- Delete Icon.
+          <td>
+            <button class="btn btn-danger" (click)="deleteDriverRankingData()">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td> -->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

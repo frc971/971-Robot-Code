@@ -32,6 +32,7 @@ export class MatchListComponent implements OnInit {
   errorMessage: string = '';
   matchList: Match[] = [];
   hideCompletedMatches: boolean = true;
+  compCode: string = '2016nytr';
 
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
 
@@ -168,7 +169,9 @@ export class MatchListComponent implements OnInit {
     this.errorMessage = '';
 
     try {
-      this.matchList = await this.matchListRequestor.fetchMatchList();
+      this.matchList = await this.matchListRequestor.fetchMatchList(
+        this.compCode
+      );
       this.progressMessage = 'Successfully fetched match list.';
     } catch (e) {
       this.errorMessage = e;

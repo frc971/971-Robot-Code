@@ -134,7 +134,7 @@ type Database interface {
 	AddToStats2024(db.Stats2024) error
 	AddToStats2025(db.Stats2025) error
 	ReturnMatches() ([]db.TeamMatch, error)
-	ReturnMatches2025() ([]db.TeamMatch2025, error)
+	ReturnMatches2025(compCode string) ([]db.TeamMatch2025, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllNotes2025(string) ([]db.NotesData2025, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
@@ -274,12 +274,12 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	_, success := parseRequest(w, requestBytes, "RequestAllMatches", request_all_matches.GetRootAsRequestAllMatches)
+	request, success := parseRequest(w, requestBytes, "RequestAllMatches", request_all_matches.GetRootAsRequestAllMatches)
 	if !success {
 		return
 	}
 
-	matches, err := handler.db.ReturnMatches2025()
+	matches, err := handler.db.ReturnMatches2025(string(request.CompCode()))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
 		return
@@ -361,6 +361,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		}
 
 		assembledMatches[key] = entry
+
 	}
 
 	var response RequestAllMatchesResponseT

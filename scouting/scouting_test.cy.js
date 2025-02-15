@@ -324,7 +324,10 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for first team.
-    cy.get('#team-key-1').should('have.text', ' Team: 1234, Comp Code: 0 ');
+    cy.get('#team-key-1').should(
+      'have.text',
+      ' Team: 1234, Comp Code: 2016nytr '
+    );
     setInputTo('#text-input-1', 'Good Driving');
     cy.get('#good_driving_0').click();
 
@@ -338,7 +341,10 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for second team.
-    cy.get('#team-key-2').should('have.text', ' Team: 1235, Comp Code: 0 ');
+    cy.get('#team-key-2').should(
+      'have.text',
+      ' Team: 1235, Comp Code: 2016nytr '
+    );
     setInputTo('#text-input-2', 'Solid Algae Shooting');
     cy.get('#solid_algae_shooting_1').click();
 

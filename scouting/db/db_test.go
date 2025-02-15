@@ -1084,16 +1084,17 @@ func TestReturnMatchDB(t *testing.T) {
 	defer fixture.TearDown()
 
 	correct := []TeamMatch2025{
-		TeamMatch2025{
-			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 1, TeamNumber: "6835"},
-		TeamMatch2025{
-			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 2, TeamNumber: "4834"},
-		TeamMatch2025{
-			MatchNumber: 9, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "B", AlliancePosition: 3, TeamNumber: "9824"},
+
 		TeamMatch2025{
 			MatchNumber: 7, CompCode: "fakeCompCode", SetNumber: 2, CompLevel: "qm", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
 		TeamMatch2025{
 			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
+		TeamMatch2025{
+			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 2, TeamNumber: "4834"},
+		TeamMatch2025{
+			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 1, TeamNumber: "6835"},
+		TeamMatch2025{
+			MatchNumber: 9, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "B", AlliancePosition: 3, TeamNumber: "9824"},
 	}
 
 	for i := 0; i < len(correct); i++ {
@@ -1101,7 +1102,7 @@ func TestReturnMatchDB(t *testing.T) {
 		check(t, err, fmt.Sprint("Failed to add match", i))
 	}
 
-	got, err := fixture.db.ReturnMatches2025()
+	got, err := fixture.db.ReturnMatches2025("fakeCompCode")
 	check(t, err, "Failed ReturnMatches2025()")
 
 	if !reflect.DeepEqual(correct, got) {
