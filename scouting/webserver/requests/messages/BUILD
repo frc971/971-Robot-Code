@@ -52,6 +52,8 @@ FILE_NAMES = (
     "submit_human_ranking_2025_response",
     "delete_2024_data_scouting",
     "delete_2024_data_scouting_response",
+    "delete_notes_2025",
+    "delete_notes_2025_response",
 )
 
 filegroup(

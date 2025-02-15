@@ -1,13 +1,13 @@
 import {Component, HostListener} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {RequestNotesForTeam} from '@org_frc971/scouting/webserver/requests/messages/request_notes_for_team_generated';
+import {RequestNotes2025ForTeam} from '@org_frc971/scouting/webserver/requests/messages/request_notes_2025_for_team_generated';
 import {
-  Note as NoteFb,
-  RequestNotesForTeamResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_notes_for_team_response_generated';
-import {SubmitNotes} from '@org_frc971/scouting/webserver/requests/messages/submit_notes_generated';
-import {SubmitNotesResponse} from '@org_frc971/scouting/webserver/requests/messages/submit_notes_response_generated';
+  Note2025 as NoteFb,
+  RequestNotes2025ForTeamResponse,
+} from '@org_frc971/scouting/webserver/requests/messages/request_notes_2025_for_team_response_generated';
+import {SubmitNotes2025} from '@org_frc971/scouting/webserver/requests/messages/submit_notes_2025_generated';
+import {SubmitNotes2025Response} from '@org_frc971/scouting/webserver/requests/messages/submit_notes_2025_response_generated';
 
 /*
 For new games, the keywords being used will likely need to be updated.
@@ -52,8 +52,15 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
 interface Keywords {
   goodDriving: boolean;
   badDriving: boolean;
-  solidPlacing: boolean;
-  sketchyPlacing: boolean;
+  coralGroundIntake: boolean;
+  coralHpIntake: boolean;
+  algaeGroundIntake: boolean;
+  solidAlgaeShooting: boolean;
+  sketchyAlgaeShooting: boolean;
+  solidCoralShooting: boolean;
+  sketchyCoralShooting: boolean;
+  shuffleCoral: boolean;
+  penalties: boolean;
   goodDefense: boolean;
   badDefense: boolean;
   easilyDefended: boolean;
@@ -61,6 +68,7 @@ interface Keywords {
 }
 
 interface Input {
+  compCode: string;
   teamNumber: string;
   notesData: string;
   keywordsData: Keywords;
@@ -72,8 +80,15 @@ interface Input {
 const KEYWORD_CHECKBOX_LABELS = {
   goodDriving: 'Good Driving',
   badDriving: 'Bad Driving',
-  solidPlacing: 'Solid Shooting',
-  sketchyPlacing: 'Sketchy Shooting',
+  coralGroundIntake: 'Coral Ground Intake',
+  coralHpIntake: 'Coral HP Intake',
+  algaeGroundIntake: 'Algae Ground Intake',
+  solidAlgaeShooting: 'Solid Algae Shooting',
+  sketchyAlgaeShooting: 'Sketchy Algae Shooting',
+  solidCoralShooting: 'Solid Coral Shooting',
+  sketchyCoralShooting: 'Sketchy Coral Shooting',
+  shuffleCoral: 'Shuffle Coral',
+  penalties: 'Penalties',
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
   easilyDefended: 'Easily Defended',
@@ -99,6 +114,7 @@ export class Notes {
 
   errorMessage = '';
   teamNumber: string = '1';
+  compCode: string = '2025camb';
   matchNumber: number = 1;
   setNumber: number = 1;
   compLevel: CompLevel = 'qm';
@@ -132,6 +148,8 @@ export class Notes {
 
   setTeamData() {
     let data: Input = {
+      compCode: this.compCode,
+
       teamNumber: this.teamNumber,
       notesData:
         'Match ' +
@@ -144,8 +162,15 @@ export class Notes {
       keywordsData: {
         goodDriving: false,
         badDriving: false,
-        solidPlacing: false,
-        sketchyPlacing: false,
+        coralGroundIntake: false,
+        coralHpIntake: false,
+        algaeGroundIntake: false,
+        solidAlgaeShooting: false,
+        sketchyAlgaeShooting: false,
+        solidCoralShooting: false,
+        sketchyCoralShooting: false,
+        shuffleCoral: false,
+        penalties: false,
         goodDefense: false,
         badDefense: false,
         easilyDefended: false,
@@ -180,28 +205,38 @@ export class Notes {
 
       const teamNumber = builder.createString(this.newData[i].teamNumber);
       const compLevel = builder.createString(this.newData[i].compLevel);
+      const compCode = builder.createString(this.newData[i].compCode);
 
       builder.finish(
-        SubmitNotes.createSubmitNotes(
+        SubmitNotes2025.createSubmitNotes2025(
           builder,
+          compCode,
           teamNumber,
+          this.newData[i].matchNumber,
+          this.newData[i].setNumber,
+          compLevel,
+
           dataFb,
           this.newData[i].keywordsData.goodDriving,
           this.newData[i].keywordsData.badDriving,
-          this.newData[i].keywordsData.solidPlacing,
-          this.newData[i].keywordsData.sketchyPlacing,
+          this.newData[i].keywordsData.coralGroundIntake,
+          this.newData[i].keywordsData.coralHpIntake,
+          this.newData[i].keywordsData.algaeGroundIntake,
+          this.newData[i].keywordsData.solidAlgaeShooting,
+          this.newData[i].keywordsData.sketchyAlgaeShooting,
+          this.newData[i].keywordsData.solidCoralShooting,
+          this.newData[i].keywordsData.sketchyCoralShooting,
+          this.newData[i].keywordsData.shuffleCoral,
+          this.newData[i].keywordsData.penalties,
           this.newData[i].keywordsData.goodDefense,
           this.newData[i].keywordsData.badDefense,
           this.newData[i].keywordsData.easilyDefended,
-          this.newData[i].keywordsData.noShow,
-          this.newData[i].matchNumber,
-          this.newData[i].setNumber,
-          compLevel
+          this.newData[i].keywordsData.noShow
         )
       );
 
       const buffer = builder.asUint8Array();
-      const res = await fetch('/requests/submit/submit_notes', {
+      const res = await fetch('/requests/submit/submit_notes_2025', {
         method: 'POST',
         body: buffer,
       });

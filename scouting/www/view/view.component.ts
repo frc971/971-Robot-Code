@@ -20,11 +20,13 @@ import {
 } from '@org_frc971/scouting/webserver/requests/messages/request_all_pit_images_response_generated';
 
 import {
-  Note,
-  RequestAllNotesResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_response_generated';
+  Note2025,
+  RequestAllNotes2025Response,
+} from '@org_frc971/scouting/webserver/requests/messages/request_all_notes_2025_response_generated';
 import {Delete2024DataScouting} from '@org_frc971/scouting/webserver/requests/messages/delete_2024_data_scouting_generated';
 import {Delete2024DataScoutingResponse} from '@org_frc971/scouting/webserver/requests/messages/delete_2024_data_scouting_response_generated';
+import {DeleteNotes2025} from '@org_frc971/scouting/webserver/requests/messages/delete_notes_2025_generated';
+import {DeleteNotes2025Response} from '@org_frc971/scouting/webserver/requests/messages/delete_notes_2025_response_generated';
 
 import {
   MatchListRequestor,
@@ -62,6 +64,7 @@ export class ViewComponent {
   // the user when fetching data.
   progressMessage: string = '';
   errorMessage: string = '';
+  compCode: string = '2025camb';
 
   // The current data source being displayed.
   currentSource: Source = 'Notes';
@@ -72,12 +75,11 @@ export class ViewComponent {
   ascendingSort = true;
 
   // Stores the corresponding data.
-  noteList: Note[] = [];
+  noteList: Note2025[] = [];
   driverRankingList: DriverRanking2025[] = [];
   humanRankingList: HumanRanking2025[] = [];
   pitImageList: PitImage[][] = [];
   statList: Stats2024[] = [];
-  compCode: string = '2025camb';
 
   // Fetch notes on initialization.
   ngOnInit() {
@@ -100,7 +102,9 @@ export class ViewComponent {
           .localeCompare(a.teamNumber(), undefined, {numeric: true});
       });
       this.noteList.sort(function (a, b) {
-        return b.team().localeCompare(a.team(), undefined, {numeric: true});
+        return b
+          .teamNumber()
+          .localeCompare(a.teamNumber(), undefined, {numeric: true});
       });
       this.pitImageList.sort(function (a, b) {
         return b[0]
@@ -120,7 +124,9 @@ export class ViewComponent {
           .localeCompare(b.teamNumber(), undefined, {numeric: true});
       });
       this.noteList.sort(function (a, b) {
-        return a.team().localeCompare(b.team(), undefined, {numeric: true});
+        return a
+          .teamNumber()
+          .localeCompare(b.teamNumber(), undefined, {numeric: true});
       });
       this.pitImageList.sort(function (a, b) {
         return a[0]
@@ -149,7 +155,7 @@ export class ViewComponent {
   fetchCurrentSource() {
     switch (this.currentSource) {
       case 'Notes': {
-        this.fetchNotes();
+        this.fetchNotes2025();
       }
 
       case 'Stats2024': {
@@ -170,15 +176,25 @@ export class ViewComponent {
     }
   }
 
-  // TODO(Filip): Add delete functionality.
-  // Gets called when a user clicks the delete icon (note scouting).
-  async deleteNoteData() {
+  async deleteNotes2025(
+    compCode: string,
+    compLevel: string,
+    matchNumber: number,
+    setNumber: number,
+    teamNumber: string
+  ) {
     const block_alerts = document.getElementById(
       'block_alerts'
     ) as HTMLInputElement;
     if (block_alerts.checked || window.confirm('Actually delete data?')) {
-      this.errorMessage = 'Deleting data has not been implemented yet.';
-      return;
+      await this.requestDeleteNotes2025(
+        compCode,
+        compLevel,
+        matchNumber,
+        setNumber,
+        teamNumber
+      );
+      await this.fetchNotes2025();
     }
   }
 
@@ -238,6 +254,45 @@ export class ViewComponent {
 
     const buffer = builder.asUint8Array();
     const res = await fetch('/requests/delete/delete_2024_data_scouting', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    if (!res.ok) {
+      const resBuffer = await res.arrayBuffer();
+      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+    }
+  }
+
+  async requestDeleteNotes2025(
+    compCode: string,
+    compLevel: string,
+    matchNumber: number,
+    setNumber: number,
+    teamNumber: string
+  ) {
+    this.progressMessage = 'Deleting data. Please be patient.';
+    const builder = new Builder();
+    const compCodeData = builder.createString(compCode);
+    const compLevelData = builder.createString(compLevel);
+    const teamNumberData = builder.createString(teamNumber);
+
+    builder.finish(
+      DeleteNotes2025.createDeleteNotes2025(
+        builder,
+        compCodeData,
+        compLevelData,
+        matchNumber,
+        setNumber,
+        teamNumberData
+      )
+    );
+
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/delete/delete_notes_2025', {
       method: 'POST',
       body: buffer,
     });
@@ -331,13 +386,15 @@ export class ViewComponent {
   }
 
   // Fetch all notes data and store in noteList.
-  async fetchNotes() {
+  async fetchNotes2025() {
     this.progressMessage = 'Fetching notes list. Please be patient.';
     this.errorMessage = '';
 
     try {
-      this.noteList = await this.viewDataRequestor.fetchNoteList();
-      this.progressMessage = 'Successfully fetched note list.';
+      this.noteList = await this.viewDataRequestor.fetchNote2025List(
+        this.compCode
+      );
+      this.progressMessage = 'Successfully fetched note 2025 list.';
     } catch (e) {
       this.errorMessage = e;
       this.progressMessage = '';
@@ -346,34 +403,35 @@ export class ViewComponent {
 
   // Parse all selected keywords for a note entry
   // into one string to be displayed in the table.
-  parseKeywords(entry: Note) {
+  parseKeywords(entry: Note2025) {
     let parsedKeywords = '';
 
+    if (entry.coralGroundIntake()) {
+      parsedKeywords += 'Coral Ground Intake, ';
+    } else {
+      parsedKeywords += 'No Coral Ground Intake, ';
+    }
+    if (entry.coralHpIntake()) {
+      parsedKeywords += 'Coral HP Intake, ';
+    } else {
+      parsedKeywords += 'No Coral HP Intake, ';
+    }
+    if (entry.solidAlgaeShooting()) {
+      parsedKeywords += 'Solid Algae Shooting, ';
+    } else {
+      parsedKeywords += 'No Solid Algae Shooting, ';
+    }
+    if (entry.penalties()) {
+      parsedKeywords += 'Penalties, ';
+    } else {
+      parsedKeywords += 'No Penalties, ';
+    }
     if (entry.goodDriving()) {
-      parsedKeywords += 'Good Driving ';
+      parsedKeywords += 'Good Driving, ';
     }
     if (entry.badDriving()) {
-      parsedKeywords += 'Bad Driving ';
+      parsedKeywords += 'Bad Driving, ';
     }
-    if (entry.noShow()) {
-      parsedKeywords += 'No Show ';
-    }
-    if (entry.solidPlacing()) {
-      parsedKeywords += 'Solid Placing ';
-    }
-    if (entry.sketchyPlacing()) {
-      parsedKeywords += 'Sketchy Placing ';
-    }
-    if (entry.goodDefense()) {
-      parsedKeywords += 'Good Defense ';
-    }
-    if (entry.badDefense()) {
-      parsedKeywords += 'Bad Defense ';
-    }
-    if (entry.easilyDefended()) {
-      parsedKeywords += 'Easily Defended';
-    }
-
     return parsedKeywords;
   }
 }

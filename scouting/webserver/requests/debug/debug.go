@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting_response"
@@ -260,4 +261,10 @@ func Delete2024DataScouting(server string, requestBytes []byte, userName string)
 	return sendMessage[delete_2024_data_scouting_response.Delete2024DataScoutingResponseT](
 		server+"/requests/delete/delete_2024_data_scouting", requestBytes,
 		delete_2024_data_scouting_response.GetRootAsDelete2024DataScoutingResponse, DefaultUsername)
+}
+
+func DeleteNotes2025(server string, requestBytes []byte, userName string) (*delete_notes_2025_response.DeleteNotes2025ResponseT, error) {
+	return sendMessage[delete_notes_2025_response.DeleteNotes2025ResponseT](
+		server+"/requests/delete/delete_notes_2025", requestBytes,
+		delete_notes_2025_response.GetRootAsDeleteNotes2025Response, DefaultUsername)
 }
