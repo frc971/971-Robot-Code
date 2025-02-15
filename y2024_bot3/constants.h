@@ -61,11 +61,13 @@ struct Values {
            (2 * M_PI /*radians*/);
   }
 
+  static constexpr double kWheelRadius = 1.8 * 0.0254;
+
   static constexpr double kRotationModuleRatio =
       control_loops::drivetrain::kOutputRatio;
 
   static constexpr double kTranslationModuleRatio() {
-    return (12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254;
+    return (12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * kWheelRadius;
   }
 
   // note: there is one mag encoder per swerve module, and they measure only

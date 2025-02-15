@@ -18,6 +18,7 @@ class InverseKinematicsTest : public ::testing::Test {
                         .drive_motor = KrakenFOC(),
                         .steer_ratio = 1.0,
                         .drive_ratio = 1.0,
+                        .wheel_radius = 1.0,
                         .extra_steer_inertia = 0.0};
   }
   static Parameters MakeParams() {

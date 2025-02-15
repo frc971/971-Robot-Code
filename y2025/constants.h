@@ -29,8 +29,10 @@ struct Values {
   static constexpr double kRotationModuleRatio =
       control_loops::drivetrain::kOutputRatio;
 
+  static constexpr double kWheelRadius = 1.8 * 0.0254;
+
   static constexpr double kTranslationModuleRatio() {
-    return (12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254;
+    return (12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * kWheelRadius;
   }
 
   static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }

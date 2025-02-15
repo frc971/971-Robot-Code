@@ -32,6 +32,7 @@ MakeSwerveParameters() {
             .drive_motor = frc971::control_loops::swerve::KrakenFOC(),
             .steer_ratio = constants::Values::kRotationModuleRatio,
             .drive_ratio = constants::Values::kTranslationModuleRatio(),
+            .wheel_radius = constants::Values::kWheelRadius,
             .extra_steer_inertia = 0.01};
   };
 

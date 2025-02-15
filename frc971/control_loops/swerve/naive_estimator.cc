@@ -61,7 +61,7 @@ NaiveEstimator::State NaiveEstimator::Update(
   // Constants for a very simple IIR on the various velocities. Currently set to
   // do no filtering.
   constexpr Scalar kAlpha = 1.0;
-  // To estimate voerall robot vx/vy, we calculate the robot velocity implied by
+  // To estimate overall robot vx/vy, we calculate the robot velocity implied by
   // each individual module and then average them all together. In cases with
   // low slip this is correct.
   Eigen::Vector2d accumulated_velocity = Eigen::Vector2d::Zero();
