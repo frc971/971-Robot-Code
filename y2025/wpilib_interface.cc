@@ -51,6 +51,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2025/constants.h"
 #include "y2025/constants/constants_generated.h"
+#include "y2025/control_loops/superstructure/led_indicator.h"
 #include "y2025/control_loops/superstructure/superstructure_can_position_static.h"
 #include "y2025/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_position_generated.h"
@@ -163,6 +164,37 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       auto builder = gyro_sender_.MakeBuilder();
       ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
           builder.MakeBuilder<::frc971::sensors::GyroReading>();
+
+      builder.CheckOk(builder.Send(gyro_reading_builder.Finish()));
+    }
+
+    {
+      auto builder = gyro_sender_.MakeBuilder();
+      ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
+          builder.MakeBuilder<::frc971::sensors::GyroReading>();
+      // +/- 2000 deg / sec
+      constexpr double kMaxVelocity = 4000;  // degrees / second
+      constexpr double kVelocityRadiansPerSecond =
+          kMaxVelocity / 360 * (2.0 * M_PI);
+
+      // Only part of the full range is used to prevent being 100% on or off.
+      constexpr double kScaledRangeLow = 0.1;
+      constexpr double kScaledRangeHigh = 0.9;
+
+      constexpr double kPWMFrequencyHz = 200;
+      double velocity_duty_cycle =
+          imu_yaw_rate_reader_.last_width() * kPWMFrequencyHz;
+
+      constexpr double kDutyCycleScale =
+          1 / (kScaledRangeHigh - kScaledRangeLow);
+      // scale from 0.1 - 0.9 to 0 - 1
+      double rescaled_velocity_duty_cycle =
+          (velocity_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
+
+      if (!std::isnan(rescaled_velocity_duty_cycle)) {
+        gyro_reading_builder.add_velocity((rescaled_velocity_duty_cycle - 0.5) *
+                                          kVelocityRadiansPerSecond);
+      }
 
       builder.CheckOk(builder.Send(gyro_reading_builder.Finish()));
     }
@@ -472,6 +504,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_output_event_loop);
+
+    // Set up LED Indicator with its own event loop thread
+    ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
+    led_indicator_event_loop.set_name("LedIndicator");
+    control_loops::superstructure::LedIndicator led_indicator(
+        &led_indicator_event_loop);
+    AddLoop(&led_indicator_event_loop);
 
     RunLoops();
   }
