@@ -3,7 +3,19 @@
 {% from 'y2025/constants/common.jinja2' import wrist_zero %}
 
 {
-  "cameras": [
+  "cameras": [    
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-7971-0_cam-24-04_2025-01-18_14-30-24.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-7971-1_cam-24-02_2025-01-18_14-30-24.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-7971-0_cam-24-01_2022-04-28_21-20-01.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-7971-1_cam-24-03_2025-01-18_14-30-24.json' %}
+    }
   ],
   "robot": {
     "elevator_constants": {
