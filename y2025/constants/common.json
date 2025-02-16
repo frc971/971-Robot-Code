@@ -41,14 +41,14 @@
   },
   // TODO change these constants for y2025 bot
   "wrist": {
-    "zeroing_voltage": 3.0,
+    "zeroing_voltage": 6.0,
     "operating_voltage": 12.0,
     "zeroing_profile_params": {
-      "max_velocity": 0.5,
+      "max_velocity": 1.5,
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 4.0,
+      "max_velocity": 6.0,
       "max_acceleration": 20.0
     },
     "range": {
@@ -62,20 +62,20 @@
 
   "elevator": {
     "zeroing_voltage": 2.0,
-    "operating_voltage": 6.0,
+    "operating_voltage": 10.0,
     "zeroing_profile_params": {
       "max_velocity": 1,
       "max_acceleration": 2.0
     },
     "default_profile_params":{
-      "max_velocity": 4.0,
-      "max_acceleration": 2.0
+      "max_velocity": 8.0,
+      "max_acceleration": 12.0
     },
     "range": {
         "lower_hard": -0.001,
-        "upper_hard": 1.39,
+        "upper_hard": 1.43,
         "lower": 0.0,
-        "upper": 1.39
+        "upper": 1.43
     },
     "loop": {% include 'y2025/control_loops/superstructure/elevator/integral_elevator_plant.json' %}
   },
@@ -104,12 +104,12 @@
   },
   "elevator_set_points": {
     "neutral": 0.05,
-    "intake_hp": 0.22220963342833937,
+    "intake_hp": 0.30,
     "intake_ground": 0.0,
     "score_l1": 0.0,
-    "score_l2": 0.15,
-    "score_l3": {{ 0.15 + 15.87 * 0.0254 }},
-    "score_l4": 1.3712316453231945,
+    "score_l2": 0.16,
+    "score_l3": {{ 0.20 + 15.87 * 0.0254 }},
+    "score_l4": 1.42,
     "algae_l2": 1.0904796600341797,
     "algae_l3": 0.9904796600341797
   },
@@ -120,7 +120,7 @@
     "score_l1": {{ 3.14 / 4.0 }},
     "score_l2": 0.4609734355461903,
     "score_l3": 0.4609734355461903,
-    "score_l4": 0.3355121620157867,
+    "score_l4": 0.29801,
     "algae_l2": 0.3904796600341797,
     "algae_l3": 0.3904796600341797
   },
@@ -131,7 +131,7 @@
     "score_l1": 0.0,
     "score_l2": 0.9267393224481775,
     "score_l3": 1.02,
-    "score_l4": 1.7169708502340164,
+    "score_l4": 1.738,
     "algae_l2": 1.3904796600341797,
     "algae_l3": 1.3904796600341797
   },
@@ -152,7 +152,7 @@
     "drive_current_r": 1e-3
   },
   "reef_apriltag_ids": [6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22],
-  "end_effector_idling_voltage": 6.0,
+  "end_effector_idling_voltage": 10.0,
   "reef_locations": [
     {
       "x": 4.272088,

@@ -54,7 +54,7 @@ struct Values {
   static constexpr double kElevatorPotRatio() { return 1; }
 
   static constexpr double kElevatorPotMetersPerRevolution() {
-    return (1.751) * 0.0254 * (2.0 * M_PI);
+    return (1.79) * 0.0254 * (2.0 * M_PI);
   }
 
   static constexpr double kElevatorEncoderMetersPerRadian() {

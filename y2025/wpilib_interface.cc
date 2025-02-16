@@ -85,7 +85,7 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
 
 double elevator_pot_translate(double voltage) {
-  return voltage * Values::kElevatorPotMetersPerVolt();
+  return -voltage * Values::kElevatorPotMetersPerVolt();
 }
 double pivot_pot_translate(double voltage) {
   return -voltage * Values::kPivotPotRadiansPerVolt();
@@ -138,7 +138,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(elevator_sensors_, builder->add_elevator(),
                    Values::kElevatorEncoderCountsPerRevolution(),
                    Values::kElevatorEncoderMetersPerRadian(),
-                   elevator_pot_translate, false,
+                   elevator_pot_translate, true,
                    robot_constants_->robot()
                        ->elevator_constants()
                        ->potentiometer_offset());
@@ -325,13 +325,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                         std::make_unique<frc::DigitalInput>(2));
     sensor_reader.set_back_right_encoder(
         make_encoder(3), std::make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_elevator(make_encoder(0),
-                               make_unique<frc::DigitalInput>(0),
+    sensor_reader.set_elevator(make_unique<frc::Encoder>(7, 6),
+                               make_unique<frc::DigitalInput>(8),
                                make_unique<frc::AnalogInput>(0));
     sensor_reader.set_pivot(make_encoder(1), make_unique<frc::DigitalInput>(1),
                             make_unique<frc::AnalogInput>(1));
-    sensor_reader.set_wrist(make_unique<frc::Encoder>(7, 6),
-                            make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_wrist(make_unique<frc::Encoder>(23, 22),
+                            make_unique<frc::DigitalInput>(24));
     // TODO: Set the roborio ports
 
     AddLoop(&sensor_reader_event_loop);
