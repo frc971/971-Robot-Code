@@ -66,6 +66,8 @@ robot_downloader(
         "//y2025/localizer:localizer_main",
         "//y2025/orin:can_logger",
         "//y2025/autonomous:autonomous_main",
+        "//frc971/vision:image_logger",
+        "//frc971/vision:camera_focus",
     ],
     data = [
         ":aos_config",

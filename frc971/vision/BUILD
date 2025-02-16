@@ -118,6 +118,22 @@ flatbuffer_py_library(
     visibility = ["//visibility:public"],
 )
 
+cc_binary(
+    name = "camera_focus",
+    srcs = [
+        "camera_focus.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":vision_fbs",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//third_party:opencv",
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
+
 py_library(
     name = "create_calib_file",
     srcs = [
