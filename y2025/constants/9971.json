@@ -1,43 +1,51 @@
-{% from 'y2025/constants/common.jinja2' import elevator_zero %}
-{% from 'y2025/constants/common.jinja2' import pivot_zero %}
-{% from 'y2025/constants/common.jinja2' import wrist_zero %}
+{% from 'y2025/constants/common.jinja2' import front_left_zero, front_right_zero, back_left_zero, back_right_zero, pi %}
 
 {
   "cameras": [
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-9971-0_cam-25-01_2022-04-28_18-19-35.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_imu-9971-1_cam-25-02_2022-04-28_17-51-15.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-9971-0_cam-25-04_2022-04-28_18-19-19.json' %}
+    },
+    {
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-9971-1_cam-25-03_2022-04-28_17-50-34.json' %}
+    }
   ],
   "robot": {
-    "elevator_constants": {
-      {% set _ = elevator_zero.update(
+  "swerve_zeroing": {
+      {% set _ = front_left_zero.update(
           {
-              "measured_absolute_position" : 0.0
+              "measured_absolute_position" : 0.7907520098189628 + pi / 4
           }
       ) %}
-      "zeroing_constants": {{ elevator_zero | tojson(indent=2)}},
-      "potentiometer_offset": 0.0
-    },
-    //TODO change these constants for y2025 bot
-    "pivot_constants": {
-      {% set _ = pivot_zero.update(
+      {% set _ = front_right_zero.update(
           {
-              "measured_absolute_position" : 0.17940018799940982
+              "measured_absolute_position" : 2.1960333241167067 - pi / 4
           }
       ) %}
-      "zeroing_constants": {{ pivot_zero | tojson(indent=2)}},
-      "potentiometer_offset": {{ 5.249596184591311 }}
-    },
-    // TODO change these constants for y2025 bot
-    "wrist_constants":{
-      {% set _ = wrist_zero.update(
+      {% set _ = back_left_zero.update(
           {
-              "measured_absolute_position" : 0.17940018799940982
+              "measured_absolute_position" : 1.6765625358760128 - pi / 4
           }
       ) %}
-      "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}
+      {% set _ = back_right_zero.update(
+          {
+              "measured_absolute_position" : 2.543585519727619 + pi / 4
+          }
+      ) %}
+      "front_left":  {{ front_left_zero | tojson(indent=2)}},
+      "front_right":  {{ front_right_zero | tojson(indent=2)}},
+      "back_left":  {{ back_left_zero | tojson(indent=2)}},
+      "back_right":  {{ back_right_zero | tojson(indent=2)}}
     },
     "input_config": {
-      "use_redundant_joysticks": true,
-      "vx_offset": 0.31496063,
-      "vy_offset": 0.2519685,
+      "use_redundant_joysticks": false,
+      "vx_offset": 0.0,
+      "vy_offset": 0.0,
       "omega_offset": 0.0
     }
   },

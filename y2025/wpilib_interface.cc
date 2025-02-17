@@ -115,9 +115,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void Start() override {
     AddToDMA(&imu_yaw_rate_reader_);
-    AddToDMA(&elevator_sensors_.reader());
-    AddToDMA(&pivot_sensors_.reader());
-    AddToDMA(&wrist_encoder_.reader());
+    if (wrist_encoder_.encoder() != nullptr ||
+        pivot_sensors_.encoder() != nullptr ||
+        elevator_sensors_.encoder() != nullptr) {
+      AddToDMA(&elevator_sensors_.reader());
+      AddToDMA(&pivot_sensors_.reader());
+      AddToDMA(&wrist_encoder_.reader());
+    }
   }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
@@ -126,7 +130,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void RunIteration() override {
-    {
+    if (wrist_encoder_.encoder() != nullptr ||
+        pivot_sensors_.encoder() != nullptr ||
+        elevator_sensors_.encoder() != nullptr) {
       aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
           superstructure_position_sender_.MakeStaticBuilder();
       CopyPosition(elevator_sensors_, builder->add_elevator(),
@@ -141,7 +147,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           Values::kPivotEncoderCountsPerRevolution(),
           Values::kPivotEncoderRatio(), pivot_pot_translate, false,
           robot_constants_->robot()->pivot_constants()->potentiometer_offset());
-
       CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
                    Values::kWristEncoderRatio(), true /* wrist flipped */);
@@ -279,7 +284,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                      frc::Encoder::k4X);
   }
 
-  void Run() override {
+  void Run971() {
     aos::FlatbufferDetachedBuffer<aos::Configuration> config =
         aos::configuration::ReadConfig("aos_config.json");
 
@@ -513,6 +518,62 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&led_indicator_event_loop);
 
     RunLoops();
+  }
+
+  void Run9971() {
+    aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+        aos::configuration::ReadConfig("aos_config.json");
+
+    frc971::constants::WaitForConstants<y2025::Constants>(&config.message());
+
+    ::aos::ShmEventLoop constant_fetcher_event_loop(&config.message());
+    frc971::constants::ConstantsFetcher<Constants> constants_fetcher(
+        &constant_fetcher_event_loop);
+    const Constants *robot_constants = &constants_fetcher.constants();
+
+    AddLoop(&constant_fetcher_event_loop);
+
+    // Thread 1.
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
+
+    LOG(INFO) << "Initialized Thread 1";
+
+    // Thread 3.
+    ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
+    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
+    sensor_reader.set_pwm_trigger(false);
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
+    sensor_reader.set_front_left_encoder(
+        make_encoder(0), std::make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_front_right_encoder(
+        make_encoder(2), std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_back_left_encoder(make_encoder(1),
+                                        std::make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_back_right_encoder(
+        make_encoder(4), std::make_unique<frc::DigitalInput>(4));
+    LOG(INFO) << "Initialized Thread 2";
+    // TODO: Set the roborio ports
+
+    AddLoop(&sensor_reader_event_loop);
+
+    RunLoops();
+  }
+
+  void Run() override {
+    const int team_number = aos::network::GetTeamNumber();
+    switch (team_number) {
+      case 971:
+        LOG(INFO) << "Running 971";
+        Run971();
+        return;
+      case 9971:
+        LOG(INFO) << "Running 9971";
+        Run9971();
+        return;
+    }
   }
 };
 
