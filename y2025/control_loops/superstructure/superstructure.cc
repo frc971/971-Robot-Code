@@ -27,6 +27,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       robot_constants_(&constants_fetcher_.constants()),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      auto_superstructure_goal_fetcher_(
+          event_loop->MakeFetcher<y2025::control_loops::superstructure::Goal>(
+              "/imu/autonomous")),
       elevator_(
           robot_constants_->common()->elevator(),
           robot_constants_->robot()->elevator_constants()->zeroing_constants()),
@@ -53,8 +56,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
   OutputT output_struct;
 
-  if (joystick_state_fetcher_.Fetch() &&
-      joystick_state_fetcher_->has_alliance()) {
+  joystick_state_fetcher_.Fetch();
+  if (joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
 
@@ -62,6 +65,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     intake_complete_ =
         rio_can_position_fetcher_.get()->end_effector()->torque_current() >
         kEndEffectorMotorTorqueThreshold;
+  }
+  if (joystick_state_fetcher_->autonomous() &&
+      auto_superstructure_goal_fetcher_.Fetch()) {
+    unsafe_goal = auto_superstructure_goal_fetcher_.get();
   }
 
   double end_effector_voltage =

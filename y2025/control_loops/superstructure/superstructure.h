@@ -51,6 +51,8 @@ class Superstructure
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const Constants *robot_constants_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Fetcher<y2025::control_loops::superstructure::Goal>
+      auto_superstructure_goal_fetcher_;
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem pivot_;
   AbsoluteEncoderSubsystem wrist_;

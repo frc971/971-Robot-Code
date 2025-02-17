@@ -1,3 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+
 package(default_visibility = ["//y2025:__subpackages__"])
 
 filegroup(
@@ -53,6 +55,14 @@ filegroup(
     ],
 )
 
+static_flatbuffer(
+    name = "autonomous_superstructure_goal_fbs",
+    srcs = ["autonomous_superstructure_goal.fbs"],
+    deps = [
+        "//y2025/control_loops/superstructure:superstructure_goal_fbs",
+    ],
+)
+
 cc_binary(
     name = "autonomous_main",
     srcs = ["autonomous_main.cc"],
@@ -60,9 +70,20 @@ cc_binary(
         ":trajectory_bfbs",
     ],
     deps = [
+        ":autonomous_superstructure_goal_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/swerve:autonomous_controller",
-        "//y2024_bot3/control_loops/superstructure:superstructure_goal_fbs",
+    ],
+)
+
+cc_binary(
+    name = "autonomous_superstructure",
+    srcs = ["autonomous_superstructure.cc"],
+    deps = [
+        ":autonomous_superstructure_goal_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//y2025/control_loops/superstructure:superstructure_goal_fbs",
     ],
 )

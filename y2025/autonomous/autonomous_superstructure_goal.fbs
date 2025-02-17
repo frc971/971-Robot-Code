@@ -1,0 +1,21 @@
+include "y2025/control_loops/superstructure/superstructure_goal.fbs";
+
+namespace y2025.autonomous;
+
+table GoalsSet {
+    end_effector: bool (id: 0);
+    pivot: bool (id: 1);
+    elevator: bool (id: 2);
+    wrist: bool (id: 3);
+    climber: bool (id: 4);
+    robot_side: bool (id: 5);
+}
+
+table AutonomousSuperstructureGoal {
+    goal: y2025.control_loops.superstructure.Goal (id: 0);
+    goals_set: GoalsSet (id: 1);
+    timed: bool (id: 2);
+    duration: int64 (id: 3); //ns
+}
+
+root_type AutonomousSuperstructureGoal;

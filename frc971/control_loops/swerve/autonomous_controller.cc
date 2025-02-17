@@ -176,7 +176,8 @@ void AutonomousController::Iterate() {
 
   auto time = trajectory_point->time();
 
-  for (auto action : actions_) {
+  for (size_t i = 0; i < actions_.size(); i++) {
+    auto &action = actions_.at(i);
     if (!action.completed && time >= action.time) {
       (*action.callback)();
       action.completed = true;
