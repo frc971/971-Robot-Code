@@ -26,9 +26,8 @@
 #include "frc971/input/swerve_joystick_input.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2025/constants/constants_generated.h"
-#include "y2025/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_goal_static.h"
-#include "y2025/control_loops/superstructure/superstructure_status_static.h"
+#include "y2025/control_loops/superstructure/superstructure_status_generated.h"
 
 using frc971::CreateProfileParameters;
 using frc971::input::driver_station::ButtonLocation;
@@ -62,6 +61,8 @@ const ButtonLocation kEndEffectorSpit(6, 5);
 
 const ButtonLocation kClimb(1, 2);
 const ButtonLocation kRetract(1, 3);
+
+const ButtonLocation kDontMove(4, 12);
 
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
@@ -112,7 +113,8 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);
     superstructure_goal_builder->set_wrist_goal(WristGoal::NEUTRAL);
 
-    if (data.IsPressed(kLeftL4) || data.IsPressed(kRightL4)) {
+    if (data.IsPressed(kDontMove)) {
+    } else if (data.IsPressed(kLeftL4) || data.IsPressed(kRightL4)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L4);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L4);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L4);
