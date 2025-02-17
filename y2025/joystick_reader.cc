@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "Eigen/Dense"
 #include "absl/flags/flag.h"
 
 #include "aos/actions/actions.h"
@@ -16,6 +17,7 @@
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/control_loops/swerve/swerve_localizer_state_generated.h"
 #include "frc971/input/action_joystick_input.h"
 #include "frc971/input/driver_station_data.h"
 #include "frc971/input/drivetrain_input.h"
@@ -48,11 +50,12 @@ const ButtonLocation kLeftL3(6, 7);
 const ButtonLocation kRightL3(2, 7);
 const ButtonLocation kLeftL2(6, 8);
 const ButtonLocation kRightL2(2, 8);
-const ButtonLocation kL1(6, 11);
+const ButtonLocation kL1(3, 11);
 
 const ButtonLocation kHumanPlayer(4, 10);
 
-const ButtonLocation kBack(6, 1);
+const ButtonLocation kFront(3, 4);
+const ButtonLocation kBack(3, 1);
 
 const ButtonLocation kEndEffectorIntake(6, 2);
 const ButtonLocation kEndEffectorSpit(6, 5);
@@ -71,7 +74,8 @@ using y2025::control_loops::superstructure::WristGoal;
 class Reader : public ::frc971::input::SwerveJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop,
-         const y2025::RobotConstants *robot_constants)
+         const y2025::RobotConstants *robot_constants,
+         const y2025::Common *common)
       : ::frc971::input::SwerveJoystickInput(
             event_loop,
             {.vx_offset = robot_constants->input_config()->vx_offset(),
@@ -83,7 +87,12 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
             event_loop->MakeSender<GoalStatic>("/superstructure")),
         superstructure_status_fetcher_(
             event_loop->MakeFetcher<Status>("/superstructure")),
-        robot_constants_(robot_constants) {
+        localizer_state_fetcher_(
+            event_loop
+                ->MakeFetcher<frc971::control_loops::swerve::LocalizerState>(
+                    "/imu/localizer")),
+        robot_constants_(robot_constants),
+        common_(common) {
     CHECK(robot_constants_ != nullptr);
   }
   void AutoEnded() { AOS_LOG(INFO, "Auto ended.\n"); }
@@ -137,7 +146,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     if (data.IsPressed(kEndEffectorSpit)) {
       superstructure_goal_builder->set_end_effector_goal(EndEffectorGoal::SPIT);
     } else if (data.IsPressed(kEndEffectorIntake) ||
-               data.IsPressed(kHumanPlayer)) {
+               data.IsPressed(kHumanPlayer) || data.IsPressed(kL1)) {
       superstructure_goal_builder->set_end_effector_goal(
           EndEffectorGoal::INTAKE);
     } else {
@@ -147,6 +156,19 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
 
     if (data.IsPressed(kBack)) {
       superstructure_goal_builder->set_robot_side(RobotSide::BACK);
+    } else if (data.IsPressed(kFront)) {
+      superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
+    } else if (data.IsPressed(kHumanPlayer)) {
+      superstructure_goal_builder->set_robot_side(
+          frontFacing(common_->HP_locations()) ? RobotSide::FRONT
+                                               : RobotSide::BACK);
+    } else if (data.IsPressed(kL1) || data.IsPressed(kLeftL2) ||
+               data.IsPressed(kLeftL3) || data.IsPressed(kLeftL4) ||
+               data.IsPressed(kRightL2) || data.IsPressed(kRightL3) ||
+               data.IsPressed(kRightL4)) {
+      superstructure_goal_builder->set_robot_side(
+          frontFacing(common_->reef_locations()) ? RobotSide::FRONT
+                                                 : RobotSide::BACK);
     } else {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
     }
@@ -165,7 +187,43 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
  private:
   ::aos::Sender<GoalStatic> superstructure_goal_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
+  ::aos::Fetcher<frc971::control_loops::swerve::LocalizerState>
+      localizer_state_fetcher_;
   const y2025::RobotConstants *robot_constants_;
+  const y2025::Common *common_;
+
+  bool frontFacing(
+      const flatbuffers::Vector<flatbuffers::Offset<y2025::Location>>
+          *locations) {
+    localizer_state_fetcher_.Fetch();
+    if (!localizer_state_fetcher_.get()) {
+      return true;
+    }
+
+    Eigen::Matrix<double, 2, 1> robot_pos;
+    robot_pos << localizer_state_fetcher_->x(), localizer_state_fetcher_->y();
+
+    std::vector<Eigen::Matrix<double, 2, 1>> points;
+
+    for (size_t i = 0; i < locations->size(); i++) {
+      Eigen::Matrix<double, 2, 1> location;
+      location << locations->Get(i)->x(), locations->Get(i)->y();
+      points.push_back(location - robot_pos);
+    }
+
+    Eigen::Matrix<double, 2, 1> closest_point = points.at(0);
+    for (size_t i = 1; i < points.size(); i++) {
+      closest_point = closest_point.squaredNorm() > points.at(i).squaredNorm()
+                          ? points.at(i)
+                          : closest_point;
+    }
+
+    Eigen::Matrix<double, 2, 1> robot_pointing;
+    robot_pointing << cos(localizer_state_fetcher_->theta()),
+        sin(localizer_state_fetcher_->theta());
+
+    return robot_pointing.dot(closest_point) > 0;
+  }
 };
 
 }  // namespace y2025::input::joysticks
@@ -182,9 +240,11 @@ int main(int argc, char **argv) {
       &constant_fetcher_event_loop);
   const y2025::RobotConstants *robot_constants =
       constants_fetcher.constants().robot();
+  const y2025::Common *common = constants_fetcher.constants().common();
 
   ::aos::ShmEventLoop event_loop(&config.message());
-  ::y2025::input::joysticks::Reader reader(&event_loop, robot_constants);
+  ::y2025::input::joysticks::Reader reader(&event_loop, robot_constants,
+                                           common);
 
   event_loop.Run();
 
