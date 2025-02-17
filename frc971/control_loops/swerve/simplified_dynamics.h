@@ -84,26 +84,34 @@ class SimplifiedDynamics {
     // omega).
     kThetas0 = 0,
     kOmegas0 = 1,
-    kThetas1 = 2,
-    kOmegas1 = 3,
-    kThetas2 = 4,
-    kOmegas2 = 5,
-    kThetas3 = 6,
-    kOmegas3 = 7,
+    kOmegad0 = 2,
+
+    kThetas1 = 3,
+    kOmegas1 = 4,
+    kOmegad1 = 5,
+
+    kThetas2 = 6,
+    kOmegas2 = 7,
+    kOmegad2 = 8,
+
+    kThetas3 = 9,
+    kOmegas3 = 10,
+    kOmegad3 = 11,
+
     // Robot yaw, in radians.
-    kTheta = 8,
+    kTheta = 12,
     // Robot speed in the global frame, in meters / sec.
-    kVx = 9,
-    kVy = 10,
+    kVx = 13,
+    kVy = 14,
     // Robot yaw rate, in radians / sec.
-    kOmega = 11,
-    kNumVelocityStates = 12,
+    kOmega = 15,
+    kNumVelocityStates = 16,
     // Augmented states for doing position control.
     // Robot X position in the global frame.
-    kX = 12,
+    kX = 16,
     // Robot Y position in the global frame.
-    kY = 13,
-    kNumPositionStates = 14,
+    kY = 17,
+    kNumPositionStates = 18,
   };
   using Inputs = InputStates::States;
 
@@ -374,6 +382,7 @@ class SimplifiedDynamics {
           input(IdIdx()) * static_cast<Scalar>(drive_motor.stall_torque /
                                                drive_motor.stall_current /
                                                module_params().drive_ratio);
+      const LocalScalar alphad = drive_force * module_params().wheel_radius;
       const Eigen::Matrix<LocalScalar, 3, 1> drive_force_vec =
           drive_force * UnitYawVector<LocalScalar>(theta + theta_steer);
       const LocalScalar drive_torque =
@@ -387,6 +396,7 @@ class SimplifiedDynamics {
           -module_params().slip_angle_alignment_coefficient * slip_angle;
 
       Xdot(OmegasIdx()) = steer_motor_accel + wheel_alignment_accel;
+      Xdot(OmegadIdx()) = alphad;
       // Sum up all the forces.
       Xdot(kVx) =
           (slip_force_vec.x() + drive_force_vec.x()) / robot_params_.mass;
@@ -406,8 +416,9 @@ class SimplifiedDynamics {
           {static_cast<LocalScalar>(sin(yaw))},
           {static_cast<LocalScalar>(0.0)}};
     }
-    size_t ThetasIdx() const { return kThetas0 + 2 * module_index_; }
-    size_t OmegasIdx() const { return kOmegas0 + 2 * module_index_; }
+    size_t ThetasIdx() const { return kThetas0 + 3 * module_index_; }
+    size_t OmegasIdx() const { return kOmegas0 + 3 * module_index_; }
+    size_t OmegadIdx() const { return kOmegad0 + 3 * module_index_; }
     size_t IsIdx() const { return Inputs::kIs0 + 2 * module_index_; }
     size_t IdIdx() const { return Inputs::kId0 + 2 * module_index_; }
 

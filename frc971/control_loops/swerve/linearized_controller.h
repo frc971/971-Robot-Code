@@ -13,6 +13,7 @@
 #include "frc971/control_loops/jacobian.h"
 #include "frc971/control_loops/swerve/dynamics.h"
 #include "frc971/control_loops/swerve/linearization_utils.h"
+#include "frc971/control_loops/swerve/nonlinear_cost.h"
 
 ABSL_DECLARE_FLAG(bool, use_slicot);
 ABSL_DECLARE_FLAG(int, dare_iterations);
@@ -37,6 +38,9 @@ class LinearizedController {
   struct Parameters {
     // State cost matrix.
     StateSquare Q;
+    // nullopt if a non linear cost is not used
+    std::optional<std::unique_ptr<NonLinearCost<NStates, Scalar>>> nonlinear_Q =
+        std::nullopt;
     // Input cost matrix.
     InputSquare R;
     // period at which the controller is called.
@@ -72,6 +76,10 @@ class LinearizedController {
     return params_.dynamics->LinearizeDynamics(X, U);
   }
 
+  const StateSquare LinearizeStateCost(const State &X) const {
+    return params_.nonlinear_Q.value()->LinearizeCost(X);
+  }
+
   // Runs the controller for a given iteration, relinearizing the dynamics about
   // the provided current state X, attempting to control the robot to the
   // desired goal state.
@@ -90,9 +98,13 @@ class LinearizedController {
             << "): "
             << frc971::controls::Controllability(discrete_dynamics.A,
                                                  discrete_dynamics.B);
+    StateSquare Q = params_.Q;
+    if (params_.nonlinear_Q.has_value()) {
+      Q += LinearizeStateCost(X);
+    }
     int sb02od_exit_code = -1;
     GainMatrix K = SolveDare(
-        discrete_dynamics.A, discrete_dynamics.B, params_.Q, params_.R,
+        discrete_dynamics.A, discrete_dynamics.B, Q, params_.R,
         absl::GetFlag(FLAGS_use_slicot) ? DareSolver::Slicot
                                         : DareSolver::IterativeApproximation,
         &sb02od_exit_code);

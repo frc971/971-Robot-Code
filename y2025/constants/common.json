@@ -140,6 +140,8 @@
   "weights": {
     "thetas_q": 1.0,
     "omegas_q": 1e-4,
+    "omegad_q": 0.0,
+    "k_slip": 0.01,
     "vel_q": 20.0,
     "theta_q": 7000.0,
     "omega_q": 7.0,

@@ -79,11 +79,13 @@ table ClimberCurrent {
 table VelocityControllerWeights {
   thetas_q: double (id: 0);
   omegas_q: double (id: 1);
-  vel_q: double (id: 2);
-  omega_q: double (id: 3);
-  theta_q: double (id: 4);
-  steer_current_r: double (id: 5);
-  drive_current_r: double (id: 6);
+  omegad_q: double (id: 2);
+  k_slip: double (id: 3);
+  vel_q: double (id: 4);
+  omega_q: double (id: 5);
+  theta_q: double (id: 6);
+  steer_current_r: double (id: 7);
+  drive_current_r: double (id: 8);
 }
 
 table Location {

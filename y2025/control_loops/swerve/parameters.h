@@ -7,11 +7,14 @@ namespace y2025::control_loops {
 using frc971::control_loops::swerve::LinearVelocityController;
 
 constexpr double kSideLength = 0.635;
+
 LinearVelocityController::ControllerWeights CreateWeights(
     const y2025::VelocityControllerWeights *weights) {
   return LinearVelocityController::ControllerWeights{
       .thetas_q = weights->thetas_q(),
       .omegas_q = weights->omegas_q(),
+      .omegad_q = weights->omegad_q(),
+      .k_slip = weights->k_slip(),
       .vel_q = weights->vel_q(),
       .theta_q = weights->theta_q(),
       .omega_q = weights->omega_q(),
