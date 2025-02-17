@@ -38,6 +38,10 @@ ABSL_FLAG(double, caster, 0.01, "Caster in meters for the module.");
 
 ABSL_FLAG(bool, symbolic, false, "If true, write everything out symbolically.");
 ABSL_FLAG(bool, function, true, "If true, make soft_atan2 a function.");
+ABSL_FLAG(bool, soft_atan2, true,
+          "If true, use a soft_atan2. This is important for solvers to be "
+          "behave nice near atan(0, 0), however, there is not a soft_atan2 for "
+          "c++ since it's not needed.");
 
 using SymEngine::abs;
 using SymEngine::add;
@@ -477,10 +481,14 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    cos = casadi.cos");
     result_py->emplace_back("    exp = casadi.exp");
-    if (absl::GetFlag(FLAGS_function)) {
-      result_py->emplace_back("    atan2 = soft_atan2()");
+    if (absl::GetFlag(FLAGS_soft_atan2)) {
+      if (absl::GetFlag(FLAGS_function)) {
+        result_py->emplace_back("    atan2 = soft_atan2()");
+      } else {
+        result_py->emplace_back("    atan2 = soft_atan2");
+      }
     } else {
-      result_py->emplace_back("    atan2 = soft_atan2");
+      result_py->emplace_back("    atan2 = casadi.atan2");
     }
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
@@ -525,10 +533,14 @@ class SwerveSimulation {
     result_py->emplace_back("    sin = casadi.sin");
     result_py->emplace_back("    exp = casadi.exp");
     result_py->emplace_back("    cos = casadi.cos");
-    if (absl::GetFlag(FLAGS_function)) {
-      result_py->emplace_back("    atan2 = soft_atan2()");
+    if (absl::GetFlag(FLAGS_soft_atan2)) {
+      if (absl::GetFlag(FLAGS_function)) {
+        result_py->emplace_back("    atan2 = soft_atan2()");
+      } else {
+        result_py->emplace_back("    atan2 = soft_atan2");
+      }
     } else {
-      result_py->emplace_back("    atan2 = soft_atan2");
+      result_py->emplace_back("    atan2 = casadi.atan2");
     }
     result_py->emplace_back("    fmax = casadi.fmax");
     result_py->emplace_back("    fabs = casadi.fabs");
