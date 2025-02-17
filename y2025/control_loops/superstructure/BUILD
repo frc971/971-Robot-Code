@@ -163,6 +163,33 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "led_indicator",
+    srcs = ["led_indicator.cc"],
+    hdrs = ["led_indicator.h"],
+    data = [
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_output_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
+        "//aos/events:event_loop",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//frc971/control_loops:control_loop",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_status_fbs",
+        "//frc971/queues:gyro_fbs",
+        "//third_party:phoenix",
+        "//third_party:wpilib",
+    ],
+)
+
 ts_project(
     name = "superstructure_plotter",
     srcs = ["superstructure_plotter.ts"],

@@ -21,16 +21,16 @@
       "name": "/roborio/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",
-      "frequency": 250,
+      "frequency": 500,
       "num_senders": 2
     },
     {
-        "name": "/roborio/drivetrain",
-        "type": "frc971.control_loops.swerve.CanPosition",
-        "source_node": "roborio",
-        "frequency": 250,
-        "num_senders": 1,
-        "max_size": 656
+      "name": "/roborio/drivetrain",
+      "type": "frc971.control_loops.swerve.CanPosition",
+      "source_node": "roborio",
+      "frequency": 250,
+      "num_senders": 1,
+      "max_size": 656
     },
     {
       "name": "/roborio/aos",

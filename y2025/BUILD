@@ -291,6 +291,7 @@ cc_binary(
         "//third_party:phoenix6",
         "//third_party:wpilib",
         "//y2025/constants:constants_fbs",
+        "//y2025/control_loops/superstructure:led_indicator",
         "//y2025/control_loops/superstructure:superstructure_can_position_fbs",
         "//y2025/control_loops/superstructure:superstructure_output_fbs",
         "//y2025/control_loops/superstructure:superstructure_position_fbs",

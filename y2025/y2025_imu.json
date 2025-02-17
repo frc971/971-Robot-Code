@@ -322,11 +322,32 @@
       "max_size": 65536
     },
     {
-        "name": "/imu/drivetrain",
-        "type": "frc971.control_loops.swerve.Status",
-        "source_node": "imu",
-        "max_size": 10000,
-        "frequency": 250
+      "name": "/imu/drivetrain",
+      "type": "frc971.control_loops.swerve.Status",
+      "source_node": "imu",
+      "max_size": 10000,
+      "frequency": 250,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/drivetrain/frc971-control_loops-swerve-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "frequency": 250
     },
     {
         "name": "/imu/drivetrain",
