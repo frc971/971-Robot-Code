@@ -111,7 +111,13 @@ TEST_F(SimplifiedDynamicsTest, AccelerateStraight) {
   PositionState state = PositionState::Zero();
   state(States::kVx) = 0.0;
   PositionState result = ValidateDynamics(state, input);
-  EXPECT_EQ(result.norm(), result(States::kVx));
+  // remove all omegad so the below is true
+  // all omegads should be positive too
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_GT(result[States::kOmegad0 + 3 * i], 0.0);
+    result[States::kOmegad0 + 3 * i] = 0;
+  }
+  EXPECT_EQ(result.norm(), result(States::kVx)) << result;
   EXPECT_LT(0.1, result(States::kVx));
 }
 
@@ -151,6 +157,12 @@ TEST_F(SimplifiedDynamicsTest, SpinInPlaceNoSlip) {
   // Everything else should be ~zero.
   result(States::kTheta) = 0.0;
   result(States::kOmega) = 0.0;
+  // remove all omegad so the below is true
+  // all omegads should be positive too
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_GT(result[States::kOmegad0 + 3 * i], 0.0);
+    result[States::kOmegad0 + 3 * i] = 0;
+  }
   EXPECT_LT(result.norm(), 1e-10);
 }
 
@@ -181,6 +193,12 @@ TEST_F(SimplifiedDynamicsTest, SpinInPlaceSkidSteer) {
   // Everything else should be ~zero.
   result(States::kTheta) = 0.0;
   result(States::kOmega) = 0.0;
+  // remove all omegad so the below is true
+  // all omegads should be positive too
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_GT(result[States::kOmegad0 + 3 * i], 0.0);
+    result[States::kOmegad0 + 3 * i] = 0;
+  }
   EXPECT_LT(result.norm(), 1e-10);
 }
 
@@ -212,6 +230,12 @@ TEST_F(SimplifiedDynamicsTest, SpinInPlaceSkidSteerBackwards) {
   // Everything else should be ~zero.
   result(States::kTheta) = 0.0;
   result(States::kOmega) = 0.0;
+  // remove all omegad so the below is true
+  // all omegads should be negative too
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_LT(result[States::kOmegad0 + 3 * i], 0.0);
+    result[States::kOmegad0 + 3 * i] = 0;
+  }
   EXPECT_LT(result.norm(), 1e-10);
 }
 

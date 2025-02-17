@@ -16,6 +16,8 @@ class LinearVelocityControllerTest : public ::testing::Test {
             LinearVelocityController::ControllerWeights{
                 .thetas_q = 1.0,
                 .omegas_q = 1e-4,
+                .omegad_q = 0.0,
+                .k_slip = 0.0,
                 .vel_q = 20.0,
                 .theta_q = 10.0,
                 .omega_q = 10.0,
@@ -96,7 +98,7 @@ TEST_F(LinearVelocityControllerTest, SpinInPlace) {
   for (std::pair<int, double> module : std::vector<std::pair<int, double>>{
            {0, -1.0}, {1, -1.0}, {2, 1.0}, {3, 1.0}}) {
     SCOPED_TRACE(module.first);
-    if (expected(States::kThetas0 + 2 * module.first) > 0) {
+    if (expected(States::kThetas0 + 3 * module.first) > 0) {
       EXPECT_LT(1.0, result.U(Inputs::kIs0 + 2 * module.first));
     } else {
       EXPECT_GT(-1.0, result.U(Inputs::kIs0 + 2 * module.first));

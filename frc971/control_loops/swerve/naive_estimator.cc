@@ -80,23 +80,27 @@ NaiveEstimator::State NaiveEstimator::Update(
       velocities_[module] = velocities_[module] * (1.0 - kAlpha) +
                             kAlpha * instantaneous_velocity;
     }
-    const int theta_idx = States::kThetas0 + 2 * module;
-    const int omega_idx = States::kOmegas0 + 2 * module;
+    const int thetas_idx = States::kThetas0 + 3 * module;
+    const int omegas_idx = States::kOmegas0 + 3 * module;
+    const int omegad_idx = States::kOmegad0 + 3 * module;
     {
       zeroing_[module].UpdateEstimate(*rotation_positions[module]);
       const Scalar yaw_encoder =
           rotation_positions[module]->encoder() + zeroing_[module].offset();
       const Scalar instantaneous_velocity =
-          first_iteration ? 0.0 : (yaw_encoder - state_(theta_idx)) / dt;
-      state_(theta_idx) = yaw_encoder;
-      state_(omega_idx) =
-          state_(omega_idx) * (1.0 - kAlpha) + kAlpha * instantaneous_velocity;
+          first_iteration ? 0.0 : (yaw_encoder - state_(thetas_idx)) / dt;
+      state_(thetas_idx) = yaw_encoder;
+      state_(omegas_idx) =
+          state_(omegas_idx) * (1.0 - kAlpha) + kAlpha * instantaneous_velocity;
+      state_(omegad_idx) = state_(omegad_idx) * (1.0 - kAlpha) +
+                           kAlpha * instantaneous_velocity /
+                               params_.modules[module].wheel_radius;
     }
     accumulated_velocity.x() +=
-        std::cos(state_(theta_idx) + state_(States::kTheta)) *
+        std::cos(state_(thetas_idx) + state_(States::kTheta)) *
         velocities_[module];
     accumulated_velocity.y() +=
-        std::sin(state_(theta_idx) + state_(States::kTheta)) *
+        std::sin(state_(thetas_idx) + state_(States::kTheta)) *
         velocities_[module];
   }
   accumulated_velocity /= 4.0;

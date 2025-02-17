@@ -45,6 +45,10 @@ class LinearVelocityController {
     // Costs for the steer module angles and steer rates.
     double thetas_q;
     double omegas_q;
+    // Cost for omega_d(constant)
+    double omegad_q = 0.0;
+    // Factor to cost slip(added to the omegad row)
+    double k_slip = 0.0;
     // Cost for the robot vx/vy.
     double vel_q;
     // Cost for the robot heading goal.

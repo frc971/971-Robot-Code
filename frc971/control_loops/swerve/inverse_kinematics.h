@@ -28,8 +28,8 @@ class InverseKinematics {
     for (size_t module_index = 0; module_index < params_.modules.size();
          ++module_index) {
       SolveModule(goal, params_.modules[module_index].position,
-                  &result(States::kThetas0 + 2 * module_index),
-                  &result(States::kOmegas0 + 2 * module_index));
+                  &result(States::kThetas0 + 3 * module_index),
+                  &result(States::kOmegas0 + 3 * module_index));
     }
     return result;
   }

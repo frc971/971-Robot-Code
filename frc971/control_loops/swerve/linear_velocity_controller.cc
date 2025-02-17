@@ -1,7 +1,12 @@
 #include "frc971/control_loops/swerve/linear_velocity_controller.h"
 
+#include <memory>
+
 #include "absl/flags/flag.h"
 
+#include "linear_velocity_controller.h"
+#include "nonlinear_cost.h"
+#include "simplified_dynamics.h"
 ABSL_FLAG(double, thetas_q, 1.0, "");
 ABSL_FLAG(double, omegas_q, 1e-4, "");
 ABSL_FLAG(double, is_r, 1e-5, "");
@@ -25,6 +30,10 @@ LinearVelocityController::Parameters LinearVelocityController::MakeParameters(
   Q.diagonal()(States::kOmegas1) = weights.omegas_q;
   Q.diagonal()(States::kOmegas2) = weights.omegas_q;
   Q.diagonal()(States::kOmegas3) = weights.omegas_q;
+  Q.diagonal()(States::kOmegad0) = weights.omegad_q;
+  Q.diagonal()(States::kOmegad1) = weights.omegad_q;
+  Q.diagonal()(States::kOmegad2) = weights.omegad_q;
+  Q.diagonal()(States::kOmegad3) = weights.omegad_q;
   Q.diagonal()(States::kTheta) = weights.theta_q;
   Q.diagonal()(States::kVx) = weights.vel_q;
   Q.diagonal()(States::kVy) = weights.vel_q;
@@ -35,6 +44,19 @@ LinearVelocityController::Parameters LinearVelocityController::MakeParameters(
     R.diagonal()(2 * index) = weights.steer_current_r;
     R.diagonal()(2 * index + 1) = weights.drive_current_r;
   }
+
+  if (weights.k_slip != 0.0) {
+    return Parameters{
+        .Q = Q,
+        .nonlinear_Q = std::optional{std::make_unique<
+            NonLinearCost<Dynamics::States::kNumVelocityStates, Scalar>>(
+            NonLinearCost<Dynamics::States::kNumVelocityStates, Scalar>(
+                weights.k_slip, params))},
+        .R = R,
+        .dt = kDt,
+        .dynamics = std::make_unique<VirtualDynamics>(params)};
+  }
+
   return Parameters{.Q = Q,
                     .R = R,
                     .dt = kDt,

@@ -514,6 +514,7 @@ cc_library(
     deps = [
         ":eigen_dynamics",
         ":linearization_utils",
+        ":nonlinear_cost",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
@@ -583,6 +584,16 @@ cc_test(
     deps = [
         ":auto_diff_jacobian",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "nonlinear_cost",
+    hdrs = ["nonlinear_cost.h"],
+    deps = [
+        ":auto_diff_jacobian",
+        ":simplified_dynamics",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
