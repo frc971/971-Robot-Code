@@ -74,7 +74,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         break;
       case EndEffectorGoal::INTAKE:
         if (!intake_complete_) {
-          end_effector_status = EndEffectorStatus::INTAKING;
+          end_effector_status = EndEffectorStatus::INTAKE;
           end_effector_voltage =
               robot_constants_->common()->end_effector_voltages()->intake();
         } else {
@@ -110,9 +110,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     switch (unsafe_goal->elevator_goal()) {
       case ElevatorGoal::NEUTRAL:
         break;
-      case ElevatorGoal::INTAKE:
+      case ElevatorGoal::INTAKE_HP:
         elevator_position =
-            robot_constants_->common()->elevator_set_points()->intake();
+            robot_constants_->common()->elevator_set_points()->intake_hp();
+        break;
+      case ElevatorGoal::INTAKE_GROUND:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->intake_ground();
         break;
       case ElevatorGoal::SCORE_L1:
         elevator_position =
@@ -168,9 +172,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     switch (unsafe_goal->pivot_goal()) {
       case PivotGoal::NEUTRAL:
         break;
-      case PivotGoal::INTAKE:
+      case PivotGoal::INTAKE_HP:
         pivot_position =
-            robot_constants_->common()->pivot_set_points()->intake();
+            robot_constants_->common()->pivot_set_points()->intake_hp();
+        break;
+      case PivotGoal::INTAKE_GROUND:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->intake_ground();
         break;
       case PivotGoal::SCORE_L1:
         pivot_position =
@@ -246,9 +254,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     switch (unsafe_goal->wrist_goal()) {
       case (WristGoal::NEUTRAL):
         break;
-      case (WristGoal::INTAKE):
+      case (WristGoal::INTAKE_HP):
         wrist_position =
-            robot_constants_->common()->wrist_set_points()->intake();
+            robot_constants_->common()->wrist_set_points()->intake_hp();
+        break;
+      case (WristGoal::INTAKE_GROUND):
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->intake_ground();
         break;
       case WristGoal::SCORE_L1:
         wrist_position =

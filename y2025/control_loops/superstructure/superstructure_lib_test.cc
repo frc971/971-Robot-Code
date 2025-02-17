@@ -251,7 +251,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         break;
       case EndEffectorGoal::INTAKE:
         if (!superstructure_.GetIntakeComplete()) {
-          expected_end_effector_status = EndEffectorStatus::INTAKING;
+          expected_end_effector_status = EndEffectorStatus::INTAKE;
           expected_end_effector_voltage = simulated_robot_constants_->common()
                                               ->end_effector_voltages()
                                               ->intake();
@@ -276,10 +276,15 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     switch (superstructure_goal_fetcher_->elevator_goal()) {
       case ElevatorGoal::NEUTRAL:
         break;
-      case ElevatorGoal::INTAKE:
+      case ElevatorGoal::INTAKE_HP:
         elevator_expected_position = simulated_robot_constants_->common()
                                          ->elevator_set_points()
-                                         ->intake();
+                                         ->intake_hp();
+        break;
+      case ElevatorGoal::INTAKE_GROUND:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->intake_ground();
         break;
       case ElevatorGoal::SCORE_L1:
         elevator_expected_position = simulated_robot_constants_->common()
@@ -336,8 +341,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::SCORE_L4:
         pivot_set_point = pivot_positions->score_l4();
         break;
-      case PivotGoal::INTAKE:
-        pivot_set_point = pivot_positions->intake();
+      case PivotGoal::INTAKE_HP:
+        pivot_set_point = pivot_positions->intake_hp();
+        break;
+      case PivotGoal::INTAKE_GROUND:
+        pivot_set_point = pivot_positions->intake_ground();
         break;
       case PivotGoal::ALGAE_L2:
         pivot_set_point = pivot_positions->algae_l2();
@@ -351,11 +359,14 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     const y2025::WristSetPoints *wrist_positions =
         simulated_robot_constants_->common()->wrist_set_points();
-    double wrist_set_point = wrist_positions->intake();
+    double wrist_set_point = wrist_positions->intake_hp();
 
     switch (superstructure_goal_fetcher_->wrist_goal()) {
-      case WristGoal::INTAKE:
-        wrist_set_point = wrist_positions->intake();
+      case WristGoal::INTAKE_HP:
+        wrist_set_point = wrist_positions->intake_hp();
+        break;
+      case WristGoal::INTAKE_GROUND:
+        wrist_set_point = wrist_positions->intake_ground();
         break;
       case WristGoal::SCORE_L1:
         wrist_set_point = wrist_positions->score_l1();
@@ -538,7 +549,7 @@ TEST_F(SuperstructureTest, ElevatorPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE);
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE_HP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -626,7 +637,7 @@ TEST_F(SuperstructureTest, WristPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_wrist_goal(WristGoal::INTAKE);
+    goal_builder.add_wrist_goal(WristGoal::INTAKE_HP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -702,7 +713,7 @@ TEST_F(SuperstructureTest, PivotPositionTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_pivot_goal(PivotGoal::INTAKE);
+    goal_builder.add_pivot_goal(PivotGoal::INTAKE_HP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -815,8 +826,8 @@ TEST_F(SuperstructureTest, PivotAndElevatorAndWristPositionTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_pivot_goal(PivotGoal::NEUTRAL);
-    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE);
-    goal_builder.add_wrist_goal(WristGoal::INTAKE);
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE_HP);
+    goal_builder.add_wrist_goal(WristGoal::INTAKE_HP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -831,6 +842,24 @@ TEST_F(SuperstructureTest, PivotAndElevatorAndWristPositionTest) {
     goal_builder.add_pivot_goal(PivotGoal::SCORE_L1);
     goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L1);
     goal_builder.add_wrist_goal(WristGoal::SCORE_L1);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+}
+
+TEST_F(SuperstructureTest, IntakeGroundTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::INTAKE_GROUND);
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE_GROUND);
+    goal_builder.add_wrist_goal(WristGoal::INTAKE_HP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

@@ -15,35 +15,38 @@ table CameraConfiguration {
 
 table ElevatorSetPoints {
   neutral:double (id: 0);
-  intake:double (id: 1);
-  score_l1:double (id: 2);
-  score_l2:double (id: 3);
-  score_l3:double (id: 4);
-  score_l4:double (id: 5);
-  algae_l2:double (id: 6);
-  algae_l3:double (id: 7);
+  intake_hp:double (id: 1);
+  intake_ground:double (id: 2);
+  score_l1:double (id: 3);
+  score_l2:double (id: 4);
+  score_l3:double (id: 5);
+  score_l4:double (id: 6);
+  algae_l2:double (id: 7);
+  algae_l3:double (id: 8);
 }
 
 table PivotSetPoints {
   neutral:double (id: 0);
-  intake:double (id: 1);
-  score_l1:double (id: 2);
-  score_l2:double (id: 3);
-  score_l3:double (id: 4);
-  score_l4:double (id: 5);
-  algae_l2:double (id: 6);
-  algae_l3:double (id: 7);
+  intake_hp:double (id: 1);
+  intake_ground:double (id: 2);
+  score_l1:double (id: 3);
+  score_l2:double (id: 4);
+  score_l3:double (id: 5);
+  score_l4:double (id: 6);
+  algae_l2:double (id: 7);
+  algae_l3:double (id: 8);
 }
 
 table WristSetPoints {
   neutral: double (id: 0);
-  intake: double (id: 1);
-  score_l1:double (id: 2);
-  score_l2:double (id: 3);
-  score_l3:double (id: 4);
-  score_l4:double (id: 5);
-  algae_l2:double (id: 6);
-  algae_l3:double (id: 7);
+  intake_hp: double (id: 1);
+  intake_ground: double (id: 2);
+  score_l1:double (id: 3);
+  score_l2:double (id: 4);
+  score_l3:double (id: 5);
+  score_l4:double (id: 6);
+  algae_l2:double (id: 7);
+  algae_l3:double (id: 8);
 }
 
 table PotAndAbsEncoderConstants {
