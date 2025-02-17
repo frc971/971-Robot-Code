@@ -61,6 +61,7 @@ const ButtonLocation kEndEffectorSpit(6, 5);
 
 const ButtonLocation kClimb(1, 2);
 const ButtonLocation kRetract(1, 3);
+const ButtonLocation kGroundIntake(4, 13);
 
 const ButtonLocation kDontMove(4, 12);
 
@@ -130,10 +131,15 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
+    } else if (data.IsPressed(kGroundIntake)) {
+      superstructure_goal_builder->set_elevator_goal(
+          ElevatorGoal::INTAKE_GROUND);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_GROUND);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_GROUND);
     } else if (data.IsPressed(kHumanPlayer)) {
-      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE);
-      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE);
-      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE);
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE_HP);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_HP);
     }
 
     if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||

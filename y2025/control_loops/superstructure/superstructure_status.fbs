@@ -5,7 +5,7 @@ namespace y2025.control_loops.superstructure;
 
 enum EndEffectorStatus : ubyte {
   NEUTRAL = 0,
-  INTAKING = 1,
+  INTAKE = 1,
   SPITTING = 2,
 }
 
@@ -17,8 +17,9 @@ enum ClimberStatus : ubyte {
 
 enum WristStatus : ubyte {
   NEUTRAL = 0,
-  INTAKE = 1,
-  SCORE = 2,
+  INTAKE_HP = 1,
+  INTAKE_GROUND = 2,
+  SCORE = 3,
 }
 
 table Status {

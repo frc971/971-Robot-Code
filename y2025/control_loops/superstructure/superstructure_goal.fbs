@@ -9,42 +9,45 @@ enum EndEffectorGoal : ubyte {
 }
 
 enum ElevatorGoal : ubyte {
-    NEUTRAL = 0,
-    INTAKE = 1,
-    SCORE_L1 = 2,
-    SCORE_L2 = 3,
-    SCORE_L3 = 4,
-    SCORE_L4 = 5,
-    ALGAE_L2 = 6,
-    ALGAE_L3 = 7,
+  NEUTRAL = 0,
+  INTAKE_HP = 1,
+  INTAKE_GROUND = 2,
+  SCORE_L1 = 3,
+  SCORE_L2 = 4,
+  SCORE_L3 = 5,
+  SCORE_L4 = 6,
+  ALGAE_L2 = 7,
+  ALGAE_L3 = 8,
 }
 
 enum PivotGoal : ubyte {
-    NEUTRAL = 0,
-    INTAKE = 1,
-    SCORE_L1 = 2,
-    SCORE_L2 = 3,
-    SCORE_L3 = 4,
-    SCORE_L4 = 5,
-    ALGAE_L2 = 6,
-    ALGAE_L3 = 7,
+  NEUTRAL = 0,
+  INTAKE_HP = 1,
+  INTAKE_GROUND = 2,
+  SCORE_L1 = 3,
+  SCORE_L2 = 4,
+  SCORE_L3 = 5,
+  SCORE_L4 = 6,
+  ALGAE_L2 = 7,
+  ALGAE_L3 = 8,
 }
 
 enum ClimberGoal : ubyte {
-    NEUTRAL = 0,
-    CLIMB = 1,
-    RETRACT = 2,
+  NEUTRAL = 0,
+  CLIMB = 1,
+  RETRACT = 2,
 }
 
 enum WristGoal : ubyte {
   NEUTRAL = 0,
-  INTAKE = 1,
-  SCORE_L1 = 2,
-  SCORE_L2 = 3,
-  SCORE_L3 = 4,
-  SCORE_L4 = 5,
-  ALGAE_L2 = 6,
-  ALGAE_L3 = 7,
+  INTAKE_HP = 1,
+  INTAKE_GROUND = 2,
+  SCORE_L1 = 3,
+  SCORE_L2 = 4,
+  SCORE_L3 = 5,
+  SCORE_L4 = 6,
+  ALGAE_L2 = 7,
+  ALGAE_L3 = 8,
 }
 
 // This could be a boolean but making it an enum makes it clearer in the logs.

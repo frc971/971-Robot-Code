@@ -149,8 +149,8 @@ void LedIndicator::CheckColor() {
   // Intake: Flash Orange/Off
 
   if (superstructure_goal_fetcher_.get() &&
-      (superstructure_goal_fetcher_->elevator_goal() == ElevatorGoal::INTAKE ||
-       superstructure_goal_fetcher_->pivot_goal() == PivotGoal::INTAKE)) {
+      (superstructure_goal_fetcher_->end_effector_goal() ==
+       EndEffectorGoal::INTAKE)) {
     if (flash_counter_.Flash()) {
       DisplayOnLED(255, 140, 0);
       return;

@@ -104,7 +104,8 @@
   },
   "elevator_set_points": {
     "neutral": 0.05,
-    "intake": 0.22220963342833937,
+    "intake_hp": 0.22220963342833937,
+    "intake_ground": 0.0,
     "score_l1": 0.0,
     "score_l2": 0.15,
     "score_l3": {{ 0.15 + 15.87 * 0.0254 }},
@@ -114,7 +115,8 @@
   },
   "pivot_set_points": {
     "neutral": 0.0,
-    "intake": 0.47924198590999334,
+    "intake_hp": 0.47924198590999334,
+    "intake_ground": -1.6914195,
     "score_l1": {{ 3.14 / 4.0 }},
     "score_l2": 0.4609734355461903,
     "score_l3": 0.4609734355461903,
@@ -124,7 +126,8 @@
   },
   "wrist_set_points": {
     "neutral": 0.0,
-    "intake": 0.5599718623892103,
+    "intake_hp": 0.5599718623892103,
+    "intake_ground": -0.31140697,
     "score_l1": 0.0,
     "score_l2": 0.9267393224481775,
     "score_l3": 1.02,
