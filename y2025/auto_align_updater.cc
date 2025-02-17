@@ -18,7 +18,7 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 
 // Distance to offset the robots position past the auto align goal tangent to
 // the tag.
-constexpr double kTangentOffset = 1.0;
+constexpr double kTangentOffset = 0.25;
 // DIstance to offset the robots position normal to the tag (left/right).
 constexpr double kNormalOffset = 0.5;
 
@@ -76,10 +76,6 @@ class AutoAlignUpdater {
     event_loop_->MakeWatcher(
         "/localizer",
         [this](const frc971::control_loops::swerve::LocalizerState &state) {
-          goal_fetcher_.Fetch();
-          if (goal_fetcher_.get() == nullptr) {
-            return;
-          }
           int closest_id =
               constants_fetcher_.constants().common()->reef_apriltag_ids()->Get(
                   0);
@@ -92,20 +88,26 @@ class AutoAlignUpdater {
           Pose robot_pose(robot_xyz, state.theta());
 
           for (const auto &[id, pose] : reef_locations_) {
-            if (pose.Rebase(&robot_pose).xy_norm() <
-                reef_locations_.at(closest_id).Rebase(&robot_pose).xy_norm()) {
+            if (std::abs(pose.Rebase(&robot_pose).xy_norm()) <
+                std::abs(reef_locations_.at(closest_id)
+                             .Rebase(&robot_pose)
+                             .xy_norm())) {
               closest_id = id;
             }
           }
+          LOG(INFO) << closest_id;
           auto builder = position_goal_sender_.MakeStaticBuilder();
 
           Pose final_pose = reef_locations_.at(closest_id);
-
-          double offset =
-              (goal_fetcher_->auto_align_direction() ==
-               y2025::control_loops::superstructure::AutoAlignDirection::LEFT)
-                  ? kNormalOffset
-                  : -kNormalOffset;
+          double offset = 0.0;
+          goal_fetcher_.Fetch();
+          if (goal_fetcher_.get() != nullptr) {
+            offset =
+                (goal_fetcher_->auto_align_direction() ==
+                 y2025::control_loops::superstructure::AutoAlignDirection::LEFT)
+                    ? kNormalOffset
+                    : -kNormalOffset;
+          }
 
           double goal_x = final_pose.abs_pos()(0) +
                           offset * sin(final_pose.abs_theta() + M_PI / 2.0);
