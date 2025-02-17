@@ -409,8 +409,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(canivore_signals_registry),
         canivore_talons,
-        [&superstructure_can_position_sender, &canivore_talons,
-         &robot_constants, &elevator_one, &elevator_two,
+        [&elevator_one, &elevator_two,
          &superstructure_canivore_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
