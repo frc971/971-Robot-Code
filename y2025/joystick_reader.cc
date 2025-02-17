@@ -90,11 +90,17 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
 
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
+    const int team_number = aos::network::GetTeamNumber();
+    if (team_number == 9971) {
+      return;
+    }
     superstructure_status_fetcher_.Fetch();
+
     if (!superstructure_status_fetcher_.get()) {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");
       return;
     }
+
     aos::Sender<superstructure::GoalStatic>::StaticBuilder
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();

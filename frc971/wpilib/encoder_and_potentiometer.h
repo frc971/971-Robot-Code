@@ -143,6 +143,8 @@ class DMAAbsoluteEncoder {
     encoder_ = ::std::move(encoder);
   }
 
+  frc::Encoder *encoder() const { return encoder_.get(); }
+
   double ReadAbsoluteEncoder() const {
     return duty_cycle_reader_.last_width() / duty_cycle_reader_.last_period();
   }
@@ -203,6 +205,8 @@ class DMAAbsoluteEncoderAndPotentiometer {
   void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
     encoder_ = ::std::move(encoder);
   }
+
+  frc::Encoder *encoder() const { return encoder_.get(); }
 
   void set_potentiometer(::std::unique_ptr<frc::AnalogInput> potentiometer) {
     potentiometer_ = ::std::move(potentiometer);
