@@ -174,7 +174,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
     } else if (data.IsPressed(kHumanPlayer)) {
       superstructure_goal_builder->set_robot_side(
-          frontFacing(common_->HP_locations()) ? RobotSide::FRONT
+          frontFacing(common_->hp_locations()) ? RobotSide::FRONT
                                                : RobotSide::BACK);
     } else if (data.IsPressed(kL1) || data.IsPressed(kLeftL2) ||
                data.IsPressed(kLeftL3) || data.IsPressed(kLeftL4) ||
