@@ -71,8 +71,10 @@ void WeightedAverageLocalizer::SendOutput(
     if (distance_to_robot > absl::GetFlag(FLAGS_distance_threshold)) {
       VLOG(1) << "Rejecting because apriltag detection with distance "
               << distance_to_robot << " to the robot.";
+      // TODO(max): Add this to the rejection counter.
     }
-    double weighing_metric = 1.0 / (distance_to_robot * distance_to_robot);
+    double weighing_metric =
+        1.0 + (1.0 / (distance_to_robot * distance_to_robot));
 
     good_detections.emplace(tag_id,
                             WeightedAverageLocalizer::WeighingDetectionInfo{
@@ -173,7 +175,7 @@ void WeightedAverageLocalizer::SendOutput(
         atan2(accumulated_pose(2), accumulated_pose(3));
   }
 
-  if (first_it_) {
+  if (first_it_ && good_detections.size() > 0) {
     state_builder->set_x(average_detected_pose(PoseIdx::kX));
     state_builder->set_y(average_detected_pose(PoseIdx::kY));
     state_builder->set_theta(average_detected_pose(PoseIdx::kTheta));
