@@ -630,6 +630,9 @@ void GpuDetector::QuadDecodeTask(void *_u) {
 
     quad_decode_index(td, &quad_original, im, task->im_samples,
                       task->detections);
+
+    if (quad_original.H) matd_destroy(quad_original.H);
+    if (quad_original.Hinv) matd_destroy(quad_original.Hinv);
   }
 }
 
