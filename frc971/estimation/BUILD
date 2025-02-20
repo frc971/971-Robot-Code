@@ -1,5 +1,6 @@
 cc_library(
     name = "ekf",
+    srcs = ["ekf.cc"],
     hdrs = ["ekf.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -7,6 +8,7 @@ cc_library(
         "//frc971/control_loops:runge_kutta",
         "//frc971/control_loops/swerve:auto_diff_jacobian",
         "//frc971/control_loops/swerve:linearization_utils",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

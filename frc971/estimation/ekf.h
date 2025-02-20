@@ -1,10 +1,14 @@
 #ifndef FRC971_ESTIMATION_EKF_H_
 #define FRC971_ESTIMATION_EKF_H_
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/control_loops/swerve/auto_diff_jacobian.h"
 #include "frc971/control_loops/swerve/linearization_utils.h"
+
+ABSL_DECLARE_FLAG(bool, use_josephs);
 
 namespace frc971::control_loops {
 
@@ -119,7 +123,19 @@ class Ekf {
         expected_measurement(Eigen::Map<const State>(X_hat_.data()));
     const Eigen::Matrix<Scalar, kNumStates, kNumMeasurements> K =
         P_ * H.transpose() * (H * P_ * H.transpose() + R).inverse();
-    P_ = (StateSquare::Identity() - K * H) * P_;
+    const StateSquare A = (StateSquare::Identity() - K * H);
+    if (absl::GetFlag(FLAGS_use_josephs)) {
+      // Joseph's update. With ideal gain, these two formulations are identical
+      // but this is also optimal with suboptimal gain and is more numerically
+      // stable but somewhat more costly.
+      // More information online such as here:
+      // https://sites.utexas.edu/renato/files/2017/04/CUKF_ver06.pdf
+      P_ = A * P_ * A.transpose() + K * R * K.transpose();
+    } else {
+      // The normal ekf update(ie on ekf wikipedia page).
+      P_ = A * P_;
+    }
+    VLOG(3) << "R\n" << R;
     VLOG(3) << "K\n" << K;
     const State update = K * (measurement - expected);
     VLOG(3) << "correction update\n" << update;
