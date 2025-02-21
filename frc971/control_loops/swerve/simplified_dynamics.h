@@ -82,6 +82,9 @@ class SimplifiedDynamics {
     // limits on the motor, then we would need to have access to those states,
     // although they can be fully derived from the robot vx, vy, theta, and
     // omega).
+    // kLength = number of kThetas, kOmegas and KOmegad
+    kLength = 3,
+
     kThetas0 = 0,
     kOmegas0 = 1,
     kOmegad0 = 2,
@@ -416,9 +419,9 @@ class SimplifiedDynamics {
           {static_cast<LocalScalar>(sin(yaw))},
           {static_cast<LocalScalar>(0.0)}};
     }
-    size_t ThetasIdx() const { return kThetas0 + 3 * module_index_; }
-    size_t OmegasIdx() const { return kOmegas0 + 3 * module_index_; }
-    size_t OmegadIdx() const { return kOmegad0 + 3 * module_index_; }
+    size_t ThetasIdx() const { return kThetas0 + kLength * module_index_; }
+    size_t OmegasIdx() const { return kOmegas0 + kLength * module_index_; }
+    size_t OmegadIdx() const { return kOmegad0 + kLength * module_index_; }
     size_t IsIdx() const { return Inputs::kIs0 + 2 * module_index_; }
     size_t IdIdx() const { return Inputs::kId0 + 2 * module_index_; }
 

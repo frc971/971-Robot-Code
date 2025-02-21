@@ -47,11 +47,14 @@ class NonLinearCost {
 
       Vector2 v_mod_wheel =
           Eigen::Rotation2D(-X[SimpleDynamics::States::kTheta] -
-                            X[SimpleDynamics::States::kThetas0 + 3 * module]) *
+                            X[SimpleDynamics::States::kThetas0 +
+                              SimpleDynamics::States::kLength * module]) *
           v_mod;
 
-      cost[SimpleDynamics::States::kOmegad0 + 3 * module] =
-          -Q_slip_ * slip(X[SimpleDynamics::States::kOmegad0 + 3 * module],
+      cost[SimpleDynamics::States::kOmegad0 +
+           SimpleDynamics::States::kLength * module] =
+          -Q_slip_ * slip(X[SimpleDynamics::States::kOmegad0 +
+                            SimpleDynamics::States::kLength * module],
                           v_mod_wheel[0], module);
     }
 

@@ -64,8 +64,8 @@ class InverseKinematicsTest : public ::testing::Test {
     const State state_derivative = (state_eps_pos - state_eps_neg) / kDt;
     for (size_t module_index = 0; module_index < 4; ++module_index) {
       SCOPED_TRACE(module_index);
-      const int omega_idx = States::kOmegas0 + 3 * module_index;
-      const int theta_idx = States::kThetas0 + 3 * module_index;
+      const int omega_idx = States::kOmegas0 + States::kLength * module_index;
+      const int theta_idx = States::kThetas0 + States::kLength * module_index;
       EXPECT_NEAR(nominal_state(omega_idx), state_derivative(theta_idx), 1e-10);
       EXPECT_NEAR(nominal_state(theta_idx), expected_thetas[module_index],
                   1e-10);
