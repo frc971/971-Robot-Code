@@ -5,12 +5,6 @@
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
     <div class="row">
-      <label id="team_number_label" class="label" for="team_number_notes">
-        Team Number
-      </label>
-      <input [(ngModel)]="teamNumber" type="text" id="team_number_notes" />
-    </div>
-    <div class="row">
       <label for="comp_code_collection">Comp Code</label>
       <select
         name="comp_code_selection"
@@ -21,7 +15,14 @@
         <option value="2025camb">Pinnacles</option>
         <option value="2025cave">Ventura</option>
         <option value="2025cafr">Central Valley</option>
+        <option value="2025isde1">ISR DE1</option>
       </select>
+    </div>
+    <div class="row">
+      <label id="team_number_label" class="label" for="team_number_notes">
+        Team Number
+      </label>
+      <input [(ngModel)]="teamNumber" type="text" id="team_number_notes" />
     </div>
     <div class="row">
       <label for="match_number_notes">Match Number</label>
