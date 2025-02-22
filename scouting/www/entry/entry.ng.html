@@ -177,6 +177,13 @@
         SCORE CORAL
       </button>
       <button
+        *ngIf="hasPickedUpCoral"
+        class="btn btn-info"
+        (click)=" actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpCoral = false;"
+      >
+        Dropped Coral
+      </button>
+      <button
         *ngIf="!hasPickedUpAlgae"
         class="btn btn-success"
         (click)="actionHelper.addPickupAlgaeAction({auto: autoPhase}); hasPickedUpAlgae = true;"
@@ -189,6 +196,13 @@
         (click)="changeSectionTo('Place Algae');"
       >
         SCORE ALGAE
+      </button>
+      <button
+        *ngIf="hasPickedUpAlgae"
+        class="btn btn-info"
+        (click)="actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpAlgae = false;"
+      >
+        Dropped Algae
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
@@ -251,12 +265,6 @@
         DEAD
       </button>
       <div class="d-grid gap-1" style="padding: 0">
-        <button
-          class="btn btn-info"
-          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpCoral = false;"
-        >
-          Dropped Coral
-        </button>
         <div class="d-grid gap-1" style="padding: 0; margin: 0">
           <div
             style="
@@ -365,12 +373,7 @@
       >
         DEAD
       </button>
-      <button
-        class="btn btn-info"
-        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpAlgae = false;"
-      >
-        Dropped Algae
-      </button>
+
       <div class="half-button-container">
         <button
           class="btn btn-success half-button"
