@@ -28,11 +28,11 @@ class EkfTest : public ::testing::Test {
               std::make_unique<PositionVelocityDynamics>()}) {}
 
   void DoMeaninglessMeasurementCorrection(aos::monotonic_clock::time_point now,
-                                          const Input &input) {
+                                          const Input &input,
+                                          double noise = 1.0) {
     ekf_.Correct<1>(
         now, Eigen::Matrix<double, 1, 1>{{0.0}},
-        Eigen::Matrix<double, 1, 1>{{std::numeric_limits<double>::infinity()}},
-        input,
+        Eigen::Matrix<double, 1, 1>{{noise}}, input,
         [](const Eigen::Vector2d &) {
           return Eigen::Matrix<double, 1, 1>::Zero();
         },
