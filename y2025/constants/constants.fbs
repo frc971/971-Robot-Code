@@ -115,7 +115,7 @@ table Common {
   reef_apriltag_ids: [int] (id: 14);
   end_effector_idling_voltage: double (id: 15);
   reef_locations: [Location] (id: 16);
-  HP_locations: [Location] (id: 17);
+  hp_locations: [Location] (id: 17);
 }
 
 table Constants {
