@@ -84,14 +84,16 @@ function submitDataScouting(
   cy.get('[type="radio"]').first().check();
   clickButton('Start Match');
 
-  // Pick and Place Note in Auto.
-  clickButton('NOTE');
-  clickButton('AMP');
+  // Pick and Place Coral in Auto.
+  clickButton('PICKUP CORAL');
+  clickButton('SCORE CORAL');
+  clickButton('L2');
 
-  // Pick and Place Cube in Teleop.
+  // Pick and Place Algae in Teleop.
   clickButton('Start Teleop');
-  clickButton('NOTE');
-  clickButton('SPEAKER AMPLIFIED');
+  clickButton('PICKUP ALGAE');
+  clickButton('SCORE ALGAE');
+  clickButton('Processor');
 
   // Robot dead and revive.
   clickButton('DEAD');
@@ -99,7 +101,7 @@ function submitDataScouting(
 
   // Endgame.
   clickButton('Endgame');
-  cy.contains(/Harmony/).click();
+  cy.contains(/Deep Cage/).click();
 
   clickButton('End Match');
 
@@ -111,13 +113,10 @@ function submitDataScouting(
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
-  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Note ');
+  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Coral ');
   cy.get('#review_data li')
     .last()
-    .should(
-      'have.text',
-      ' Ended Match; stageType: kHARMONY, trapNote: false, spotlight: false '
-    );
+    .should('have.text', ' Ended Match; cageType: kDEEP_CAGE ');
   // Ensure that the penalties action is only submitted once.
   cy.get('#review_data li:contains("Penalties")').its('length').should('eq', 1);
 
@@ -298,8 +297,8 @@ describe('Scouting app tests', () => {
     cy.get('[type="radio"]').first().check();
     clickButton('Start Match');
 
-    // Pick up note.
-    clickButton('NOTE');
+    // Pick up algae.
+    clickButton('PICKUP ALGAE');
 
     // Undo that pick up.
     clickButton('UNDO');
@@ -308,10 +307,11 @@ describe('Scouting app tests', () => {
     headerShouldBe('3990 Pickup ');
 
     // Check the same thing but for undoing place.
-    clickButton('NOTE');
-    clickButton('AMP');
+    clickButton('PICKUP ALGAE');
+    clickButton('SCORE ALGAE');
+    clickButton('Net');
     clickButton('UNDO');
-    headerShouldBe('3990 Place ');
+    headerShouldBe('3990 Place Algae ');
   });
 
   it('should: submit note scouting for multiple teams', () => {
@@ -324,16 +324,13 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for first team.
-    cy.get('#team-key-1').should(
-      'have.text',
-      ' Team: 1234, Comp Code: 2025camb '
-    );
+    cy.get('#team-key-1').should('have.text', ' Team: 1234, Comp Code: 0 ');
     setInputTo('#text-input-1', 'Good Driving');
     cy.get('#good_driving_0').click();
 
     // Navigate to add team selection and add another team.
     clickButton('Add team');
-    setInputTo('#comp_code_selection', '2025camb');
+    setInputTo('#comp_code_selection', '0');
     setInputTo('#team_number_notes', '1235');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);
@@ -341,10 +338,7 @@ describe('Scouting app tests', () => {
     clickButton('Select');
 
     // Add note and select keyword for second team.
-    cy.get('#team-key-2').should(
-      'have.text',
-      ' Team: 1235, Comp Code: 2025camb '
-    );
+    cy.get('#team-key-2').should('have.text', ' Team: 1235, Comp Code: 0 ');
     setInputTo('#text-input-2', 'Solid Algae Shooting');
     cy.get('#solid_algae_shooting_1').click();
 
@@ -359,7 +353,7 @@ describe('Scouting app tests', () => {
     headerShouldBe('Notes');
 
     // Add first team.
-    setInputTo('#comp_code_selection', '2025camb');
+    setInputTo('#comp_code_selection', '0');
     setInputTo('#team_number_notes', '1234');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);
@@ -368,7 +362,7 @@ describe('Scouting app tests', () => {
 
     // Add second team.
     clickButton('Add team');
-    setInputTo('#comp_code_selection', '2025camb');
+    setInputTo('#comp_code_selection', '0');
     setInputTo('#team_number_notes', '1235');
     setInputTo('#match_number_notes', 1);
     setInputTo('#set_number_notes', 2);

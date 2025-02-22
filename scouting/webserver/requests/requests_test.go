@@ -9,6 +9,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2025_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
@@ -76,99 +77,103 @@ func Test404(t *testing.T) {
 }
 
 // Validates that we can request the full match list.
-func TestRequestAllMatches(t *testing.T) {
+func TestRequestAllMatches2025(t *testing.T) {
 	db := MockDatabase{
-		matches: []db.TeamMatch{
+		matches2025: []db.TeamMatch2025{
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: "5",
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: "42",
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: "600",
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: "971",
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: "400",
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 1, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: "200",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: "6",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: "43",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: "601",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: "972",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: "401",
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 2, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: "201",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: "7",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: "44",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: "602",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: "973",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: "402",
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+				MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: "202",
 			},
 		},
 		// Pretend that we have some data scouting data.
-		stats2024: []db.Stats2024{
+		stats2025: []db.Stats2025{
 			{
-				CompType: "Regular", TeamNumber: "5",
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
-				SpeakerAuto: 2, AmpAuto: 4, NotesDroppedAuto: 1, MobilityAuto: true,
-				Speaker: 0, Amp: 1, SpeakerAmplified: 2, Shuttled: 1, OutOfField: 2,
-				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 233,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "5",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
+				ProcessorAuto: 2, NetAuto: 1, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 1, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 2, L3Auto: 1, L4Auto: 0,
+				ProcessorTeleop: 1, NetTeleop: 2, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 1, L2Teleop: 2, L3Teleop: 1, L4Teleop: 0,
+				Penalties: 0, ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "angelina",
 			},
 			{
-				CompType: "Regular", TeamNumber: "973",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
-				SpeakerAuto: 0, AmpAuto: 2, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 4, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
-				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 120,
-				Park: true, OnStage: false, Harmony: false, RobotDied: true, NoShow: false, CollectedBy: "bob",
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "973",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
+				ProcessorAuto: 1, NetAuto: 3, CoralDroppedAuto: 2, AlgaeDroppedAuto: 1,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 2, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 1, NetTeleop: 2, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 3, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 0, L1Teleop: 4, L2Teleop: 5, L3Teleop: 1, L4Teleop: 0,
+				Penalties: 1, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "jolie",
 			},
 		},
 	}
@@ -188,7 +193,7 @@ func TestRequestAllMatches(t *testing.T) {
 
 	expected := request_all_matches_response.RequestAllMatchesResponseT{
 		MatchList: []*request_all_matches_response.MatchT{
-			// MatchNumber, SetNumber, CompLevel
+			// MatchNumber, CompCode, SetNumber, CompLevel
 			// R1, R2, R3, B1, B2, B3
 			{
 				1, 1, "qm",
@@ -197,14 +202,14 @@ func TestRequestAllMatches(t *testing.T) {
 					// The R1 team has already been data
 					// scouted.
 					true, false, false, false, false, false,
-				},
+				}, "fakeCompCode",
 			},
 			{
 				2, 1, "qm",
 				"6", "43", "601", "972", "401", "201",
 				&request_all_matches_response.ScoutedLevelT{
 					false, false, false, false, false, false,
-				},
+				}, "fakeCompCode",
 			},
 			{
 				3, 1, "qm",
@@ -213,7 +218,7 @@ func TestRequestAllMatches(t *testing.T) {
 					// The B1 team has already been data
 					// scouted.
 					false, false, false, true, false, false,
-				},
+				}, "fakeCompCode",
 			},
 		},
 	}
@@ -488,7 +493,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 		stats2025: []db.Stats2025{
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "687",
-				MatchNumber: 6, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+				MatchNumber: 6, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 				ProcessorAuto: 1, NetAuto: 2, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
@@ -498,7 +503,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 			},
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "943",
-				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				MatchNumber: 4, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 0,
 				ProcessorAuto: 3, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
@@ -508,7 +513,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 			},
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "134",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
 				ProcessorAuto: 2, NetAuto: 0, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
@@ -525,7 +530,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 	defer scoutingServer.Stop()
 
 	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_2025_data_scouting.Request2025DataScoutingT{}).Pack(builder))
+	builder.Finish((&request_2025_data_scouting.Request2025DataScoutingT{CompCode: "fakeCompCode"}).Pack(builder))
 
 	response, err := debug.Request2025DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
 	if err != nil {
@@ -536,7 +541,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 		StatsList: []*request_2025_data_scouting_response.Stats2025T{
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "687",
-				MatchNumber: 6, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+				MatchNumber: 6, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 				ProcessorAuto: 1, NetAuto: 2, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 1, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 2, NetTeleop: 3, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 1,
@@ -546,7 +551,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 			},
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "943",
-				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
+				MatchNumber: 4, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 0,
 				ProcessorAuto: 3, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 5, NetTeleop: 4, CoralDroppedTeleop: 2, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
@@ -556,7 +561,7 @@ func TestRequest2025DataScouting(t *testing.T) {
 			},
 			{
 				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "134",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
 				ProcessorAuto: 2, NetAuto: 0, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
 				CoralMissedAuto: 0, AlgaeMissedAuto: 1, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 				ProcessorTeleop: 3, NetTeleop: 1, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 2, CoralMissedTeleop: 0,
@@ -582,7 +587,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 		TeamNumber:  "8098",
 		MatchNumber: 3,
 		SetNumber:   1,
-		CompLevel:   "quals",
+		CompLevel:   "qm",
 		CompCode:    "fakeCompCode",
 		ActionsList: []*submit_2025_actions.ActionT{
 			{
@@ -773,7 +778,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 
 	expected := db.Stats2025{
 		CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "8098",
-		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+		MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 		ProcessorAuto: 0, NetAuto: 1, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
 		CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 		ProcessorTeleop: 0, NetTeleop: 1, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
@@ -1912,7 +1917,7 @@ func TestAddingActions2025(t *testing.T) {
 		TeamNumber:  "4752",
 		MatchNumber: 2,
 		SetNumber:   1,
-		CompLevel:   "quals",
+		CompLevel:   "qm",
 		CompCode:    "fakeCompCode",
 		ActionsList: []*submit_2025_actions.ActionT{
 			{
@@ -1950,7 +1955,7 @@ func TestAddingActions2025(t *testing.T) {
 			TeamNumber:      "4752",
 			MatchNumber:     2,
 			SetNumber:       1,
-			CompLevel:       "quals",
+			CompLevel:       "qm",
 			CollectedBy:     "debug_cli",
 			CompletedAction: []byte{},
 			Timestamp:       1800,
@@ -1961,7 +1966,7 @@ func TestAddingActions2025(t *testing.T) {
 			TeamNumber:      "4752",
 			MatchNumber:     2,
 			SetNumber:       1,
-			CompLevel:       "quals",
+			CompLevel:       "qm",
 			CollectedBy:     "debug_cli",
 			CompletedAction: []byte{},
 			Timestamp:       2500,
@@ -1971,7 +1976,7 @@ func TestAddingActions2025(t *testing.T) {
 	expectedStats := []db.Stats2025{
 		db.Stats2025{
 			CompCode: "fakeCompCode", CompType: "Prescouting", TeamNumber: "4752",
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 0,
+			MatchNumber: 2, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 0,
 			ProcessorAuto: 0, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
 			CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: false, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 			ProcessorTeleop: 0, NetTeleop: 0, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0,
@@ -2084,6 +2089,110 @@ func TestDeleteFromStats2024(t *testing.T) {
 	}
 }
 
+func TestDeleteFromStats2025(t *testing.T) {
+	mockClock := MockClock{now: time.Now()}
+	database := MockDatabase{
+		stats2025: []db.Stats2025{
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "293",
+				MatchNumber: 1, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 1,
+				ProcessorAuto: 1, NetAuto: 2, CoralDroppedAuto: 1, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 1, AlgaeMissedAuto: 2, MobilityAuto: true, L1Auto: 1, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 3, NetTeleop: 2, CoralDroppedTeleop: 1, AlgaeDroppedTeleop: 1, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 2, L1Teleop: 1, L2Teleop: 3, L3Teleop: 2, L4Teleop: 0,
+				Penalties: 0, ShallowCage: false, DeepCage: true, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "phineas",
+			},
+			{
+				CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "827",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 0,
+				ProcessorAuto: 0, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+				CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: false, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+				ProcessorTeleop: 1, NetTeleop: 3, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0,
+				AlgaeMissedTeleop: 1, L1Teleop: 3, L2Teleop: 2, L3Teleop: 0, L4Teleop: 0,
+				Penalties: 0, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+				RobotDied: false, NoShow: false, CollectedBy: "ferb",
+			},
+		},
+		actions: []db.Action{
+			{
+				CompCode:        "fakeCompCode",
+				CompType:        "Regular",
+				TeamNumber:      "293",
+				MatchNumber:     1,
+				SetNumber:       2,
+				CompLevel:       "qm",
+				CollectedBy:     "debug_cli",
+				CompletedAction: []byte{},
+				Timestamp:       2400,
+			},
+			{
+				CompCode:        "fakeCompCode",
+				CompType:        "Regular",
+				TeamNumber:      "827",
+				MatchNumber:     3,
+				SetNumber:       1,
+				CompLevel:       "qm",
+				CollectedBy:     "debug_cli",
+				CompletedAction: []byte{},
+				Timestamp:       1009,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scoutingServer, mockClock)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&delete_2025_data_scouting.Delete2025DataScoutingT{
+		CompCode:    "fakeCompCode",
+		CompLevel:   "qm",
+		MatchNumber: 1,
+		SetNumber:   2,
+		TeamNumber:  "293",
+	}).Pack(builder))
+
+	_, err := debug.Delete2025DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
+	if err != nil {
+		t.Fatal("Failed to delete from data scouting 2025", err)
+	}
+
+	expectedActions := []db.Action{
+		{
+			CompCode:        "fakeCompCode",
+			CompType:        "Regular",
+			TeamNumber:      "827",
+			MatchNumber:     3,
+			SetNumber:       1,
+			CompLevel:       "qm",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       1009,
+		},
+	}
+
+	expectedStats := []db.Stats2025{
+		{
+			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "827",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 0,
+			ProcessorAuto: 0, NetAuto: 0, CoralDroppedAuto: 0, AlgaeDroppedAuto: 0,
+			CoralMissedAuto: 0, AlgaeMissedAuto: 0, MobilityAuto: false, L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
+			ProcessorTeleop: 1, NetTeleop: 3, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0,
+			AlgaeMissedTeleop: 1, L1Teleop: 3, L2Teleop: 2, L3Teleop: 0, L4Teleop: 0,
+			Penalties: 0, ShallowCage: true, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false,
+			RobotDied: false, NoShow: false, CollectedBy: "ferb",
+		},
+	}
+
+	if !reflect.DeepEqual(expectedActions, database.actions) {
+		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
+	}
+	if !reflect.DeepEqual(expectedStats, database.stats2025) {
+		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2025)
+	}
+}
+
 func TestDeleteFromNotesData2025(t *testing.T) {
 	mockClock := MockClock{now: time.Now()}
 	database := MockDatabase{
@@ -2190,6 +2299,7 @@ func TestDeleteFromNotesData2025(t *testing.T) {
 
 type MockDatabase struct {
 	matches             []db.TeamMatch
+	matches2025         []db.TeamMatch2025
 	notes               []db.NotesData
 	notes2025           []db.NotesData2025
 	shiftSchedule       []db.Shift
@@ -2207,6 +2317,11 @@ func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
 	return nil
 }
 
+func (database *MockDatabase) AddToMatch2025(match db.TeamMatch2025) error {
+	database.matches2025 = append(database.matches2025, match)
+	return nil
+}
+
 func (database *MockDatabase) AddToStats2024(stats2024 db.Stats2024) error {
 	database.stats2024 = append(database.stats2024, stats2024)
 	return nil
@@ -2217,6 +2332,10 @@ func (database *MockDatabase) AddToStats2025(stats2025 db.Stats2025) error {
 }
 func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
+}
+
+func (database *MockDatabase) ReturnMatches2025() ([]db.TeamMatch2025, error) {
+	return database.matches2025, nil
 }
 
 func (database *MockDatabase) ReturnStats2024() ([]db.Stats2024, error) {
@@ -2349,6 +2468,54 @@ func (database *MockDatabase) QueryPitImages(requestedTeam string) ([]db.Request
 	return results, nil
 }
 
+func (database *MockDatabase) QueryStats2025(compCode string) ([]db.Stats2025, error) {
+	var results []db.Stats2025
+	for _, data := range database.stats2025 {
+		if data.CompCode == compCode {
+			results = append(results, db.Stats2025{
+				CompCode:           data.CompCode,
+				MatchNumber:        data.MatchNumber,
+				TeamNumber:         data.TeamNumber,
+				SetNumber:          data.SetNumber,
+				CompLevel:          data.CompLevel,
+				StartingQuadrant:   data.StartingQuadrant,
+				ProcessorAuto:      data.ProcessorAuto,
+				NetAuto:            data.NetAuto,
+				MobilityAuto:       data.MobilityAuto,
+				CoralDroppedAuto:   data.CoralDroppedAuto,
+				AlgaeDroppedAuto:   data.AlgaeDroppedAuto,
+				CoralMissedAuto:    data.CoralMissedAuto,
+				AlgaeMissedAuto:    data.AlgaeMissedAuto,
+				L1Auto:             data.L1Auto,
+				L2Auto:             data.L2Auto,
+				L3Auto:             data.L3Auto,
+				L4Auto:             data.L4Auto,
+				L1Teleop:           data.L1Teleop,
+				L2Teleop:           data.L2Teleop,
+				L3Teleop:           data.L3Teleop,
+				L4Teleop:           data.L4Teleop,
+				ProcessorTeleop:    data.ProcessorTeleop,
+				NetTeleop:          data.NetTeleop,
+				CoralDroppedTeleop: data.CoralDroppedTeleop,
+				AlgaeDroppedTeleop: data.AlgaeDroppedTeleop,
+				CoralMissedTeleop:  data.CoralMissedTeleop,
+				AlgaeMissedTeleop:  data.AlgaeMissedTeleop,
+				Penalties:          data.Penalties,
+				AvgCycle:           data.AvgCycle,
+				Park:               data.Park,
+				ShallowCage:        data.ShallowCage,
+				DeepCage:           data.DeepCage,
+				BuddieClimb:        data.BuddieClimb,
+				RobotDied:          data.RobotDied,
+				NoShow:             data.NoShow,
+				CollectedBy:        data.CollectedBy,
+				CompType:           data.CompType,
+			})
+		}
+	}
+	return results, nil
+}
+
 func (database *MockDatabase) AddDriverRanking(data db.DriverRankingData) error {
 	database.driver_ranking = append(database.driver_ranking, data)
 	return nil
@@ -2407,6 +2574,19 @@ func (database *MockDatabase) DeleteFromStats2024(compLevel_ string, matchNumber
 	return nil
 }
 
+func (database *MockDatabase) DeleteFromStats2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	for i, stat := range database.stats2025 {
+		if stat.CompLevel == compLevel_ &&
+			stat.MatchNumber == matchNumber_ &&
+			stat.SetNumber == setNumber_ &&
+			stat.TeamNumber == teamNumber_ {
+			// Match found, remove the element from the array.
+			database.stats2025 = append(database.stats2025[:i], database.stats2025[i+1:]...)
+		}
+	}
+	return nil
+}
+
 func (database *MockDatabase) DeleteFromNotesData2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	for i, stat := range database.notes2025 {
 		if stat.CompCode == compCode_ &&
@@ -2422,6 +2602,19 @@ func (database *MockDatabase) DeleteFromNotesData2025(compCode_ string, compLeve
 }
 
 func (database *MockDatabase) DeleteFromActions(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	for i, action := range database.actions {
+		if action.CompLevel == compLevel_ &&
+			action.MatchNumber == matchNumber_ &&
+			action.SetNumber == setNumber_ &&
+			action.TeamNumber == teamNumber_ {
+			// Match found, remove the element from the array.
+			database.actions = append(database.actions[:i], database.actions[i+1:]...)
+		}
+	}
+	return nil
+}
+
+func (database *MockDatabase) DeleteFromActions2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	for i, action := range database.actions {
 		if action.CompLevel == compLevel_ &&
 			action.MatchNumber == matchNumber_ &&

@@ -242,7 +242,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "432",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
 			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -256,7 +256,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "52A",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
 			CoralDroppedAuto: 0, AlgaeDroppedAuto: 0, CoralMissedAuto: 0, AlgaeMissedAuto: 0,
 			MobilityAuto: false,
@@ -270,7 +270,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "745",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
 			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -283,7 +283,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		},
 		Stats2025{
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "894",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 4,
 			L1Auto: 3, L2Auto: 1, L3Auto: 2, L4Auto: 1, NetAuto: 0, ProcessorAuto: 1,
 			CoralDroppedAuto: 1, AlgaeDroppedAuto: 0, CoralMissedAuto: 1, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -297,7 +297,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "934",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
 			CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -311,7 +311,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Practice", TeamNumber: "942",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
 			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
 			CoralDroppedAuto: 0, AlgaeDroppedAuto: 0, CoralMissedAuto: 0, AlgaeMissedAuto: 0,
 			MobilityAuto: false,
@@ -325,7 +325,7 @@ func TestAddToStats2025DB(t *testing.T) {
 		Stats2025{
 
 			CompCode: "fakeCompCode", CompType: "Regular", TeamNumber: "942",
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
 			CoralDroppedAuto: 1, AlgaeDroppedAuto: 2, CoralMissedAuto: 1, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -339,17 +339,17 @@ func TestAddToStats2025DB(t *testing.T) {
 	}
 
 	matches := []TeamMatch2025{
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 2, TeamNumber: "745"},
-		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 3, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 3, TeamNumber: "934"},
 	}
 
@@ -407,7 +407,7 @@ func TestInsertPracticeMatchStats2025(t *testing.T) {
 
 		CompCode: "fakeCompCode",
 		CompType: "Regular", TeamNumber: "6344",
-		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+		MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 4,
 		L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 0,
 		CoralDroppedAuto: 4, AlgaeDroppedAuto: 2, CoralMissedAuto: 0, AlgaeMissedAuto: 2,
 		MobilityAuto: true,
@@ -698,7 +698,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "345",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -713,7 +713,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "645",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 4,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 2, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -728,7 +728,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "323",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -743,7 +743,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "542",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -761,7 +761,7 @@ func TestDeleteFromStats2025(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "345",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -775,23 +775,23 @@ func TestDeleteFromStats2025(t *testing.T) {
 	}
 
 	originalMatches := []TeamMatch2025{
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 1, TeamNumber: "345"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 1, TeamNumber: "645"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 3, TeamNumber: "323"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 2, TeamNumber: "542"},
 	}
 
 	// Matches for which we want to delete the stats.
 	matches := []TeamMatch2025{
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			TeamNumber: "645"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			TeamNumber: "323"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			TeamNumber: "542"},
 	}
 
@@ -1083,26 +1083,26 @@ func TestReturnMatchDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	correct := []TeamMatch{
-		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 1, TeamNumber: "6835"},
-		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: "4834"},
-		TeamMatch{
-			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: "9824"},
-		TeamMatch{
-			MatchNumber: 7, SetNumber: 2, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
-		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
+	correct := []TeamMatch2025{
+		TeamMatch2025{
+			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 1, TeamNumber: "6835"},
+		TeamMatch2025{
+			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "R", AlliancePosition: 2, TeamNumber: "4834"},
+		TeamMatch2025{
+			MatchNumber: 9, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "B", AlliancePosition: 3, TeamNumber: "9824"},
+		TeamMatch2025{
+			MatchNumber: 7, CompCode: "fakeCompCode", SetNumber: 2, CompLevel: "qm", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
+		TeamMatch2025{
+			MatchNumber: 8, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
 	}
 
 	for i := 0; i < len(correct); i++ {
-		err := fixture.db.AddToMatch(correct[i])
+		err := fixture.db.AddToMatch2025(correct[i])
 		check(t, err, fmt.Sprint("Failed to add match", i))
 	}
 
-	got, err := fixture.db.ReturnMatches()
-	check(t, err, "Failed ReturnMatches()")
+	got, err := fixture.db.ReturnMatches2025()
+	check(t, err, "Failed ReturnMatches2025()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
@@ -1219,7 +1219,7 @@ func TestReturnStats2025DB(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Practice4", TeamNumber: "432",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 3, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -1234,7 +1234,7 @@ func TestReturnStats2025DB(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "52A",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 2, L3Auto: 1, L4Auto: 4, NetAuto: 1, ProcessorAuto: 1,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -1249,7 +1249,7 @@ func TestReturnStats2025DB(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Practice", TeamNumber: "894",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 0, L3Auto: 0, L4Auto: 0, NetAuto: 1, ProcessorAuto: 0,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -1264,7 +1264,7 @@ func TestReturnStats2025DB(t *testing.T) {
 
 			CompCode: "fakeCompCode",
 			CompType: "Regular", TeamNumber: "942",
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			MatchNumber: 5, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			L1Auto: 2, L2Auto: 4, L3Auto: 0, L4Auto: 0, NetAuto: 0, ProcessorAuto: 0,
 			CoralDroppedAuto: 5, AlgaeDroppedAuto: 2, CoralMissedAuto: 3, AlgaeMissedAuto: 2,
 			MobilityAuto: true,
@@ -1278,13 +1278,13 @@ func TestReturnStats2025DB(t *testing.T) {
 	}
 
 	matches := []TeamMatch2025{
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
-		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "quals",
+		TeamMatch2025{MatchNumber: 5, CompCode: "fakeCompCode", SetNumber: 1, CompLevel: "qm",
 			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
 	}
 

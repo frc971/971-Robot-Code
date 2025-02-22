@@ -57,20 +57,23 @@ function prepareDataScouting(options) {
   cy.get('[type="radio"]').first().check();
   clickButton('Start Match');
 
-  // Pick and Place Note in Auto.
-  clickButton('NOTE');
-  clickButton('AMP');
+  // Pick and Place Coral in Auto.
+  clickButton('PICKUP CORAL');
+  clickButton('SCORE CORAL');
+  clickButton('L1');
 
-  // Pick and Place Cube in Teleop.
+  // Pick and Place Algae in Teleop.
   clickButton('Start Teleop');
-  clickButton('NOTE');
-  clickButton('SPEAKER AMPLIFIED');
+  clickButton('PICKUP ALGAE');
+  clickButton('SCORE ALGAE');
+  clickButton('Net');
 
   // Generate some extra actions so that we are guaranteed to have at least 2
   // QR codes.
   for (let i = 0; i < 5; i++) {
-    clickButton('NOTE');
-    clickButton('AMP');
+    clickButton('PICKUP CORAL');
+    clickButton('SCORE CORAL');
+    clickButton('L2');
   }
 
   // Robot dead and revive.
@@ -79,20 +82,17 @@ function prepareDataScouting(options) {
 
   // Endgame.
   clickButton('Endgame');
-  cy.contains(/Harmony/).click();
+  cy.contains(/Shallow Cage/).click();
 
   clickButton('End Match');
   headerShouldBe(teamNumber + ' Review and Submit ');
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
-  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Note ');
+  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Coral ');
   cy.get('#review_data li')
     .last()
-    .should(
-      'have.text',
-      ' Ended Match; stageType: kHARMONY, trapNote: false, spotlight: false '
-    );
+    .should('have.text', ' Ended Match; cageType: kSHALLOW_CAGE ');
 }
 
 before(() => {

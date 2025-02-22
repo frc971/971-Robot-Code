@@ -355,6 +355,14 @@ func (database *Database) DeleteFromActions(compLevel_ string, matchNumber_ int3
 	return result.Error
 }
 
+func (database *Database) DeleteFromActions2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	var actions []Action
+	result := database.
+		Where("comp_code = ? AND comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compCode_, compLevel_, matchNumber_, setNumber_, teamNumber_).
+		Delete(&actions)
+	return result.Error
+}
+
 func (database *Database) AddOrUpdateRankings(r Ranking) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -364,6 +372,12 @@ func (database *Database) AddOrUpdateRankings(r Ranking) error {
 
 func (database *Database) ReturnMatches() ([]TeamMatch, error) {
 	var matches []TeamMatch
+	result := database.Find(&matches)
+	return matches, result.Error
+}
+
+func (database *Database) ReturnMatches2025() ([]TeamMatch2025, error) {
+	var matches []TeamMatch2025
 	result := database.Find(&matches)
 	return matches, result.Error
 }

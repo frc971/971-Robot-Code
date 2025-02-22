@@ -4,7 +4,7 @@ import {
 {% for action in ACTIONS %}
   {{ action }}T,
 {% endfor %}
-} from '@org_frc971/scouting/webserver/requests/messages/submit_2024_actions_generated';
+} from '@org_frc971/scouting/webserver/requests/messages/submit_2025_actions_generated';
 
 export type ConcreteAction =
 {% for action in ACTIONS %}

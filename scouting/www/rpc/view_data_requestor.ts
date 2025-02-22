@@ -16,16 +16,16 @@ import {
   HumanRanking2025,
   RequestAveragedHumanRankings2025Response,
 } from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
-import {Request2024DataScouting} from '@org_frc971/scouting/webserver/requests/messages/request_2024_data_scouting_generated';
+import {Request2025DataScouting} from '@org_frc971/scouting/webserver/requests/messages/request_2025_data_scouting_generated';
 import {
   PitImage,
   RequestAllPitImagesResponse,
 } from '@org_frc971/scouting/webserver/requests/messages/request_all_pit_images_response_generated';
 import {RequestAllPitImages} from '@org_frc971/scouting/webserver/requests/messages/request_all_pit_images_generated';
 import {
-  Stats2024,
-  Request2024DataScoutingResponse,
-} from '@org_frc971/scouting/webserver/requests/messages/request_2024_data_scouting_response_generated';
+  Stats2025,
+  Request2025DataScoutingResponse,
+} from '@org_frc971/scouting/webserver/requests/messages/request_2025_data_scouting_response_generated';
 
 @Injectable({providedIn: 'root'})
 export class ViewDataRequestor {
@@ -170,15 +170,33 @@ export class ViewDataRequestor {
   }
 
   // Returns all data scouting entries from the database.
-  async fetchStats2024List(): Promise<Stats2024[]> {
-    let fbBuffer = await this.fetchFromServer(
-      Request2024DataScouting.startRequest2024DataScouting,
-      Request2024DataScouting.endRequest2024DataScouting,
-      '/requests/request/2024_data_scouting'
+  async fetchStats2025List(comp_code: string): Promise<Stats2025[]> {
+    const builder = new Builder();
+
+    builder.finish(
+      Request2025DataScouting.createRequest2025DataScouting(
+        builder,
+        builder.createString(comp_code)
+      )
     );
 
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/request/2025_data_scouting', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    const resBuffer = await res.arrayBuffer();
+    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+
+    if (!res.ok) {
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      throw `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+    }
+
     const parsedResponse =
-      Request2024DataScoutingResponse.getRootAsRequest2024DataScoutingResponse(
+      Request2025DataScoutingResponse.getRootAsRequest2025DataScoutingResponse(
         fbBuffer
       );
 

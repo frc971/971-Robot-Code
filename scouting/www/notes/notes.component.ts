@@ -114,7 +114,7 @@ export class Notes {
 
   errorMessage = '';
   teamNumber: string = '1';
-  compCode: string = '2025camb';
+  compCode: string = '0';
   matchNumber: number = 1;
   setNumber: number = 1;
   compLevel: CompLevel = 'qm';

@@ -6,11 +6,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/scraping"
 	"log"
+	"strconv"
 	"strings"
 )
 
 type Database interface {
-	AddToMatch(db.TeamMatch) error
+	AddToMatch2025(db.TeamMatch2025) error
 }
 
 func parseTeamKey(teamKey string) string {
@@ -58,34 +59,40 @@ func GetMatchList(database Database, year int32, eventCode string, blueAllianceC
 			return
 		}
 
-		team_matches := []db.TeamMatch{
+		team_matches := []db.TeamMatch2025{
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "R", AlliancePosition: 1, TeamNumber: red[0],
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "R", AlliancePosition: 2, TeamNumber: red[1],
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "R", AlliancePosition: 3, TeamNumber: red[2],
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "B", AlliancePosition: 1, TeamNumber: blue[0],
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "B", AlliancePosition: 2, TeamNumber: blue[1],
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
+				CompCode:    strconv.Itoa(int(year)) + eventCode,
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
 				Alliance: "B", AlliancePosition: 3, TeamNumber: blue[2],
 			},
@@ -93,7 +100,7 @@ func GetMatchList(database Database, year int32, eventCode string, blueAllianceC
 
 		for _, match := range team_matches {
 			// Iterate through matches to check they can be added to database.
-			err = database.AddToMatch(match)
+			err = database.AddToMatch2025(match)
 			if err != nil {
 				log.Println("Failed to add team %d from match %d to the database: %v", match.TeamNumber, match.MatchNumber, err)
 				return
