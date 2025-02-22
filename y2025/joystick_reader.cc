@@ -116,36 +116,48 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();
 
-    superstructure_goal_builder->set_elevator_goal(ElevatorGoal::NEUTRAL);
-    superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);
-    superstructure_goal_builder->set_wrist_goal(WristGoal::NEUTRAL);
+    if (climber_l1_latched_) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
+    } else {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::NEUTRAL);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::NEUTRAL);
+    }
 
     if (data.IsPressed(kDontMove)) {
     } else if (data.IsPressed(kLeftL4) || data.IsPressed(kRightL4)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L4);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L4);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L4);
+      climber_l1_latched_ = false;
     } else if (data.IsPressed(kLeftL3) || data.IsPressed(kRightL3)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L3);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L3);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L3);
+      climber_l1_latched_ = false;
     } else if (data.IsPressed(kLeftL2) || data.IsPressed(kRightL2)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L2);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L2);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L2);
+      climber_l1_latched_ = false;
     } else if (data.IsPressed(kL1)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
+      climber_l1_latched_ = false;
     } else if (data.IsPressed(kGroundIntake)) {
       superstructure_goal_builder->set_elevator_goal(
           ElevatorGoal::INTAKE_GROUND);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_GROUND);
       superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_GROUND);
+      climber_l1_latched_ = false;
     } else if (data.IsPressed(kHumanPlayer)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE_HP);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP);
       superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_HP);
+      climber_l1_latched_ = false;
     }
 
     if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||
@@ -189,6 +201,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
 
     if (data.IsPressed(kClimb)) {
       superstructure_goal_builder->set_climber_goal(ClimberGoal::CLIMB);
+      climber_l1_latched_ = true;
     } else if (data.IsPressed(kRetract)) {
       superstructure_goal_builder->set_climber_goal(ClimberGoal::RETRACT);
     } else {
@@ -205,6 +218,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       localizer_state_fetcher_;
   const y2025::RobotConstants *robot_constants_;
   const y2025::Common *common_;
+  bool climber_l1_latched_ = false;
 
   bool frontFacing(
       const flatbuffers::Vector<flatbuffers::Offset<y2025::Location>>
