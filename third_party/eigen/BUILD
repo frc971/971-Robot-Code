@@ -4,7 +4,10 @@ cc_library(
     name = "eigen",
     srcs = glob(["Eigen/src/**/*.h"]),
     hdrs = glob(
-        ["Eigen/*"],
+        [
+            "Eigen/*",
+            "Eigen/src/plugins/**",
+        ],
         exclude = [
             # Stuff that we don't have the dependencies for.
             "Eigen/CholmodSupport",

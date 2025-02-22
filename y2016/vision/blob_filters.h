@@ -1,6 +1,8 @@
 #ifndef Y2016_VISION_BLOB_FILTERS_H_
 #define Y2016_VISION_BLOB_FILTERS_H_
 
+#include "absl/log/check.h"
+
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/find_blob.h"
 #include "aos/vision/blob/hierarchical_contour_merge.h"

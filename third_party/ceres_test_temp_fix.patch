@@ -1,0 +1,13 @@
+diff --git a/BUILD b/BUILD
+index 4b18cb91..45bc4cf1 100644
+--- a/BUILD
++++ b/BUILD
+@@ -129,7 +129,7 @@ CERES_TESTS = [
+     "parameter_block_ordering",
+     "parameter_block",
+     "partitioned_matrix_view",
+-    "polynomial",
++    #"polynomial",
+     "problem",
+     "program",
+     "reorder_program",

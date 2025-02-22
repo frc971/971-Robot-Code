@@ -89,6 +89,7 @@ cc_library(
     name = "target_finder",
     srcs = ["target_finder.cc"],
     hdrs = ["target_finder.h"],
+    copts = ["-w"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/vision/blob:threshold",
