@@ -9,11 +9,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2025_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
@@ -27,7 +25,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
@@ -144,12 +141,6 @@ func RequestAveragedHumanRankings2025(server string, requestBytes []byte, userNa
 		request_averaged_human_rankings_2025_response.GetRootAsRequestAveragedHumanRankings2025Response, DefaultUsername)
 }
 
-func Request2024DataScouting(server string, requestBytes []byte, userName string) (*request_2024_data_scouting_response.Request2024DataScoutingResponseT, error) {
-	return sendMessage[request_2024_data_scouting_response.Request2024DataScoutingResponseT](
-		server+"/requests/request/2024_data_scouting", requestBytes,
-		request_2024_data_scouting_response.GetRootAsRequest2024DataScoutingResponse, DefaultUsername)
-}
-
 func Request2025DataScouting(server string, requestBytes []byte, userName string) (*request_2025_data_scouting_response.Request2025DataScoutingResponseT, error) {
 	return sendMessage[request_2025_data_scouting_response.Request2025DataScoutingResponseT](
 		server+"/requests/request/2025_data_scouting", requestBytes,
@@ -240,12 +231,6 @@ func SubmitHumanRanking2025(server string, requestBytes []byte, userName string)
 		submit_human_ranking_2025_response.GetRootAsSubmitHumanRanking2025Response, DefaultUsername)
 }
 
-func Submit2024Actions(server string, requestBytes []byte, userName string) (*submit_2024_actions_response.Submit2024ActionsResponseT, error) {
-	return sendMessage[submit_2024_actions_response.Submit2024ActionsResponseT](
-		server+"/requests/submit/submit_2024_actions", requestBytes,
-		submit_2024_actions_response.GetRootAsSubmit2024ActionsResponse, DefaultUsername)
-}
-
 func Submit2025Actions(server string, requestBytes []byte, userName string) (*submit_2025_actions_response.Submit2025ActionsResponseT, error) {
 	return sendMessage[submit_2025_actions_response.Submit2025ActionsResponseT](
 		server+"/requests/submit/submit_2025_actions", requestBytes,
@@ -256,12 +241,6 @@ func SubmitPitImage(server string, requestBytes []byte, userName string) (*submi
 	return sendMessage[submit_pit_image_response.SubmitPitImageResponseT](
 		server+"/requests/submit/submit_pit_image", requestBytes,
 		submit_pit_image_response.GetRootAsSubmitPitImageResponse, DefaultUsername)
-}
-
-func Delete2024DataScouting(server string, requestBytes []byte, userName string) (*delete_2024_data_scouting_response.Delete2024DataScoutingResponseT, error) {
-	return sendMessage[delete_2024_data_scouting_response.Delete2024DataScoutingResponseT](
-		server+"/requests/delete/delete_2024_data_scouting", requestBytes,
-		delete_2024_data_scouting_response.GetRootAsDelete2024DataScoutingResponse, DefaultUsername)
 }
 
 func Delete2025DataScouting(server string, requestBytes []byte, userName string) (*delete_2025_data_scouting_response.Delete2025DataScoutingResponseT, error) {

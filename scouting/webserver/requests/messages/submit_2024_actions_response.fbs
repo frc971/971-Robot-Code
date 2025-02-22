@@ -1,7 +1,0 @@
-namespace scouting.webserver.requests;
-
-table Submit2024ActionsResponse {
-    // empty response
-}
-
-root_type Submit2024ActionsResponse;

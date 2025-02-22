@@ -8,11 +8,8 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2025_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2025_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
@@ -37,7 +34,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
@@ -231,261 +227,6 @@ func TestRequestAllMatches2025(t *testing.T) {
 		}
 	}
 
-}
-
-// Validates that we can request the 2024 stats.
-func TestRequest2024DataScouting(t *testing.T) {
-	db := MockDatabase{
-		stats2024: []db.Stats2024{
-			{
-				CompType: "Regular", TeamNumber: "342",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
-				SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
-				Speaker: 4, Amp: 2, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
-				NotesDropped: 2, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
-				Park: true, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
-			},
-			{
-				CompType: "Regular", TeamNumber: "132",
-				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
-				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 1,
-				NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
-				Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: true, CollectedBy: "jeff",
-			},
-			{
-				CompType: "Regular", TeamNumber: "982",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
-				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 2, SpeakerAmplified: 3, Shuttled: 1, OutOfField: 0,
-				NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "george",
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_2024_data_scouting.Request2024DataScoutingT{}).Pack(builder))
-
-	response, err := debug.Request2024DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to request all matches: ", err)
-	}
-
-	expected := request_2024_data_scouting_response.Request2024DataScoutingResponseT{
-		StatsList: []*request_2024_data_scouting_response.Stats2024T{
-			{
-				CompType: "Regular", TeamNumber: "342",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
-				SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
-				Speaker: 4, Amp: 2, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
-				NotesDropped: 2, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
-				Park: true, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "alex",
-			},
-			{
-				CompType: "Regular", TeamNumber: "132",
-				MatchNumber: 4, SetNumber: 2, CompLevel: "quals", StartingQuadrant: 0,
-				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 1,
-				NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
-				Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: true, CollectedBy: "jeff",
-			},
-			{
-				CompType: "Regular", TeamNumber: "982",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
-				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 2, SpeakerAmplified: 3, Shuttled: 1, OutOfField: 0,
-				NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "george",
-			},
-		},
-	}
-	if len(expected.StatsList) != len(response.StatsList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.StatsList {
-		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
-			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
-		}
-	}
-}
-
-// Validates that we can request the 2024 stats.
-func TestConvertActionsToStat2024(t *testing.T) {
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_2024_actions.Submit2024ActionsT{
-		TeamNumber:  "4244",
-		MatchNumber: 3,
-		SetNumber:   1,
-		CompLevel:   "quals",
-		ActionsList: []*submit_2024_actions.ActionT{
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypeStartMatchAction,
-					Value: &submit_2024_actions.StartMatchActionT{
-						Position: 2,
-					},
-				},
-				Timestamp: 0,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type:  submit_2024_actions.ActionTypeNoShowAction,
-					Value: &submit_2024_actions.NoShowActionT{},
-				},
-				Timestamp: 200,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePickupNoteAction,
-					Value: &submit_2024_actions.PickupNoteActionT{
-						Auto: true,
-					},
-				},
-				Timestamp: 800,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePlaceNoteAction,
-					Value: &submit_2024_actions.PlaceNoteActionT{
-						ScoreType: submit_2024_actions.ScoreTypekAMP,
-						Auto:      true,
-					},
-				},
-				Timestamp: 2000,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypeMobilityAction,
-					Value: &submit_2024_actions.MobilityActionT{
-						Mobility: true,
-					},
-				},
-				Timestamp: 2200,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePenaltyAction,
-					Value: &submit_2024_actions.PenaltyActionT{
-						Penalties: 5,
-					},
-				},
-				Timestamp: 2400,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePickupNoteAction,
-					Value: &submit_2024_actions.PickupNoteActionT{
-						Auto: false,
-					},
-				},
-				Timestamp: 2800,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePlaceNoteAction,
-					Value: &submit_2024_actions.PlaceNoteActionT{
-						ScoreType: submit_2024_actions.ScoreTypekSHUTTLED,
-						Auto:      false,
-					},
-				},
-				Timestamp: 3100,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePickupNoteAction,
-					Value: &submit_2024_actions.PickupNoteActionT{
-						Auto: false,
-					},
-				},
-				Timestamp: 3200,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePlaceNoteAction,
-					Value: &submit_2024_actions.PlaceNoteActionT{
-						ScoreType: submit_2024_actions.ScoreTypekDROPPED,
-						Auto:      false,
-					},
-				},
-				Timestamp: 3300,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypeRobotDeathAction,
-					Value: &submit_2024_actions.RobotDeathActionT{
-						RobotDead: true,
-					},
-				},
-				Timestamp: 3400,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypeRobotDeathAction,
-					Value: &submit_2024_actions.RobotDeathActionT{
-						RobotDead: false,
-					},
-				},
-				Timestamp: 3450,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePickupNoteAction,
-					Value: &submit_2024_actions.PickupNoteActionT{
-						Auto: false,
-					},
-				},
-				Timestamp: 3500,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePlaceNoteAction,
-					Value: &submit_2024_actions.PlaceNoteActionT{
-						ScoreType: submit_2024_actions.ScoreTypekSPEAKER_AMPLIFIED,
-						Auto:      false,
-					},
-				},
-				Timestamp: 3900,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypeEndMatchAction,
-					Value: &submit_2024_actions.EndMatchActionT{
-						StageType: submit_2024_actions.StageTypekHARMONY,
-						TrapNote:  false,
-						Spotlight: false,
-					},
-				},
-				Timestamp: 4200,
-			},
-		},
-		CompType: "Regular",
-	}).Pack(builder))
-
-	submit2024Actions := submit_2024_actions.GetRootAsSubmit2024Actions(builder.FinishedBytes(), 0)
-	response, err := ConvertActionsToStat2024(submit2024Actions)
-
-	if err != nil {
-		t.Fatal("Failed to convert actions to stats: ", err)
-	}
-
-	expected := db.Stats2024{
-		CompType: "Regular", TeamNumber: "4244",
-		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
-		SpeakerAuto: 0, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: true,
-		Speaker: 0, Amp: 0, SpeakerAmplified: 1, Shuttled: 1, OutOfField: 0,
-		NotesDropped: 1, Penalties: 5, TrapNote: false, Spotlight: false, AvgCycle: 950,
-		Park: false, OnStage: false, Harmony: true, RobotDied: true, NoShow: true, CollectedBy: "",
-	}
-
-	if expected != response {
-		t.Fatal("Expected ", expected, ", but got ", response)
-	}
 }
 
 func TestRequest2025DataScouting(t *testing.T) {
@@ -1819,91 +1560,6 @@ func TestRequestAllNotes2025(t *testing.T) {
 	}
 }
 
-func TestAddingActions2024(t *testing.T) {
-	database := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&database, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_2024_actions.Submit2024ActionsT{
-		TeamNumber:  "3421",
-		MatchNumber: 2,
-		SetNumber:   1,
-		CompLevel:   "quals",
-		ActionsList: []*submit_2024_actions.ActionT{
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePickupNoteAction,
-					Value: &submit_2024_actions.PickupNoteActionT{
-						Auto: true,
-					},
-				},
-				Timestamp: 1800,
-			},
-			{
-				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type: submit_2024_actions.ActionTypePlaceNoteAction,
-					Value: &submit_2024_actions.PlaceNoteActionT{
-						ScoreType: submit_2024_actions.ScoreTypekSPEAKER,
-						Auto:      false,
-					},
-				},
-				Timestamp: 2500,
-			},
-		},
-		CompType: "Prescouting",
-	}).Pack(builder))
-
-	_, err := debug.Submit2024Actions("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to submit actions: ", err)
-	}
-
-	expectedActions := []db.Action{
-		{
-			CompType:        "Prescouting",
-			TeamNumber:      "3421",
-			MatchNumber:     2,
-			SetNumber:       1,
-			CompLevel:       "quals",
-			CollectedBy:     "debug_cli",
-			CompletedAction: []byte{},
-			Timestamp:       1800,
-		},
-		{
-			CompType:        "Prescouting",
-			TeamNumber:      "3421",
-			MatchNumber:     2,
-			SetNumber:       1,
-			CompLevel:       "quals",
-			CollectedBy:     "debug_cli",
-			CompletedAction: []byte{},
-			Timestamp:       2500,
-		},
-	}
-
-	expectedStats := []db.Stats2024{
-		db.Stats2024{
-			CompType: "Prescouting", TeamNumber: "3421",
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 0,
-			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-			Speaker: 1, Amp: 0, SpeakerAmplified: 0, Shuttled: 0, OutOfField: 0,
-			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
-			Park: false, OnStage: false, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "debug_cli",
-		},
-	}
-
-	if !reflect.DeepEqual(expectedActions, database.actions) {
-		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
-	}
-	if !reflect.DeepEqual(expectedStats, database.stats2024) {
-		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2024)
-	}
-}
-
 func TestAddingActions2025(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
@@ -1991,101 +1647,6 @@ func TestAddingActions2025(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expectedStats, database.stats2025) {
 		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2025)
-	}
-}
-
-// Validates that we can delete 2024 stats.
-func TestDeleteFromStats2024(t *testing.T) {
-	mockClock := MockClock{now: time.Now()}
-	database := MockDatabase{
-		stats2024: []db.Stats2024{
-			{
-				CompType: "Practice", TeamNumber: "746",
-				MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
-				SpeakerAuto: 0, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
-				Speaker: 0, Amp: 1, SpeakerAmplified: 1, Shuttled: 0, OutOfField: 2,
-				NotesDropped: 0, Penalties: 1, TrapNote: true, Spotlight: false, AvgCycle: 233,
-				Park: false, OnStage: false, Harmony: true, RobotDied: false, NoShow: false, CollectedBy: "alek",
-			},
-			{
-				CompType: "Regular", TeamNumber: "244",
-				MatchNumber: 5, SetNumber: 3, CompLevel: "quals", StartingQuadrant: 1,
-				SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-				Speaker: 0, Amp: 0, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
-				NotesDropped: 0, Penalties: 1, TrapNote: false, Spotlight: false, AvgCycle: 120,
-				Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "kacey",
-			},
-		},
-		actions: []db.Action{
-			{
-				CompType:        "Practice",
-				TeamNumber:      "746",
-				MatchNumber:     3,
-				SetNumber:       1,
-				CompLevel:       "quals",
-				CollectedBy:     "debug_cli",
-				CompletedAction: []byte{},
-				Timestamp:       2400,
-			},
-			{
-				CompType:        "Prescouting",
-				TeamNumber:      "244",
-				MatchNumber:     5,
-				SetNumber:       3,
-				CompLevel:       "quals",
-				CollectedBy:     "debug_cli",
-				CompletedAction: []byte{},
-				Timestamp:       1009,
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&database, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&delete_2024_data_scouting.Delete2024DataScoutingT{
-		CompLevel:   "quals",
-		MatchNumber: 3,
-		SetNumber:   1,
-		TeamNumber:  "746",
-	}).Pack(builder))
-
-	_, err := debug.Delete2024DataScouting("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to delete from data scouting 2024", err)
-	}
-
-	expectedActions := []db.Action{
-		{
-			CompType:        "Prescouting",
-			TeamNumber:      "244",
-			MatchNumber:     5,
-			SetNumber:       3,
-			CompLevel:       "quals",
-			CollectedBy:     "debug_cli",
-			CompletedAction: []byte{},
-			Timestamp:       1009,
-		},
-	}
-
-	expectedStats := []db.Stats2024{
-		{
-			CompType: "Regular", TeamNumber: "244",
-			MatchNumber: 5, SetNumber: 3, CompLevel: "quals", StartingQuadrant: 1,
-			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
-			Speaker: 0, Amp: 0, SpeakerAmplified: 3, Shuttled: 0, OutOfField: 0,
-			NotesDropped: 0, Penalties: 1, TrapNote: false, Spotlight: false, AvgCycle: 120,
-			Park: false, OnStage: true, Harmony: false, RobotDied: false, NoShow: false, CollectedBy: "kacey",
-		},
-	}
-
-	if !reflect.DeepEqual(expectedActions, database.actions) {
-		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
-	}
-	if !reflect.DeepEqual(expectedStats, database.stats2024) {
-		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2024)
 	}
 }
 
@@ -2298,13 +1859,11 @@ func TestDeleteFromNotesData2025(t *testing.T) {
 // needed for your tests.
 
 type MockDatabase struct {
-	matches             []db.TeamMatch
 	matches2025         []db.TeamMatch2025
 	notes               []db.NotesData
 	notes2025           []db.NotesData2025
 	shiftSchedule       []db.Shift
 	driver_ranking      []db.DriverRankingData
-	stats2024           []db.Stats2024
 	stats2025           []db.Stats2025
 	actions             []db.Action
 	images              []db.PitImage
@@ -2312,26 +1871,14 @@ type MockDatabase struct {
 	human_ranking_2025  []db.HumanRanking2025
 }
 
-func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
-	database.matches = append(database.matches, match)
-	return nil
-}
-
 func (database *MockDatabase) AddToMatch2025(match db.TeamMatch2025) error {
 	database.matches2025 = append(database.matches2025, match)
 	return nil
 }
 
-func (database *MockDatabase) AddToStats2024(stats2024 db.Stats2024) error {
-	database.stats2024 = append(database.stats2024, stats2024)
-	return nil
-}
 func (database *MockDatabase) AddToStats2025(stats2025 db.Stats2025) error {
 	database.stats2025 = append(database.stats2025, stats2025)
 	return nil
-}
-func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
-	return database.matches, nil
 }
 
 func (database *MockDatabase) ReturnMatches2025(compCode string) ([]db.TeamMatch2025, error) {
@@ -2344,22 +1891,8 @@ func (database *MockDatabase) ReturnMatches2025(compCode string) ([]db.TeamMatch
 	return results, nil
 }
 
-func (database *MockDatabase) ReturnStats2024() ([]db.Stats2024, error) {
-	return database.stats2024, nil
-}
-
 func (database *MockDatabase) ReturnStats2025() ([]db.Stats2025, error) {
 	return database.stats2025, nil
-}
-
-func (database *MockDatabase) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2024, error) {
-	var results []db.Stats2024
-	for _, stats := range database.stats2024 {
-		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel && stats.CompType == compType {
-			results = append(results, stats)
-		}
-	}
-	return results, nil
 }
 
 func (database *MockDatabase) ReturnStats2025ForTeam(compCode string, teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2025, error) {
@@ -2567,19 +2100,6 @@ func (database *MockDatabase) ReturnPitImages() ([]db.PitImage, error) {
 	return database.images, nil
 }
 
-func (database *MockDatabase) DeleteFromStats2024(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
-	for i, stat := range database.stats2024 {
-		if stat.CompLevel == compLevel_ &&
-			stat.MatchNumber == matchNumber_ &&
-			stat.SetNumber == setNumber_ &&
-			stat.TeamNumber == teamNumber_ {
-			// Match found, remove the element from the array.
-			database.stats2024 = append(database.stats2024[:i], database.stats2024[i+1:]...)
-		}
-	}
-	return nil
-}
-
 func (database *MockDatabase) DeleteFromStats2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	for i, stat := range database.stats2025 {
 		if stat.CompLevel == compLevel_ &&
@@ -2602,19 +2122,6 @@ func (database *MockDatabase) DeleteFromNotesData2025(compCode_ string, compLeve
 			stat.TeamNumber == teamNumber_ {
 			// Match found, remove the element from the array.
 			database.notes2025 = append(database.notes2025[:i], database.notes2025[i+1:]...)
-		}
-	}
-	return nil
-}
-
-func (database *MockDatabase) DeleteFromActions(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
-	for i, action := range database.actions {
-		if action.CompLevel == compLevel_ &&
-			action.MatchNumber == matchNumber_ &&
-			action.SetNumber == setNumber_ &&
-			action.TeamNumber == teamNumber_ {
-			// Match found, remove the element from the array.
-			database.actions = append(database.actions[:i], database.actions[i+1:]...)
 		}
 	}
 	return nil

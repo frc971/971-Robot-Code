@@ -1,7 +1,0 @@
-namespace scouting.webserver.requests;
-
-table Request2024DataScouting {
-
-}
-
-root_type Request2024DataScouting;
