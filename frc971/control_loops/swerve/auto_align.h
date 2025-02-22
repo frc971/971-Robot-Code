@@ -20,6 +20,7 @@ class AutoAlign {
   void Iterate();
 
  private:
+  aos::EventLoop *event_loop_;
   aos::Sender<GoalStatic> swerve_goal_sender_;
   aos::Fetcher<frc971::control_loops::swerve::PositionGoal>
       position_goal_fetcher_;
@@ -29,6 +30,14 @@ class AutoAlign {
   double goal_x_ = 0.0;
   double goal_y_ = 0.0;
   double goal_theta_ = 0.0;
+
+  double prev_x_error_ = 0.0;
+  double prev_y_error_ = 0.0;
+  double prev_theta_error_ = 0.0;
+
+  bool theta_only_ = true;
+
+  aos::monotonic_clock::time_point last_time_{aos::monotonic_clock::min_time};
 };
 
 }  // namespace frc971::control_loops::swerve

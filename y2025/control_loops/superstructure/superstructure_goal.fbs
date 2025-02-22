@@ -72,6 +72,7 @@ table Goal {
   wrist_goal:WristGoal (id: 4);
   robot_side: RobotSide (id: 5);
   auto_align_direction: AutoAlignDirection (id: 6);
+  theta_lock: bool = false (id: 7);
 }
 
 root_type Goal;

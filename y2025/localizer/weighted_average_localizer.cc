@@ -1,6 +1,6 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, vision_weight, 0.01,
+ABSL_FLAG(double, vision_weight, 0.7,
           "How much to weigh the vision detection vs the velocity based pose "
           "estimation.");
 ABSL_FLAG(double, distance_threshold, 3.0,
@@ -184,6 +184,8 @@ void WeightedAverageLocalizer::SendOutput(
 
     state_builder.CheckOk(state_builder.Send());
     first_it_ = false;
+
+    estimated_pose_ = average_detected_pose;
     return;
   }
 
