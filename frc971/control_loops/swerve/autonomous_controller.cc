@@ -145,8 +145,9 @@ void AutonomousController::Iterate() {
   double x_error = x - flip_mult * trajectory_point->position()->x();
   double y_error = y - trajectory_point->position()->y();
   const double theta_trajectory = trajectory_point->position()->theta();
-  double theta_error = theta - (flipped_ ? std::numbers::pi - theta_trajectory
-                                         : theta_trajectory);
+  double theta_error = aos::math::NormalizeAngle(
+      theta -
+      (flipped_ ? std::numbers::pi - theta_trajectory : theta_trajectory));
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
