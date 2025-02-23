@@ -104,10 +104,10 @@ public class Translation3d
   }
 
   /**
-   * Constructs a Translation3d from the provided translation vector's X, Y, and Z components. The
-   * values are assumed to be in meters.
+   * Constructs a Translation3d from a 3D translation vector. The values are assumed to be in
+   * meters.
    *
-   * @param vector The translation vector to represent.
+   * @param vector The translation vector.
    */
   public Translation3d(Vector<N3> vector) {
     this(vector.get(0), vector.get(1), vector.get(2));
@@ -184,9 +184,9 @@ public class Translation3d
   }
 
   /**
-   * Returns a vector representation of this translation.
+   * Returns a 2D translation vector representation of this translation.
    *
-   * @return A Vector representation of this translation.
+   * @return A 2D translation vector representation of this translation.
    */
   public Vector<N3> toVector() {
     return VecBuilder.fill(m_x, m_y, m_z);
@@ -214,6 +214,17 @@ public class Translation3d
     final var p = new Quaternion(0.0, m_x, m_y, m_z);
     final var qprime = other.getQuaternion().times(p).times(other.getQuaternion().inverse());
     return new Translation3d(qprime.getX(), qprime.getY(), qprime.getZ());
+  }
+
+  /**
+   * Rotates this translation around another translation in 3D space.
+   *
+   * @param other The other translation to rotate around.
+   * @param rot The rotation to rotate the translation by.
+   * @return The new rotated translation.
+   */
+  public Translation3d rotateAround(Translation3d other, Rotation3d rot) {
+    return this.minus(other).rotateBy(rot).plus(other);
   }
 
   /**
