@@ -79,7 +79,7 @@ void LedIndicator::CheckColor() {
   client_statistics_fetcher_.Fetch();
 
   // Stopped: Red
-  if (superstructure_status_fetcher_.get() &&
+  if (superstructure_status_fetcher_.get() != nullptr &&
       superstructure_status_fetcher_->estopped()) {
     DisplayOnLED(255, 0, 0);
     return;
@@ -87,7 +87,8 @@ void LedIndicator::CheckColor() {
 
   // 1+ orin pis not connected: red/green flash
 
-  if (server_statistics_fetcher_.get() && client_statistics_fetcher_.get() &&
+  if (server_statistics_fetcher_.get() != nullptr &&
+      client_statistics_fetcher_.get() != nullptr &&
       (DisconnectedOrinServer(*server_statistics_fetcher_) ||
        DisconnectedOrinClient(*client_statistics_fetcher_))) {
     if (flash_counter_.Flash()) {
@@ -119,7 +120,7 @@ void LedIndicator::CheckColor() {
   // make it so gyro has to not have velocity twice in a row
 
   // Not zeroed: Pink
-  if (superstructure_status_fetcher_.get() &&
+  if (superstructure_status_fetcher_.get() != nullptr &&
       !(superstructure_status_fetcher_->zeroed())) {
     DisplayOnLED(255, 20, 147);
     return;
@@ -127,7 +128,7 @@ void LedIndicator::CheckColor() {
 
   // Scoring/Spitting : Purple
 
-  if (superstructure_goal_fetcher_.get() &&
+  if (superstructure_goal_fetcher_.get() != nullptr &&
       (superstructure_goal_fetcher_->pivot_goal() == PivotGoal::SCORE_L1 ||
        superstructure_goal_fetcher_->pivot_goal() == PivotGoal::SCORE_L2 ||
        superstructure_goal_fetcher_->pivot_goal() == PivotGoal::SCORE_L3 ||
@@ -148,7 +149,7 @@ void LedIndicator::CheckColor() {
 
   // Intake: Flash Orange/Off
 
-  if (superstructure_goal_fetcher_.get() &&
+  if (superstructure_goal_fetcher_.get() != nullptr &&
       (superstructure_goal_fetcher_->end_effector_goal() ==
        EndEffectorGoal::INTAKE)) {
     if (flash_counter_.Flash()) {
@@ -162,7 +163,7 @@ void LedIndicator::CheckColor() {
 
   // Moving: Flash yellow/off
 
-  if (drivetrain_status_fetcher_.get() &&
+  if (drivetrain_status_fetcher_.get() != nullptr &&
       ((abs(drivetrain_status_fetcher_->naive_estimator()->vx()) > 0.01) ||
        (abs(drivetrain_status_fetcher_->naive_estimator()->vy()) > 0.01) ||
        (abs(drivetrain_status_fetcher_->naive_estimator()->omega()) > 0.01))) {
