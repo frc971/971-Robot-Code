@@ -43,33 +43,33 @@ namespace superstructure = y2025::control_loops::superstructure;
 
 namespace swerve = frc971::control_loops::swerve;
 
-const ButtonLocation kLeftL4(4, 9);
-const ButtonLocation kRightL4(4, 4);
-const ButtonLocation kLeftL3(4, 8);
-const ButtonLocation kRightL3(4, 2);
-const ButtonLocation kLeftL2(4, 7);
-const ButtonLocation kRightL2(4, 5);
-const ButtonLocation kL1(4, 6);
+const ButtonLocation kLeftL4(6, 4);
+const ButtonLocation kRightL4(6, 5);
+const ButtonLocation kLeftL3(6, 3);
+const ButtonLocation kRightL3(6, 6);
+const ButtonLocation kLeftL2(6, 2);
+const ButtonLocation kRightL2(6, 7);
+const ButtonLocation kL1(6, 1);
 
-const ButtonLocation kHumanPlayer(4, 10);
+const ButtonLocation kHumanPlayer(6, 10);
 
-const ButtonLocation kFront(3, 10);
-const ButtonLocation kBack(3, 9);
+const ButtonLocation kFront(3, 8);
+const ButtonLocation kBack(3, 4);
 
-const ButtonLocation kEndEffectorIntake(4, 12);
-const ButtonLocation kEndEffectorSpit(3, 12);
+const ButtonLocation kEndEffectorIntake(3, 6);
+const ButtonLocation kEndEffectorSpit(6, 11);
 
-const ButtonLocation kClimb(1, 2);
-const ButtonLocation kRetract(1, 3);
-const ButtonLocation kGroundIntake(3, 13);
+const ButtonLocation kClimb(3, 5);
+const ButtonLocation kRetract(3, 7);
+const ButtonLocation kGroundIntake(6, 12);
 
-const ButtonLocation kDontMove(4, 11);
+const ButtonLocation kDontMove(3, 2);
 
-const ButtonLocation kAlgaeL2(4, 3);
-const ButtonLocation kAlgaeL3(4, 1);
-const ButtonLocation kBarge(4, 12);
+const ButtonLocation kAlgaeL2(6, 8);
+const ButtonLocation kAlgaeL3(6, 9);
+const ButtonLocation kBarge(3, 3);
 
-const ButtonLocation kThetaLock(1, 5);
+const ButtonLocation kThetaLock(2, 12);
 
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
