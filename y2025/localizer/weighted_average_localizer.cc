@@ -175,7 +175,9 @@ void WeightedAverageLocalizer::SendOutput(
         atan2(accumulated_pose(2), accumulated_pose(3));
   }
 
-  if (first_it_ && good_detections.size() > 0) {
+  if (first_it_ && good_detections.size() > 0 &&
+      (event_loop_->context().monotonic_event_time - start_time_) >=
+          std::chrono::seconds(2)) {
     state_builder->set_x(average_detected_pose(PoseIdx::kX));
     state_builder->set_y(average_detected_pose(PoseIdx::kY));
     state_builder->set_theta(average_detected_pose(PoseIdx::kTheta));
