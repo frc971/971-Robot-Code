@@ -127,6 +127,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     }
 
     if (data.IsPressed(kDontMove)) {
+      // Skipping setting any set points.
     } else if (data.IsPressed(kLeftL4) || data.IsPressed(kRightL4)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L4);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L4);
@@ -164,9 +165,13 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         data.IsPressed(kLeftL4)) {
       superstructure_goal_builder->set_auto_align_direction(
           AutoAlignDirection::LEFT);
-    } else {
+    } else if (data.IsPressed(kRightL4) || data.IsPressed(kRightL3) ||
+               data.IsPressed(kRightL2)) {
       superstructure_goal_builder->set_auto_align_direction(
           AutoAlignDirection::RIGHT);
+    } else {
+      superstructure_goal_builder->set_auto_align_direction(
+          AutoAlignDirection::CENTER);
     }
 
     if (data.IsPressed(kEndEffectorSpit)) {

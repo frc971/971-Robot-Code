@@ -59,8 +59,9 @@ enum RobotSide : ubyte {
 }
 
 enum AutoAlignDirection : ubyte {
-  LEFT = 0,
-  RIGHT = 1,
+  CENTER = 0,
+  LEFT = 1,
+  RIGHT = 2,
 }
 
 table Goal {
