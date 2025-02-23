@@ -162,17 +162,26 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   constexpr double kRotationDeadband = 0.0;
   constexpr double kVelScale = 12.0;
   constexpr double kOmegaScale = 5.0;
+  constexpr double kRoundtoOneThreshold = 0.95;
+
+  double raw_omega = data.GetAxis(omega_axis_);
+
+  raw_omega = (std::abs(raw_omega) > kRoundtoOneThreshold)
+                  ? std::round(raw_omega)
+                  : raw_omega;
 
   const double omega =
-      -kOmegaScale * aos::Deadband(pow(data.GetAxis(omega_axis_), 1),
-                                   kRotationDeadband, 1.0) +
+      -kOmegaScale * aos::Deadband(pow(raw_omega, 1), kRotationDeadband, 1.0) +
       swerve_config_.omega_offset;
 
-  const double raw_vx =
-      data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
+  double raw_vx = data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
 
-  const double raw_vy =
-      -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
+  double raw_vy = -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
+
+  raw_vx =
+      (std::abs(raw_vx) > kRoundtoOneThreshold) ? std::round(raw_vx) : raw_vx;
+  raw_vy =
+      (std::abs(raw_vy) > kRoundtoOneThreshold) ? std::round(raw_vy) : raw_vy;
 
   // Link to the cubicish function: https://www.desmos.com/3d/shvumybi1g
   // TODO add a deadband (currently there is none)
