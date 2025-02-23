@@ -93,7 +93,7 @@ class AutoAlignUpdater {
           closest_id = id;
         }
       }
-      LOG(INFO) << closest_id;
+      VLOG(1) << closest_id;
       auto builder = position_goal_sender_.MakeStaticBuilder();
 
       Pose final_pose = reef_locations_.at(closest_id);
