@@ -9,6 +9,14 @@
 
 namespace y2025::vision {
 
+// Generate unique colors for each camera
+const auto kOrinColors = std::map<std::string, cv::Scalar>{
+    {"/orin1/camera0", cv::Scalar(255, 0, 255)},
+    {"/orin1/camera1", cv::Scalar(255, 255, 0)},
+    {"/imu/camera0", cv::Scalar(0, 255, 255)},
+    {"/imu/camera1", cv::Scalar(255, 165, 0)},
+};
+
 // Structure to store node name (e.g., orin1, imu), number, and a usable string
 struct CameraNode {
   std::string node_name;
