@@ -99,7 +99,6 @@ class Localizer {
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   std::array<CameraState, kNumCameras> cameras_;
-  const std::array<Transform, kNumCameras> camera_extrinsics_;
   const std::map<uint64_t, Transform> target_poses_;
 
   frc971::control_loops::drivetrain::DrivetrainUkf down_estimator_;

@@ -697,7 +697,10 @@ http_archive(
 http_archive(
     name = "com_google_ceres_solver",
     patch_args = ["-p1"],
-    patches = ["//third_party:ceres.patch"],
+    patches = [
+        "//third_party:ceres.patch",
+        "//third_party:ceres_test_temp_fix.patch",
+    ],
     sha256 = "5fef6cd0ed744a09e20d1c341a15b0f94ed0c8df43537e198a869e6c242c99d5",
     strip_prefix = "ceres-solver-bd323ce698748bef0686eb27cb6cea4f88bb4f44",
     urls = ["https://github.com/ceres-solver/ceres-solver/archive/bd323ce698748bef0686eb27cb6cea4f88bb4f44.zip"],

@@ -7,7 +7,7 @@ endif()
 
 if(QT4_FOUND)
   add_executable(Tutorial_sparse_example Tutorial_sparse_example.cpp Tutorial_sparse_example_details.cpp)
-  target_link_libraries(Tutorial_sparse_example ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+  target_link_libraries(Tutorial_sparse_example ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} Eigen3::Eigen)
 
   add_custom_command(
     TARGET Tutorial_sparse_example
@@ -19,16 +19,13 @@ if(QT4_FOUND)
   add_dependencies(all_examples Tutorial_sparse_example)
 endif()
 
-if(EIGEN_COMPILER_SUPPORT_CPP11)
-  add_executable(random_cpp11 random_cpp11.cpp)
-  target_link_libraries(random_cpp11 ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
-  add_dependencies(all_examples random_cpp11)
-  ei_add_target_property(random_cpp11 COMPILE_FLAGS "-std=c++11")
+add_executable(random_cpp11 random_cpp11.cpp)
+target_link_libraries(random_cpp11 ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO} Eigen3::Eigen)
+add_dependencies(all_examples random_cpp11)
 
-  add_custom_command(
-    TARGET random_cpp11
-    POST_BUILD
-    COMMAND random_cpp11
-    ARGS >${CMAKE_CURRENT_BINARY_DIR}/random_cpp11.out
-  )
-endif()
+add_custom_command(
+  TARGET random_cpp11
+  POST_BUILD
+  COMMAND random_cpp11
+  ARGS >${CMAKE_CURRENT_BINARY_DIR}/random_cpp11.out
+)

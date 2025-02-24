@@ -48,7 +48,7 @@ void CornerFinder::EnqueueLine(std::vector<FittedLine> *list, FittedLine line) {
 }
 
 Segment<2> CornerFinder::MakeLine(const std::vector<FittedLine> &list) {
-  assert(list.size() == 2);
+  CHECK(list.size() == 2);
   Vector<2> st0(list[0].st.x, list[0].st.y);
   Vector<2> ed0(list[0].ed.x, list[0].ed.y);
   Vector<2> st1(list[1].st.x, list[1].st.y);
@@ -368,7 +368,7 @@ void HistogramBlobFilter::MakeGoalHist(bool is_90) {
   int j = 0;
   for (double i = 0; j < hist_size_; i += hist_step_) {
     if (is_90) {
-      assert(false);
+      CHECK(false);
     } else {
       if (i < (tape_width / targ_height)) {
         vert_hist_[j] = 1.0;
