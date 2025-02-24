@@ -14,12 +14,6 @@ ABSL_FLAG(double, kXOffset, 0.0, "X Offset");
 ABSL_FLAG(double, kYOffset, 0.0, "Y Offset");
 ABSL_FLAG(double, kThetaOffset, 0.0, "Theta Offset");
 
-constexpr double limit_goal_omega(double goal, double limit) {
-  goal = std::min(goal, limit);
-  goal = std::max(goal, -limit);
-  return goal;
-}
-
 AutoAlign::AutoAlign(aos::EventLoop *event_loop)
     : swerve_goal_sender_(
           event_loop->MakeSender<frc971::control_loops::swerve::GoalStatic>(
@@ -58,16 +52,13 @@ void AutoAlign::Iterate() {
   const double kVelocityLimit = absl::GetFlag(FLAGS_kVelLimit);
   const double kOmegaLimit = absl::GetFlag(FLAGS_kOmegaLimit);
 
-  const double kThreshold = 0.005;
+  constexpr double kThreshold = 0.005;
 
   double x_error = x_goal - x + absl::GetFlag(FLAGS_kXOffset);
   double y_error = y_goal - y + absl::GetFlag(FLAGS_kYOffset);
-  // Shortest distance (theta_error should be between -pi, pi)
-  double theta_error =
-      std::fmod(
-          theta_goal - theta + absl::GetFlag(FLAGS_kThetaOffset) + 3 * M_PI,
-          (2 * M_PI)) -
-      M_PI;
+  // Shortest distance (theta_error should be between -pi and pi)
+  double theta_error = aos::math::NormalizeAngle(
+      theta_goal - theta + absl::GetFlag(FLAGS_kThetaOffset));
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
@@ -95,7 +86,7 @@ void AutoAlign::Iterate() {
   }
 
   // limit the omega (angular velocity)
-  goal_omega = limit_goal_omega(goal_omega, kOmegaLimit);
+  goal_omega = std::clamp(goal_omega, -kOmegaLimit, kOmegaLimit);
 
   // send joystick goal
   auto joystick_goal = builder->add_joystick_goal();
