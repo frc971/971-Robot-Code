@@ -85,7 +85,7 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 30,
-      "max_size": 12296
+      "max_size": 13216
     },
     {
       "name": "/imu/autonomous",
@@ -463,6 +463,20 @@
       "executable_name": "hardware_monitor",
       "nodes": [
           "imu"
+      ]
+    },
+    {
+      "name": "argus_monitor_imu",
+      "executable_name": "argus_monitor",
+      "args": [
+        "/imu/camera0",
+        "frc971.vision.TargetMap",
+        "/imu/camera1",
+        "frc971.vision.TargetMap",
+      ],
+      "user": "pi",
+      "nodes": [
+        "imu"
       ]
     },
     {

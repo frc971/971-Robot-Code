@@ -54,6 +54,7 @@ robot_downloader(
         "//frc971/orin:argus_camera",
         "//frc971/vision:intrinsics_calibration",
         "//aos/util:filesystem_monitor",
+        "//frc971/orin:argus_monitor",
         "//y2025/vision:viewer",
         "//y2025/vision:apriltag_detector",
         "//y2025/constants:constants_sender",
