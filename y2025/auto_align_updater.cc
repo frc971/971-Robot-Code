@@ -117,12 +117,20 @@ class AutoAlignUpdater {
         }
       }
 
+      double goal_theta = final_pose.abs_theta();
+
+      if (goal_fetcher_.get() &&
+          goal_fetcher_->elevator_goal() ==
+              y2025::control_loops::superstructure::ElevatorGoal::INTAKE_HP) {
+        goal_theta += std::numbers::pi;
+      }
+
       double goal_x = final_pose.abs_pos()(0) +
                       offset * cos(final_pose.abs_theta() + M_PI / 2.0);
       double goal_y = final_pose.abs_pos()(1) +
                       offset * sin(final_pose.abs_theta() + M_PI / 2.0);
 
-      builder->set_theta(final_pose.abs_theta());
+      builder->set_theta(goal_theta);
       if (goal_fetcher_.get() == nullptr || !goal_fetcher_->theta_lock()) {
         builder->set_x(goal_x);
         builder->set_y(goal_y);
