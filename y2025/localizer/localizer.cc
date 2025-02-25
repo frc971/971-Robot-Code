@@ -102,12 +102,13 @@ void PopulateCameraStats(const Localizer::CameraState &camera,
 Localizer::Localizer(aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       constants_fetcher_(event_loop_),
+      constants_(&constants_fetcher_.constants()),
       localizer_state_sender_(
           event_loop_->MakeSender<LocalizerStateStatic>("/localizer")),
       localizer_status_sender_(
           event_loop_->MakeSender<StatusStatic>("/localizer")),
-      cameras_(MakeCameras(constants_fetcher_.constants())),
-      target_poses_(GetTargetLocations(constants_fetcher_.constants())),
+      cameras_(MakeCameras(*constants_)),
+      target_poses_(GetTargetLocations(*constants_)),
       utils_(event_loop) {
   for (size_t camera_index = 0; camera_index < Localizer::kNumCameras;
        ++camera_index) {
@@ -193,10 +194,32 @@ void Localizer::HandleTargetPoseFbs(
   CameraState camera = cameras_.at(camera_index);
   const uint64_t target_id = target->id();
 
-  std::set<int> accepted_targets{6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22};
+  if (constants_->common()->localizer_config()->has_apriltag_whitelist()) {
+    auto fbs_whitelist =
+        constants_->common()->localizer_config()->apriltag_whitelist();
+    std::set<int> apriltag_whitelist(fbs_whitelist->begin(),
+                                     fbs_whitelist->end());
 
-  if (!accepted_targets.contains(target_id)) {
-    return;
+    if (!apriltag_whitelist.contains(target_id)) {
+      VLOG(1) << "Rejected target for not being on the apriltag whitelist: "
+              << target_id;
+      camera.rejection_counter.IncrementError(
+          RejectionReason::TAG_OFF_WHITELIST);
+      return;
+    }
+  } else {
+    auto fbs_blacklist =
+        constants_->common()->localizer_config()->apriltag_blacklist();
+    std::set<int> apriltag_blacklist(fbs_blacklist->begin(),
+                                     fbs_blacklist->end());
+
+    if (apriltag_blacklist.contains(target_id)) {
+      VLOG(1) << "Rejected target for being on the apriltag blacklist: "
+              << target_id;
+      camera.rejection_counter.IncrementError(
+          RejectionReason::TAG_ON_BLACKLIST);
+      return;
+    }
   }
 
   if (!target_poses_.contains(target_id)) {

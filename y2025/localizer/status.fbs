@@ -8,6 +8,8 @@ enum RejectionReason: uint8 {
   INVALID_TAG_ID = 2,
   HIGH_POSE_ERROR = 3,
   HIGH_POSE_ERROR_RATIO = 4,
+  TAG_ON_BLACKLIST = 5,
+  TAG_OFF_WHITELIST = 6
 }
 
 table RejectionCount {

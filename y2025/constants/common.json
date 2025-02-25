@@ -1,3 +1,5 @@
+{% from 'y2025/constants/common.jinja2' import reef_apriltags %}
+
 "common": {
   "target_map": {% include 'y2025/vision/maps/target_map.json' %},
   "swerve_positions_constants": {
@@ -159,7 +161,7 @@
     "steer_current_r": 1e-5,
     "drive_current_r": 1e-3
   },
-  "reef_apriltag_ids": [6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22],
+  "reef_apriltag_ids": {{ reef_apriltags }},
   "end_effector_idling_voltage": 10.0,
   "reef_locations": [
     {
@@ -188,6 +190,9 @@
       "x": 8.820987,
       "y": -4.143112
     }
-  ]
+  ],
+  "localizer_config": {
+      "apriltag_whitelist": {{ reef_apriltags }}
+  }
 }
 
