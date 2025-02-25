@@ -41,6 +41,7 @@ ts_project(
         "//frc971/vision:target_map_ts_fbs",
         "//y2025/control_loops/superstructure:superstructure_position_ts_fbs",
         "//y2025/control_loops/superstructure:superstructure_status_ts_fbs",
+        "//y2025/localizer:status_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

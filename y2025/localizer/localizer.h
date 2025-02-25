@@ -61,6 +61,12 @@ class Localizer {
 
   static constexpr int kNumCameras = 4;
 
+  struct DebugPoseEstimate {
+    uint64_t camera;
+    uint64_t april_tag;
+    XYThetaPose robot_pose;
+  };
+
   struct CameraState {
     Transform extrinsics = Transform::Zero();
     aos::util::ArrayErrorCounter<RejectionReason, RejectionCount>
@@ -116,6 +122,8 @@ class Localizer {
 
   std::array<CameraState, kNumCameras> cameras_;
   const std::map<uint64_t, Transform> target_poses_;
+
+  std::vector<DebugPoseEstimate> debug_estimates_;
 
   frc971::control_loops::drivetrain::LocalizationUtils utils_;
 

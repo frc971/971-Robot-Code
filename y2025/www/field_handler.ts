@@ -10,7 +10,7 @@ import {Position as SuperstructurePosition} from  '../control_loops/superstructu
 import {Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
 import {LocalizerState} from '../../frc971/control_loops/swerve/swerve_localizer_state_generated'
-
+import {Status} from '../localizer/status_generated'
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -22,13 +22,14 @@ const ROBOT_WIDTH = 32 * IN_TO_M;
 const ROBOT_LENGTH = 32 * IN_TO_M;
 
 const CAMERA_COLORS = ['#ff00ff', '#ffff00', '#00ffff', '#ffa500'];
-const CAMERAS = [];
+const CAMERAS = ['/orin1/camera0', '/orin1/camera1', '/imu/camera0', '/imu/camera1'];
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
   // private superstructureStatus: SuperstructureStatus|null = null;
   // private superstructurePosition: SuperstructurePosition|null = null;
   private localizerState: LocalizerState|null = null;
+  private localizerStatus: Status|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
@@ -114,6 +115,10 @@ export class FieldHandler {
           this.handleLocalizerState(data);
         });
       this.connection.addHandler(
+        '/localizer', 'y2025.localizer.Status', (data) => {
+          this.handleLocalizerStatus(data);
+        });
+      this.connection.addHandler(
         '/aos', 'aos.message_bridge.ServerStatistics',
         (data) => {this.handleServerStatistics(data)});
       this.connection.addHandler(
@@ -131,6 +136,11 @@ export class FieldHandler {
   private handleLocalizerState(data: Uint8Array): void {
 	  const fbBuffer = new ByteBuffer(data);
 	  this.localizerState = LocalizerState.getRootAsLocalizerState(fbBuffer);
+  }
+
+  private handleLocalizerStatus(data: Uint8Array): void {
+	  const fbBuffer = new ByteBuffer(data);
+	  this.localizerStatus = Status.getRootAsStatus(fbBuffer);
   }
 
   private populateNodeConnections(nodeName: string): void {
@@ -308,6 +318,16 @@ export class FieldHandler {
       this.x.textContent = "NA";
       this.y.textContent = "NA";
       this.theta.textContent = "NA";
+    }
+
+    if (this.localizerStatus)  {
+      for (let i = 0; i < this.localizerStatus.debugEstimates.length; i++) {
+        const pose_estimate = this.localizerStatus.debugEstimates(i);
+        if (pose_estimate.robotX() == 0) {
+          continue;
+        }
+        this.drawRobot(pose_estimate.robotX(), pose_estimate.robotY(), pose_estimate.robotTheta(), CAMERA_COLORS[Number(pose_estimate.camera())])
+      }
     }
   }
 
