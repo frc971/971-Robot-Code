@@ -55,22 +55,30 @@ int main(int argc, char **argv) {
           frc971::wpilib::TalonFXParams{2, true},
           frc971::wpilib::TalonFXParams{3, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
-          current_limits->drivetrain_supply_current_limit()),
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->steer_stator_current_limit(),
+          current_limits->steer_supply_current_limit()),
       .front_right = std::make_shared<SwerveModule>(
           frc971::wpilib::TalonFXParams{10, true},
           frc971::wpilib::TalonFXParams{4, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
-          current_limits->drivetrain_supply_current_limit()),
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->steer_stator_current_limit(),
+          current_limits->steer_supply_current_limit()),
       .back_left = std::make_shared<SwerveModule>(
           frc971::wpilib::TalonFXParams{7, true},
           frc971::wpilib::TalonFXParams{6, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
-          current_limits->drivetrain_supply_current_limit()),
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->steer_stator_current_limit(),
+          current_limits->steer_supply_current_limit()),
       .back_right = std::make_shared<SwerveModule>(
           frc971::wpilib::TalonFXParams{11, true},
           frc971::wpilib::TalonFXParams{0, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
-          current_limits->drivetrain_supply_current_limit())};
+          current_limits->drivetrain_supply_current_limit(),
+          current_limits->steer_stator_current_limit(),
+          current_limits->steer_supply_current_limit())};
 
   // Thread 2
   aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());

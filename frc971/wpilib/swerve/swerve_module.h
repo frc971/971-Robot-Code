@@ -13,6 +13,18 @@ struct SwerveModule {
   SwerveModule(TalonFXParams rotation_params, TalonFXParams translation_params,
                std::string canbus,
                std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
+               double stator_current_limit, double supply_current_limit,
+               double steer_stator_current_limit,
+               double steer_supply_current_limit)
+      : rotation(std::make_shared<TalonFX>(rotation_params, canbus, signals,
+                                           steer_stator_current_limit,
+                                           steer_supply_current_limit)),
+        translation(std::make_shared<TalonFX>(translation_params, canbus,
+                                              signals, stator_current_limit,
+                                              supply_current_limit)) {}
+  SwerveModule(TalonFXParams rotation_params, TalonFXParams translation_params,
+               std::string canbus,
+               std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
                double stator_current_limit, double supply_current_limit)
       : rotation(std::make_shared<TalonFX>(rotation_params, canbus, signals,
                                            stator_current_limit,
