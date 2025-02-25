@@ -98,7 +98,7 @@ TEST_F(LinearVelocityControllerTest, SpinInPlace) {
   for (std::pair<int, double> module : std::vector<std::pair<int, double>>{
            {0, -1.0}, {1, -1.0}, {2, 1.0}, {3, 1.0}}) {
     SCOPED_TRACE(module.first);
-    if (expected(States::kThetas0 + 3 * module.first) > 0) {
+    if (expected(States::kThetas0 + States::kLength * module.first) > 0) {
       EXPECT_LT(1.0, result.U(Inputs::kIs0 + 2 * module.first));
     } else {
       EXPECT_GT(-1.0, result.U(Inputs::kIs0 + 2 * module.first));

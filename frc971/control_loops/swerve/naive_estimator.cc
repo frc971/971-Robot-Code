@@ -80,9 +80,9 @@ NaiveEstimator::State NaiveEstimator::Update(
       velocities_[module] = velocities_[module] * (1.0 - kAlpha) +
                             kAlpha * instantaneous_velocity;
     }
-    const int thetas_idx = States::kThetas0 + 3 * module;
-    const int omegas_idx = States::kOmegas0 + 3 * module;
-    const int omegad_idx = States::kOmegad0 + 3 * module;
+    const int thetas_idx = States::kThetas0 + States::kLength * module;
+    const int omegas_idx = States::kOmegas0 + States::kLength * module;
+    const int omegad_idx = States::kOmegad0 + States::kLength * module;
     {
       zeroing_[module].UpdateEstimate(*rotation_positions[module]);
       const Scalar yaw_encoder =
