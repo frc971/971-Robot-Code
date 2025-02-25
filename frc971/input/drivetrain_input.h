@@ -208,11 +208,15 @@ class SwerveDrivetrainInputReader {
         auto_align_button_(auto_align_button),
         goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
             "/drivetrain")),
+        joystick_state_fetcher_(
+            event_loop->MakeFetcher<::aos::JoystickState>("/aos")),
         swerve_config_(swerve_config) {}
   // Computes the steering and throttle from the provided driverstation data.
   SwerveGoals GetSwerveGoals(const ::frc971::input::driver_station::Data &data);
 
   ::aos::Sender<control_loops::swerve::GoalStatic> goal_sender_;
+
+  ::aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   // The scale for the joysticks for closed loop mode converting
   // joysticks to meters displacement on the two wheels.
