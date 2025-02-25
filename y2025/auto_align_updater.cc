@@ -19,8 +19,10 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 // Distance to offset the robots position past the auto align goal tangent to
 // the tag.
 constexpr double kTangentOffset = 0.25;
-// DIstance to offset the robots position normal to the tag (left/right).
-constexpr double kNormalOffset = 0.5;
+// Distance to offset the robots position normal to the tag (left/right).
+constexpr double kNormalOffset = 2.5 * 0.0254;
+// Distance between the two poles in the reef.
+constexpr double kPoleDistance = 13 * 0.0254;
 
 using frc971::control_loops::Pose;
 using y2025::Constants;
@@ -93,21 +95,22 @@ class AutoAlignUpdater {
           closest_id = id;
         }
       }
-      VLOG(1) << closest_id;
+
+      VLOG(1) << "Closest auto align apriltag id: " << closest_id;
+
       auto builder = position_goal_sender_.MakeStaticBuilder();
 
       Pose final_pose = reef_locations_.at(closest_id);
       double offset = 0.0;
       goal_fetcher_.Fetch();
-      if (goal_fetcher_.get() != nullptr) {
-        offset = 0.0;
 
+      if (goal_fetcher_.get() != nullptr) {
         switch (goal_fetcher_->auto_align_direction()) {
           case y2025::control_loops::superstructure::AutoAlignDirection::LEFT:
-            offset = kNormalOffset;
+            offset = kNormalOffset - kPoleDistance;
             break;
           case y2025::control_loops::superstructure::AutoAlignDirection::RIGHT:
-            offset = -kNormalOffset;
+            offset = kNormalOffset;
             break;
           case y2025::control_loops::superstructure::AutoAlignDirection::CENTER:
             break;
@@ -115,14 +118,15 @@ class AutoAlignUpdater {
       }
 
       double goal_x = final_pose.abs_pos()(0) +
-                      offset * sin(final_pose.abs_theta() + M_PI / 2.0);
-      double goal_y = final_pose.abs_pos()(1) +
                       offset * cos(final_pose.abs_theta() + M_PI / 2.0);
-
-      builder->set_x(goal_x);
-      builder->set_y(goal_y);
+      double goal_y = final_pose.abs_pos()(1) +
+                      offset * sin(final_pose.abs_theta() + M_PI / 2.0);
 
       builder->set_theta(final_pose.abs_theta());
+      if (goal_fetcher_.get() == nullptr || !goal_fetcher_->theta_lock()) {
+        builder->set_x(goal_x);
+        builder->set_y(goal_y);
+      }
 
       builder.CheckOk(builder.Send());
     });

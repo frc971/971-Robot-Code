@@ -193,6 +193,12 @@ void Localizer::HandleTargetPoseFbs(
   CameraState camera = cameras_.at(camera_index);
   const uint64_t target_id = target->id();
 
+  std::set<int> accepted_targets{6, 7, 8, 9, 10, 11, 17, 18, 19, 20, 21, 22};
+
+  if (!accepted_targets.contains(target_id)) {
+    return;
+  }
+
   if (!target_poses_.contains(target_id)) {
     VLOG(1) << "Rejecting target to invalid ID " << target_id;
     camera.rejection_counter.IncrementError(RejectionReason::INVALID_TAG_ID);

@@ -65,6 +65,12 @@ const ButtonLocation kGroundIntake(3, 13);
 
 const ButtonLocation kDontMove(4, 11);
 
+const ButtonLocation kAlgaeL2(4, 3);
+const ButtonLocation kAlgaeL3(4, 1);
+const ButtonLocation kBarge(4, 12);
+
+const ButtonLocation kThetaLock(1, 5);
+
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
 using y2025::control_loops::superstructure::ElevatorGoal;
@@ -102,19 +108,23 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
     const int team_number = aos::network::GetTeamNumber();
+    aos::Sender<superstructure::GoalStatic>::StaticBuilder
+        superstructure_goal_builder =
+            superstructure_goal_sender_.MakeStaticBuilder();
+
+    superstructure_goal_builder->set_theta_lock(data.IsPressed(kThetaLock));
+
     if (team_number == 9971) {
+      superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
       return;
     }
+
     superstructure_status_fetcher_.Fetch();
 
     if (!superstructure_status_fetcher_.get()) {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");
       return;
     }
-
-    aos::Sender<superstructure::GoalStatic>::StaticBuilder
-        superstructure_goal_builder =
-            superstructure_goal_sender_.MakeStaticBuilder();
 
     if (climber_l1_latched_) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);

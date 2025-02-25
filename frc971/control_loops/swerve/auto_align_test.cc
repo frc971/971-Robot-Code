@@ -135,6 +135,6 @@ class AutoAlignTest : public frc971::testing::ControlLoopTest {
 
 TEST_F(AutoAlignTest, AlignToDesiredState) {
   setGoal(15.0, -5.0, M_PI / 2);
-  RunFor(std::chrono::seconds(7));
+  RunFor(std::chrono::seconds(15));
   VerifyNearGoal();
 }
