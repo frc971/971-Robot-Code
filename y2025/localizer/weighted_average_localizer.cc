@@ -36,6 +36,11 @@ void WeightedAverageLocalizer::HandleDetectedRobotPose(
     detected_pose_.erase(target_id);
   }
 
+  pose(PoseIdx::kTheta) =
+      aos::math::NormalizeAngle(pose(PoseIdx::kTheta) -
+                                estimated_pose_(PoseIdx::kTheta)) +
+      estimated_pose_(PoseIdx::kTheta);
+
   detected_pose_.emplace(target_id, WeightedAverageLocalizer::DetectionInfo{
                                         .distance_to_robot = distance_to_robot,
                                         .time_detected = capture_time,
