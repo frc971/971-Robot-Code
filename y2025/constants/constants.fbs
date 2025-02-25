@@ -154,6 +154,8 @@ table CurrentLimits {
   climber_supply_current_limit:double (id: 9);
   wrist_stator_current_limit:double (id: 10);
   wrist_supply_current_limit:double (id: 11);
+  steer_stator_current_limit:double (id: 12);
+  steer_supply_current_limit:double (id: 13);
 }
 
 root_type Constants;
