@@ -132,8 +132,8 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
 
   auto joystick_goal = builder->add_joystick_goal();
 
-  joystick_goal->set_vx(vy);
-  joystick_goal->set_vy(vx);
+  joystick_goal->set_vx(vx);
+  joystick_goal->set_vy(vy);
   joystick_goal->set_omega(omega);
   joystick_goal->set_auto_align(auto_align_);
 
@@ -145,13 +145,17 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // Swerve Controller
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
-  const JoystickAxis kVxAxis(1, 1), kVyAxis(1, 2), kOmegaAxis(1, 5);
-  const ButtonLocation kAutoAlignButton(1, 1);
+  const JoystickAxis kVxAxis(3, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
+  const ButtonLocation kAutoAlignButton(2, 6);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
       new SwerveDrivetrainInputReader(event_loop, swerve_config, kVxAxis,
                                       kVyAxis, kOmegaAxis, kAutoAlignButton));
   return result;
+}
+
+double JoystickCurve(double x) {
+  return std::copysign(std::abs(std::pow(x, 2)), x);
 }
 
 SwerveDrivetrainInputReader::SwerveGoals
@@ -166,28 +170,30 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
 
   double raw_omega = data.GetAxis(omega_axis_);
 
-  raw_omega = (std::abs(raw_omega) > kRoundtoOneThreshold)
-                  ? std::round(raw_omega)
-                  : raw_omega;
-
-  const double omega =
-      -kOmegaScale * aos::Deadband(pow(raw_omega, 1), kRotationDeadband, 1.0) +
-      swerve_config_.omega_offset;
-
   double raw_vx = data.GetAxis(vx_axis_) + (swerve_config_.vx_offset / 8.0);
 
   double raw_vy = -data.GetAxis(vy_axis_) + (swerve_config_.vy_offset / 8.0);
 
-  raw_vx =
-      (std::abs(raw_vx) > kRoundtoOneThreshold) ? std::round(raw_vx) : raw_vx;
-  raw_vy =
-      (std::abs(raw_vy) > kRoundtoOneThreshold) ? std::round(raw_vy) : raw_vy;
+  if (std::abs(raw_vx) > kRoundtoOneThreshold) {
+    raw_vx = std::copysign(1.0, raw_vx);
+  }
+  if (std::abs(raw_vy) > kRoundtoOneThreshold) {
+    raw_vy = std::copysign(1.0, raw_vy);
+  }
+  if (std::abs(raw_omega) > kRoundtoOneThreshold) {
+    raw_omega = std::copysign(1.0, raw_omega);
+  }
+
+  const double omega =
+      kOmegaScale * aos::Deadband(pow(raw_omega, 1), kRotationDeadband, 1.0) +
+      swerve_config_.omega_offset;
 
   // Link to the cubicish function: https://www.desmos.com/3d/shvumybi1g
   // TODO add a deadband (currently there is none)
   const double speed =
-      kVelScale * aos::Deadband(std::hypot(pow(raw_vx, 3), pow(raw_vy, 3)),
-                                kMovementDeadband, 1.0);
+      kVelScale *
+      aos::Deadband(std::hypot(JoystickCurve(raw_vx), JoystickCurve(raw_vy)),
+                    kMovementDeadband, 1.0);
 
   const double theta = std::atan2(raw_vy, raw_vx);
 
