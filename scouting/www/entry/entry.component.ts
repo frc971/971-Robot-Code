@@ -140,6 +140,7 @@ export class EntryComponent implements OnInit {
   errorMessage: string = '';
   successMessage: string = '';
   autoPhase: boolean = true;
+  endGame: boolean = false;
   mobilityCompleted: boolean = false;
   hasPickedUpCoral: boolean = false;
   hasPickedUpAlgae: boolean = false;
@@ -355,6 +356,7 @@ export class EntryComponent implements OnInit {
           break;
         case ActionType.EndTeleopPhaseAction:
           this.section = 'Pickup';
+          this.endGame = false;
           break;
         case ActionType.PlaceCoralAction:
           this.section = 'Place Coral';
@@ -377,7 +379,11 @@ export class EntryComponent implements OnInit {
           // TODO(FILIP): Return user to the screen they
           // clicked dead robot on. Pickup is fine for now but
           // might cause confusion.
-          this.section = 'Pickup';
+          if (this.endGame) {
+            this.section = 'Endgame';
+          } else {
+            this.section = 'Pickup';
+          }
           break;
         default:
           break;

@@ -240,7 +240,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-primary"
-        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({}); endGame=true;"
       >
         Endgame
       </button>
@@ -349,7 +349,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-primary"
-        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({}); endGame=true;"
       >
         Endgame
       </button>
@@ -430,7 +430,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-primary"
-        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({});"
+        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({}); endGame=true;"
       >
         Endgame
       </button>
@@ -549,7 +549,7 @@
       </div>
       <button
         class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); actionHelper.addRobotDeathAction({robotDead: false}); "
+        (click)="endGame == true ? changeSectionTo('Endgame'): changeSectionTo('Pickup'); actionHelper.addRobotDeathAction({robotDead: false}); "
       >
         Revive
       </button>
