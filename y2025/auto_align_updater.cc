@@ -117,13 +117,33 @@ class AutoAlignUpdater {
         }
       }
 
-      double goal_theta = final_pose.abs_theta();
+      auto final_transform = final_pose.AsTransformationMatrix();
+      auto robot_transform = robot_pose.AsTransformationMatrix();
+
+      // transform a unit z vector of the april tag(straight out) into robot
+      // coordinates
+      auto april_z_vector = robot_transform * final_transform.inverse() *
+                            Eigen::Vector4d(0.0, 0.0, 1.0, 1.0);
+
+      // dot product the transformed vector(only x and y) with the a unit vector
+      // in the forward direction of the robot(x unit vector)
+      // negative dot porduct means the front is closer
+      auto dot_product =
+          april_z_vector.block<2, 1>(0, 0).dot(Eigen::Vector2d(0.0, 1.0));
+
+      // add pi to the goal theta of the tag if positive(needs to go to the
+      // other side of the robot)
+      double goal_theta =
+          static_cast<double>(std::signbit(-dot_product)) * std::numbers::pi +
+          final_pose.abs_theta();
 
       if (goal_fetcher_.get() &&
           goal_fetcher_->elevator_goal() ==
               y2025::control_loops::superstructure::ElevatorGoal::INTAKE_HP) {
         goal_theta += std::numbers::pi;
       }
+
+      goal_theta = aos::math::NormalizeAngle(goal_theta);
 
       double goal_x = final_pose.abs_pos()(0) +
                       offset * cos(final_pose.abs_theta() + M_PI / 2.0);
