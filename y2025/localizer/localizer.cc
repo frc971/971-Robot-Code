@@ -233,6 +233,12 @@ void Localizer::HandleTargetPoseFbs(
   robot_pose << robot_position.abs_pos()(0), robot_position.abs_pos()(1),
       (robot_position.abs_theta() - (M_PI / 2.0));
 
+  debug_estimates_.push_back(DebugPoseEstimate{
+      .camera = camera_index,
+      .april_tag = target_id,
+      .robot_pose = robot_pose,
+  });
+
   HandleDetectedRobotPose(robot_pose, Pose(H_robot_target).xy_norm(), target_id,
                           target->distortion_factor(), capture_time, now);
 }
@@ -300,6 +306,18 @@ void Localizer::SendStatus() {
                       stats->add_imu_camera0());
   PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera1")),
                       stats->add_imu_camera1());
+  auto *estimates = status_builder->add_debug_estimates();
+  for (const DebugPoseEstimate &estimate : debug_estimates_) {
+    DebugPoseEstimateStatic *fb_estimate = estimates->emplace_back();
+
+    fb_estimate->set_camera(estimate.camera);
+    fb_estimate->set_april_tag(estimate.april_tag);
+    fb_estimate->set_robot_x(estimate.robot_pose(PoseIdx::kX));
+    fb_estimate->set_robot_y(estimate.robot_pose(PoseIdx::kY));
+    fb_estimate->set_robot_theta(estimate.robot_pose(PoseIdx::kTheta));
+  }
+
+  debug_estimates_.clear();
 
   status_builder.CheckOk(status_builder.Send());
 }

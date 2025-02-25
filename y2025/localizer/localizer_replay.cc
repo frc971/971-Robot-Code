@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
 
   reader.RemapLoggedChannel("/imu/localizer",
                             "frc971.control_loops.swerve.LocalizerState");
+  reader.RemapLoggedChannel("/imu/localizer", "y2025.localizer.Status");
   reader.RemapLoggedChannel("/imu/constants", "y2025.Constants");
   reader.RemapLoggedChannel("/roborio/constants", "y2025.Constants");
   reader.RemapLoggedChannel("/orin1/constants", "y2025.Constants");
