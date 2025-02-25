@@ -316,6 +316,21 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                                          ->elevator_set_points()
                                          ->algae_l3();
         break;
+      case ElevatorGoal::BARGE:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->barge();
+        break;
+      case ElevatorGoal::ALGAE_PROCESSOR:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->algae_processor();
+        break;
+      case ElevatorGoal::ALGAE_GROUND:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->algae_ground();
+        break;
     }
 
     EXPECT_NEAR(elevator_expected_position,
@@ -353,6 +368,15 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::ALGAE_L3:
         pivot_set_point = pivot_positions->algae_l3();
         break;
+      case PivotGoal::BARGE:
+        pivot_set_point = pivot_positions->barge();
+        break;
+      case PivotGoal::ALGAE_PROCESSOR:
+        pivot_set_point = pivot_positions->algae_processor();
+        break;
+      case PivotGoal::ALGAE_GROUND:
+        pivot_set_point = pivot_positions->algae_ground();
+        break;
     }
     EXPECT_NEAR(pivot_set_point,
                 superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
@@ -388,6 +412,15 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         break;
       case WristGoal::ALGAE_L3:
         wrist_set_point = wrist_positions->algae_l3();
+        break;
+      case WristGoal::BARGE:
+        wrist_set_point = wrist_positions->barge();
+        break;
+      case WristGoal::ALGAE_PROCESSOR:
+        wrist_set_point = wrist_positions->algae_processor();
+        break;
+      case WristGoal::ALGAE_GROUND:
+        wrist_set_point = wrist_positions->algae_ground();
         break;
     }
     EXPECT_NEAR(wrist_set_point,

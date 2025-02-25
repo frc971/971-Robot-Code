@@ -18,6 +18,9 @@ enum ElevatorGoal : ubyte {
   SCORE_L4 = 6,
   ALGAE_L2 = 7,
   ALGAE_L3 = 8,
+  BARGE = 9,
+  ALGAE_PROCESSOR = 10,
+  ALGAE_GROUND = 11,
 }
 
 enum PivotGoal : ubyte {
@@ -30,6 +33,9 @@ enum PivotGoal : ubyte {
   SCORE_L4 = 6,
   ALGAE_L2 = 7,
   ALGAE_L3 = 8,
+  BARGE = 9,
+  ALGAE_PROCESSOR = 10,
+  ALGAE_GROUND = 11,
 }
 
 enum ClimberGoal : ubyte {
@@ -48,6 +54,9 @@ enum WristGoal : ubyte {
   SCORE_L4 = 6,
   ALGAE_L2 = 7,
   ALGAE_L3 = 8,
+  BARGE = 9,
+  ALGAE_PROCESSOR = 10,
+  ALGAE_GROUND = 11,
 }
 
 // This could be a boolean but making it an enum makes it clearer in the logs.

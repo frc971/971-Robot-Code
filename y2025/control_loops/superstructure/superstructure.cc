@@ -57,7 +57,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   OutputT output_struct;
 
   joystick_state_fetcher_.Fetch();
-  if (joystick_state_fetcher_->has_alliance()) {
+  if (joystick_state_fetcher_.get() != nullptr &&
+      joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
 
@@ -66,7 +67,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         rio_can_position_fetcher_.get()->end_effector()->torque_current() >
         kEndEffectorMotorTorqueThreshold;
   }
-  if (joystick_state_fetcher_->autonomous() &&
+  if (joystick_state_fetcher_.get() != nullptr &&
+      joystick_state_fetcher_->autonomous() &&
       auto_superstructure_goal_fetcher_.Fetch()) {
     unsafe_goal = auto_superstructure_goal_fetcher_.get();
   }
@@ -149,6 +151,19 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         elevator_position =
             robot_constants_->common()->elevator_set_points()->algae_l3();
         break;
+      case ElevatorGoal::BARGE:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->barge();
+        break;
+      case ElevatorGoal::ALGAE_PROCESSOR:
+        elevator_position = robot_constants_->common()
+                                ->elevator_set_points()
+                                ->algae_processor();
+        break;
+      case ElevatorGoal::ALGAE_GROUND:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->algae_ground();
+        break;
     }
   }
 
@@ -210,6 +225,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case PivotGoal::ALGAE_L3:
         pivot_position =
             robot_constants_->common()->pivot_set_points()->algae_l3();
+        break;
+      case PivotGoal::BARGE:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->barge();
+        break;
+      case PivotGoal::ALGAE_PROCESSOR:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->algae_processor();
+        break;
+      case PivotGoal::ALGAE_GROUND:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->algae_ground();
         break;
     }
   }
@@ -292,6 +319,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case WristGoal::ALGAE_L3:
         wrist_position =
             robot_constants_->common()->wrist_set_points()->algae_l3();
+        break;
+      case WristGoal::BARGE:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->barge();
+        break;
+      case WristGoal::ALGAE_PROCESSOR:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->algae_processor();
+        break;
+      case WristGoal::ALGAE_GROUND:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->algae_ground();
         break;
     }
   }

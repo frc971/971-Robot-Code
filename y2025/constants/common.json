@@ -41,11 +41,11 @@
   },
   // TODO change these constants for y2025 bot
   "wrist": {
-    "zeroing_voltage": 6.0,
+    "zeroing_voltage": 8.0,
     "operating_voltage": 12.0,
     "zeroing_profile_params": {
-      "max_velocity": 1.5,
-      "max_acceleration": 3.0
+      "max_velocity": 3.0,
+      "max_acceleration": 5.0
     },
     "default_profile_params":{
       "max_velocity": 6.0,
@@ -104,41 +104,49 @@
   },
   "elevator_set_points": {
     "neutral": 0.05,
-    "intake_hp": 0.30,
+    "intake_hp": 0.23,
     "intake_ground": 0.0,
     "score_l1": 0.0,
-    "score_l2": 0.16,
-    "score_l3": {{ 0.20 + 15.87 * 0.0254 }},
-    "score_l4": 1.42,
-    "algae_l2": 1.0904796600341797,
-    "algae_l3": 0.9904796600341797
+    "score_l2": {{ 0.42844483657770693 - 0.06 }},
+    "score_l3": {{ 0.395 + 15.87 * 0.0254 - 0.04}},
+    "score_l4": {{1.38 - 0.08}},
+    "algae_l2": {{0.44 - 0.03}},
+    "algae_l3": {{ 0.44 + 15.87 * 0.0254 - 0.03}},
+    "barge": {{1.417347 - 0.04}},
+    "algae_ground": 0.0,
+    "algae_processor": {{0.04821807672146558 - 0.04}}
   },
   "pivot_set_points": {
     "neutral": 0.0,
     "intake_hp": 0.47924198590999334,
     "intake_ground": -1.6914195,
     "score_l1": {{ 3.14 / 4.0 }},
-    "score_l2": 0.4609734355461903,
-    "score_l3": 0.4609734355461903,
-    "score_l4": 0.29801,
-    "algae_l2": 0.3904796600341797,
-    "algae_l3": 0.3904796600341797
+    "score_l2": 0.4371424007672057,
+    "score_l3": 0.4371424007672057,
+    "score_l4": 0.22801,
+    "algae_l2": 0.6469645178250809,
+    "algae_l3": 0.6469645178250809,
+    "barge": 0.40087852,
+    "algae_ground": 0.0,
+    "algae_processor": 0.8714493948498565
   },
   "wrist_set_points": {
     "neutral": 0.0,
-    "intake_hp": 0.5599718623892103,
+    "intake_hp": 0.56,
     "intake_ground": -0.31140697,
     "score_l1": 0.0,
-    "score_l2": 0.9267393224481775,
-    "score_l3": 1.02,
-    "score_l4": 1.738,
-    "algae_l2": 1.3904796600341797,
-    "algae_l3": 1.3904796600341797
+    "score_l2": 1.67,
+    "score_l3": 1.67,
+    "score_l4": 1.67,
+    "algae_l2": 1.1975354363464791,
+    "algae_l3": 1.1975354363464791,
+    "barge": 0.0,
+    "algae_ground": 0.0,
+    "algae_processor": 0.8045471934439157
   },
-  //TODO: Update these voltages
   "end_effector_voltages": {
-    "spit": -12.0,
-    "intake": 12.0
+    "spit": -10.0,
+    "intake": 10.0
   },
   "weights": {
     "thetas_q": 1.0,

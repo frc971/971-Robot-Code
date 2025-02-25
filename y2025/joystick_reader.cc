@@ -55,6 +55,8 @@ const ButtonLocation kHumanPlayer(6, 10);
 
 const ButtonLocation kFront(3, 8);
 const ButtonLocation kBack(3, 4);
+const ButtonLocation kAlgaeGround(3, 10);
+const ButtonLocation kAlgaeProcessor(3, 11);
 
 const ButtonLocation kEndEffectorIntake(3, 6);
 const ButtonLocation kEndEffectorSpit(6, 11);
@@ -169,6 +171,26 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP);
       superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_HP);
       climber_l1_latched_ = false;
+    } else if (data.IsPressed(kAlgaeL2)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::ALGAE_L2);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_L2);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_L2);
+      climber_l1_latched_ = false;
+    } else if (data.IsPressed(kAlgaeL3)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::ALGAE_L3);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_L3);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_L3);
+      climber_l1_latched_ = false;
+    } else if (data.IsPressed(kBarge)) {
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::BARGE);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::BARGE);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::BARGE);
+      climber_l1_latched_ = false;
+    } else if (data.IsPressed(kAlgaeProcessor)) {
+      superstructure_goal_builder->set_elevator_goal(
+          ElevatorGoal::ALGAE_PROCESSOR);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_PROCESSOR);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_PROCESSOR);
     }
 
     if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||
@@ -206,10 +228,16 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     } else if (data.IsPressed(kL1) || data.IsPressed(kLeftL2) ||
                data.IsPressed(kLeftL3) || data.IsPressed(kLeftL4) ||
                data.IsPressed(kRightL2) || data.IsPressed(kRightL3) ||
-               data.IsPressed(kRightL4)) {
+               data.IsPressed(kRightL4) || data.IsPressed(kAlgaeL2) ||
+               data.IsPressed(kAlgaeL3)) {
       superstructure_goal_builder->set_robot_side(
           frontFacing(common_->reef_locations()) ? RobotSide::FRONT
                                                  : RobotSide::BACK);
+    } else if (data.IsPressed(kBarge)) {
+      localizer_state_fetcher_.Fetch();
+      bool red = localizer_state_fetcher_->x() > 0.0;
+      superstructure_goal_builder->set_robot_side(red ? RobotSide::BACK
+                                                      : RobotSide::FRONT);
     } else {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
     }

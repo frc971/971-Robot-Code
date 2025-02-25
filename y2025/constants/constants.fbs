@@ -23,6 +23,9 @@ table ElevatorSetPoints {
   score_l4:double (id: 6);
   algae_l2:double (id: 7);
   algae_l3:double (id: 8);
+  barge:double (id: 9);
+  algae_processor:double (id: 10);
+  algae_ground:double (id: 11);
 }
 
 table PivotSetPoints {
@@ -35,6 +38,9 @@ table PivotSetPoints {
   score_l4:double (id: 6);
   algae_l2:double (id: 7);
   algae_l3:double (id: 8);
+  barge:double (id: 9);
+  algae_processor:double (id: 10);
+  algae_ground:double (id: 11);
 }
 
 table WristSetPoints {
@@ -47,6 +53,9 @@ table WristSetPoints {
   score_l4:double (id: 6);
   algae_l2:double (id: 7);
   algae_l3:double (id: 8);
+  barge:double (id: 9);
+  algae_processor:double (id: 10);
+  algae_ground:double (id: 11);
 }
 
 table PotAndAbsEncoderConstants {
