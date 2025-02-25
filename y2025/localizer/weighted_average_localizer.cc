@@ -9,6 +9,12 @@ ABSL_FLAG(double, distance_threshold, 3.0,
 ABSL_FLAG(bool, do_moving_average, false,
           "If true, use a moving average of previous samples.");
 ABSL_FLAG(
+    int, time_threshold, 100,
+    "How long in ms to wait until ignoring a detection for being too old.");
+ABSL_FLAG(double, displacement_threshold, 0.5,
+          "How much displacement in meters are we willing to accept before "
+          "rejecting a detected pose.");
+ABSL_FLAG(
     double, moving_average_factor, 1,
     "Scales up the moving average accumulation. Increasing this number "
     "increases the weight of the most recent sample in the moving average.");
@@ -63,7 +69,8 @@ void WeightedAverageLocalizer::SendOutput(
 
   for (const auto &[tag_id, detection] : detected_pose_) {
     if ((event_loop_->context().monotonic_event_time -
-         detection.time_detected) >= std::chrono::milliseconds(100)) {
+         detection.time_detected) >=
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_time_threshold))) {
       continue;
     }
 
@@ -71,8 +78,10 @@ void WeightedAverageLocalizer::SendOutput(
     if (distance_to_robot > absl::GetFlag(FLAGS_distance_threshold)) {
       VLOG(1) << "Rejecting because apriltag detection with distance "
               << distance_to_robot << " to the robot.";
+      continue;
       // TODO(max): Add this to the rejection counter.
     }
+
     double weighing_metric =
         1.0 + (1.0 / (distance_to_robot * distance_to_robot));
 
@@ -94,6 +103,7 @@ void WeightedAverageLocalizer::SendOutput(
         weighing_info.pose(PoseIdx::kX) * weighing_info.weighing_metric;
     average_detected_pose(PoseIdx::kY) +=
         weighing_info.pose(PoseIdx::kY) * weighing_info.weighing_metric;
+
     // We're doing this so that we actually properly take the average of
     // theta. https://en.wikipedia.org/wiki/Circular_mean
     average_detected_yaw(0) += cos(weighing_info.pose(PoseIdx::kTheta)) *
@@ -131,9 +141,16 @@ void WeightedAverageLocalizer::SendOutput(
         atan2(yaw_vector(1), yaw_vector(0));
   }
 
-  if ((estimated_pose_ - final_robot_pose).norm() > 0.3 &&
+  if ((estimated_pose_ - final_robot_pose).norm() >
+          absl::GetFlag(FLAGS_displacement_threshold) &&
+      !first_it_ &&
       (event_loop_->context().monotonic_event_time - start_time_) >=
-          std::chrono::seconds(2)) {
+          std::chrono::seconds(4)) {
+    VLOG(1) << "Rejecting image for shoving us "
+            << absl::GetFlag(FLAGS_displacement_threshold)
+            << "m  away from our pose in one "
+               "iteration.";
+    return;
   }
 
   estimated_pose_ = final_robot_pose;
