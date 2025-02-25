@@ -124,13 +124,20 @@ void DrivetrainInputReader::HandleDrivetrain(
 void SwerveDrivetrainInputReader::HandleDrivetrain(
     const ::frc971::input::driver_station::Data &data) {
   const auto swerve_goals = GetSwerveGoals(data);
-  const double vx = swerve_goals.vx;
-  const double vy = swerve_goals.vy;
+  double vx = swerve_goals.vx;
+  double vy = swerve_goals.vy;
   const double omega = swerve_goals.omega;
 
   auto builder = goal_sender_.MakeStaticBuilder();
 
   auto joystick_goal = builder->add_joystick_goal();
+
+  joystick_state_fetcher_.Fetch();
+  if (joystick_state_fetcher_.get() != nullptr &&
+      joystick_state_fetcher_->alliance() == aos::Alliance::kRed) {
+    vx *= -1;
+    vy *= -1;
+  }
 
   joystick_goal->set_vx(vx);
   joystick_goal->set_vy(vy);

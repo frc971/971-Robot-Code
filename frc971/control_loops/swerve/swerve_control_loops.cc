@@ -199,12 +199,6 @@ void SwerveControlLoops::RunIteration(
         goal_omega = goal->joystick_goal()->omega();
       }
 
-      if (joystick_state_fetcher_.get() != nullptr &&
-          joystick_state_fetcher_->alliance() == aos::Alliance::kRed) {
-        kinematics_state(NaiveEstimator::States::kVx) *= -1;
-        kinematics_state(NaiveEstimator::States::kVy) *= -1;
-      }
-
       const Scalar current_omega =
           kinematics_state(NaiveEstimator::States::kOmega);
       const Scalar current_theta =
