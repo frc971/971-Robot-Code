@@ -115,6 +115,8 @@ class Localizer {
  private:
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
 
+  const y2025::Constants *constants_;
+
   aos::Sender<frc971::control_loops::swerve::LocalizerStateStatic>
       localizer_state_sender_;
 

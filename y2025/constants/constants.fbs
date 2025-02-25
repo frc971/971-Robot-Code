@@ -105,6 +105,13 @@ table Location {
   y: double (id: 1);
 }
 
+// By default the localizer will disallow tags from the blacklist,
+// however if the whitelist is created then it will only use tags on the whitelist.
+table LocalizerConfig {
+    apriltag_blacklist: [int] (id: 0);
+    apriltag_whitelist: [int] (id: 1);
+}
+
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMapField (id: 0);
@@ -125,6 +132,7 @@ table Common {
   end_effector_idling_voltage: double (id: 15);
   reef_locations: [Location] (id: 16);
   hp_locations: [Location] (id: 17);
+  localizer_config:LocalizerConfig (id: 18);
 }
 
 table Constants {
