@@ -26,6 +26,9 @@ class AutonomousController {
 
   bool Completed();
 
+  void AddCallback(std::function<void()> callback,
+                   std::chrono::milliseconds delay);
+
  private:
   // nullopt when we aren't running, when we're running its the index of the
   // running trajectory
