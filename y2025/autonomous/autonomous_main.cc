@@ -26,15 +26,130 @@ class AutoGoalSender {
                 "/autonomous")) {
     std::unordered_map<std::string_view, std::function<void()>> callbacks;
 
-    callbacks.emplace("elevator up", [this]() {
+    callbacks.emplace("hp intake front", [this]() {
       SendAutonomousSuperstructureGoal(
-          EndEffectorGoal::INTAKE, ElevatorGoal::SCORE_L3, PivotGoal::SCORE_L3,
-          std::nullopt, WristGoal::SCORE_L3, RobotSide::FRONT, std::nullopt);
+          EndEffectorGoal::INTAKE, ElevatorGoal::INTAKE_HP,
+          PivotGoal::INTAKE_HP, std::nullopt, WristGoal::INTAKE_HP,
+          RobotSide::FRONT, std::chrono::milliseconds(2000));
     });
-    callbacks.emplace("elevator down", [this]() {
+
+    callbacks.emplace("hp intake back", [this]() {
       SendAutonomousSuperstructureGoal(
-          EndEffectorGoal::NEUTRAL, ElevatorGoal::NEUTRAL, PivotGoal::NEUTRAL,
-          std::nullopt, WristGoal::NEUTRAL, std::nullopt, std::nullopt);
+          EndEffectorGoal::INTAKE, ElevatorGoal::INTAKE_HP,
+          PivotGoal::INTAKE_HP, std::nullopt, WristGoal::INTAKE_HP,
+          RobotSide::BACK, std::chrono::milliseconds(2000));
+    });
+
+    callbacks.emplace("L4 front", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L4,
+                                       PivotGoal::SCORE_L4, std::nullopt,
+                                       WristGoal::SCORE_L4, RobotSide::FRONT,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("L4 back", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L4,
+                                       PivotGoal::SCORE_L4, std::nullopt,
+                                       WristGoal::SCORE_L4, RobotSide::BACK,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("L3 front", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L3,
+                                       PivotGoal::SCORE_L3, std::nullopt,
+                                       WristGoal::SCORE_L3, RobotSide::FRONT,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("L3 back", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L3,
+                                       PivotGoal::SCORE_L3, std::nullopt,
+                                       WristGoal::SCORE_L3, RobotSide::BACK,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("L2 front", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L2,
+                                       PivotGoal::SCORE_L2, std::nullopt,
+                                       WristGoal::SCORE_L2, RobotSide::FRONT,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("L2 back", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L2,
+                                       PivotGoal::SCORE_L2, std::nullopt,
+                                       WristGoal::SCORE_L2, RobotSide::BACK,
+                                       std::chrono::milliseconds(2000));
+      autonomous_controller_->AddCallback(
+          [this]() {
+            SendAutonomousSuperstructureGoal(
+                EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+          },
+          std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("algae low front", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::ALGAE_L2,
+                                       PivotGoal::ALGAE_L2, std::nullopt,
+                                       WristGoal::ALGAE_L2, RobotSide::FRONT,
+                                       std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("algae low back", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::ALGAE_L2,
+                                       PivotGoal::ALGAE_L2, std::nullopt,
+                                       WristGoal::ALGAE_L2, RobotSide::BACK,
+                                       std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("algae high front", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::ALGAE_L3,
+                                       PivotGoal::ALGAE_L3, std::nullopt,
+                                       WristGoal::ALGAE_L3, RobotSide::FRONT,
+                                       std::chrono::milliseconds(1000));
+    });
+
+    callbacks.emplace("algae high back", [this]() {
+      SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::ALGAE_L3,
+                                       PivotGoal::ALGAE_L3, std::nullopt,
+                                       WristGoal::ALGAE_L3, RobotSide::BACK,
+                                       std::chrono::milliseconds(1000));
     });
 
     autonomous_controller_ =

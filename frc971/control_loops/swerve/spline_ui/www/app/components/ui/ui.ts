@@ -1163,7 +1163,7 @@ export class Ui implements AfterViewInit {
       startDelay: number,
     } = {
       splines: [],
-      rot_breakpoints: [this.rotbreakpoints[0]],
+      rot_breakpoints: [[this.rotbreakpoints[0][0], -this.rotbreakpoints[0][1]]],
       constraints: [],
       startDelay: this.stopPoints[0].delay, /*(BREAKPOINT)*/
     }
@@ -1371,6 +1371,8 @@ export class Ui implements AfterViewInit {
       }
       p0 = pair[1]
     }
+
+    console.log(this.rotbreakpoints);
   }
 
 

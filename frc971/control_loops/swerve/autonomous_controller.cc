@@ -7,8 +7,8 @@
 #include "frc971/math/flatbuffers_matrix.h"
 
 // We are using a PID controller with only the P (proportional) part
-ABSL_FLAG(double, kPositionGain, 2.0, "Proportional gain for positional error");
-ABSL_FLAG(double, kRotationGain, 0.5, "Proportional gain for rotational error");
+ABSL_FLAG(double, kPositionGain, 8.0, "Proportional gain for positional error");
+ABSL_FLAG(double, kRotationGain, 8.0, "Proportional gain for rotational error");
 
 using frc971::control_loops::swerve::AutonomousController;
 
@@ -189,3 +189,15 @@ void AutonomousController::Iterate() {
 };
 
 bool AutonomousController::Completed() { return completed_; }
+
+void AutonomousController::AddCallback(std::function<void()> callback,
+                                       std::chrono::milliseconds delay) {
+  double time = trajectory_.message()
+                    .discretized_trajectory()
+                    ->Get(trajectory_index_.value())
+                    ->time();
+  actions_.push_back(
+      Action{.completed = false,
+             .time = time + delay.count() * 0.001,
+             .callback = std::make_shared<std::function<void()>>(callback)});
+};
