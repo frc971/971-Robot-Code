@@ -27,7 +27,7 @@
       "source_node": "orin1",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4096
+      "max_size": 6144
     },
     {
       "name": "/orin1/aos",

@@ -484,11 +484,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               talonfx_map.find("pivot")->second->WriteVoltage(
                   output.pivot_voltage());
               talonfx_map.find("climber_one")
-                  ->second->WriteCurrent(-output.climber_current(), 4.0);
-              talonfx_map.find("climber_two")
                   ->second->WriteCurrent(output.climber_current(), 4.0);
+              talonfx_map.find("climber_two")
+                  ->second->WriteCurrent(-output.climber_current(), 4.0);
               talonfx_map.find("end_effector")
-                  ->second->WriteVoltage(output.end_effector_voltage());
+                  ->second->WriteVoltage(-output.end_effector_voltage());
               talonfx_map.find("wrist")->second->WriteVoltage(
                   output.wrist_voltage());
             });
