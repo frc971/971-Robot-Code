@@ -1,11 +1,8 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, vision_weight, 0.7,
+ABSL_FLAG(double, vision_weight, 0.01,
           "How much to weigh the vision detection vs the velocity based pose "
           "estimation.");
-ABSL_FLAG(double, distance_threshold, 3.0,
-          "Distance in meters from the robot where we consider detections "
-          "invalid due to the variance they have.");
 ABSL_FLAG(bool, do_moving_average, false,
           "If true, use a moving average of previous samples.");
 ABSL_FLAG(
@@ -80,12 +77,6 @@ void WeightedAverageLocalizer::SendOutput(
     }
 
     double distance_to_robot = detection.distance_to_robot;
-    if (distance_to_robot > absl::GetFlag(FLAGS_distance_threshold)) {
-      VLOG(1) << "Rejecting because apriltag detection with distance "
-              << distance_to_robot << " to the robot.";
-      continue;
-      // TODO(max): Add this to the rejection counter.
-    }
 
     double weighing_metric =
         1.0 + (1.0 / (distance_to_robot * distance_to_robot));
@@ -150,7 +141,7 @@ void WeightedAverageLocalizer::SendOutput(
           absl::GetFlag(FLAGS_displacement_threshold) &&
       !first_it_ &&
       (event_loop_->context().monotonic_event_time - start_time_) >=
-          std::chrono::seconds(4)) {
+          std::chrono::seconds(5)) {
     VLOG(1) << "Rejecting image for shoving us "
             << absl::GetFlag(FLAGS_displacement_threshold)
             << "m  away from our pose in one "

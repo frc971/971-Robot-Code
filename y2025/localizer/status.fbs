@@ -9,7 +9,8 @@ enum RejectionReason: uint8 {
   HIGH_POSE_ERROR = 3,
   HIGH_POSE_ERROR_RATIO = 4,
   TAG_ON_BLACKLIST = 5,
-  TAG_OFF_WHITELIST = 6
+  TAG_OFF_WHITELIST = 6,
+  TOO_FAR_FROM_ROBOT = 7
 }
 
 table RejectionCount {

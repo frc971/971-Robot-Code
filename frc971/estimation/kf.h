@@ -53,7 +53,6 @@ class Kf {
 
     if (dt.count() == 0) {
       VLOG(1) << "Correct called and dt = 0, skipping prediction step.";
-      return;
     } else {
       StateSquare Q_discrete, A_discrete;
 
@@ -78,12 +77,19 @@ class Kf {
   }
 
   const State X_hat() { return X_hat_; }
+
+  // This is exposed in order to normalize our angle after running position and
+  // omega through the correct step and avoid floating point issues with
+  // exploding thetas. In the future we should probably do this by storing the
+  // sin and cos or rotation matrix in the state instead to avoid absolute
+  // thetas.
+  State *X_hat_mut() { return &X_hat_; }
   const StateSquare P() { return P_; }
 
  private:
   void Predict(StateSquare Q_discrete, StateSquare A_discrete) {
     X_hat_ = A_discrete * X_hat_;
-    P_ = A_discrete * P_ * A_discrete.transpose() * Q_discrete;
+    P_ = A_discrete * P_ * A_discrete.transpose() + Q_discrete;
   }
 
   State X_hat_;

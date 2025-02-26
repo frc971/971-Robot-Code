@@ -1,8 +1,8 @@
 #include "y2025/localizer/localizer.h"
 
-ABSL_FLAG(double, q_pos, 0.1,
+ABSL_FLAG(double, q_pos, 1.0,
           "Q for position states in the kalman (X, Y, Theta)");
-ABSL_FLAG(double, q_vel, 0.1,
+ABSL_FLAG(double, q_vel, 1.0,
           "Q for velocity states in the kalman (V_x, V_y, Omega)");
 
 namespace y2025::localizer {
@@ -34,6 +34,7 @@ StateSquare A() {
   return A;
 }
 
+// TOOD(max): Initialize P to the steady state covariance.
 StateSquare P() {
   StateSquare P = StateSquare::Identity();
   P *= 1e-6;
@@ -53,7 +54,6 @@ void KalmanFilterLocalizer::HandleDetectedRobotPose(
     aos::monotonic_clock::time_point capture_time,
     aos::monotonic_clock::time_point now) {
   (void)capture_time;
-  (void)distance_to_robot;
   (void)target_id;
 
   Eigen::Matrix<double, 3, kNumStates> H;
@@ -64,38 +64,48 @@ void KalmanFilterLocalizer::HandleDetectedRobotPose(
   H(2, StateIdx::kTheta) = 1.0;
 
   Eigen::Matrix<double, 3, 1> z;
+  State x_hat = kalman_filter_.X_hat();
+  double robot_theta = x_hat(StateIdx::kTheta);
+  double closest_theta =
+      aos::math::NormalizeAngle(pose(PoseIdx::kTheta) - robot_theta) +
+      robot_theta;
 
-  z << pose(PoseIdx::kX), pose(PoseIdx::kY), pose(PoseIdx::kTheta);
+  z << pose(PoseIdx::kX), pose(PoseIdx::kY), closest_theta;
 
   Eigen::Matrix<double, 3, 3> noise = Eigen::Matrix<double, 3, 3>::Identity();
 
-  noise *= distortion_factor;
+  noise *= (1.0 + distortion_factor) * (distance_to_robot * distance_to_robot);
 
   kalman_filter_.Correct(z, H, noise, now);
+
+  (*kalman_filter_.X_hat_mut())(StateIdx::kTheta) =
+      aos::math::NormalizeAngle(kalman_filter_.X_hat()(StateIdx::kTheta));
 }
 
 void KalmanFilterLocalizer::HandleEstimatedSwerveState(
     EstimatedSwerveState estimated_state,
     aos::monotonic_clock::time_point now) {
-  Eigen::Matrix<double, 6, KalmanFilterLocalizer::kNumStates> H;
-  H.setZero();
-  H(0, StateIdx::kX) = 1.0;
-  H(0, StateIdx::kY) = 1.0;
-  H(0, StateIdx::kTheta) = 1.0;
-  H(0, StateIdx::kVx) = 1.0;
-  H(0, StateIdx::kVy) = 1.0;
-  H(0, StateIdx::kOmega) = 1.0;
+  Eigen::Matrix<double, 3, KalmanFilterLocalizer::kNumStates> H;
 
-  State z;
-  z << estimated_state.x, estimated_state.y, estimated_state.theta,
-      estimated_state.vx, estimated_state.vy, estimated_state.omega;
+  H.setZero();
+
+  H(0, StateIdx::kVx) = 1.0;
+  H(1, StateIdx::kVy) = 1.0;
+  H(2, StateIdx::kOmega) = 1.0;
+
+  Eigen::Matrix<double, 3, 1> z;
+  z << estimated_state.vx, estimated_state.vy, estimated_state.omega;
 
   // This should be fine because it already goes through basic filtering before
   // we get it.
-  StateSquare R = StateSquare::Identity();
+  Eigen::Matrix<double, 3, 3> noise = Eigen::Matrix<double, 3, 3>::Identity();
 
-  R *= 1e-6;
-  kalman_filter_.Correct(z, H, R, now);
+  noise *= 1e-6;
+
+  kalman_filter_.Correct(z, H, noise, now);
+
+  (*kalman_filter_.X_hat_mut())(StateIdx::kTheta) =
+      aos::math::NormalizeAngle(kalman_filter_.X_hat()(StateIdx::kTheta));
 }
 
 void KalmanFilterLocalizer::HandleAutonomousInit(

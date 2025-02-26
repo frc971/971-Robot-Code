@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   frc971::constants::WaitForConstants<y2025::Constants>(&config.message());
 
   aos::ShmEventLoop event_loop(&config.message());
-  y2025::localizer::WeightedAverageLocalizer localizer(&event_loop);
+  y2025::localizer::KalmanFilterLocalizer localizer(&event_loop);
 
   event_loop.Run();
 

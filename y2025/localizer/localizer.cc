@@ -13,8 +13,11 @@ ABSL_FLAG(bool, use_swerve_extended_kalman_filter, false,
           "estimation.");
 ABSL_FLAG(double, max_pose_error, 1e-5,
           "Throw out targets with a higher pose error than this.");
-ABSL_FLAG(double, max_pose_error_ratio, 0.4,
+ABSL_FLAG(double, max_pose_error_ratio, 0.3,
           "Throw out targets with a higher pose error ratio than this.");
+ABSL_FLAG(double, distance_threshold, 5.0,
+          "Distance in meters from the robot where we consider detections "
+          "invalid due to the variance they have.");
 
 namespace y2025::localizer {
 namespace {
@@ -268,7 +271,18 @@ void Localizer::HandleTargetPoseFbs(
       .robot_pose = robot_pose,
   });
 
-  HandleDetectedRobotPose(robot_pose, Pose(H_robot_target).xy_norm(), target_id,
+  double distance_to_robot = Pose(H_robot_target).xy_norm();
+
+  if (distance_to_robot > absl::GetFlag(FLAGS_distance_threshold)) {
+    VLOG(1) << "Rejecting target due to distance from robot "
+            << distance_to_robot << " which is greater than "
+            << absl::GetFlag(FLAGS_distance_threshold);
+    camera.rejection_counter.IncrementError(
+        RejectionReason::TOO_FAR_FROM_ROBOT);
+    return;
+  }
+
+  HandleDetectedRobotPose(robot_pose, distance_to_robot, target_id,
                           target->distortion_factor(), capture_time, now);
 }
 
