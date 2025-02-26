@@ -6,9 +6,9 @@ using frc971::control_loops::swerve::AutoAlign;
 ABSL_FLAG(double, kDVx, 1.6, "Gain for x derivative error");
 ABSL_FLAG(double, kDVy, 1.6, "Gain for y derivative error");
 ABSL_FLAG(double, kDVtheta, 0.4, "Gain for theta derivative error");
-ABSL_FLAG(double, kPVx, 3.0, "Gain for x position error");
-ABSL_FLAG(double, kPVy, 3.0, "Gain for y position error");
-ABSL_FLAG(double, kPVtheta, 4.0, "Gain for theta position error");
+ABSL_FLAG(double, kPVx, 4.0, "Gain for x position error");
+ABSL_FLAG(double, kPVy, 4.0, "Gain for y position error");
+ABSL_FLAG(double, kPVtheta, 6.0, "Gain for theta position error");
 
 ABSL_FLAG(double, kVelLimit, 2.0, "Velocity Limit");
 ABSL_FLAG(double, kOmegaLimit, 13.0, "Omega Limit");

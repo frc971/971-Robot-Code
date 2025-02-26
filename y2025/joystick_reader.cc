@@ -114,7 +114,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();
 
-    superstructure_goal_builder->set_theta_lock(data.IsPressed(kThetaLock));
+    superstructure_goal_builder->set_theta_lock(!data.IsPressed(kThetaLock));
 
     if (team_number == 9971) {
       superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());

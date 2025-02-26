@@ -18,7 +18,7 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 
 // Distance to offset the robots position past the auto align goal tangent to
 // the tag.
-constexpr double kTangentOffset = 0.25;
+constexpr double kTangentOffset = 0.175;
 // Distance to offset the robots position normal to the tag (left/right).
 constexpr double kNormalOffset = 2.5 * 0.0254;
 // Distance between the two poles in the reef.
