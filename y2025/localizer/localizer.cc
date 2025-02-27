@@ -15,7 +15,7 @@ ABSL_FLAG(double, max_pose_error, 1e-5,
           "Throw out targets with a higher pose error than this.");
 ABSL_FLAG(double, max_pose_error_ratio, 0.3,
           "Throw out targets with a higher pose error ratio than this.");
-ABSL_FLAG(double, distance_threshold, 5.0,
+ABSL_FLAG(double, distance_threshold, 4.5,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
 
@@ -279,6 +279,7 @@ void Localizer::HandleTargetPoseFbs(
             << absl::GetFlag(FLAGS_distance_threshold);
     camera.rejection_counter.IncrementError(
         RejectionReason::TOO_FAR_FROM_ROBOT);
+
     return;
   }
 
