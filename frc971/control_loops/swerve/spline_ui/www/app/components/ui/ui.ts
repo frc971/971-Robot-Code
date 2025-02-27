@@ -202,8 +202,12 @@ export class Ui implements AfterViewInit {
   private drawRobotAtPos(p: Point, theta: number): [Point, Point, Point, Point] {
     const rxoffs = this.field_to_pixels(this.robot_size[0]) / 2
     const ryoffs = this.field_to_pixels(this.robot_size[1]) / 2
+    const bumper_radius = this.field_to_pixels(3.25 * 0.0254)
+    const bxoffs = rxoffs + bumper_radius
+    const byoffs = ryoffs + bumper_radius
 
     let rpoints: [Point, Point, Point, Point] = [[rxoffs, ryoffs], [-rxoffs, ryoffs], [-rxoffs, -ryoffs], [rxoffs, -ryoffs]]
+    let bpoints = [[rxoffs, byoffs], [-rxoffs, byoffs], [-bxoffs, ryoffs], [-bxoffs, -ryoffs], [-rxoffs, -byoffs], [rxoffs, -byoffs], [bxoffs, -ryoffs], [bxoffs, ryoffs]]
 
     for (let point of rpoints) {
       let newPoint = [0, 0]
@@ -213,7 +217,16 @@ export class Ui implements AfterViewInit {
       point[1] = newPoint[1]
     }
 
+    for (let point of bpoints) {
+      let newPoint = [0, 0]
+      newPoint[0] = point[0] * Math.cos(theta) - point[1] * Math.sin(theta)
+      newPoint[1] = point[0] * Math.sin(theta) + point[1] * Math.cos(theta)
+      point[0] = newPoint[0]
+      point[1] = newPoint[1]
+    }
+
     rpoints = rpoints.map(e => [e[0] + p[0], e[1] + p[1]]) as [Point, Point, Point, Point]
+    bpoints = bpoints.map(e => [e[0] + p[0], e[1] + p[1]]) as [Point, Point, Point, Point]
 
     this.ctx.beginPath()
     this.ctx.moveTo(rpoints[0][0], rpoints[0][1])
@@ -223,6 +236,29 @@ export class Ui implements AfterViewInit {
     this.ctx.lineTo(rpoints[0][0], rpoints[0][1])
     this.ctx.lineTo(rpoints[1][0], rpoints[1][1])
     this.ctx.stroke()
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(bpoints[0][0], bpoints[0][1]);
+    for(let i = 1; i < 8; i++) {
+      this.ctx.lineTo(bpoints[i][0], bpoints[i][1])
+    }
+    this.ctx.lineTo(bpoints[0][0], bpoints[0][1])
+    this.ctx.lineTo(bpoints[1][0], bpoints[1][1])
+    this.ctx.stroke()
+
+    // TODO: do this in a more principled way that lends itself better to future years
+    let pivot_lines: [Point, Point] = [[this.field_to_pixels(20 * 0.0254), -this.field_to_pixels(2.5 * 0.0254)], [this.field_to_pixels(-20 * 0.0254), -this.field_to_pixels(2.5 * 0.0254)]]
+    pivot_lines[0] = [pivot_lines[0][0] * Math.cos(theta) - pivot_lines[0][1] * Math.sin(theta),
+      pivot_lines[0][0] * Math.sin(theta) + pivot_lines[0][1] * Math.cos(theta)]
+    pivot_lines[1] = [pivot_lines[1][0] * Math.cos(theta) - pivot_lines[1][1] * Math.sin(theta),
+      pivot_lines[1][0] * Math.sin(theta) + pivot_lines[1][1] * Math.cos(theta)]
+    pivot_lines[0] = [pivot_lines[0][0] + p[0], pivot_lines[0][1] + p[1]]
+    pivot_lines[1] = [pivot_lines[1][0] + p[0], pivot_lines[1][1] + p[1]]
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(pivot_lines[0][0], pivot_lines[0][1])
+    this.ctx.lineTo(pivot_lines[1][0], pivot_lines[1][1])
+    this.ctx.stroke();
 
     return rpoints
   }
@@ -425,7 +461,7 @@ export class Ui implements AfterViewInit {
           this.ctx.moveTo(rpoints[i][0], rpoints[i][1])
           let offs = [
             forces[i][0] * Math.cos(r) - forces[i][1] * Math.sin(r),
-            forces[i][0] * Math.sin(r) + forces[i][1] * Math.cos(r)
+            -forces[i][0] * Math.sin(r) - forces[i][1] * Math.cos(r)
           ]
           this.ctx.lineTo(rpoints[i][0] + offs[0] / 4, rpoints[i][1] + offs[1] / 4)
           this.ctx.stroke()
@@ -437,7 +473,7 @@ export class Ui implements AfterViewInit {
         for (let i = 0; i < 4; i++) {
           this.ctx.beginPath()
           this.ctx.moveTo(rpoints[i][0], rpoints[i][1])
-          this.ctx.lineTo(rpoints[i][0] + mod_vels[i][0] * 5, rpoints[i][1] + mod_vels[i][1] * 5)
+          this.ctx.lineTo(rpoints[i][0] + mod_vels[i][0] * 5, rpoints[i][1] - mod_vels[i][1] * 5)
           this.ctx.stroke()
         }
       }
@@ -698,17 +734,13 @@ export class Ui implements AfterViewInit {
         }
         this.grabbedConstraint = null
       } else if (this.mode == "edit actions" && !this.panning) {
-        console.log("REE")
         if (this.grabbedAction != null) {
-          console.log("REE2")
           this.selectedContext = new ActionContext(this.grabbedAction, this)
         } else if (this.closeCurveT != null) {
-          console.log("REE3")
           this.actions.push({
             location: this.closeCurveT,
             name: "unnamed action"
           })
-          console.log(this.actions)
         }
       }
       this.grabbedAction = null;
@@ -853,7 +885,6 @@ export class Ui implements AfterViewInit {
           if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
             this.grabbedConstraint = this.constraints[i]
             this.grabbedConstraintIndex = 0
-            console.log("HELLO")
           } else {
             point = this.getPosAtT(this.constraints[i].selection[1])
             if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
