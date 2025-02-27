@@ -1,6 +1,7 @@
 #include "autonomous_controller.h"
 
 #include "aos/json_to_flatbuffer.h"
+#include "aos/util/math.h"
 #include "frc971/control_loops/swerve/simplified_dynamics.h"
 #include "frc971/control_loops/swerve/swerve_trajectory_static.h"
 #include "frc971/input/robot_state_generated.h"
@@ -59,18 +60,17 @@ AutonomousController::AutonomousController(
                                      ->Get(0)
                                      ->position()
                                      ->x());
-      builder->set_y(trajectory_.message()
-                         .discretized_trajectory()
-                         ->Get(0)
-                         ->position()
-                         ->y());
+      builder->set_y(flip_mult * trajectory_.message()
+                                     .discretized_trajectory()
+                                     ->Get(0)
+                                     ->position()
+                                     ->y());
       const double theta_trajectory = trajectory_.message()
                                           .discretized_trajectory()
                                           ->Get(0)
                                           ->position()
                                           ->theta();
-      builder->set_theta(flipped_ ? std::numbers::pi - theta_trajectory
-                                  : theta_trajectory);
+      builder->set_theta((flipped_ ? std::numbers::pi : 0) + theta_trajectory);
       builder.CheckOk(builder.Send());
     }
   });
@@ -151,7 +151,7 @@ void AutonomousController::Iterate() {
   constexpr double dt = 0.005;
   const double vx = (x - prev_x_) / dt;
   const double vy = (y - prev_y_) / dt;
-  const double omega = (theta - prev_theta_) / dt;
+  const double omega = aos::math::NormalizeAngle(theta - prev_theta_) / dt;
 
   const double flip_mult = flipped_ ? -1.0 : 1.0;
 
@@ -201,7 +201,7 @@ void AutonomousController::Iterate() {
   double vy_commanded = goal_vy - y_error * absl::GetFlag(FLAGS_kPositionGain) -
                         vy_error * absl::GetFlag(FLAGS_kVelocityGain);
   double omega_commanded = goal_omega -
-                           omega_error * absl::GetFlag(FLAGS_kRotationGain) -
+                           theta_error * absl::GetFlag(FLAGS_kRotationGain) -
                            omega_error * absl::GetFlag(FLAGS_kOmegaGain);
 
   auto joystick_goal = builder->add_joystick_goal();
