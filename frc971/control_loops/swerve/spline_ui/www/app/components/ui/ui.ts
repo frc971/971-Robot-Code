@@ -679,6 +679,9 @@ export class Ui implements AfterViewInit {
             c.selection[0] *= (this.splines.length - 1) / (this.splines.length)
             c.selection[1] *= (this.splines.length - 1) / (this.splines.length)
           }
+          for (let a of this.actions) {
+            a.location *= (this.splines.length - 1) / this.splines.length
+          }
           if (this.mode == "add G0 spline") {
             this.addrotbreakpoint((this.splines.length - 1) / this.splines.length, false, this.rotbreakpoints[this.rotbreakpoints.length - 1][1])
             this.staticrotbreakpoints.push(this.rotbreakpoints[this.rotbreakpoints.length - 2][0])
