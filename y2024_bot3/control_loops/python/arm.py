@@ -21,7 +21,7 @@ gflags.DEFINE_bool('hybrid', False, 'If true, make it hybrid.')
 
 kArm = angular_system.AngularSystemParams(
     name='Arm',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(14. / 50.) * (24. / 64.) * (24. / 64.) * (12. / 48.),
     J=0.2,
     q_pos=0.20,

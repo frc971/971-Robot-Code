@@ -21,7 +21,7 @@ gflags.DEFINE_bool('hybrid', False, 'If true, make it hybrid.')
 
 kExtend = linear_system.LinearSystemParams(
     name='Extend',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(14. / 60.) * (32. / 48.),
     radius=36 * 0.005 / numpy.pi / 2.0,
     mass=5.0,

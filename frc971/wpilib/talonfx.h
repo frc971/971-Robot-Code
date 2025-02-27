@@ -39,11 +39,16 @@ class TalonFX {
           double stator_current_limit, double supply_current_limit);
 
   void PrintConfigs();
-
   void WriteConfigs();
+
+  // Currently this only uses FOC from what I understand, which we should avoid
+  // using if we dont have an FOC profile for the motor itself.
   ctre::phoenix::StatusCode WriteCurrent(double current, double max_voltage);
 
-  ctre::phoenix::StatusCode WriteVoltage(double voltage);
+  // The only case where we don't want to use FOC is when using Trapezoidal
+  // control.
+  ctre::phoenix::StatusCode WriteVoltage(double voltage,
+                                         bool enable_foc = true);
 
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 

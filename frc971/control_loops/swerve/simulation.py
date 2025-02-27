@@ -20,7 +20,7 @@ matplotlib.use("GTK3Agg")
 class SwerveSimulation(object):
 
     def __init__(self):
-        self.motor = control_loop.KrakenFOC()
+        self.motor = control_loop.KrakenX60FOC()
 
         vx, vy, omega = sympy.symbols('vx vy omega')
         fx, fy = sympy.symbols('fx fy')

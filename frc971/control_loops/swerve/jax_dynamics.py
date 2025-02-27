@@ -4,7 +4,6 @@ from functools import partial
 from collections import namedtuple
 import jax
 
-from frc971.control_loops.python.control_loop import KrakenFOC
 from frc971.control_loops.swerve.dynamics_constants import *
 
 # Note: this physics needs to match the symengine code.  We have tests that

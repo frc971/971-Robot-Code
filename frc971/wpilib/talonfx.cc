@@ -101,12 +101,13 @@ ctre::phoenix::StatusCode TalonFX::WriteCurrent(double current,
   return status;
 }
 
-ctre::phoenix::StatusCode TalonFX::WriteVoltage(double voltage) {
+ctre::phoenix::StatusCode TalonFX::WriteVoltage(double voltage,
+                                                bool enable_foc) {
   ctre::phoenix6::controls::DutyCycleOut control(SafeSpeed(voltage));
 
   // Using 0_Hz here makes it a one-shot update.
   control.UpdateFreqHz = 0_Hz;
-  control.EnableFOC = true;
+  control.EnableFOC = enable_foc;
 
   ctre::phoenix::StatusCode status = talon()->SetControl(control);
   if (!status.IsOK()) {

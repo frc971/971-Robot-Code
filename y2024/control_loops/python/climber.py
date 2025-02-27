@@ -16,7 +16,7 @@ except gflags.DuplicateFlagError:
 
 kClimber = linear_system.LinearSystemParams(
     name='Climber',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(8. / 60.) * (16. / 60.),
     radius=16 * 0.25 / numpy.pi / 2.0 * 0.0254,
     mass=2.0,

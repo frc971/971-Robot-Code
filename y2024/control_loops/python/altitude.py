@@ -21,7 +21,7 @@ gflags.DEFINE_bool('hybrid', False, 'If true, make it hybrid.')
 
 kAltitude = angular_system.AngularSystemParams(
     name='Altitude',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(16.0 / 60.0) * (16.0 / 162.0),
     # 4340 in^ lb
     J=1.2,
