@@ -6,9 +6,11 @@
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/math/flatbuffers_matrix.h"
 
-// We are using a PID controller with only the P (proportional) part
-ABSL_FLAG(double, kPositionGain, 8.0, "Proportional gain for positional error");
-ABSL_FLAG(double, kRotationGain, 8.0, "Proportional gain for rotational error");
+ABSL_FLAG(double, kPositionGain, 4.0, "Proportional gain for positional error");
+ABSL_FLAG(double, kRotationGain, 4.0, "Proportional gain for rotational error");
+ABSL_FLAG(double, kVelocityGain, 0.0, "Proportional gain for velocity error");
+ABSL_FLAG(double, kOmegaGain, 0.0,
+          "Proportional gain for angular velocity error");
 
 using frc971::control_loops::swerve::AutonomousController;
 
@@ -135,19 +137,43 @@ void AutonomousController::Iterate() {
 
   localizer_state_fetcher_.Fetch();
 
-  double x = localizer_state_fetcher_->x();
-  double y = localizer_state_fetcher_->y();
-  double theta = localizer_state_fetcher_->theta();
+  const double x = localizer_state_fetcher_->x();
+  const double y = localizer_state_fetcher_->y();
+  const double theta = localizer_state_fetcher_->theta();
 
-  double kThreshold = 0.005;
+  if (trajectory_index_.value() == 0) {
+    prev_x_ = x;
+    prev_y_ = y;
+    prev_theta_ = theta;
+  }
+  // this is a weird way of doing things; once it's more trustworthy we should
+  // switch back to using naive/ekf to get velocities
+  constexpr double dt = 0.005;
+  const double vx = (x - prev_x_) / dt;
+  const double vy = (y - prev_y_) / dt;
+  const double omega = (theta - prev_theta_) / dt;
 
   const double flip_mult = flipped_ ? -1.0 : 1.0;
-  double x_error = x - flip_mult * trajectory_point->position()->x();
-  double y_error = y - trajectory_point->position()->y();
-  const double theta_trajectory = trajectory_point->position()->theta();
-  double theta_error = aos::math::NormalizeAngle(
-      theta -
-      (flipped_ ? std::numbers::pi - theta_trajectory : theta_trajectory));
+
+  const double goal_x = flip_mult * trajectory_point->position()->x();
+  const double goal_y = flip_mult * trajectory_point->position()->y();
+  const double goal_theta =
+      flipped_ ? std::numbers::pi + trajectory_point->position()->theta()
+               : trajectory_point->position()->theta();
+
+  const double goal_vx = flip_mult * trajectory_point->velocity()->x();
+  const double goal_vy = flip_mult * trajectory_point->velocity()->y();
+  const double goal_omega = trajectory_point->velocity()->theta();
+
+  double x_error = x - goal_x;
+  double y_error = y - goal_y;
+  double theta_error = aos::math::NormalizeAngle(theta - goal_theta);
+
+  const double vx_error = vx - goal_vx;
+  const double vy_error = vy - goal_vy;
+  const double omega_error = omega - goal_omega;
+
+  constexpr double kThreshold = 0.005;
 
   if (std::abs(x_error) < kThreshold) {
     x_error = 0.0;
@@ -159,21 +185,29 @@ void AutonomousController::Iterate() {
     theta_error = 0.0;
   }
 
+  prev_x_ = x;
+  prev_y_ = y;
+  prev_theta_ = theta;
+
   VLOG(1) << "x error: " << x_error;
   VLOG(1) << "y error: " << y_error;
   VLOG(1) << "theta error: " << theta_error;
+  VLOG(1) << "vx error: " << vx_error;
+  VLOG(1) << "vy error: " << vy_error;
+  VLOG(1) << "omega error: " << omega_error;
 
-  double goal_vx = flip_mult * trajectory_point->velocity()->x() -
-                   absl::GetFlag(FLAGS_kPositionGain) * x_error;
-  double goal_vy = trajectory_point->velocity()->y() -
-                   absl::GetFlag(FLAGS_kPositionGain) * y_error;
-  double goal_omega = flip_mult * trajectory_point->velocity()->theta() -
-                      absl::GetFlag(FLAGS_kRotationGain) * theta_error;
+  double vx_commanded = goal_vx - x_error * absl::GetFlag(FLAGS_kPositionGain) -
+                        vx_error * absl::GetFlag(FLAGS_kVelocityGain);
+  double vy_commanded = goal_vy - y_error * absl::GetFlag(FLAGS_kPositionGain) -
+                        vy_error * absl::GetFlag(FLAGS_kVelocityGain);
+  double omega_commanded = goal_omega -
+                           omega_error * absl::GetFlag(FLAGS_kRotationGain) -
+                           omega_error * absl::GetFlag(FLAGS_kOmegaGain);
 
   auto joystick_goal = builder->add_joystick_goal();
-  joystick_goal->set_vx(goal_vx);
-  joystick_goal->set_vy(goal_vy);
-  joystick_goal->set_omega(goal_omega);
+  joystick_goal->set_vx(vx_commanded);
+  joystick_goal->set_vy(vy_commanded);
+  joystick_goal->set_omega(omega_commanded);
 
   auto time = trajectory_point->time();
 

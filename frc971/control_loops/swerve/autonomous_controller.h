@@ -55,6 +55,10 @@ class AutonomousController {
 
   bool completed_;
 
+  double prev_x_;
+  double prev_y_;
+  double prev_theta_;
+
   aos::EventLoop *event_loop_;
 };
 
