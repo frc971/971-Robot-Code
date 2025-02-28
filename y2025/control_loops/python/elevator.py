@@ -17,7 +17,7 @@ except gflags.DuplicateFlagError:
 
 kElevator = linear_system.LinearSystemParams(
     name='Elevator',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(8.0 / 62.0),
     radius=(1.79) * 0.0254,  #in terms of second stage
     mass=(5.554 / 2.205) + ((11.665 * 2) / 2.205),

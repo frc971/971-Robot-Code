@@ -5,7 +5,7 @@ from casadi import cos, sin
 from typing import Callable, Optional, Union, TypeVar
 
 from frc971.control_loops.swerve import dynamics
-from frc971.control_loops.python.control_loop import KrakenFOC
+from frc971.control_loops.python.control_loop import KrakenX60FOC
 
 # This code based off this paper: Minimum-time speed optimisation over a fixed path (https://web.stanford.edu/~boyd/papers/pdf/speed_opt.pdf)
 # It can certainly be optimized some more, including using fatrop
@@ -22,7 +22,7 @@ def create_MX_from_MX(
         return casadi.vertcat(*matrix)
 
 
-kraken = KrakenFOC()
+kraken = KrakenX60FOC()
 
 
 class SwervePath():

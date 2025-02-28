@@ -19,7 +19,7 @@ except gflags.DuplicateFlagError:
 
 kIntakePivot = angular_system.AngularSystemParams(
     name='IntakePivot',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(16. / 60.) * (18. / 62.) * (18. / 62.) * (15. / 24.),
     J=0.4,
     q_pos=1.0,

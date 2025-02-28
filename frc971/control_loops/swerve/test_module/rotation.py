@@ -20,7 +20,7 @@ except gflags.DuplicateFlagError:
 
 kRotation = angular_system_current.AngularSystemCurrentParams(
     name='Rotation',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=9.0 / 24.0 * 14.0 / 72.0,
     J=3.1 / 1000.0,
     q_pos=0.05,

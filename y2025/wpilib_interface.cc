@@ -490,7 +490,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               talonfx_map.find("end_effector")
                   ->second->WriteVoltage(-output.end_effector_voltage());
               talonfx_map.find("wrist")->second->WriteVoltage(
-                  output.wrist_voltage());
+                  output.wrist_voltage(), false);
             });
 
     can_superstructure_writer.add_talonfx("elevator_one", elevator_one);

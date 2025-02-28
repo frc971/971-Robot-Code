@@ -18,7 +18,7 @@ kDrivetrain = drivetrain.DrivetrainParams(
     # TODO(austin): Measure radius a bit better.
     robot_radius=0.32,
     wheel_radius=2 * 0.0254 * 3.7592 / 3.825,
-    motor_type=control_loop.KrakenFOC(),
+    motor_type=control_loop.KrakenX60FOC(),
     num_motors=2,
     G=(14.0 / 52.0) * (36.0 / 56.0),
     q_pos=0.24,

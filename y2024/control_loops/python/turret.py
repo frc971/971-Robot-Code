@@ -19,7 +19,7 @@ except gflags.DuplicateFlagError:
 
 kTurret = angular_system.AngularSystemParams(
     name='Turret',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(14.0 / 60.0) * (28.0 / 48.0) * (22.0 / 100.0),
     # 1305 in^2 lb
     J=0.4,

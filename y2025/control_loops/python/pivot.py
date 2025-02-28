@@ -17,7 +17,7 @@ except gflags.DuplicateFlagError:
 gflags.DEFINE_bool('hybrid', False, 'If true, make it hybrid.')
 kpivot = angular_system.AngularSystemParams(
     name='pivot',
-    motor=control_loop.KrakenFOC(),
+    motor=control_loop.KrakenX60FOC(),
     G=(14.0 / 54.0) * (28.0 / 70.0) * (10.0 / 110.0),
     J=0.04193,
     q_pos=0.020,

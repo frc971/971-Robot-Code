@@ -28,7 +28,7 @@ def AddResistance(motor, resistance):
 kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
     name='Catapult',
     # Add the battery series resistance to make it better match.
-    motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
+    motor=AddResistance(control_loop.NMotor(control_loop.KrakenX60FOC(), 2),
                         0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 135.2928 in^2 lb
@@ -46,7 +46,7 @@ kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
 kCatapultWithGamePiece = angular_system.AngularSystemParams(
     name='CatapultWithPiece',
     # Add the battery series resistance to make it better match.
-    motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
+    motor=AddResistance(control_loop.NMotor(control_loop.KrakenX60FOC(), 2),
                         0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 208.7328 in^2 lb
@@ -64,7 +64,7 @@ kCatapultWithGamePiece = angular_system.AngularSystemParams(
 kCatapultWithoutGamePieceDecel = angular_system.AngularSystemParams(
     name='CatapultWithoutPieceDecel',
     # Add the battery series resistance to make it better match.
-    motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
+    motor=AddResistance(control_loop.NMotor(control_loop.KrakenX60FOC(), 2),
                         0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 135.2928 in^2 lb
