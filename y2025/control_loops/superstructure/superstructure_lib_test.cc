@@ -262,6 +262,14 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         expected_end_effector_voltage = simulated_robot_constants_->common()
                                             ->end_effector_voltages()
                                             ->spit();
+
+        if (superstructure_goal_fetcher_->has_elevator_goal() &&
+            superstructure_goal_fetcher_->elevator_goal() ==
+                ElevatorGoal::SCORE_L1) {
+          expected_end_effector_voltage = simulated_robot_constants_->common()
+                                              ->end_effector_voltages()
+                                              ->spit_l1();
+        }
         break;
     }
 
@@ -875,6 +883,7 @@ TEST_F(SuperstructureTest, PivotAndElevatorAndWristPositionTest) {
     goal_builder.add_pivot_goal(PivotGoal::SCORE_L1);
     goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L1);
     goal_builder.add_wrist_goal(WristGoal::SCORE_L1);
+    goal_builder.add_end_effector_goal(EndEffectorGoal::SPIT);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

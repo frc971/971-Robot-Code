@@ -79,6 +79,7 @@ table RobotConstants {
 table EndEffectorVoltages {
   spit:double (id: 0);
   intake:double (id: 1);
+  spit_l1: double (id: 2);
 }
 
 table ClimberCurrent {

@@ -150,7 +150,8 @@
   },
   "end_effector_voltages": {
     "spit": -10.0,
-    "intake": 10.0
+    "intake": 10.0,
+    "spit_l1": -5
   },
   "weights": {
     "thetas_q": 1.0,

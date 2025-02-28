@@ -94,8 +94,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         break;
       case EndEffectorGoal::SPIT:
         end_effector_status = EndEffectorStatus::SPITTING;
-        end_effector_voltage =
-            robot_constants_->common()->end_effector_voltages()->spit();
+        if (unsafe_goal->has_elevator_goal() &&
+            unsafe_goal->elevator_goal() == ElevatorGoal::SCORE_L1) {
+          end_effector_voltage =
+              robot_constants_->common()->end_effector_voltages()->spit_l1();
+        } else {
+          end_effector_voltage =
+              robot_constants_->common()->end_effector_voltages()->spit();
+        }
         intake_complete_ = false;
         break;
     }
