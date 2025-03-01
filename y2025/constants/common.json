@@ -198,6 +198,7 @@
   ],
   "localizer_config": {
       "apriltag_whitelist": {{ reef_apriltags }}
-  }
+  },
+  "elevator_threshold": 0.001
 }
 

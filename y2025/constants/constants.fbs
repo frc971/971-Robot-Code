@@ -136,6 +136,7 @@ table Common {
   reef_locations: [Location] (id: 16);
   hp_locations: [Location] (id: 17);
   localizer_config:LocalizerConfig (id: 18);
+  elevator_threshold: double (id: 19);
 }
 
 table Constants {

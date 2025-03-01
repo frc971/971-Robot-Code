@@ -234,6 +234,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     }
   }
 
+  bool PositionNear(double position, double goal, double threshold) {
+    return std::abs(position - goal) < threshold;
+  }
+
   void VerifyNearGoal() {
     constexpr double kEpsPivot = 0.001;
     constexpr double kEpsElevator = 0.001;
@@ -336,6 +340,20 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                                          ->elevator_set_points()
                                          ->intake_hp_backup();
         break;
+    }
+
+    if (superstructure_status_fetcher_->elevator()->position() >
+            simulated_robot_constants_->common()
+                ->elevator_set_points()
+                ->neutral() &&
+        !PositionNear(
+            superstructure_status_fetcher_->elevator()->position(),
+            elevator_expected_position,
+            simulated_robot_constants_->common()->elevator_threshold())) {
+      EXPECT_NEAR(
+          simulated_robot_constants_->common()->pivot_set_points()->neutral(),
+          superstructure_status_fetcher_->pivot()->position(), 0.001);
+      return;
     }
 
     EXPECT_NEAR(elevator_expected_position,
@@ -519,16 +537,13 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
   WaitUntilZeroed();
-
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
   RunFor(chrono::seconds(1));
-
   VerifyNearGoal();
 }
 
@@ -890,7 +905,21 @@ TEST_F(SuperstructureTest, PivotAndElevatorAndWristPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(1));
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L4);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L4);
+    goal_builder.add_wrist_goal(WristGoal::SCORE_L4);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
 }
@@ -916,6 +945,7 @@ TEST_F(SuperstructureTest, IntakeGroundTest) {
 TEST_F(SuperstructureTest, IntakeHPBackupTest) {
   SetEnabled(true);
   WaitUntilZeroed();
+
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
@@ -931,4 +961,65 @@ TEST_F(SuperstructureTest, IntakeHPBackupTest) {
   VerifyNearGoal();
 }
 
+TEST_F(SuperstructureTest, PivotElevatorMovesFirstPositionTest) {
+  // The elevator does not have enough time to move when given 1 second, so the
+  // pivot stays at 0 waiting for the elevator to move. Having the duration at 2
+  // seconds allows both subsystems to reach their position, confirming that the
+  // elevator moves before the pivot when at L4.
+
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L4);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L4);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::milliseconds(500));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L4);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L4);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L3);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L3);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::milliseconds(400));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::SCORE_L3);
+    goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L3);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(3));
+
+  VerifyNearGoal();
+}
 }  // namespace y2025::control_loops::superstructure::testing
