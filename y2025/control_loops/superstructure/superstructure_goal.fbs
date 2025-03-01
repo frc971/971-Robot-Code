@@ -21,6 +21,7 @@ enum ElevatorGoal : ubyte {
   BARGE = 9,
   ALGAE_PROCESSOR = 10,
   ALGAE_GROUND = 11,
+  INTAKE_HP_BACKUP = 12,
 }
 
 enum PivotGoal : ubyte {
@@ -36,6 +37,7 @@ enum PivotGoal : ubyte {
   BARGE = 9,
   ALGAE_PROCESSOR = 10,
   ALGAE_GROUND = 11,
+  INTAKE_HP_BACKUP = 12,
 }
 
 enum ClimberGoal : ubyte {
@@ -57,6 +59,7 @@ enum WristGoal : ubyte {
   BARGE = 9,
   ALGAE_PROCESSOR = 10,
   ALGAE_GROUND = 11,
+  INTAKE_HP_BACKUP = 12,
 }
 
 // This could be a boolean but making it an enum makes it clearer in the logs.

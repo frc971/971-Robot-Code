@@ -26,6 +26,7 @@ table ElevatorSetPoints {
   barge:double (id: 9);
   algae_processor:double (id: 10);
   algae_ground:double (id: 11);
+  intake_hp_backup:double (id: 12);
 }
 
 table PivotSetPoints {
@@ -41,6 +42,7 @@ table PivotSetPoints {
   barge:double (id: 9);
   algae_processor:double (id: 10);
   algae_ground:double (id: 11);
+  intake_hp_backup:double (id: 12);
 }
 
 table WristSetPoints {
@@ -56,6 +58,7 @@ table WristSetPoints {
   barge:double (id: 9);
   algae_processor:double (id: 10);
   algae_ground:double (id: 11);
+  intake_hp_backup:double (id: 12);
 }
 
 table PotAndAbsEncoderConstants {

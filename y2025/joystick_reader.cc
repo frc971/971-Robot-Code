@@ -52,6 +52,8 @@ const ButtonLocation kRightL2(6, 7);
 const ButtonLocation kL1(6, 1);
 
 const ButtonLocation kHumanPlayer(6, 10);
+// TODO: update this with a real button location
+const ButtonLocation kHumanPlayerBackup(0, 0);
 
 const ButtonLocation kFront(3, 8);
 const ButtonLocation kBack(3, 4);
@@ -170,6 +172,11 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE_HP);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP);
       superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_HP);
+    } else if (data.IsPressed(kHumanPlayerBackup)) {
+      superstructure_goal_builder->set_elevator_goal(
+          ElevatorGoal::INTAKE_HP_BACKUP);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP_BACKUP);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_HP_BACKUP);
       climber_l1_latched_ = false;
     } else if (data.IsPressed(kAlgaeL2)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::ALGAE_L2);

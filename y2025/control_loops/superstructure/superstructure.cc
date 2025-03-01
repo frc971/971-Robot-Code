@@ -164,6 +164,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         elevator_position =
             robot_constants_->common()->elevator_set_points()->algae_ground();
         break;
+      case ElevatorGoal::INTAKE_HP_BACKUP:
+        elevator_position = robot_constants_->common()
+                                ->elevator_set_points()
+                                ->intake_hp_backup();
+        break;
     }
   }
 
@@ -237,6 +242,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case PivotGoal::ALGAE_GROUND:
         pivot_position =
             robot_constants_->common()->pivot_set_points()->algae_ground();
+        break;
+      case PivotGoal::INTAKE_HP_BACKUP:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->intake_hp_backup();
         break;
     }
   }
@@ -331,6 +340,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case WristGoal::ALGAE_GROUND:
         wrist_position =
             robot_constants_->common()->wrist_set_points()->algae_ground();
+        break;
+      case WristGoal::INTAKE_HP_BACKUP:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->intake_hp_backup();
         break;
     }
   }

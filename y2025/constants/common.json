@@ -118,7 +118,8 @@
     "algae_l3": {{ 0.44 + 15.87 * 0.0254 - 0.03}},
     "barge": {{1.417347 - 0.04}},
     "algae_ground": 0.0,
-    "algae_processor": {{0.04821807672146558 - 0.04}}
+    "algae_processor": {{0.04821807672146558 - 0.04}},
+    "intake_hp_backup": 0.23
   },
   "pivot_set_points": {
     "neutral": 0.0,
@@ -132,7 +133,8 @@
     "algae_l3": 0.6469645178250809,
     "barge": 0.40087852,
     "algae_ground": 0.0,
-    "algae_processor": 0.8714493948498565
+    "algae_processor": 0.8714493948498565,
+    "intake_hp_backup": 0.23
   },
   "wrist_set_points": {
     "neutral": 0.0,
@@ -146,7 +148,8 @@
     "algae_l3": 1.1975354363464791,
     "barge": 0.0,
     "algae_ground": 0.0,
-    "algae_processor": 0.8045471934439157
+    "algae_processor": 0.8045471934439157,
+    "intake_hp_backup": 0.23
   },
   "end_effector_voltages": {
     "spit": -10.0,
