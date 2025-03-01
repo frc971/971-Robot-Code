@@ -173,7 +173,7 @@
       <button
         *ngIf="hasPickedUpCoral"
         class="btn btn-warning"
-        (click)="changeSectionTo('Place Coral');"
+        (click)="changeSectionTo('Place Coral'); actionHelper.addScoreCoralAction({});"
       >
         SCORE CORAL
       </button>
@@ -194,7 +194,7 @@
       <button
         *ngIf="hasPickedUpAlgae"
         class="btn btn-success"
-        (click)="changeSectionTo('Place Algae');"
+        (click)="changeSectionTo('Place Algae'); actionHelper.addScoreAlgaeAction({});"
       >
         SCORE ALGAE
       </button>

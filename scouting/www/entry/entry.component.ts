@@ -115,7 +115,7 @@ export class EntryComponent implements OnInit {
   readonly ScoreCoralActionT = ScoreCoralActionT;
   readonly PlaceCoralActionT = PlaceCoralActionT;
   readonly PickupAlgaeActionT = PickupAlgaeActionT;
-  readonly ScireAlgaeActionT = ScoreAlgaeActionT;
+  readonly ScoreAlgaeActionT = ScoreAlgaeActionT;
   readonly PlaceAlgaeActionT = PlaceAlgaeActionT;
   readonly RobotDeathActionT = RobotDeathActionT;
   readonly PenaltyActionT = PenaltyActionT;

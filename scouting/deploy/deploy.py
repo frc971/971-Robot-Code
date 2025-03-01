@@ -16,7 +16,7 @@ def main(argv):
     parser.add_argument(
         "--host",
         type=str,
-        default="scouting.frc971.org",
+        default="scouting25.971spartans.net",
         help="The SSH host to install the scouting web server to.",
     )
     parser.add_argument(
