@@ -719,9 +719,9 @@ cc_library(
             ],
 )
 """,
-    sha256 = "d301be39a7c7585742146682327c4e208f38686aff5e94b87b85cbc914cd73d5",
+    sha256 = "22cb176e710a29831c37910e209ba60c770d8ad0392c30db1b538090f6c0fa59",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.2/api-cpp-25.2.2-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.3.1/api-cpp-25.3.1-headers.zip",
     ],
 )
 
@@ -743,9 +743,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "79fb7009820c5488f188c91bb70288c078cea018b29f236349bc387367ffec84",
+    sha256 = "36e35c985e0cc6e872e420ab8343e4c6648bcf9fca1cf782df1e251f9d64ccd7",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.2.2/api-cpp-25.2.2-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/25.3.1/api-cpp-25.3.1-linuxathena.zip",
     ],
 )
 
@@ -758,9 +758,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/phoenix/**/*.hpp', 'ctre/phoenix6/**/*.hpp']),
 )
 """,
-    sha256 = "6045d3283bfa7ebba611f902230449906de9ac0d642e6aa18e35686c423810f4",
+    sha256 = "efc1c38afb52d7510937035226ac7cf63c2315badfe977440f6ad7e17471576f",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.2/tools-25.2.2-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.3.1/tools-25.3.1-headers.zip",
     ],
 )
 
@@ -782,9 +782,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "ed3715c40807f25bf36d4da905efcf82d72077f0069282d10d7cf11937f37b0a",
+    sha256 = "851f599510c2a386a64f0c3d9da258c15c9e20d0cd41df066dc0cd9073d2631f",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.2.2/tools-25.2.2-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/25.3.1/tools-25.3.1-linuxathena.zip",
     ],
 )
 
@@ -867,15 +867,15 @@ cc_library(
     ],
 )
 
-# Downloaded from: https://deb.ctr-electronics.com/libs/2025/packages/phoenix6/25.2.2/phoenix6_25.2.2_arm64.deb
+# Downloaded from: https://deb.ctr-electronics.com/libs/2025/packages/phoenix6/25.3.1/phoenix6_25.3.1_arm64.deb
 http_archive(
     name = "ctre_phoenix6_arm64",
     build_file_content = """
 filegroup(
     name = 'shared_libraries',
     srcs = [
-        'phoenix6/usr/lib/phoenix6/libCTRE_PhoenixTools.so',
-        'phoenix6/usr/lib/phoenix6/libCTRE_Phoenix6.so',
+        'usr/lib/phoenix6/libCTRE_PhoenixTools.so',
+        'usr/lib/phoenix6/libCTRE_Phoenix6.so',
     ],
     visibility = ['//visibility:public'],
     target_compatible_with = ['@platforms//cpu:arm64'],
@@ -888,8 +888,8 @@ cc_library(
     name = "shared_libraries_lib",
     visibility = ['//visibility:public'],
     srcs = [
-        'phoenix6/usr/lib/phoenix6/libCTRE_PhoenixTools.so',
-        'phoenix6/usr/lib/phoenix6/libCTRE_Phoenix6.so',
+        'usr/lib/phoenix6/libCTRE_PhoenixTools.so',
+        'usr/lib/phoenix6/libCTRE_Phoenix6.so',
     ],
     target_compatible_with = ['@platforms//cpu:arm64'],
 )
@@ -897,8 +897,8 @@ cc_library(
 cc_library(
     name = 'headers',
     visibility = ['//visibility:public'],
-    hdrs = glob(['phoenix6/usr/include/phoenix6/**/*.hpp', 'phoenix6/usr/include/phoenix6/**/*.h']),
-    includes = ["phoenix6/usr/include/phoenix6/"],
+    hdrs = glob(['usr/include/phoenix6/**/*.hpp', 'usr/include/phoenix6/**/*.h']),
+    includes = ["usr/include/phoenix6/"],
     target_compatible_with = ['@platforms//cpu:arm64'],
     defines = [
         "UNIT_LIB_DISABLE_FMT",
@@ -906,9 +906,9 @@ cc_library(
     ],
 )
 """,
-    sha256 = "74f6e4d1b5947087dee0c9e92047fa2c97312afe69731567b9e8b09199714e24",
+    sha256 = "bb5a56756f0d863a0fb31508988d6e602975d2df265ad26f46fd80561f96d1c1",
     urls = [
-        "https://software.frc971.org/Build-Dependencies/phoenix6_25.2.2_arm64.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/phoenix6_25.3.1_arm64.tar.gz",
     ],
 )
 
