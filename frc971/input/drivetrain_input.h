@@ -186,6 +186,7 @@ class SwerveDrivetrainInputReader {
   const driver_station::JoystickAxis vy_axis_;
   const driver_station::JoystickAxis omega_axis_;
   const driver_station::ButtonLocation auto_align_button_;
+  const driver_station::ButtonLocation foc_override_button_;
 
   // Structure containing the (potentially adjusted) steering and throttle
   // values from the joysticks.
@@ -196,16 +197,18 @@ class SwerveDrivetrainInputReader {
   };
 
  private:
-  SwerveDrivetrainInputReader(::aos::EventLoop *event_loop,
-                              const SwerveConfig swerve_config,
-                              driver_station::JoystickAxis vx_axis,
-                              driver_station::JoystickAxis vy_axis,
-                              driver_station::JoystickAxis omega_axis,
-                              driver_station::ButtonLocation auto_align_button)
+  SwerveDrivetrainInputReader(
+      ::aos::EventLoop *event_loop, const SwerveConfig swerve_config,
+      driver_station::JoystickAxis vx_axis,
+      driver_station::JoystickAxis vy_axis,
+      driver_station::JoystickAxis omega_axis,
+      driver_station::ButtonLocation auto_align_button,
+      driver_station::ButtonLocation foc_override_button)
       : vx_axis_(vx_axis),
         vy_axis_(vy_axis),
         omega_axis_(omega_axis),
         auto_align_button_(auto_align_button),
+        foc_override_button_(foc_override_button),
         goal_sender_(event_loop->MakeSender<control_loops::swerve::GoalStatic>(
             "/drivetrain")),
         joystick_state_fetcher_(
@@ -225,6 +228,7 @@ class SwerveDrivetrainInputReader {
   const SwerveConfig swerve_config_;
 
   bool auto_align_ = false;
+  bool foc_override_ = false;
 };
 
 // Implements DrivetrainInputReader for the original steering wheel.

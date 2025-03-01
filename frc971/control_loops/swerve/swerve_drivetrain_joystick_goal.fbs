@@ -5,6 +5,7 @@ table JoystickGoal {
   vy:float (id: 1);
   omega:float (id: 2);
   auto_align:bool (id: 3);
+  foc_override:bool (id: 4);
 }
 
 root_type JoystickGoal;

@@ -173,6 +173,12 @@ void SwerveControlLoops::RunIteration(
       }
       NaiveEstimator::State kinematics_state = current_state.value();
 
+      if (goal->joystick_goal()->foc_override()) {
+        naive_estimator_.use_localizer_theta(true);
+      } else {
+        naive_estimator_.use_localizer_theta(false);
+      }
+
       Scalar goal_omega = 0;
 
       auto_align_goal_fetcher_.Fetch();

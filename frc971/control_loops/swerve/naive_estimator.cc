@@ -116,7 +116,7 @@ NaiveEstimator::State NaiveEstimator::Update(
   state_(States::kOmega) = yaw_rate;
   state_(States::kVx) = averaged_velocity.x();
   state_(States::kVy) = averaged_velocity.y();
-  if (!initial_theta_set_) {
+  if (!initial_theta_set_ || use_localizer_theta_) {
     localizer_state_fetcher_.Fetch();
     if (localizer_state_fetcher_.get() != nullptr) {
       state_(States::kTheta) = localizer_state_fetcher_->theta();

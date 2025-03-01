@@ -40,6 +40,10 @@ class NaiveEstimator {
 
   void PopulateStatus(NaiveEstimatorStatusStatic *fbs) const;
 
+  void use_localizer_theta(bool use_theta) { use_localizer_theta_ = use_theta; }
+
+  bool initial_theta_set() { return initial_theta_set_; }
+
  private:
   // Tracks the drive velocity, in m/s, of each module.
   std::array<Scalar, 4> velocities_;
@@ -58,6 +62,8 @@ class NaiveEstimator {
   aos::Fetcher<LocalizerState> localizer_state_fetcher_;
 
   bool initial_theta_set_ = false;
+
+  bool use_localizer_theta_ = false;
 };
 }  // namespace frc971::control_loops::swerve
 #endif  // FRC971_CONTROL_LOOPS_SWERVE_NAIVE_ESTIMATOR_H_
