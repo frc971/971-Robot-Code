@@ -44,26 +44,26 @@ class AutoGoalSender {
       SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L4,
                                        PivotGoal::SCORE_L4, std::nullopt,
                                        WristGoal::SCORE_L4, RobotSide::FRONT,
-                                       std::chrono::milliseconds(2300));
+                                       std::chrono::milliseconds(1500));
       autonomous_controller_->AddCallback(
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(600));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
           },
-          std::chrono::milliseconds(1700));
+          std::chrono::milliseconds(1000));
     });
 
     callbacks.emplace("L4 back", [this]() {
       SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L4,
                                        PivotGoal::SCORE_L4, std::nullopt,
                                        WristGoal::SCORE_L4, RobotSide::BACK,
-                                       std::chrono::milliseconds(2000));
+                                       std::chrono::milliseconds(1500));
       autonomous_controller_->AddCallback(
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
           },
           std::chrono::milliseconds(1000));
     });
@@ -72,12 +72,12 @@ class AutoGoalSender {
       SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L3,
                                        PivotGoal::SCORE_L3, std::nullopt,
                                        WristGoal::SCORE_L3, RobotSide::FRONT,
-                                       std::chrono::milliseconds(2000));
+                                       std::chrono::milliseconds(1500));
       autonomous_controller_->AddCallback(
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
           },
           std::chrono::milliseconds(1000));
     });
@@ -86,12 +86,12 @@ class AutoGoalSender {
       SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L3,
                                        PivotGoal::SCORE_L3, std::nullopt,
                                        WristGoal::SCORE_L3, RobotSide::BACK,
-                                       std::chrono::milliseconds(2000));
+                                       std::chrono::milliseconds(1500));
       autonomous_controller_->AddCallback(
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
           },
           std::chrono::milliseconds(1000));
     });
@@ -100,14 +100,14 @@ class AutoGoalSender {
       SendAutonomousSuperstructureGoal(std::nullopt, ElevatorGoal::SCORE_L2,
                                        PivotGoal::SCORE_L2, std::nullopt,
                                        WristGoal::SCORE_L2, RobotSide::FRONT,
-                                       std::chrono::milliseconds(3000));
+                                       std::chrono::milliseconds(1500));
       autonomous_controller_->AddCallback(
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
           },
-          std::chrono::milliseconds(2000));
+          std::chrono::milliseconds(1000));
     });
 
     callbacks.emplace("L2 back", [this]() {

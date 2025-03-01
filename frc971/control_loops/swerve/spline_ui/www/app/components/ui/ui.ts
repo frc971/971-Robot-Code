@@ -1240,12 +1240,11 @@ export class Ui implements AfterViewInit {
   }
 
   public flip() {
-    const width = this.field_to_pixels(this.field.field_size[0])
     let lastFlippedPoint = null
     for (let spline of this.splines) {
       for (let point of spline.control_points) {
         if (point != lastFlippedPoint) {
-          point[0] = width - point[0]
+          point[1] = -point[1]
         }
         lastFlippedPoint = point
       }
@@ -1254,6 +1253,7 @@ export class Ui implements AfterViewInit {
     for (let rpoint of this.rotbreakpoints) {
       rpoint[1] = Math.PI - rpoint[1]
     }
+    this.fixrotation();
     this.updateCanvas()
   }
 
