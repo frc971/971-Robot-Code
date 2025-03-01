@@ -44,6 +44,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
 
 bool Superstructure::GetIntakeComplete() { return intake_complete_; }
 
+inline bool PositionNear(double position, double goal, double threshold) {
+  return std::abs(position - goal) < threshold;
+}
+
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
@@ -97,6 +101,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         end_effector_voltage =
             robot_constants_->common()->end_effector_voltages()->spit();
         intake_complete_ = false;
+
         break;
     }
   }
@@ -114,6 +119,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   double elevator_position =
       robot_constants_->common()->elevator_set_points()->neutral();
+  bool pivot_can_move_ = true;
 
   if (unsafe_goal != nullptr) {
     switch (unsafe_goal->elevator_goal()) {
@@ -170,6 +176,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                 ->intake_hp_backup();
         break;
     }
+
+    // TODO: Generalize this logic to be done in a more generic way by being
+    // able to decide per set-point the flow of actions between subsystems
+    bool elevator_first_ =
+        unsafe_goal->elevator_goal() == ElevatorGoal::SCORE_L4 ||
+        unsafe_goal->elevator_goal() == ElevatorGoal::SCORE_L3;
+    pivot_can_move_ =
+        (!elevator_first_) ||
+        (elevator_first_ &&
+         PositionNear(elevator_.position(), elevator_position,
+                      robot_constants_->common()->elevator_threshold()));
   }
 
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -177,6 +194,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *elevator_goal = &elevator_goal_builder->AsFlatbuffer();
+
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       elevator_status_offset = elevator_.Iterate(
           elevator_goal, position->elevator(),
@@ -195,7 +213,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double pivot_position =
       robot_constants_->common()->pivot_set_points()->neutral();
 
-  if (unsafe_goal != nullptr) {
+  if (pivot_can_move_ && unsafe_goal != nullptr) {
     switch (unsafe_goal->pivot_goal()) {
       case PivotGoal::NEUTRAL:
         break;
@@ -248,10 +266,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
             robot_constants_->common()->pivot_set_points()->intake_hp_backup();
         break;
     }
-  }
-
-  if (unsafe_goal != nullptr && unsafe_goal->robot_side() == RobotSide::BACK) {
-    pivot_position *= -1;
+    if (unsafe_goal->robot_side() == RobotSide::BACK) {
+      pivot_position *= -1;
+    }
   }
 
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(pivot_goal_builder.get(),
@@ -267,6 +284,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           status->fbb());
 
   double climber_current = 0.0;
+
   if (unsafe_goal != nullptr) {
     switch (unsafe_goal->climber_goal()) {
       case (ClimberGoal::NEUTRAL):
