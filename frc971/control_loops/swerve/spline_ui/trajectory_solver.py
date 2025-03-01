@@ -30,7 +30,6 @@ def solve(paths, global_constraints) -> list[dict]:
             }
     """
 
-    print("Requested paths: ", paths)
     solved_trajectories = []
     spline_index = 0
     for path in paths:
@@ -87,9 +86,7 @@ def solve(paths, global_constraints) -> list[dict]:
             max_current_sections=max_current_sections,
             max_velocity_sections=max_velocity_sections,
             max_voltage_sections=max_voltage_sections,
-            solver_print=True)
-        print("Solved path:", path)
-        print("Solved trajectory:", solved_trajectory)
+            solver_print=False)
         # All the list()s are to get rid of np.ndarrays so it can jsonify nicely
         sol_dict = {
             "driving_currents":
@@ -156,8 +153,9 @@ def solve_and_discretize(saved_path) -> tuple[list[dict], list[dict]]:
     trajectory = solved_trajectories[path_index]
     path = paths[path_index]
     # Convert t to seconds and make it relative to the start of the current trajectory
-    # Run the loop for 15000 ms (15 s)
-    for t in range(0, 15000 + 5, 5):
+    # Run the loop for 5s after the end time of the path
+    for t in range(0, 5005 + int(solved_trajectories[-1]["times"][-1] * 1000),
+                   5):
         time_in_trajectory = t / 1000 - last_trajectory_time - path[
             "startDelay"]
 
