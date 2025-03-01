@@ -331,6 +331,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                                          ->elevator_set_points()
                                          ->algae_ground();
         break;
+      case ElevatorGoal::INTAKE_HP_BACKUP:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->intake_hp_backup();
+        break;
     }
 
     EXPECT_NEAR(elevator_expected_position,
@@ -377,6 +382,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::ALGAE_GROUND:
         pivot_set_point = pivot_positions->algae_ground();
         break;
+      case PivotGoal::INTAKE_HP_BACKUP:
+        pivot_set_point = pivot_positions->intake_hp_backup();
+        break;
     }
     EXPECT_NEAR(pivot_set_point,
                 superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
@@ -421,6 +429,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         break;
       case WristGoal::ALGAE_GROUND:
         wrist_set_point = wrist_positions->algae_ground();
+        break;
+      case WristGoal::INTAKE_HP_BACKUP:
+        wrist_set_point = wrist_positions->intake_hp_backup();
         break;
     }
     EXPECT_NEAR(wrist_set_point,
@@ -893,6 +904,24 @@ TEST_F(SuperstructureTest, IntakeGroundTest) {
     goal_builder.add_pivot_goal(PivotGoal::INTAKE_GROUND);
     goal_builder.add_elevator_goal(ElevatorGoal::INTAKE_GROUND);
     goal_builder.add_wrist_goal(WristGoal::INTAKE_HP);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(1));
+
+  VerifyNearGoal();
+}
+
+TEST_F(SuperstructureTest, IntakeHPBackupTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(PivotGoal::INTAKE_HP_BACKUP);
+    goal_builder.add_elevator_goal(ElevatorGoal::INTAKE_HP_BACKUP);
+    goal_builder.add_wrist_goal(WristGoal::INTAKE_HP_BACKUP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
