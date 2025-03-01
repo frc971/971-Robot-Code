@@ -146,12 +146,19 @@ void AutonomousController::Iterate() {
     prev_y_ = y;
     prev_theta_ = theta;
   }
-  // this is a weird way of doing things; once it's more trustworthy we should
-  // switch back to using naive/ekf to get velocities
-  constexpr double dt = 0.005;
-  const double vx = (x - prev_x_) / dt;
-  const double vy = (y - prev_y_) / dt;
-  const double omega = aos::math::NormalizeAngle(theta - prev_theta_) / dt;
+
+  constexpr double dt =
+      aos::time::DurationInSeconds(std::chrono::milliseconds(5));
+  const double vx = localizer_state_fetcher_->has_vx()
+                        ? localizer_state_fetcher_->vx()
+                        : (x - prev_x_) / dt;
+  const double vy = localizer_state_fetcher_->has_vy()
+                        ? localizer_state_fetcher_->vy()
+                        : (y - prev_y_) / dt;
+  const double omega =
+      localizer_state_fetcher_->has_omega()
+          ? localizer_state_fetcher_->omega()
+          : aos::math::NormalizeAngle(theta - prev_theta_) / dt;
 
   const double flip_mult = flipped_ ? -1.0 : 1.0;
 
