@@ -177,6 +177,7 @@ class TestDebugCli(unittest.TestCase):
             "bad_defense": True,
             "easily_defended": True,
             "no_show": False,
+            "reef_intake": False,
         })
         exit_code, _, stderr = run_debug_cli(["-submitNotes2025", json_path])
         self.assertEqual(exit_code, 0, stderr)
@@ -213,7 +214,8 @@ class TestDebugCli(unittest.TestCase):
             GoodDefense: (bool) true,
             BadDefense: (bool) true,
             EasilyDefended: (bool) true,
-            NoShow: (bool) false
+            NoShow: (bool) false,
+            ReefIntake: (bool) false
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking(self):

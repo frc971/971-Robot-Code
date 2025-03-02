@@ -60,6 +60,7 @@ interface Keywords {
   solidCoralShooting: boolean;
   sketchyCoralShooting: boolean;
   shuffleCoral: boolean;
+  reefIntake: boolean;
   penalties: boolean;
   goodDefense: boolean;
   badDefense: boolean;
@@ -88,6 +89,7 @@ const KEYWORD_CHECKBOX_LABELS = {
   solidCoralShooting: 'Solid Coral Shooting',
   sketchyCoralShooting: 'Sketchy Coral Shooting',
   shuffleCoral: 'Shuffle Coral',
+  reefIntake: 'Reef Intake',
   penalties: 'Penalties',
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
@@ -170,6 +172,7 @@ export class Notes {
         solidCoralShooting: false,
         sketchyCoralShooting: false,
         shuffleCoral: false,
+        reefIntake: false,
         penalties: false,
         goodDefense: false,
         badDefense: false,
@@ -227,6 +230,7 @@ export class Notes {
           this.newData[i].keywordsData.solidCoralShooting,
           this.newData[i].keywordsData.sketchyCoralShooting,
           this.newData[i].keywordsData.shuffleCoral,
+          this.newData[i].keywordsData.reefIntake,
           this.newData[i].keywordsData.penalties,
           this.newData[i].keywordsData.goodDefense,
           this.newData[i].keywordsData.badDefense,
