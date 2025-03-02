@@ -131,9 +131,9 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
     }
 
     if (climber_l1_latched_) {
-      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::SCORE_L1);
-      superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
-      superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
+      superstructure_goal_builder->set_elevator_goal(ElevatorGoal::CLIMB);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::CLIMB);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::CLIMB);
     } else {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::NEUTRAL);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::NEUTRAL);

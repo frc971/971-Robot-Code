@@ -348,6 +348,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                                          ->elevator_set_points()
                                          ->intake_hp_backup();
         break;
+      case ElevatorGoal::CLIMB:
+        elevator_expected_position = simulated_robot_constants_->common()
+                                         ->elevator_set_points()
+                                         ->climb();
+        break;
     }
 
     if (superstructure_status_fetcher_->elevator()->position() >
@@ -411,6 +416,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case PivotGoal::INTAKE_HP_BACKUP:
         pivot_set_point = pivot_positions->intake_hp_backup();
         break;
+      case PivotGoal::CLIMB:
+        pivot_set_point = pivot_positions->climb();
+        break;
     }
     EXPECT_NEAR(pivot_set_point,
                 superstructure_status_fetcher_->pivot()->position(), kEpsPivot);
@@ -458,6 +466,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         break;
       case WristGoal::INTAKE_HP_BACKUP:
         wrist_set_point = wrist_positions->intake_hp_backup();
+        break;
+      case WristGoal::CLIMB:
+        wrist_set_point = wrist_positions->climb();
         break;
     }
     EXPECT_NEAR(wrist_set_point,

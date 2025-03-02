@@ -181,6 +181,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                 ->elevator_set_points()
                                 ->intake_hp_backup();
         break;
+      case ElevatorGoal::CLIMB:
+        elevator_position =
+            robot_constants_->common()->elevator_set_points()->climb();
+        break;
     }
 
     // TODO: Generalize this logic to be done in a more generic way by being
@@ -270,6 +274,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case PivotGoal::INTAKE_HP_BACKUP:
         pivot_position =
             robot_constants_->common()->pivot_set_points()->intake_hp_backup();
+        break;
+      case PivotGoal::CLIMB:
+        pivot_position =
+            robot_constants_->common()->pivot_set_points()->climb();
         break;
     }
     if (unsafe_goal->robot_side() == RobotSide::BACK) {
@@ -368,6 +376,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case WristGoal::INTAKE_HP_BACKUP:
         wrist_position =
             robot_constants_->common()->wrist_set_points()->intake_hp_backup();
+        break;
+      case WristGoal::CLIMB:
+        wrist_position =
+            robot_constants_->common()->wrist_set_points()->climb();
         break;
     }
   }
