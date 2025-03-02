@@ -26,19 +26,85 @@
             </div>
         </div>
         <div style="margin: 5px; display: flex; flex-direction: column; flex-grow: 1;">
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="addG1Spline()">{{mode=="add G1 spline" ? "Cancel add spline" : "Add spline"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="addG0Spline()" [disabled]="splines.length==0">{{mode=="add G0 spline" ? "Cancel add stop point spline" : "Add stop point spline"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editSectionConstraints()" [disabled]="splines.length==0">{{mode=="edit section constraints" ? "Stop editing section constraints" : "Edit section constraints"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearSectionConstraints()">Clear section constraints</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editRotPoints()" [disabled]="splines.length==0">{{mode=="edit rotation breakpoints" ? "Stop editing rotation breakpoints" : "Edit rotation breakpoints"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearRotPoints()">Clear rotation breakpoints</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="editActions()" [disabled]="splines.length==0">{{mode=="edit actions" ? "Stop editing actions" : "Edit actions"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clearActions()">Clear actions</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="clear()">Clear everything</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="sendPath();" [disabled]="splines.length==0 || loading">{{loading ? "Loading..." : "Solve for speeds"}}</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="downloadPath();" [disabled]="splines.length==0">Save path</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="flip();" [disabled]="splines.length == 0">Flip</button>
-            <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="openFileDialog();">Load path</button>
+            <button
+                [class]='"nicebutton" + (mode=="add G1 spline" ? " active" : "")'
+                (keyup)="$event.preventDefault()"
+                (click)="addG1Spline()">
+                    {{mode=="add G1 spline" ? "Cancel add spline" : "Add spline"}}
+            </button>
+            <button
+                [class]='"nicebutton" + (mode=="add G0 spline" ? " active" : "")'
+                (keyup)="$event.preventDefault()" (click)="addG0Spline()"
+                [disabled]="splines.length==0">
+                    {{mode=="add G0 spline" ? "Cancel add stop point spline" : "Add stop point spline"}}
+            </button>
+            <button
+                [class]='"nicebutton" + (mode=="edit section constraints" ? " active" : "")'
+                (keyup)="$event.preventDefault()" (click)="editSectionConstraints()"
+                [disabled]="splines.length==0">
+                    {{mode=="edit section constraints" ? "Stop editing section constraints" : "Edit section constraints"}}
+            </button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="clearSectionConstraints()">
+					Clear section constraints
+			</button>
+            <button
+				[class]='"nicebutton" + (mode=="edit rotation breakpoints" ? " active" : "")'
+				(keyup)="$event.preventDefault()"
+				(click)="editRotPoints()" [disabled]="splines.length==0">
+					{{mode=="edit rotation breakpoints" ? "Stop editing rotation breakpoints" : "Edit rotation breakpoints"}}
+			</button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="clearRotPoints()" [disabled]="splines.length==0">
+					Clear rotation breakpoints
+			</button>
+            <button
+				[class]='"nicebutton" + (mode=="edit actions" ? " active" : "")'
+				(keyup)="$event.preventDefault()"
+				(click)="editActions()" [disabled]="splines.length==0">
+					{{mode=="edit actions" ? "Stop editing actions" : "Edit actions"}}
+			</button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="clearActions()" [disabled]="splines.length==0">
+					Clear actions
+			</button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="clear()">
+					Clear everything
+			</button>
+            <button
+                [class]='"nicebutton" + (loading ? " active" : "" )'
+                (keyup)="$event.preventDefault()"
+                (click)="sendPath();"
+                [disabled]="splines.length==0 || loading">
+                    {{loading ? "Loading..." : "Solve for speeds"}}
+            </button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="downloadPath();" [disabled]="splines.length==0">
+					Save path
+			</button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="flip();" [disabled]="splines.length == 0">
+					Flip
+			</button>
+            <button
+				class="nicebutton"
+				(keyup)="$event.preventDefault()"
+				(click)="openFileDialog();">
+					Load path
+			</button>
             <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="showDisplaySettings = !showDisplaySettings" style="position: relative;">
                 Display Settings
                 <svg width="10" height="10">

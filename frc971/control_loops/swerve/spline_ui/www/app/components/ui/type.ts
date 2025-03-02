@@ -16,10 +16,7 @@ export type ActionInfo = {
   name: string
 }
 
-export type Rotation = {
-  location: number,
-  angle: number // radians
-}
+export type Rotation = [number, number] // [location, angle(rad)]
 
 // This type represents the exact result of the trajectory solver.
 // See SwerveSolution in swerve_trajectory_optimizer.py for explanation of these properties.

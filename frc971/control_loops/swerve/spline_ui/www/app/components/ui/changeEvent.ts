@@ -1,4 +1,4 @@
-import type { StopPoint, Constraint, Spline } from './type'
+import type { StopPoint, Constraint, Spline, ActionInfo } from './type'
 
 import type { Ui } from '../ui/ui'
 type UiState = {
@@ -8,6 +8,7 @@ type UiState = {
   constraints: Constraint[]
   pathOutOfDate: boolean
   stopPoints: StopPoint[]
+  actions: ActionInfo[]
 }
 
 
@@ -41,6 +42,7 @@ export class ChangeEvent {
       constraints: structuredClone(ui.constraints),
       pathOutOfDate: ui.pathOutOfDate,
       stopPoints: structuredClone(ui.stopPoints),
+      actions: structuredClone(ui.actions)
     }
   }
 
@@ -51,6 +53,7 @@ export class ChangeEvent {
     ui.constraints = state.constraints
     ui.pathOutOfDate = state.pathOutOfDate
     ui.stopPoints = state.stopPoints
+    ui.actions = state.actions
     if (ui.splines.length === 0) {
       ui.mode = "view"
     }

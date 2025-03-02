@@ -277,23 +277,36 @@ export class ActionContext extends Context {
         name: "event name",
         default: this_.action.name,
         onchange(newval) {
+          this_.ui.changeInProgress = new ChangeEvent(this_.ui)
           this_.action.name = (newval.target as HTMLInputElement).value
           this_.ui.updateCanvas()
+          this_.ui.finalizeChange()
         },
       }
     ]
+    this.button_list.push({
+      name: "delete",
+      action(ev) {
+        this_.ui.changeInProgress = new ChangeEvent(this_.ui)
+        this_.ui.removeAction(this_.action)
+        this_.ui.updateCanvas()
+        this_.ui.finalizeChange()
+      }
+    })
     this.parameter_list = plist
   }
 }
 
 export class RotationContext extends Context {
   public rotation: Rotation
+  public fixed: boolean
 
-  public constructor(values: Rotation, ui: Ui) {
+  public constructor(values: Rotation, fixed: boolean, ui: Ui) {
     super()
 
     this.ui = ui
     this.rotation = values
+    this.fixed = fixed
 
     this.update()
   }
@@ -301,32 +314,46 @@ export class RotationContext extends Context {
   public update() {
     let plist: ContextInfo[] = []
     let this_ = this
-    plist.push({
-      name: "location",
-      max: 1,
-      min: 0,
-      default: this.rotation.location,
-      step: 0.001,
-      allow_null: false,
-      onchange(newval) {
-        this_.ui.changeInProgress = new ChangeEvent(this_.ui)
-        this_.rotation.location = newval
-        this_.ui.pathOutOfDate = true
-        this_.ui.finalizeChange()
-      }
-    })
+    if(!this.fixed) {
+      plist.push({
+        name: "location",
+        max: 1,
+        min: 0,
+        default: this.rotation[0],
+        step: 0.001,
+        allow_null: false,
+        onchange(newval) {
+          this_.ui.changeInProgress = new ChangeEvent(this_.ui)
+          this_.rotation[0] = newval
+          this_.ui.pathOutOfDate = true
+          this_.ui.finalizeChange()
+          this_.ui.updateCanvas()
+        }
+      })
+      this.button_list.push({
+        name: "delete",
+        action(ev) {
+          this_.ui.changeInProgress = new ChangeEvent(this_.ui)
+          this_.ui.removeRotation(this_.rotation)
+          this_.ui.updateCanvas()
+          this_.ui.pathOutOfDate = true
+          this_.ui.finalizeChange()
+        }
+      })
+    }
     plist.push({
       name: "angle",
       max: null,
       min: null,
-      default: this.rotation.angle / Math.PI * 180,
+      default: this.rotation[1] / Math.PI * 180,
       step: 0.1,
       allow_null: false,
       onchange(newval) {
         this_.ui.changeInProgress = new ChangeEvent(this_.ui)
-        this_.rotation.angle = newval / 180 * Math.PI
+        this_.rotation[1] = newval / 180 * Math.PI
         this_.ui.pathOutOfDate = true
         this_.ui.finalizeChange()
+        this_.ui.updateCanvas()
       }
     })
     this.parameter_list = plist
