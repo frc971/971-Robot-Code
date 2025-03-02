@@ -88,7 +88,7 @@ double elevator_pot_translate(double voltage) {
   return -voltage * Values::kElevatorPotMetersPerVolt();
 }
 double pivot_pot_translate(double voltage) {
-  return -voltage * Values::kPivotPotRadiansPerVolt();
+  return voltage * Values::kPivotPotRadiansPerVolt();
 }
 
 }  // namespace
