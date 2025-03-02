@@ -93,13 +93,11 @@ struct Values {
   static constexpr double kPivotOutputRatio =
       control_loops::superstructure::pivot::kOutputRatio;
 
-  static constexpr double kPivotPotRatio() {
-    return (38.0 / 20.0) * (10.0 / 110.0);
-  }
+  static constexpr double kPivotPotRatio() { return (26.0 / 60.0); }
 
   static constexpr double kPivotEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kPivotEncoderRatio() { return (10.0 / 110.0); }
+  static constexpr double kPivotEncoderRatio() { return (26.0 / 60.0); }
 
   static constexpr double kPivotPotRadiansPerVolt() {
     return kPivotPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
