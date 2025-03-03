@@ -200,6 +200,16 @@
   "localizer_config": {
       "apriltag_whitelist": {{ reef_apriltags }}
   },
-  "elevator_threshold": 0.001
+  "elevator_threshold": 0.001,
+  "processor_locations": [
+    {
+      "x": 2.786682,
+      "y": 4.029583
+    },
+    {
+      "x": -2.786682,
+      "y": -4.029583
+    }
+  ]
 }
 

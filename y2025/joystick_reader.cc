@@ -242,9 +242,18 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
                                                  : RobotSide::BACK);
     } else if (data.IsPressed(kBarge)) {
       localizer_state_fetcher_.Fetch();
-      bool red = localizer_state_fetcher_->x() > 0.0;
-      superstructure_goal_builder->set_robot_side(red ? RobotSide::BACK
-                                                      : RobotSide::FRONT);
+
+      double theta = localizer_state_fetcher_->theta();
+      double x = localizer_state_fetcher_->x();
+
+      bool front_facing = x * cos(theta) > 0.0;
+
+      superstructure_goal_builder->set_robot_side(
+          front_facing ? RobotSide::BACK : RobotSide::FRONT);
+    } else if (data.IsPressed(kAlgaeProcessor)) {
+      superstructure_goal_builder->set_robot_side(
+          frontFacing(common_->processor_locations()) ? RobotSide::FRONT
+                                                      : RobotSide::BACK);
     } else {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
     }
