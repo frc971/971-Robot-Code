@@ -108,7 +108,7 @@
   },
   "elevator_set_points": {
     "neutral": 0.05,
-    "intake_hp": 0.23,
+    "intake_hp": 0.21,
     "intake_ground": 0.0,
     "score_l1": 0.0,
     "score_l2": {{ 0.42844483657770693 - 0.06 }},
@@ -119,30 +119,30 @@
     "barge": {{1.417347 - 0.04}},
     "algae_ground": 0.0,
     "algae_processor": {{0.04821807672146558 - 0.04}},
-    "intake_hp_backup": 0.23,
+    "intake_hp_backup": 0.25562477038543463,
     "climb": 0.0
   },
   "pivot_set_points": {
     "neutral": 0.0,
     "intake_hp": 0.47924198590999334,
-    "intake_ground": -1.6914195,
-    "score_l1": {{ 3.14 / 4.0 }},
+    "intake_ground": -1.7506857466163983,
+    "score_l1": 0.5005590635867202,
     "score_l2": 0.4371424007672057,
     "score_l3": 0.4371424007672057,
     "score_l4": 0.22801,
     "algae_l2": 0.6469645178250809,
     "algae_l3": 0.6469645178250809,
     "barge": 0.40087852,
-    "algae_ground": 0.0,
+    "algae_ground": 1.6365430439366704,
     "algae_processor": 0.8714493948498565,
-    "intake_hp_backup": 0.23,
+    "intake_hp_backup": 0.7444157402869043,
     "climb": {{ 3.14 / 4.0 }}
   },
   "wrist_set_points": {
     "neutral": 0.0,
     "intake_hp": 0.56,
-    "intake_ground": -0.31140697,
-    "score_l1": 0.0,
+    "intake_ground": -0.2802198226015157,
+    "score_l1": 1.0736817822790836,
     "score_l2": 1.67,
     "score_l3": 1.67,
     "score_l4": 1.67,
@@ -151,13 +151,13 @@
     "barge": 0.0,
     "algae_ground": 0.0,
     "algae_processor": 0.8045471934439157,
-    "intake_hp_backup": 0.23,
+    "intake_hp_backup": 0.317912797392084,
     "climb": 0.0
   },
   "end_effector_voltages": {
     "spit": -10.0,
     "intake": 10.0,
-    "spit_l1": -5
+    "spit_l1": -3
   },
   "weights": {
     "thetas_q": 1.0,
