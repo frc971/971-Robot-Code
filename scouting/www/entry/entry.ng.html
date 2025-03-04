@@ -180,7 +180,7 @@
       <button
         *ngIf="hasPickedUpCoral"
         class="btn btn-info"
-        (click)=" actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpCoral = false;"
+        (click)=" actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kDROPPEDCORAL}); hasPickedUpCoral = false;"
       >
         Dropped Coral
       </button>
@@ -201,7 +201,7 @@
       <button
         *ngIf="hasPickedUpAlgae"
         class="btn btn-info"
-        (click)="actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kDROPPED}); hasPickedUpAlgae = false;"
+        (click)="actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kDROPPEDALGAE}); hasPickedUpAlgae = false;"
       >
         Dropped Algae
       </button>
@@ -309,7 +309,7 @@
         </div>
         <button
           class="btn btn-danger"
-          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kMISSED}); hasPickedUpCoral = false;"
+          (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kMISSEDCORAL}); hasPickedUpCoral = false;"
         >
           Missed
         </button>
@@ -391,7 +391,7 @@
       </div>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kMISSED}); hasPickedUpAlgae = false;"
+        (click)="changeSectionTo('Pickup'); actionHelper.addPlaceAlgaeAction({auto: autoPhase, scoreType: ScoreType.kMISSEDALGAE}); hasPickedUpAlgae = false;"
       >
         Missed
       </button>

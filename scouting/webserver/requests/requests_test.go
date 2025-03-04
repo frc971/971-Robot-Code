@@ -491,7 +491,7 @@ func TestConvertActionsToStat2025(t *testing.T) {
 				ActionTaken: &submit_2025_actions.ActionTypeT{
 					Type: submit_2025_actions.ActionTypePlaceAlgaeAction,
 					Value: &submit_2025_actions.PlaceAlgaeActionT{
-						ScoreType: submit_2025_actions.ScoreTypekDROPPED,
+						ScoreType: submit_2025_actions.ScoreTypekDROPPEDALGAE,
 						Auto:      false,
 					},
 				},

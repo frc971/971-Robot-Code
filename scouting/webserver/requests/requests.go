@@ -653,15 +653,7 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
 			count_in_cycle := true
-			if score_type == submit_2025_actions.ScoreTypekPROCESSOR && auto {
-				stat.ProcessorAuto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekPROCESSOR && !auto {
-				stat.ProcessorTeleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekNET && auto {
-				stat.NetAuto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekNET && !auto {
-				stat.NetTeleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL1 && auto {
+			if score_type == submit_2025_actions.ScoreTypekL1 && auto {
 				stat.L1Auto += 1
 			} else if score_type == submit_2025_actions.ScoreTypekL1 && !auto {
 				stat.L1Teleop += 1
@@ -677,16 +669,16 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				stat.L4Auto += 1
 			} else if score_type == submit_2025_actions.ScoreTypekL4 && !auto {
 				stat.L4Teleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && auto {
+			} else if score_type == submit_2025_actions.ScoreTypekDROPPEDCORAL && auto {
 				stat.CoralDroppedAuto += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && !auto {
+			} else if score_type == submit_2025_actions.ScoreTypekDROPPEDCORAL && !auto {
 				stat.CoralDroppedTeleop += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekMISSED && auto {
+			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && auto {
 				stat.CoralMissedAuto += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekMISSED && !auto {
+			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && !auto {
 				stat.CoralMissedTeleop += 1
 				count_in_cycle = false
 			} else {
@@ -724,32 +716,16 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				stat.NetAuto += 1
 			} else if score_type == submit_2025_actions.ScoreTypekNET && !auto {
 				stat.NetTeleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL1 && auto {
-				stat.L1Auto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL1 && !auto {
-				stat.L1Teleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL2 && auto {
-				stat.L2Auto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL2 && !auto {
-				stat.L2Teleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL3 && auto {
-				stat.L3Auto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL3 && !auto {
-				stat.L3Teleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL4 && auto {
-				stat.L4Auto += 1
-			} else if score_type == submit_2025_actions.ScoreTypekL4 && !auto {
-				stat.L4Teleop += 1
-			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && auto {
+			} else if score_type == submit_2025_actions.ScoreTypekDROPPEDALGAE && auto {
 				stat.AlgaeDroppedAuto += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekDROPPED && !auto {
+			} else if score_type == submit_2025_actions.ScoreTypekDROPPEDALGAE && !auto {
 				stat.AlgaeDroppedTeleop += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekMISSED && auto {
+			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && auto {
 				stat.AlgaeMissedAuto += 1
 				count_in_cycle = false
-			} else if score_type == submit_2025_actions.ScoreTypekMISSED && !auto {
+			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && !auto {
 				stat.AlgaeMissedTeleop += 1
 				count_in_cycle = false
 			} else {
