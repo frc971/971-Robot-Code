@@ -11,6 +11,10 @@
 .nicebutton[disabled] {
     color: gray;
 }
+.nicebutton.active {
+    border: #9955FF solid 2px;
+    background-color: #D0A0F0;
+}
 
 .noselect {
     -webkit-touch-callout: none; /* iOS Safari */

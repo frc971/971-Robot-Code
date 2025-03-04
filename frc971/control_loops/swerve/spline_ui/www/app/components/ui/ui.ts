@@ -1,4 +1,4 @@
-import type { Spline, Point, SplineControl, OptiData, ActionInfo, Constraint, GlobalConstraint, StopPoint } from './type'
+import type { Spline, Point, SplineControl, OptiData, ActionInfo, Constraint, GlobalConstraint, StopPoint, Rotation } from './type'
 import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core'
 import { Context, StopPointContext, ConstraintContext, GlobalContext, ActionContext, RotationContext } from './context'
 import { ChangeEvent } from './changeEvent'
@@ -123,7 +123,7 @@ export class Ui implements AfterViewInit {
   private selectedStopPoint: StopPoint = null
   public stopPoints: StopPoint[] = []
 
-  public keybindsenabled: boolean = true;
+  public keybindsenabled: boolean = true
 
   constructor(private http: HttpClient) { }
 
@@ -423,6 +423,12 @@ export class Ui implements AfterViewInit {
     if (this.splines.length != 0) {
       for (let rotpoint of this.rotbreakpoints) {
         if (this.mode == "edit rotation breakpoints") {
+          if (this.selectedContext instanceof RotationContext && this.selectedContext.rotation == rotpoint) {
+            this.ctx.strokeStyle = "#00FFFF"
+            this.ctx.lineWidth = 4
+            let [len, rot] = rotpoint
+            this.drawRobot(len, rot)
+          }
           this.ctx.strokeStyle = "black"
           this.ctx.fillStyle = "#DD00CC"
         } else {
@@ -496,12 +502,23 @@ export class Ui implements AfterViewInit {
       this.ctx.beginPath()
       this.ctx.arc(point[0], point[1], 5, 0, Math.PI * 2)
       this.ctx.fill()
+      //highlight if selected
+      if(this.selectedContext instanceof ActionContext && this.selectedContext.action == action) {
+        this.ctx.strokeStyle = "#00FFFF"
+        this.ctx.lineWidth = 1
+        this.ctx.stroke()
+      }
 
       //draw the label
       this.ctx.textAlign = "center"
       this.ctx.textBaseline = "top"
-      this.ctx.fillStyle = "#008020"
-      this.ctx.fillText(action.name, point[0], point[1] + 3);
+      if(action.name == "") {
+        this.ctx.fillStyle = "#808080"
+        this.ctx.fillText("unnamed action", point[0], point[1] + 3)
+      } else {
+        this.ctx.fillStyle = "#008020"
+        this.ctx.fillText(action.name, point[0], point[1] + 3)
+      }
     }
 
     if (this.closeCurvePoint !== null && this.grabbedRotPointRot === null && this.grabbedRotPointLen === null && this.splines.length > 0) {
@@ -695,7 +712,10 @@ export class Ui implements AfterViewInit {
       } else if (this.mode == "edit rotation breakpoints" && !this.panning) {
         if (this.closeCurveT !== null && this.grabbedRotPointLen === null && this.grabbedRotPointRot === null) {
           //rotbreakpoints MUST BE SORTED
-          this.addrotbreakpoint(this.closeCurveT, true)
+          let i = this.addrotbreakpoint(this.closeCurveT, true)
+          this.selectedContext = new RotationContext(this.rotbreakpoints[i], this.staticrotbreakpoints.includes(this.rotbreakpoints[i][0]), this)
+        } else {
+          this.selectedContext = new GlobalContext(this.globalConstraints, this)
         }
       } else if (this.mode == "edit section constraints" && !this.panning) {
         //they call me the section the way I constraint.
@@ -739,11 +759,15 @@ export class Ui implements AfterViewInit {
       } else if (this.mode == "edit actions" && !this.panning) {
         if (this.grabbedAction != null) {
           this.selectedContext = new ActionContext(this.grabbedAction, this)
+          this.finalizeChange()
         } else if (this.closeCurveT != null) {
-          this.actions.push({
-            location: this.closeCurveT,
-            name: "unnamed action"
-          })
+          let action = {location: this.closeCurveT, name: ""}
+          this.changeInProgress = new ChangeEvent(this)
+          this.actions.push(action)
+          this.finalizeChange()
+          this.selectedContext = new ActionContext(action, this)
+        } else {
+          this.selectedContext = new GlobalContext(this.globalConstraints, this)
         }
       }
       this.grabbedAction = null;
@@ -782,6 +806,8 @@ export class Ui implements AfterViewInit {
       if (this.grabbedRotPointLen !== null || this.grabbedRotPointRot !== null) {
         this.pathOutOfDate = true
         this.finalizeChange()
+        let i = this.grabbedRotPointLen ?? this.grabbedRotPointRot
+        this.selectedContext = new RotationContext(this.rotbreakpoints[i], this.staticrotbreakpoints.includes(this.rotbreakpoints[i][0]), this)
       }
       this.grabbedRotPointLen = null
       this.grabbedRotPointRot = null
@@ -902,6 +928,7 @@ export class Ui implements AfterViewInit {
           let point = this.getPosAtT(action.location)
           if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
             this.grabbedAction = action
+            this.changeInProgress = new ChangeEvent(this)
           }
         }
       }
@@ -1371,14 +1398,15 @@ export class Ui implements AfterViewInit {
     this.updateCanvas()
   }
 
-  private addrotbreakpoint(t: number, c: boolean, r?: number) {
+  private addrotbreakpoint(t: number, c: boolean, r?: number): number {
     if (c) {
       this.changeInProgress = new ChangeEvent(this)
     }
     if (r === undefined) {
       r = this.getRotationAtT(t)
     }
-    for (let i = 0; ; i++) {
+    let i = 0
+    for ( ; ; i++) {
       if (i >= this.rotbreakpoints.length || this.rotbreakpoints[i][0] >= t) {
         if (this.rotbreakpoints[i][0] != t) {
           this.rotbreakpoints.splice(i, 0, [t, r])
@@ -1390,6 +1418,7 @@ export class Ui implements AfterViewInit {
       this.pathOutOfDate = true
       this.finalizeChange()
     }
+    return i
   }
 
   private fixrotation() {
@@ -1405,8 +1434,6 @@ export class Ui implements AfterViewInit {
       }
       p0 = pair[1]
     }
-
-    console.log(this.rotbreakpoints);
   }
 
 
@@ -1577,6 +1604,8 @@ export class Ui implements AfterViewInit {
         this.redoEventStack.push(ev)
       }
     }
+    //TODO: figure out why some selections break on undo/redo
+    this.selectedContext = new GlobalContext(this.globalConstraints, this)
     this.updateCanvas()
   }
 
@@ -1591,6 +1620,8 @@ export class Ui implements AfterViewInit {
         this.undoEventStack.push(ev)
       }
     }
+    //TODO: figure out why some selections break on undo/redo
+    this.selectedContext = new GlobalContext(this.globalConstraints, this)
     this.updateCanvas()
   }
 
@@ -1665,5 +1696,16 @@ export class Ui implements AfterViewInit {
     this.changeInProgress.finalize(this)
     this.undoEventStack.push(this.changeInProgress)
     this.changeInProgress = null
+  }
+
+  public removeRotation(rbp: [number, number]) {
+    this.rotbreakpoints = this.rotbreakpoints.filter(e => e[0] != rbp[0])
+    this.staticrotbreakpoints = this.staticrotbreakpoints.filter(e => e != rbp[0])
+    this.selectedContext = new GlobalContext(this.globalConstraints, this)
+  }
+
+  public removeAction(action: ActionInfo) {
+    this.actions = this.actions.filter(e => !(e.location == action.location && e.name == action.name))
+    this.selectedContext = new GlobalContext(this.globalConstraints, this)
   }
 }
