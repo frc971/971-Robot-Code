@@ -57,14 +57,14 @@ const ButtonLocation kHumanPlayerBackup(0, 0);
 
 const ButtonLocation kFront(3, 8);
 const ButtonLocation kBack(3, 4);
-const ButtonLocation kAlgaeGround(3, 10);
+const ButtonLocation kAlgaeGround(3, 7);
 const ButtonLocation kAlgaeProcessor(3, 1);
 
 const ButtonLocation kEndEffectorIntake(3, 6);
 const ButtonLocation kEndEffectorSpit(6, 11);
 
 const ButtonLocation kClimb(3, 5);
-const ButtonLocation kRetract(3, 7);
+const ButtonLocation kRetract(2, 4);
 const ButtonLocation kGroundIntake(6, 12);
 
 const ButtonLocation kDontMove(3, 2);
@@ -198,6 +198,11 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
           ElevatorGoal::ALGAE_PROCESSOR);
       superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_PROCESSOR);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_PROCESSOR);
+    } else if (data.IsPressed(kAlgaeGround)) {
+      superstructure_goal_builder->set_elevator_goal(
+          ElevatorGoal::ALGAE_GROUND);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_GROUND);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_GROUND);
     }
 
     if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||
