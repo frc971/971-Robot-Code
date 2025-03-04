@@ -141,6 +141,7 @@ table Common {
   hp_locations: [Location] (id: 17);
   localizer_config:LocalizerConfig (id: 18);
   elevator_threshold: double (id: 19);
+  processor_locations:[Location] (id: 20);
 }
 
 table Constants {
