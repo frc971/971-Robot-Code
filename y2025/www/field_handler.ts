@@ -10,6 +10,7 @@ import {Position as SuperstructurePosition} from  '../control_loops/superstructu
 import { EndEffectorStatus, ClimberStatus, WristStatus, Status as SuperstructureStatus } from '../control_loops/superstructure/superstructure_status_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
 import {LocalizerState} from '../../frc971/control_loops/swerve/swerve_localizer_state_generated'
+import {AutonomousInit} from '../../frc971/control_loops/swerve/autonomous_init_generated'
 import {Status} from '../localizer/status_generated'
 import { ClimberGoal, ElevatorGoal, PivotGoal, RobotSide, AutoAlignDirection, EndEffectorGoal, WristGoal, Goal as SuperstructureGoal } from '../control_loops/superstructure/superstructure_goal_generated'
 
@@ -28,6 +29,7 @@ const CAMERAS = ['/orin1/camera0', '/orin1/camera1', '/imu/camera0', '/imu/camer
 export class FieldHandler {
   private canvas = document.createElement('canvas');
 
+  private autonomousInit: AutonomousInit|null = null;
   private localizerState: LocalizerState|null = null;
   private localizerStatus: Status|null = null;
   private superstructureGoal: SuperstructureGoal | null = null;
@@ -156,6 +158,10 @@ export class FieldHandler {
           this.handleLocalizerState(data);
         });
       this.connection.addHandler(
+        '/localizer', 'frc971.control_loops.swerve.AutonomousInit', (data) => {
+          this.handleAutonomousInit(data);
+        });
+      this.connection.addHandler(
         '/localizer', 'y2025.localizer.Status', (data) => {
           this.handleLocalizerStatus(data);
         });
@@ -197,6 +203,11 @@ export class FieldHandler {
   private handleSuperstructureGoal(data: Uint8Array): void {
 	  const fbBuffer = new ByteBuffer(data);
 	  this.superstructureGoal = SuperstructureGoal.getRootAsGoal(fbBuffer);
+  }
+
+  private handleAutonomousInit(data: Uint8Array): void {
+	  const fbBuffer = new ByteBuffer(data);
+	  this.autonomousInit = AutonomousInit.getRootAsAutonomousInit(fbBuffer);
   }
 
   private handleLocalizerStatus(data: Uint8Array): void {
@@ -426,6 +437,12 @@ export class FieldHandler {
         false);
     }
     window.requestAnimationFrame(() => this.draw());
+    if (this.autonomousInit) {
+      this.drawRobot(
+          this.autonomousInit.x(), this.autonomousInit.y(),
+          this.autonomousInit.theta(), "#c8ff69");
+    }
+
     if (this.localizerState) {
       this.drawRobot(
         this.localizerState.x(), this.localizerState.y(),

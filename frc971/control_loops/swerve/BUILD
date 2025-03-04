@@ -82,6 +82,11 @@ static_flatbuffer(
     srcs = ["autonomous_init.fbs"],
 )
 
+flatbuffer_ts_library(
+    name = "autonomous_init_ts_fbs",
+    srcs = ["autonomous_init.fbs"],
+)
+
 static_flatbuffer(
     name = "position_goal_fbs",
     srcs = ["position_goal.fbs"],
