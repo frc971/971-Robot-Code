@@ -5,6 +5,39 @@ filegroup(
 )
 
 cc_binary(
+    name = "target_mapping",
+    srcs = [
+        "target_mapping.cc",
+        "vision_util.cc",
+        "vision_util.h",
+    ],
+    data = [
+        "//y2025:aos_config",
+        "//y2025/constants:constants.json",
+        "//y2025/vision:maps",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2025:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/util:mcap_logger",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:pose",
+        "//frc971/vision:calibrate_multi_cameras_lib",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:target_mapper",
+        "//frc971/vision:vision_util_lib",
+        "//frc971/vision:visualize_robot",
+        "//third_party:opencv",
+        "//y2025/constants:constants_fbs",
+        "//y2025/constants:simulated_constants_sender",
+    ],
+)
+
+cc_binary(
     name = "apriltag_detector",
     srcs = [
         "apriltag_detector.cc",
