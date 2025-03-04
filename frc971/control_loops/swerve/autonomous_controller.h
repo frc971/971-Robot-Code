@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_SWERVE
 
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/swerve/autonomous_controller_debug_static.h"
 #include "frc971/control_loops/swerve/autonomous_init_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_goal_static.h"
 #include "frc971/control_loops/swerve/swerve_drivetrain_status_generated.h"
@@ -39,6 +40,8 @@ class AutonomousController {
 
   aos::Sender<GoalStatic> swerve_goal_sender_;
   aos::Sender<AutonomousInitStatic> autonomous_init_sender_;
+  aos::Sender<AutonomousControllerDebugStatic>
+      autonomous_controller_debug_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<frc971::control_loops::swerve::LocalizerState>
       localizer_state_fetcher_;
