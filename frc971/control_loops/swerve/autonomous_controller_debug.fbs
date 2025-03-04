@@ -1,0 +1,12 @@
+namespace frc971.control_loops.swerve;
+
+table AutonomousControllerDebug {
+    x_error: double (id: 0);
+    y_error: double (id: 1);
+    theta_error: double (id: 2);
+    vx_error: double (id: 3);
+    vy_error: double (id: 4);
+    omega_error: double (id: 5);
+}
+
+root_type AutonomousControllerDebug;

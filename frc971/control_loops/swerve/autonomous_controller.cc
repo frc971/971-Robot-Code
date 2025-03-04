@@ -30,6 +30,10 @@ AutonomousController::AutonomousController(
           event_loop
               ->MakeSender<frc971::control_loops::swerve::AutonomousInitStatic>(
                   "/drivetrain")),
+      autonomous_controller_debug_sender_(
+          event_loop->MakeSender<
+              frc971::control_loops::swerve::AutonomousControllerDebugStatic>(
+              "/autonomous")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/roborio/aos")),
       localizer_state_fetcher_(
@@ -211,6 +215,14 @@ void AutonomousController::Iterate() {
                            theta_error * absl::GetFlag(FLAGS_kRotationGain) -
                            omega_error * absl::GetFlag(FLAGS_kOmegaGain);
 
+  auto debug_builder = autonomous_controller_debug_sender_.MakeStaticBuilder();
+  debug_builder->set_x_error(x_error);
+  debug_builder->set_y_error(y_error);
+  debug_builder->set_theta_error(theta_error);
+  debug_builder->set_vx_error(vx_error);
+  debug_builder->set_vy_error(vy_error);
+  debug_builder->set_omega_error(omega_error);
+
   auto joystick_goal = builder->add_joystick_goal();
   joystick_goal->set_vx(vx_commanded);
   joystick_goal->set_vy(vy_commanded);
@@ -227,6 +239,7 @@ void AutonomousController::Iterate() {
   }
 
   builder.CheckOk(builder.Send());
+  debug_builder.CheckOk(debug_builder.Send());
 };
 
 bool AutonomousController::Completed() { return completed_; }

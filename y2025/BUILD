@@ -135,6 +135,7 @@ aos_config(
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
         "//frc971/vision:vision_fbs",
+        "//frc971/control_loops/swerve:autonomous_controller_debug_fbs",
         "//y2025/control_loops/superstructure:superstructure_goal_fbs",
         "@com_github_foxglove_schemas//:schemas",
     ],

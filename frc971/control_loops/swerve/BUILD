@@ -20,6 +20,11 @@ static_flatbuffer(
 )
 
 static_flatbuffer(
+    name = "autonomous_controller_debug_fbs",
+    srcs = ["autonomous_controller_debug.fbs"],
+)
+
+static_flatbuffer(
     name = "swerve_localizer_state_fbs",
     srcs = ["swerve_localizer_state.fbs"],
 )
@@ -679,6 +684,7 @@ cc_library(
     srcs = ["autonomous_controller.cc"],
     hdrs = ["autonomous_controller.h"],
     deps = [
+        ":autonomous_controller_debug_fbs",
         ":autonomous_init_fbs",
         ":simplified_dynamics",
         ":swerve_drivetrain_goal_fbs",
