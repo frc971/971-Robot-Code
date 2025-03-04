@@ -105,6 +105,12 @@
 				(click)="openFileDialog();">
 					Load path
 			</button>
+            <button
+				[class]='"nicebutton" + (isolating ? " active" : "")'
+				(keyup)="$event.preventDefault()"
+				(click)="toggleIsolation();">
+					{{isolating ? (isolated_spline == null ? "Select spline" : "Stop isolating") : "Isolate spline"}}
+			</button>
             <button class="nicebutton" (keyup)="$event.preventDefault()" (click)="showDisplaySettings = !showDisplaySettings" style="position: relative;">
                 Display Settings
                 <svg width="10" height="10">

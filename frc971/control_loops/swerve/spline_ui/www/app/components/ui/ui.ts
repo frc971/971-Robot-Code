@@ -14,6 +14,7 @@ type Field = {
 }
 const splineSubdivisions = 1000
 const splineColors = ["#A00000", "#00A0A0", "#A0A000", "#0000A0", "#00A000", "#A000A0"]
+const transparentColor = "#BBBBBB80"
 //TODO:
 //Load file resets all selections
 //Display Voltage
@@ -27,6 +28,7 @@ const splineColors = ["#A00000", "#00A0A0", "#A0A000", "#0000A0", "#00A000", "#A
 //highlight selected action
 //clean up gui to make selectables/draggables more clear (big - split into subtasks)
 //show first point in new constraint (maybe even show whole thing!)
+//actually show keybinds
 
 //Code-cleaning TODO:
 //revamp 'grab' system to make simpler (probably goes with cleaned-up ui)
@@ -124,6 +126,9 @@ export class Ui implements AfterViewInit {
   public stopPoints: StopPoint[] = []
 
   public keybindsenabled: boolean = true
+
+  public isolated_spline: number = null
+  public isolating: boolean = false
 
   constructor(private http: HttpClient) { }
 
@@ -333,7 +338,9 @@ export class Ui implements AfterViewInit {
         this.ctx.stroke()
       }
       this.ctx.lineWidth = 1
-      if (this.mode == "view") {
+      if(this.isolating && this.isolated_spline != null && this.splines[this.isolated_spline] != spline) {
+        this.ctx.strokeStyle = transparentColor
+      } else if (this.mode == "view") {
         this.ctx.strokeStyle = splineColors[splineColorIndex]
       } else {
         this.ctx.strokeStyle = "black"
@@ -355,7 +362,6 @@ export class Ui implements AfterViewInit {
       this.ctx.stroke()
 
       for (let point of spline.control_points) {
-        this.ctx.strokeStyle = splineColors[splineColorIndex]
         this.drawPoint(point, point == spline.control_points[0] && spline.prev_spline_link == "G0"
           || point == spline.control_points[5] && spline.next_spline_link == "G0",
           this.selectedStopPoint != null && ((point == spline.control_points[0] && this.splines[this.selectedStopPoint.next_spline_index] == spline)
@@ -429,11 +435,18 @@ export class Ui implements AfterViewInit {
             let [len, rot] = rotpoint
             this.drawRobot(len, rot)
           }
-          this.ctx.strokeStyle = "black"
-          this.ctx.fillStyle = "#DD00CC"
+          if (this.isolating && this.isolated_spline != null
+                  && (rotpoint[0] < this.isolated_spline / this.splines.length
+                      || rotpoint[0] > (this.isolated_spline + 1) / this.splines.length)) {
+            this.ctx.strokeStyle = transparentColor
+            this.ctx.fillStyle = transparentColor
+          } else {
+            this.ctx.strokeStyle = "black"
+            this.ctx.fillStyle = "#DD00CC"
+          }
         } else {
-          this.ctx.strokeStyle = "#BBBBBB80"
-          this.ctx.fillStyle = "#BBBBBB80"
+          this.ctx.strokeStyle = transparentColor
+          this.ctx.fillStyle = transparentColor
         }
         this.ctx.lineWidth = 2
         let [len, rot] = rotpoint
@@ -498,7 +511,10 @@ export class Ui implements AfterViewInit {
     for (let action of this.actions) {
       //draw a point
       let point = this.getPosAtT(action.location)
-      this.ctx.fillStyle = "#00A040"
+      let isolated_away = this.isolating && this.isolated_spline != null
+              && (action.location < this.isolated_spline / this.splines.length
+                  || action.location > (this.isolated_spline + 1) / this.splines.length);
+      this.ctx.fillStyle = isolated_away ? transparentColor : "#00A040"
       this.ctx.beginPath()
       this.ctx.arc(point[0], point[1], 5, 0, Math.PI * 2)
       this.ctx.fill()
@@ -513,10 +529,10 @@ export class Ui implements AfterViewInit {
       this.ctx.textAlign = "center"
       this.ctx.textBaseline = "top"
       if(action.name == "") {
-        this.ctx.fillStyle = "#808080"
+        this.ctx.fillStyle = isolated_away ? transparentColor : "#808080"
         this.ctx.fillText("unnamed action", point[0], point[1] + 3)
       } else {
-        this.ctx.fillStyle = "#008020"
+        this.ctx.fillStyle = isolated_away ? transparentColor : "#008020"
         this.ctx.fillText(action.name, point[0], point[1] + 3)
       }
     }
@@ -656,7 +672,11 @@ export class Ui implements AfterViewInit {
     })
 
     this.canvas.addEventListener("mouseup", (ev) => {
-      if ((this.mode == "add G1 spline" || this.mode == "add G0 spline") && !this.panning) {
+      if(!this.panning && this.isolating && this.isolated_spline == null) {
+        if(this.closeCurveT != null) {
+          this.isolated_spline = Math.floor(this.closeCurveT * this.splines.length)
+        }
+      } else if ((this.mode == "add G1 spline" || this.mode == "add G0 spline") && !this.panning) {
         this.addedPoints.push(this.pointToField([ev.offsetX, ev.offsetY]))
         this.undonePointsStack = []
         this.pointsToAdd--
@@ -719,7 +739,9 @@ export class Ui implements AfterViewInit {
         }
       } else if (this.mode == "edit section constraints" && !this.panning) {
         //they call me the section the way I constraint.
-        if (this.grabbedConstraint == null) {
+        if (this.grabbedConstraint != null) {
+          this.selectedContext = new ConstraintContext(this.grabbedConstraint, this)
+        } else {
           //check for nearby section constraints
           let selecting = false
           for (let constraint of this.constraints) {
@@ -829,6 +851,9 @@ export class Ui implements AfterViewInit {
       //robot highlighting
       let minDistSq = (this.grabbedRotPointLen != null || this.grabbedRotPointRot != null) ? Infinity : (100 / this.ctx.getTransform().a) ** 2
       for (let ind = 0; ind < this.splines.length; ind++) {
+        if(this.isolating && this.isolated_spline != null && this.isolated_spline != ind) {
+          continue
+        }
         let spline = this.splines[ind]
         for (let i = 0; i < spline.curve_points.length; i++) {
           let point = spline.curve_points[i]
@@ -871,7 +896,8 @@ export class Ui implements AfterViewInit {
     this.canvas.addEventListener("mousedown", (ev) => {
       if (this.mode == "view") {
         let truePoint = this.pointToField([ev.offsetX, ev.offsetY])
-        for (let spline of this.splines) {
+        let splines_to_search = (this.isolating && this.isolated_spline != null) ? [this.splines[this.isolated_spline]] : this.splines
+        for (let spline of splines_to_search) {
           for (let point of spline.control_points) {
             if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
               this.changeInProgress = new ChangeEvent(this)
@@ -890,6 +916,11 @@ export class Ui implements AfterViewInit {
         let truePoint = this.pointToField([ev.offsetX, ev.offsetY])
         for (let i = 0; i < this.rotbreakpoints.length; i++) {
           let [len, rot] = this.rotbreakpoints[i]
+          if(this.isolating && this.isolated_spline != null
+                  && (len < this.isolated_spline / this.splines.length
+                      || len > (this.isolated_spline + 1) / this.splines.length)) {
+            continue
+          }
           if (this.staticrotbreakpoints.indexOf(this.rotbreakpoints[i][0]) === -1) {
             let point = this.getPosAtT(len)
             if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
@@ -925,6 +956,11 @@ export class Ui implements AfterViewInit {
       } else if (this.mode == "edit actions") {
         let truePoint = this.pointToField([ev.offsetX, ev.offsetY])
         for (let action of this.actions) {
+            if(this.isolating && this.isolated_spline != null
+                    && (action.location < this.isolated_spline / this.splines.length
+                        || action.location > (this.isolated_spline + 1) / this.splines.length)) {
+            continue
+          }
           let point = this.getPosAtT(action.location)
           if ((point[0] - truePoint[0]) ** 2 + (point[1] - truePoint[1]) ** 2 <= (5 + 5 / this.ctx.getTransform().a) ** 2) {
             this.grabbedAction = action
@@ -1013,6 +1049,10 @@ export class Ui implements AfterViewInit {
             if (ev.getModifierState("Control")) {
               this.redo()
             }
+            break
+          }
+          case "i": {
+            this.toggleIsolation()
             break
           }
         }
@@ -1707,5 +1747,15 @@ export class Ui implements AfterViewInit {
   public removeAction(action: ActionInfo) {
     this.actions = this.actions.filter(e => !(e.location == action.location && e.name == action.name))
     this.selectedContext = new GlobalContext(this.globalConstraints, this)
+  }
+
+  public toggleIsolation() {
+    if(this.isolating) {
+      this.isolated_spline = null
+      this.isolating = false
+    } else {
+      this.isolating = true
+    }
+    this.updateCanvas();
   }
 }
