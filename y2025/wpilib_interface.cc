@@ -510,11 +510,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&can_output_event_loop);
 
     // Set up LED Indicator with its own event loop thread
-    ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
+    /*::aos::ShmEventLoop led_indicator_event_loop(&config.message());
     led_indicator_event_loop.set_name("LedIndicator");
     control_loops::superstructure::LedIndicator led_indicator(
         &led_indicator_event_loop);
-    AddLoop(&led_indicator_event_loop);
+    AddLoop(&led_indicator_event_loop);*/
 
     RunLoops();
   }
