@@ -49,7 +49,7 @@ class AutoGoalSender {
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
           },
           std::chrono::milliseconds(1000));
     });
@@ -63,7 +63,7 @@ class AutoGoalSender {
           [this]() {
             SendAutonomousSuperstructureGoal(
                 EndEffectorGoal::SPIT, std::nullopt, std::nullopt, std::nullopt,
-                std::nullopt, std::nullopt, std::chrono::milliseconds(500));
+                std::nullopt, std::nullopt, std::chrono::milliseconds(1000));
           },
           std::chrono::milliseconds(1000));
     });

@@ -7,9 +7,9 @@
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/math/flatbuffers_matrix.h"
 
-ABSL_FLAG(double, kPositionGain, 6.0, "Proportional gain for positional error");
+ABSL_FLAG(double, kPositionGain, 7.0, "Proportional gain for positional error");
 ABSL_FLAG(double, kRotationGain, 6.0, "Proportional gain for rotational error");
-ABSL_FLAG(double, kNextPositionGain, 1.0,
+ABSL_FLAG(double, kNextPositionGain, 2.0,
           "Proportional gain for positional error");
 ABSL_FLAG(double, kNextRotationGain, 0.0,
           "Proportional gain for rotational error");
