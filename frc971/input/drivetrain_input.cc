@@ -155,7 +155,7 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // movement)
   const JoystickAxis kVxAxis(3, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
   const ButtonLocation kAutoAlignButton(2, 6);
-  const ButtonLocation kFocOverrideButton(0, 0);
+  const ButtonLocation kFocOverrideButton(1, 9);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
       new SwerveDrivetrainInputReader(event_loop, swerve_config, kVxAxis,
@@ -217,9 +217,9 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   }
 
   if (data.PosEdge(foc_override_button_)) {
-    foc_override_ = true;
-  } else if (data.NegEdge(foc_override_button_)) {
     foc_override_ = false;
+  } else if (data.NegEdge(foc_override_button_)) {
+    foc_override_ = true;
   }
 
   return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega};
