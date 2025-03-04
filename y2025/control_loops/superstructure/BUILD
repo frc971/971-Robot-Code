@@ -15,6 +15,17 @@ static_flatbuffer(
     ],
 )
 
+flatbuffer_ts_library(
+    name = "superstructure_goal_ts_fbs",
+    srcs = [
+        "superstructure_goal.fbs",
+    ],
+    deps = [
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops:profiled_subsystem_ts_fbs",
+    ],
+)
+
 static_flatbuffer(
     name = "superstructure_output_fbs",
     srcs = [
