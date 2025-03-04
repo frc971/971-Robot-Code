@@ -5,8 +5,11 @@ table AutonomousControllerDebug {
     y_error: double (id: 1);
     theta_error: double (id: 2);
     vx_error: double (id: 3);
-    vy_error: double (id: 4);
-    omega_error: double (id: 5);
+    goal_vx: double (id: 4);
+    vy_error: double (id: 5);
+    goal_vy: double (id: 6);
+    omega_error: double (id: 7);
+    goal_omega: double (id: 8);
 }
 
 root_type AutonomousControllerDebug;
