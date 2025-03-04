@@ -21,8 +21,8 @@ kWrist = angular_system.AngularSystemParams(
     # Use parallel axis theorem to get the moment of inertia around
     # the joint (I = I_cm + mh^2 = 0.001877 + 0.8332 * 0.0407162^2)
     J=0.0263663657,  # Calculated with onshape
-    q_pos=0.80,
-    q_vel=80.0,
+    q_pos=0.00080,
+    q_vel=00.04,
     kalman_q_pos=1.20,
     kalman_q_vel=2.0,
     kalman_q_voltage=0.5,

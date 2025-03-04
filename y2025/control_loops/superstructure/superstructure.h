@@ -37,6 +37,10 @@ class Superstructure
                           const ::std::string &name = "/superstructure");
 
   bool GetIntakeComplete();
+  inline static bool PositionNear(double position, double goal,
+                                  double threshold) {
+    return std::abs(position - goal) < threshold;
+  }
 
   const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
   const PotAndAbsoluteEncoderSubsystem &pivot() const { return pivot_; }

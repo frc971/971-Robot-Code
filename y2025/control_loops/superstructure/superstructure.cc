@@ -44,10 +44,6 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
 
 bool Superstructure::GetIntakeComplete() { return intake_complete_; }
 
-inline bool PositionNear(double position, double goal, double threshold) {
-  return std::abs(position - goal) < threshold;
-}
-
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
@@ -126,6 +122,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double elevator_position =
       robot_constants_->common()->elevator_set_points()->neutral();
   bool pivot_can_move_ = true;
+  bool wrist_can_move_ = true;
 
   if (unsafe_goal != nullptr) {
     switch (unsafe_goal->elevator_goal()) {
@@ -195,8 +192,15 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     pivot_can_move_ =
         (!elevator_first_) ||
         (elevator_first_ &&
-         PositionNear(elevator_.position(), elevator_position,
-                      robot_constants_->common()->elevator_threshold()));
+         Superstructure::PositionNear(
+             elevator_.position(), elevator_position,
+             robot_constants_->common()->pivot_can_move_elevator_threshold()));
+    wrist_can_move_ =
+        (!elevator_first_) ||
+        (elevator_first_ &&
+         PositionNear(
+             elevator_.position(), elevator_position,
+             robot_constants_->common()->wrist_can_move_elevator_threshold()));
   }
 
   PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -325,7 +329,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   double wrist_position =
       robot_constants_->common()->wrist_set_points()->neutral();
-  if (unsafe_goal != nullptr) {
+  if (wrist_can_move_ && unsafe_goal != nullptr) {
     switch (unsafe_goal->wrist_goal()) {
       case (WristGoal::NEUTRAL):
         break;

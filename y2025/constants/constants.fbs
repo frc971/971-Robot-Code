@@ -140,8 +140,10 @@ table Common {
   reef_locations: [Location] (id: 16);
   hp_locations: [Location] (id: 17);
   localizer_config:LocalizerConfig (id: 18);
-  elevator_threshold: double (id: 19);
+  elevator_threshold: double (id: 19, deprecated);
   processor_locations:[Location] (id: 20);
+  pivot_can_move_elevator_threshold: double (id: 21);
+  wrist_can_move_elevator_threshold: double (id: 22);
 }
 
 table Constants {
