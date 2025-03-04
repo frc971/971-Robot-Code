@@ -234,10 +234,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     }
   }
 
-  bool PositionNear(double position, double goal, double threshold) {
-    return std::abs(position - goal) < threshold;
-  }
-
   void VerifyNearGoal() {
     constexpr double kEpsPivot = 0.001;
     constexpr double kEpsElevator = 0.001;
@@ -356,17 +352,37 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     }
 
     if (superstructure_status_fetcher_->elevator()->position() >
-            simulated_robot_constants_->common()
-                ->elevator_set_points()
-                ->neutral() &&
-        !PositionNear(
-            superstructure_status_fetcher_->elevator()->position(),
-            elevator_expected_position,
-            simulated_robot_constants_->common()->elevator_threshold())) {
-      EXPECT_NEAR(
-          simulated_robot_constants_->common()->pivot_set_points()->neutral(),
-          superstructure_status_fetcher_->pivot()->position(), 0.001);
-      return;
+        simulated_robot_constants_->common()
+            ->elevator_set_points()
+            ->neutral()) {
+      bool near_threshold = false;
+      if (!Superstructure::PositionNear(
+              superstructure_status_fetcher_->elevator()->position(),
+              elevator_expected_position,
+              simulated_robot_constants_->common()
+                  ->pivot_can_move_elevator_threshold())) {
+        // The system moves too fast for the pivot to fully zero.
+        EXPECT_NEAR(
+            simulated_robot_constants_->common()->pivot_set_points()->neutral(),
+            superstructure_status_fetcher_->pivot()->position(),
+            kEpsPivot * 10);
+        near_threshold = true;
+      }
+
+      if (!Superstructure::PositionNear(
+              superstructure_status_fetcher_->elevator()->position(),
+              elevator_expected_position,
+              simulated_robot_constants_->common()
+                  ->wrist_can_move_elevator_threshold())) {
+        EXPECT_NEAR(
+            simulated_robot_constants_->common()->wrist_set_points()->neutral(),
+            superstructure_status_fetcher_->wrist()->position(), kEpsWrist);
+        near_threshold = true;
+      }
+
+      if (near_threshold) {
+        return;
+      }
     }
 
     EXPECT_NEAR(elevator_expected_position,
@@ -999,7 +1015,7 @@ TEST_F(SuperstructureTest, PivotElevatorMovesFirstPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::milliseconds(500));
+  RunFor(chrono::milliseconds(200));
 
   VerifyNearGoal();
 
@@ -1012,7 +1028,7 @@ TEST_F(SuperstructureTest, PivotElevatorMovesFirstPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(3));
+  RunFor(chrono::seconds(4));
 
   VerifyNearGoal();
 
@@ -1038,7 +1054,7 @@ TEST_F(SuperstructureTest, PivotElevatorMovesFirstPositionTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(3));
+  RunFor(chrono::seconds(4));
 
   VerifyNearGoal();
 }

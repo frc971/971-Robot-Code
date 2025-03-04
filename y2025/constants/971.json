@@ -41,7 +41,7 @@
     "wrist_constants":{
     {% set _ = wrist_zero.update(
           {
-              "measured_absolute_position" : 2.912000398753849
+              "measured_absolute_position" : 2.874374907207409
           }
       ) %}
       "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}
