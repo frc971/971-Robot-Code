@@ -154,8 +154,7 @@ def solve_and_discretize(saved_path) -> tuple[list[dict], list[dict]]:
     path = paths[path_index]
     # Convert t to seconds and make it relative to the start of the current trajectory
     # Run the loop for 5s after the end time of the path
-    for t in range(0, 5005 + int(solved_trajectories[-1]["times"][-1] * 1000),
-                   5):
+    for t in range(0, 20000, 5):
         time_in_trajectory = t / 1000 - last_trajectory_time - path[
             "startDelay"]
 
