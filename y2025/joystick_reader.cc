@@ -53,27 +53,26 @@ const ButtonLocation kL1(6, 1);
 
 const ButtonLocation kHumanPlayer(6, 10);
 // TODO: update this with a real button location
-const ButtonLocation kHumanPlayerBackup(0, 0);
+const ButtonLocation kHumanPlayerBackup(3, 2);
 
 const ButtonLocation kFront(3, 8);
 const ButtonLocation kBack(3, 4);
-const ButtonLocation kAlgaeGround(3, 7);
+const ButtonLocation kAlgaeGround(3, 5);
 const ButtonLocation kAlgaeProcessor(3, 1);
 
-const ButtonLocation kEndEffectorIntake(3, 6);
 const ButtonLocation kEndEffectorSpit(6, 11);
 
-const ButtonLocation kClimb(3, 5);
+const ButtonLocation kClimb(3, 7);
 const ButtonLocation kRetract(2, 4);
 const ButtonLocation kGroundIntake(6, 12);
 
-const ButtonLocation kDontMove(3, 2);
+const ButtonLocation kDontMove(3, 6);
 
 const ButtonLocation kAlgaeL2(6, 8);
 const ButtonLocation kAlgaeL3(6, 9);
 const ButtonLocation kBarge(3, 3);
 
-const ButtonLocation kThetaLock(2, 12);
+const ButtonLocation kThetaLock(2, 7);
 
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
@@ -116,7 +115,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         superstructure_goal_builder =
             superstructure_goal_sender_.MakeStaticBuilder();
 
-    superstructure_goal_builder->set_theta_lock(!data.IsPressed(kThetaLock));
+    superstructure_goal_builder->set_theta_lock(data.IsPressed(kThetaLock));
 
     if (team_number == 9971) {
       superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
@@ -205,14 +204,19 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_GROUND);
     }
 
+    localizer_state_fetcher_.Fetch();
+
+    bool between_reefs = std::abs(localizer_state_fetcher_->x()) <
+                         std::abs(common_->reef_locations()->Get(0)->x());
+
     if (data.IsPressed(kLeftL2) || data.IsPressed(kLeftL3) ||
         data.IsPressed(kLeftL4)) {
       superstructure_goal_builder->set_auto_align_direction(
-          AutoAlignDirection::LEFT);
+          between_reefs ? AutoAlignDirection::RIGHT : AutoAlignDirection::LEFT);
     } else if (data.IsPressed(kRightL4) || data.IsPressed(kRightL3) ||
                data.IsPressed(kRightL2)) {
       superstructure_goal_builder->set_auto_align_direction(
-          AutoAlignDirection::RIGHT);
+          between_reefs ? AutoAlignDirection::LEFT : AutoAlignDirection::RIGHT);
     } else {
       superstructure_goal_builder->set_auto_align_direction(
           AutoAlignDirection::CENTER);
@@ -220,8 +224,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
 
     if (data.IsPressed(kEndEffectorSpit)) {
       superstructure_goal_builder->set_end_effector_goal(EndEffectorGoal::SPIT);
-    } else if (data.IsPressed(kEndEffectorIntake) ||
-               data.IsPressed(kHumanPlayer) ||
+    } else if (data.IsPressed(kHumanPlayer) ||
                data.IsPressed(kHumanPlayerBackup) || data.IsPressed(kL1)) {
       superstructure_goal_builder->set_end_effector_goal(
           EndEffectorGoal::INTAKE);
@@ -246,6 +249,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_robot_side(
           frontFacing(common_->reef_locations()) ? RobotSide::FRONT
                                                  : RobotSide::BACK);
+
     } else if (data.IsPressed(kBarge)) {
       localizer_state_fetcher_.Fetch();
 

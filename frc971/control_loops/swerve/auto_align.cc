@@ -3,8 +3,8 @@
 using frc971::control_loops::swerve::AutoAlign;
 
 // TODO Move these constants to a json or something
-ABSL_FLAG(double, kDVx, 1.6, "Gain for x derivative error");
-ABSL_FLAG(double, kDVy, 1.6, "Gain for y derivative error");
+ABSL_FLAG(double, kDVx, 2.4, "Gain for x derivative error");
+ABSL_FLAG(double, kDVy, 2.4, "Gain for y derivative error");
 ABSL_FLAG(double, kDVtheta, 0.4, "Gain for theta derivative error");
 ABSL_FLAG(double, kPVx, 4.0, "Gain for x position error");
 ABSL_FLAG(double, kPVy, 4.0, "Gain for y position error");
@@ -62,7 +62,7 @@ void AutoAlign::Iterate() {
   const double kVelocityLimit = absl::GetFlag(FLAGS_kVelLimit);
   const double kOmegaLimit = absl::GetFlag(FLAGS_kOmegaLimit);
 
-  constexpr double kThreshold = 0.005;
+  constexpr double kThreshold = 0.0005;
 
   double x_error = x_goal - x + absl::GetFlag(FLAGS_kXOffset);
   double y_error = y_goal - y + absl::GetFlag(FLAGS_kYOffset);
