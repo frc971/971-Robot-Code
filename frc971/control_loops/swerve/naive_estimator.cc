@@ -18,7 +18,9 @@ NaiveEstimator::NaiveEstimator(aos::EventLoop *event_loop,
       state_(State::Zero()),
       params_(params),
       localizer_state_fetcher_(
-          event_loop->MakeFetcher<LocalizerState>("/localizer")) {
+          event_loop->MakeFetcher<LocalizerState>("/localizer")),
+      autonomous_init_fetcher_(
+          event_loop->MakeFetcher<AutonomousInit>("/drivetrain")) {
   velocities_.fill(0);
   last_drive_positions_.fill(0);
 }
@@ -122,6 +124,12 @@ NaiveEstimator::State NaiveEstimator::Update(
       state_(States::kTheta) = localizer_state_fetcher_->theta();
       initial_theta_set_ = true;
     }
+  }
+
+  // This lets us be field oriented even when we have no camera detections.
+  autonomous_init_fetcher_.Fetch();
+  if (autonomous_init_fetcher_.get() != nullptr) {
+    state_(States::kTheta) = autonomous_init_fetcher_->theta();
   }
 
   state_(States::kTheta) += state_(States::kOmega) * dt;

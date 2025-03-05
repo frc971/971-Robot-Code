@@ -60,6 +60,7 @@ class NaiveEstimator {
   std::optional<aos::monotonic_clock::time_point> last_update_;
 
   aos::Fetcher<LocalizerState> localizer_state_fetcher_;
+  aos::Fetcher<AutonomousInit> autonomous_init_fetcher_;
 
   bool initial_theta_set_ = false;
 
