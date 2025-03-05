@@ -136,7 +136,7 @@
     "algae_ground": 1.257683,
     "algae_processor": 0.8714493948498565,
     "intake_hp_backup": 0.7444157402869043,
-    "climb": {{ 3.14 / 4.0 }}
+    "climb": {{ 3.14 / 3.0 }}
   },
   "wrist_set_points": {
     "neutral": 0.0,
@@ -152,7 +152,7 @@
     "algae_ground": 0.7534604,
     "algae_processor": 0.8045471934439157,
     "intake_hp_backup": 0.317912797392084,
-    "climb": 0.0
+    "climb": -{{3.14 / 4.0}}
   },
   "end_effector_voltages": {
     "spit": -10.0,
