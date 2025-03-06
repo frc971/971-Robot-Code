@@ -199,6 +199,7 @@ type NotesData2025 struct {
 	SolidCoralShooting   bool
 	SketchyCoralShooting bool
 	ShuffleCoral         bool
+	ReefIntake           bool
 	Penalties            bool
 	GoodDefense          bool
 	BadDefense           bool
@@ -600,6 +601,7 @@ func (database *Database) AddNotes2025(data NotesData2025) error {
 		SolidCoralShooting:   data.SolidCoralShooting,
 		ShuffleCoral:         data.ShuffleCoral,
 		SketchyCoralShooting: data.SketchyCoralShooting,
+		ReefIntake:           data.ReefIntake,
 		Penalties:            data.Penalties,
 		GoodDefense:          data.GoodDefense,
 		BadDefense:           data.BadDefense,

@@ -17,6 +17,7 @@ table SubmitNotes2025 {
   solid_coral_shooting:bool (id: 13);
   sketchy_coral_shooting:bool (id: 14);
   shuffle_coral:bool (id: 15);
+  reef_intake:bool (id:21);
   penalties:bool (id: 16);
   good_defense:bool (id: 17);
   bad_defense:bool (id: 18);
