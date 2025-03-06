@@ -142,7 +142,7 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
   joystick_goal->set_vx(vx);
   joystick_goal->set_vy(vy);
   joystick_goal->set_omega(omega);
-  joystick_goal->set_auto_align(auto_align_);
+  joystick_goal->set_auto_align(!auto_align_);
   joystick_goal->set_foc_override(foc_override_);
 
   builder.CheckOk(builder.Send());
@@ -154,7 +154,7 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
   const JoystickAxis kVxAxis(3, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
-  const ButtonLocation kAutoAlignButton(2, 6);
+  const ButtonLocation kAutoAlignButton(2, 12);
   const ButtonLocation kFocOverrideButton(1, 9);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(

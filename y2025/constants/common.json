@@ -15,8 +15,8 @@
     "elevator_supply_current_limit": 50,
     "pivot_stator_current_limit": 100,
     "pivot_supply_current_limit": 50,
-    "end_effector_stator_current_limit": 60,
-    "end_effector_supply_current_limit": 25,
+    "end_effector_stator_current_limit": 70,
+    "end_effector_supply_current_limit": 32.5,
     "climber_stator_current_limit": 100,
     "climber_supply_current_limit": 60,
     "wrist_stator_current_limit": 50,
@@ -109,7 +109,7 @@
   "elevator_set_points": {
     "neutral": 0.05,
     "intake_hp": 0.21,
-    "intake_ground": 0.0,
+    "intake_ground": 0.006580912,
     "score_l1": 0.0,
     "score_l2": {{ 0.42844483657770693 - 0.06 }},
     "score_l3": {{ 0.395 + 15.87 * 0.0254 - 0.04}},
@@ -125,7 +125,7 @@
   "pivot_set_points": {
     "neutral": 0.0,
     "intake_hp": 0.47924198590999334,
-    "intake_ground": -1.7506857466163983,
+    "intake_ground": -1.777646,
     "score_l1": 0.5005590635867202,
     "score_l2": 0.4371424007672057,
     "score_l3": 0.4371424007672057,
@@ -141,7 +141,7 @@
   "wrist_set_points": {
     "neutral": 0.0,
     "intake_hp": 0.56,
-    "intake_ground": -0.2802198226015157,
+    "intake_ground": -0.243765,
     "score_l1": 1.0736817822790836,
     "score_l2": 1.67,
     "score_l3": 1.67,
@@ -155,7 +155,7 @@
     "climb": -{{3.14 / 4.0}}
   },
   "end_effector_voltages": {
-    "spit": -10.0,
+    "spit": -6.0,
     "intake": 10.0,
     "spit_l1": -3
   },
