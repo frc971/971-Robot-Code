@@ -20,6 +20,7 @@ type TeamInMatch = {
   matchNumber: number;
   setNumber: number;
   compLevel: CompLevel;
+  compCode: string;
 };
 
 @Component({
@@ -33,6 +34,7 @@ export class App {
     matchNumber: 1,
     setNumber: 1,
     compLevel: 'qm',
+    compCode: '2016nytr',
   };
   // Keep track of the match list automatically navigating the user to the
   // Entry tab.
