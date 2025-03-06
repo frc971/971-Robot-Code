@@ -16,6 +16,7 @@
         name="comp_code_selection"
         id="comp_code_selection"
         [(ngModel)]="compCode"
+        (ngModelChange)="fetchMatchList()"
       >
         <option value="2016nytr">N/A</option>
         <option value="2025camb">Pinnacles</option>

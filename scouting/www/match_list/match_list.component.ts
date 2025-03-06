@@ -18,6 +18,7 @@ type TeamInMatch = {
   matchNumber: number;
   setNumber: number;
   compLevel: CompLevel;
+  compCode: string;
 };
 
 @Component({
