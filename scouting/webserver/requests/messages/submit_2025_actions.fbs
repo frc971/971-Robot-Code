@@ -11,8 +11,10 @@ enum ScoreType: short {
     kL4,
     kPROCESSOR,
     kNET,
-    kDROPPED,
-    kMISSED,
+    kDROPPEDCORAL,
+    kMISSEDCORAL,
+    kDROPPEDALGAE,
+    kMISSEDALGAE,
 }
 
 table NoShowAction {}

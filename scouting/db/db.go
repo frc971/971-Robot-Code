@@ -14,15 +14,6 @@ type Database struct {
 	*gorm.DB
 }
 
-type TeamMatch struct {
-	MatchNumber      int32  `gorm:"primaryKey"`
-	SetNumber        int32  `gorm:"primaryKey"`
-	CompLevel        string `gorm:"primaryKey"`
-	Alliance         string `gorm:"primaryKey"` // "R" or "B"
-	AlliancePosition int32  `gorm:"primaryKey"` // 1, 2, or 3
-	TeamNumber       string
-}
-
 type TeamMatch2025 struct {
 	MatchNumber      int32  `gorm:"primaryKey"`
 	CompCode         string `gorm:"primaryKey"`
@@ -49,31 +40,6 @@ type RequestedPitImage struct {
 	TeamNumber string
 	CheckSum   string `gorm:"primaryKey"`
 	ImagePath  string
-}
-
-type Stats2024 struct {
-	TeamNumber                                  string `gorm:"primaryKey"`
-	MatchNumber                                 int32  `gorm:"primaryKey"`
-	SetNumber                                   int32  `gorm:"primaryKey"`
-	CompLevel                                   string `gorm:"primaryKey"`
-	CompType                                    string `gorm:"primaryKey"`
-	StartingQuadrant                            int32
-	SpeakerAuto, AmpAuto                        int32
-	NotesDroppedAuto                            int32
-	MobilityAuto                                bool
-	Speaker, Amp, SpeakerAmplified              int32
-	NotesDropped                                int32
-	Shuttled, OutOfField                        int32
-	Penalties                                   int32
-	AvgCycle                                    int64
-	RobotDied                                   bool
-	Park, OnStage, Harmony, TrapNote, Spotlight bool
-	NoShow                                      bool
-
-	// The username of the person who collected these statistics.
-	// "unknown" if submitted without logging in.
-	// Empty if the stats have not yet been collected.
-	CollectedBy string
 }
 
 type Stats2025 struct {
@@ -222,7 +188,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &TeamMatch2025{}, &Shift{}, &Stats2024{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch2025{}, &Shift{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -241,13 +207,6 @@ func (database *Database) Delete() error {
 
 func (database *Database) SetDebugLogLevel() {
 	database.DB.Logger = database.DB.Logger.LogMode(logger.Info)
-}
-
-func (database *Database) AddToMatch(m TeamMatch) error {
-	result := database.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&m)
-	return result.Error
 }
 
 func (database *Database) AddToMatch2025(m TeamMatch2025) error {
@@ -276,30 +235,6 @@ func (database *Database) AddPitImage(p PitImage) error {
 	return result.Error
 }
 
-func (database *Database) AddToStats2024(s Stats2024) error {
-	if s.CompType == "Regular" {
-		matches, err := database.QueryMatchesString(s.TeamNumber)
-		if err != nil {
-			return err
-		}
-		foundMatch := false
-		for _, match := range matches {
-			if match.MatchNumber == s.MatchNumber {
-				foundMatch = true
-				break
-			}
-		}
-		if !foundMatch {
-			return errors.New(fmt.Sprint(
-				"Failed to find team ", s.TeamNumber,
-				" in match ", s.MatchNumber, " in the schedule."))
-		}
-	}
-
-	result := database.Create(&s)
-	return result.Error
-}
-
 func (database *Database) AddToStats2025(s Stats2025) error {
 	if s.CompType == "Regular" {
 		matches, err := database.queryMatches2025(s.TeamNumber, s.CompCode)
@@ -324,14 +259,6 @@ func (database *Database) AddToStats2025(s Stats2025) error {
 	return result.Error
 }
 
-func (database *Database) DeleteFromStats2024(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
-	var stats2024 []Stats2024
-	result := database.
-		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
-		Delete(&stats2024)
-	return result.Error
-}
-
 func (database *Database) DeleteFromStats2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	var stats2025 []Stats2025
 	result := database.
@@ -345,14 +272,6 @@ func (database *Database) DeleteFromNotesData2025(compCode_ string, compLevel_ s
 	result := database.
 		Where("comp_code = ? AND comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compCode_, compLevel_, matchNumber_, setNumber_, teamNumber_).
 		Delete(&notes2025)
-	return result.Error
-}
-
-func (database *Database) DeleteFromActions(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
-	var actions []Action
-	result := database.
-		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
-		Delete(&actions)
 	return result.Error
 }
 
@@ -371,16 +290,10 @@ func (database *Database) AddOrUpdateRankings(r Ranking) error {
 	return result.Error
 }
 
-func (database *Database) ReturnMatches() ([]TeamMatch, error) {
-	var matches []TeamMatch
-	result := database.Find(&matches)
-	return matches, result.Error
-}
-
 func (database *Database) ReturnMatches2025(compCode_ string) ([]TeamMatch2025, error) {
 	var matches []TeamMatch2025
 	result := database.
-		Where("comp_code = $1", compCode_).Order("match_number").Order("team_number").
+		Where("comp_code = $1", compCode_).
 		Find(&matches)
 	return matches, result.Error
 }
@@ -427,12 +340,6 @@ func (database *Database) ReturnPitImages() ([]PitImage, error) {
 	return images, result.Error
 }
 
-func (database *Database) ReturnStats2024() ([]Stats2024, error) {
-	var stats2024 []Stats2024
-	result := database.Find(&stats2024)
-	return stats2024, result.Error
-}
-
 func (database *Database) ReturnStats2025() ([]Stats2025, error) {
 	var stats2025 []Stats2025
 	result := database.Find(&stats2025)
@@ -448,15 +355,6 @@ func (database *Database) QueryStats2025(CompCode string) ([]Stats2025, error) {
 	return stats2025, result.Error
 }
 
-func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]Stats2024, error) {
-	var stats2024 []Stats2024
-	result := database.
-		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND comp_type = ?",
-			teamNumber, matchNumber, setNumber, compLevel, compType).
-		Find(&stats2024)
-	return stats2024, result.Error
-}
-
 func (database *Database) ReturnStats2025ForTeam(compCode string, teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]Stats2025, error) {
 	var stats2025 []Stats2025
 	result := database.
@@ -470,14 +368,6 @@ func (database *Database) ReturnRankings() ([]Ranking, error) {
 	var rankins []Ranking
 	result := database.Find(&rankins)
 	return rankins, result.Error
-}
-
-func (database *Database) queryMatches(teamNumber_ string) ([]TeamMatch, error) {
-	var matches []TeamMatch
-	result := database.
-		Where("team_number = $1", teamNumber_).
-		Find(&matches)
-	return matches, result.Error
 }
 
 func (database *Database) queryMatches2025(teamNumber_ string, compCode string) ([]TeamMatch2025, error) {
@@ -508,14 +398,6 @@ func (database *Database) QueryPitImageByChecksum(checksum_ string) (PitImage, e
 func ComputeSha256FromByteArray(arr []byte) string {
 	sum := sha256.Sum256(arr)
 	return fmt.Sprintf("%x", sum)
-}
-
-func (database *Database) QueryMatchesString(teamNumber_ string) ([]TeamMatch, error) {
-	var matches []TeamMatch
-	result := database.
-		Where("team_number = $1", teamNumber_).
-		Find(&matches)
-	return matches, result.Error
 }
 
 func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
