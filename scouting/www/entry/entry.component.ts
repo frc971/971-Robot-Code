@@ -279,6 +279,7 @@ export class EntryComponent implements OnInit {
         this.matchNumber == match.matchNumber() &&
         this.setNumber == match.setNumber() &&
         this.compLevel == match.compLevel() &&
+        this.compCode == match.compCode() &&
         (this.teamNumber === match.r1() ||
           this.teamNumber === match.r2() ||
           this.teamNumber === match.r3() ||
@@ -500,7 +501,8 @@ export class EntryComponent implements OnInit {
         if (
           this.matchNumber === match.matchNumber() &&
           this.setNumber === match.setNumber() &&
-          this.compLevel === match.compLevel()
+          this.compLevel === match.compLevel() &&
+          this.compCode === match.compCode()
         ) {
           this.teamNumber = this.teamNumber;
           if (this.teamNumber == match.r1()) {
