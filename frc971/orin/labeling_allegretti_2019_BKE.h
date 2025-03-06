@@ -1,6 +1,7 @@
 #ifndef FRC971_ORIN_LABELING_ALLEGRETTI_2019_BKE_H_
 #define FRC971_ORIN_LABELING_ALLEGRETTI_2019_BKE_H_
 
+#include <cstdint>
 #include <cuda_runtime.h>
 
 #include "frc971/orin/gpu_image.h"
