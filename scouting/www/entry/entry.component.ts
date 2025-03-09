@@ -360,10 +360,20 @@ export class EntryComponent implements OnInit {
           this.endGame = false;
           break;
         case ActionType.PlaceCoralAction:
-          this.section = 'Place Coral';
+          const placeCoralAction = lastAction.actionTaken as PlaceCoralActionT;
+          if (placeCoralAction.scoreType === ScoreType.kDROPPEDCORAL) {
+            this.hasPickedUpCoral = true;
+          } else {
+            this.section = 'Place Coral';
+          }
           break;
         case ActionType.PlaceAlgaeAction:
-          this.section = 'Place Algae';
+          const placeAlgaeAction = lastAction.actionTaken as PlaceAlgaeActionT;
+          if (placeAlgaeAction.scoreType === ScoreType.kDROPPEDALGAE) {
+            this.hasPickedUpAlgae = true;
+          } else {
+            this.section = 'Place Algae';
+          }
           break;
         case ActionType.EndMatchAction:
           this.section = 'Endgame';
@@ -559,6 +569,8 @@ export class EntryComponent implements OnInit {
       this.autoPhase = true;
       this.actionList = [];
       this.mobilityCompleted = false;
+      this.hasPickedUpAlgae = false;
+      this.hasPickedUpCoral = false;
       this.compType = 'Regular';
       this.matchStartTimestamp = 0;
       this.selectedValue = 0;
