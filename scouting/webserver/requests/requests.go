@@ -1765,8 +1765,24 @@ func (handler submit2025ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	log.Println("Got actions for match", request.MatchNumber(), "team", string(request.TeamNumber()), "type", string(request.CompType()), "from", username)
 
-	for i := 0; i < request.ActionsListLength(); i++ {
+	stats, err := ConvertActionsToStat2025(request)
+	if err != nil {
+		log.Println("Failed to add action from", username, "to the database:", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
+		return
+	}
 
+	stats.CollectedBy = username
+
+	err = handler.db.AddToStats2025(stats)
+	if err != nil {
+		log.Println("Failed to submit stats from", username, "to the database:", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats2025: ", stats, ": ", err))
+		return
+	}
+
+	//Now that the stats have been submitted successfully, submit the actions.
+	for i := 0; i < request.ActionsListLength(); i++ {
 		var action Action2025
 		request.ActionsList(&action, i)
 
@@ -1797,22 +1813,6 @@ func (handler submit2025ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
 			return
 		}
-	}
-
-	stats, err := ConvertActionsToStat2025(request)
-	if err != nil {
-		log.Println("Failed to add action from", username, "to the database:", err)
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
-		return
-	}
-
-	stats.CollectedBy = username
-
-	err = handler.db.AddToStats2025(stats)
-	if err != nil {
-		log.Println("Failed to submit stats from", username, "to the database:", err)
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats2025: ", stats, ": ", err))
-		return
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
