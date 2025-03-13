@@ -29,6 +29,7 @@ SwerveControlLoops::SwerveControlLoops(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       imu_fetcher_(
           event_loop->TryMakeFetcher<::frc971::IMUValuesBatch>("/localizer")),
+      robot_state_fetcher_(event_loop->MakeFetcher<aos::RobotState>("/aos")),
       naive_estimator_(event_loop, zeroing_params, params),
       auto_align_(event_loop),
       velocity_controller_(
@@ -50,6 +51,15 @@ void SwerveControlLoops::RunIteration(
   if (iteration_counter_ % absl::GetFlag(FLAGS_swerve_skip_iters) != 0) {
     return;
   }
+
+  robot_state_fetcher_.Fetch();
+  if (robot_state_fetcher_.get() != nullptr &&
+      robot_state_fetcher_->user_button()) {
+    naive_estimator_.use_localizer_theta(true);
+  } else {
+    naive_estimator_.use_localizer_theta(false);
+  }
+
   const aos::monotonic_clock::time_point profiling_start_time =
       aos::monotonic_clock::now();
   const aos::monotonic_clock::time_point now =
@@ -153,6 +163,7 @@ void SwerveControlLoops::RunIteration(
       auto_goal_fetcher_.get() != nullptr) {
     goal = auto_goal_fetcher_.get();
   }
+
   if (goal != nullptr && current_state.has_value()) {
     CHECK_NE(goal->has_linear_velocity_goal(), goal->has_joystick_goal());
     if (goal->has_linear_velocity_goal()) {
@@ -173,7 +184,10 @@ void SwerveControlLoops::RunIteration(
       }
       NaiveEstimator::State kinematics_state = current_state.value();
 
-      if (goal->joystick_goal()->foc_override()) {
+      robot_state_fetcher_.Fetch();
+      if (goal->joystick_goal()->foc_override() ||
+          (robot_state_fetcher_.get() != nullptr &&
+           robot_state_fetcher_->user_button())) {
         naive_estimator_.use_localizer_theta(true);
       } else {
         naive_estimator_.use_localizer_theta(false);

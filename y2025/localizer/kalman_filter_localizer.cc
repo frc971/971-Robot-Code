@@ -110,14 +110,7 @@ void KalmanFilterLocalizer::HandleEstimatedSwerveState(
 
 void KalmanFilterLocalizer::HandleAutonomousInit(
     const frc971::control_loops::swerve::AutonomousInit &init_message) {
-  State initial_x_hat = State::Zero();
-
-  initial_x_hat(StateIdx::kX) = init_message.x();
-  initial_x_hat(StateIdx::kY) = init_message.y();
-  initial_x_hat(StateIdx::kTheta) = init_message.theta();
-
-  kalman_filter_.Reset(event_loop_->context().monotonic_event_time,
-                       StateSquare::Zero(), initial_x_hat);
+  (void)init_message;
 }
 
 void KalmanFilterLocalizer::SendOutput(

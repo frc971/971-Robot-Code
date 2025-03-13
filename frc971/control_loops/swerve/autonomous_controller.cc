@@ -61,31 +61,6 @@ AutonomousController::AutonomousController(
                  << "' not found in callbacks.";
     }
   }
-
-  event_loop_->MakeWatcher("/aos", [this](const aos::RobotState &state) {
-    if (state.user_button()) {
-      auto builder = autonomous_init_sender_.MakeStaticBuilder();
-      const double flip_mult = flipped_ ? -1.0 : 1.0;
-      builder->set_x(flip_mult * trajectory_.message()
-                                     .discretized_trajectory()
-                                     ->Get(0)
-                                     ->position()
-                                     ->x());
-      builder->set_y(flip_mult * trajectory_.message()
-                                     .discretized_trajectory()
-                                     ->Get(0)
-                                     ->position()
-                                     ->y());
-      const double theta_trajectory = trajectory_.message()
-                                          .discretized_trajectory()
-                                          ->Get(0)
-                                          ->position()
-                                          ->theta();
-      builder->set_theta((flipped_ ? std::numbers::pi : 0) + theta_trajectory);
-      builder.CheckOk(builder.Send());
-    }
-  });
-
   const auto timer = event_loop_->AddTimer([this]() {
     joystick_state_fetcher_.Fetch();
     if (joystick_state_fetcher_.get() != nullptr) {

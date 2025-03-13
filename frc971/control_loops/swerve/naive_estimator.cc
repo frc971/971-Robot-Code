@@ -126,12 +126,6 @@ NaiveEstimator::State NaiveEstimator::Update(
     }
   }
 
-  // This lets us be field oriented even when we have no camera detections.
-  autonomous_init_fetcher_.Fetch();
-  if (autonomous_init_fetcher_.get() != nullptr) {
-    state_(States::kTheta) = autonomous_init_fetcher_->theta();
-  }
-
   state_(States::kTheta) += state_(States::kOmega) * dt;
 
   last_update_ = now;

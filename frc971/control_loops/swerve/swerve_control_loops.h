@@ -65,6 +65,7 @@ class SwerveControlLoops
   aos::Fetcher<Goal> auto_align_goal_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<frc971::IMUValuesBatch> imu_fetcher_;
+  aos::Fetcher<aos::RobotState> robot_state_fetcher_;
   std::optional<double> yaw_gyro_zero_;
   zeroing::Averager<double, 200> yaw_gyro_zeroer_;
   frc971::zeroing::ImuZeroer imu_zeroer_;
