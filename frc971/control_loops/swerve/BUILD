@@ -54,6 +54,17 @@ static_flatbuffer(
     ],
 )
 
+flatbuffer_ts_library(
+    name = "swerve_drivetrain_status_ts_fbs",
+    srcs = [
+        "swerve_drivetrain_status.fbs",
+    ],
+    deps = [
+        "//frc971/control_loops:profiled_subsystem_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+    ],
+)
+
 static_flatbuffer(
     name = "swerve_drivetrain_output_fbs",
     srcs = ["swerve_drivetrain_output.fbs"],

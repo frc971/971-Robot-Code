@@ -6,6 +6,7 @@ import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
 import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
 import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
+import {Status as SwerveDrivetrainStatus} from '../../frc971/control_loops/swerve/swerve_drivetrain_status_generated'
 import {Position as SuperstructurePosition} from  '../control_loops/superstructure/superstructure_position_generated'
 import { EndEffectorStatus, ClimberStatus, WristStatus, Status as SuperstructureStatus } from '../control_loops/superstructure/superstructure_status_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
@@ -34,6 +35,7 @@ export class FieldHandler {
   private localizerStatus: Status|null = null;
   private superstructureGoal: SuperstructureGoal | null = null;
   private drivetrainStatus: DrivetrainStatus | null = null;
+  private swerveDrivetrainStatus: SwerveDrivetrainStatus | null = null;
   private drivetrainPosition: DrivetrainPosition | null = null;
   private drivetrainCANPosition: DrivetrainCANPosition | null = null;
   private superstructureStatus: SuperstructureStatus | null = null;
@@ -45,6 +47,7 @@ export class FieldHandler {
   private y: HTMLElement = (document.getElementById('y') as HTMLElement);
   private theta: HTMLElement =
     (document.getElementById('theta') as HTMLElement);
+  private naiveEstimatorTheta: HTMLElement = (document.getElementById('naive-theta'));
 
   private imagesAcceptedCounter: HTMLElement =
     (document.getElementById('images_accepted') as HTMLElement);
@@ -153,12 +156,17 @@ export class FieldHandler {
           });
       }
 
+        // is this the right node?
+      this.connection.addHandler(
+        '/imu/drivetrain', 'frc971.control_loops.swerve.Status', (data) => {
+          this.handleSwerveDrivetrainStatus(data);
+        });
       this.connection.addHandler(
         '/imu/localizer', 'frc971.control_loops.swerve.LocalizerState', (data) => {
           this.handleLocalizerState(data);
         });
       this.connection.addHandler(
-        '/localizer', 'frc971.control_loops.swerve.AutonomousInit', (data) => {
+        '/drivetrain', 'frc971.control_loops.swerve.AutonomousInit', (data) => {
           this.handleAutonomousInit(data);
         });
       this.connection.addHandler(
@@ -193,6 +201,11 @@ export class FieldHandler {
   private handleLocalizerState(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.localizerState = LocalizerState.getRootAsLocalizerState(fbBuffer);
+  }
+
+  private handleSwerveDrivetrainStatus(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    this.swerveDrivetrainStatus = SwerveDrivetrainStatus.getRootAsStatus(fbBuffer);
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
@@ -436,12 +449,7 @@ export class FieldHandler {
         this.drivetrainStatus.trajectoryLogging().theta(), '#000000FF',
         false);
     }
-    window.requestAnimationFrame(() => this.draw());
-    if (this.autonomousInit) {
-      this.drawRobot(
-          this.autonomousInit.x(), this.autonomousInit.y(),
-          this.autonomousInit.theta(), "#c8ff69");
-    }
+
 
     if (this.localizerState) {
       this.drawRobot(
@@ -450,10 +458,12 @@ export class FieldHandler {
       this.setValue(this.x, this.localizerState.x());
       this.setValue(this.y, this.localizerState.y());
       this.setValue(this.theta, this.localizerState.theta());
+      this.setValue(this.naiveEstimatorTheta, this.swerveDrivetrainStatus.naiveEstimator().yaw());
     } else {
       this.x.textContent = "NA";
       this.y.textContent = "NA";
       this.theta.textContent = "NA";
+      this.naiveEstimatorTheta.textContent = "NA";
     }
 
     if (this.localizerStatus)  {
@@ -465,6 +475,14 @@ export class FieldHandler {
         this.drawRobot(pose_estimate.robotX(), pose_estimate.robotY(), pose_estimate.robotTheta(), CAMERA_COLORS[Number(pose_estimate.camera())])
       }
     }
+
+    if (this.autonomousInit) {
+      this.drawRobot(
+          this.autonomousInit.x(), this.autonomousInit.y(),
+          this.autonomousInit.theta(), "#c8ff69");
+    }
+
+    window.requestAnimationFrame(() => this.draw());
   }
 
   reset(): void {

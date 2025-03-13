@@ -38,6 +38,7 @@ ts_project(
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_ts_fbs",
         "//frc971/control_loops/swerve:autonomous_init_ts_fbs",
+        "//frc971/control_loops/swerve:swerve_drivetrain_status_ts_fbs",
         "//frc971/control_loops/swerve:swerve_localizer_state_ts_fbs",
         "//frc971/vision:target_map_ts_fbs",
         "//y2025/control_loops/superstructure:superstructure_goal_ts_fbs",
