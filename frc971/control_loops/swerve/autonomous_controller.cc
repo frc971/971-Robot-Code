@@ -14,7 +14,7 @@ ABSL_FLAG(double, kNextPositionGain, 2.0,
 ABSL_FLAG(double, kNextRotationGain, 0.0,
           "Proportional gain for rotational error");
 ABSL_FLAG(double, kVelocityGain, 0.1, "Proportional gain for velocity error");
-ABSL_FLAG(double, kNextVelocityGain, 0.5,
+ABSL_FLAG(double, kNextVelocityGain, 1.0,
           "Proportional gain for velocity error");
 ABSL_FLAG(double, kNextOmegaGain, 0.0, "Proportional gain for velocity error");
 ABSL_FLAG(double, kOmegaGain, 1.0,

@@ -21,7 +21,7 @@ filegroup(
 genrule(
     name = "genrule_trajectory",
     srcs = [
-        "paths/L4-3-good.json",
+        "paths/L4-3-faster.json",
     ],
     outs = [
         "trajectory.json",
