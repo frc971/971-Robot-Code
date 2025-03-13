@@ -72,7 +72,7 @@ const ButtonLocation kAlgaeL2(3, 8);
 const ButtonLocation kAlgaeL3(3, 9);
 const ButtonLocation kBarge(2, 3);
 
-const ButtonLocation kThetaLock(1, 7);
+const ButtonLocation kThetaLock(0, 0);
 
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
@@ -237,7 +237,8 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_robot_side(RobotSide::BACK);
     } else if (data.IsPressed(kFront)) {
       superstructure_goal_builder->set_robot_side(RobotSide::FRONT);
-    } else if (data.IsPressed(kHumanPlayer)) {
+    } else if (data.IsPressed(kHumanPlayer) ||
+               data.IsPressed(kHumanPlayerBackup)) {
       superstructure_goal_builder->set_robot_side(
           frontFacing(common_->hp_locations()) ? RobotSide::FRONT
                                                : RobotSide::BACK);

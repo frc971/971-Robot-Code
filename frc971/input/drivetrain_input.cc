@@ -154,7 +154,7 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
   const JoystickAxis kVxAxis(2, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
-  const ButtonLocation kAutoAlignButton(1, 7);
+  const ButtonLocation kAutoAlignButton(1, 6);
   const ButtonLocation kFocOverrideButton(1, 11);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
