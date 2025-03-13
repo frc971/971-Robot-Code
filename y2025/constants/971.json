@@ -73,7 +73,7 @@
       "back_right":  {{ back_right_zero | tojson(indent=2)}}
     },
     "input_config": {
-      "use_redundant_joysticks": false,
+      "use_redundant_joysticks": true,
       "vx_offset": 0.0,
       "vy_offset": 0.0,
       "omega_offset": 0.0

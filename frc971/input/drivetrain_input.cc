@@ -142,7 +142,7 @@ void SwerveDrivetrainInputReader::HandleDrivetrain(
   joystick_goal->set_vx(vx);
   joystick_goal->set_vy(vy);
   joystick_goal->set_omega(omega);
-  joystick_goal->set_auto_align(!auto_align_);
+  joystick_goal->set_auto_align(auto_align_);
   joystick_goal->set_foc_override(foc_override_);
 
   builder.CheckOk(builder.Send());
@@ -153,9 +153,9 @@ std::unique_ptr<SwerveDrivetrainInputReader> SwerveDrivetrainInputReader::Make(
   // Swerve Controller
   // axis (2, 2) will give you alternative omega axis (controls with vertical
   // movement)
-  const JoystickAxis kVxAxis(3, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
-  const ButtonLocation kAutoAlignButton(2, 12);
-  const ButtonLocation kFocOverrideButton(1, 9);
+  const JoystickAxis kVxAxis(2, 1), kVyAxis(1, 1), kOmegaAxis(1, 2);
+  const ButtonLocation kAutoAlignButton(1, 7);
+  const ButtonLocation kFocOverrideButton(1, 11);
 
   std::unique_ptr<SwerveDrivetrainInputReader> result(
       new SwerveDrivetrainInputReader(event_loop, swerve_config, kVxAxis,
@@ -217,9 +217,9 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   }
 
   if (data.PosEdge(foc_override_button_)) {
-    foc_override_ = false;
-  } else if (data.NegEdge(foc_override_button_)) {
     foc_override_ = true;
+  } else if (data.NegEdge(foc_override_button_)) {
+    foc_override_ = false;
   }
 
   return SwerveDrivetrainInputReader::SwerveGoals{vx, vy, omega};

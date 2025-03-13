@@ -43,36 +43,36 @@ namespace superstructure = y2025::control_loops::superstructure;
 
 namespace swerve = frc971::control_loops::swerve;
 
-const ButtonLocation kLeftL4(6, 4);
-const ButtonLocation kRightL4(6, 5);
-const ButtonLocation kLeftL3(6, 3);
-const ButtonLocation kRightL3(6, 6);
-const ButtonLocation kLeftL2(6, 2);
-const ButtonLocation kRightL2(6, 7);
-const ButtonLocation kL1(6, 1);
+const ButtonLocation kLeftL4(3, 4);
+const ButtonLocation kRightL4(3, 5);
+const ButtonLocation kLeftL3(3, 3);
+const ButtonLocation kRightL3(3, 6);
+const ButtonLocation kLeftL2(3, 2);
+const ButtonLocation kRightL2(3, 7);
+const ButtonLocation kL1(3, 1);
 
-const ButtonLocation kHumanPlayer(6, 10);
+const ButtonLocation kHumanPlayer(3, 10);
 // TODO: update this with a real button location
-const ButtonLocation kHumanPlayerBackup(3, 2);
+const ButtonLocation kHumanPlayerBackup(2, 2);
 
-const ButtonLocation kFront(3, 8);
-const ButtonLocation kBack(3, 4);
-const ButtonLocation kAlgaeGround(3, 5);
-const ButtonLocation kAlgaeProcessor(3, 1);
+const ButtonLocation kFront(2, 8);
+const ButtonLocation kBack(2, 4);
+const ButtonLocation kAlgaeGround(2, 5);
+const ButtonLocation kAlgaeProcessor(2, 1);
 
-const ButtonLocation kEndEffectorSpit(6, 11);
+const ButtonLocation kEndEffectorSpit(3, 11);
 
-const ButtonLocation kClimb(3, 7);
-const ButtonLocation kRetract(2, 4);
-const ButtonLocation kGroundIntake(6, 12);
+const ButtonLocation kClimb(2, 7);
+const ButtonLocation kRetract(1, 4);
+const ButtonLocation kGroundIntake(3, 12);
 
-const ButtonLocation kDontMove(3, 6);
+const ButtonLocation kDontMove(2, 6);
 
-const ButtonLocation kAlgaeL2(6, 8);
-const ButtonLocation kAlgaeL3(6, 9);
-const ButtonLocation kBarge(3, 3);
+const ButtonLocation kAlgaeL2(3, 8);
+const ButtonLocation kAlgaeL3(3, 9);
+const ButtonLocation kBarge(2, 3);
 
-const ButtonLocation kThetaLock(2, 7);
+const ButtonLocation kThetaLock(1, 7);
 
 using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
