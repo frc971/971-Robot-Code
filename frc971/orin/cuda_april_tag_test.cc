@@ -2120,7 +2120,7 @@ class CudaAprilTagDetector {
   int num_quads_ = 0;
   std::vector<QuadCorners> fit_quads_;
 
-  GpuDetector gpu_detector_;
+  GpuDetector<frc971::apriltag::InputFormat::YCbCr422> gpu_detector_;
 
   zarray_t *aprilrobotics_detections_ = nullptr;
 
