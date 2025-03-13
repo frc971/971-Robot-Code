@@ -563,6 +563,7 @@ export class EntryComponent implements OnInit {
       this.matchStartTimestamp = 0;
       this.selectedValue = 0;
       this.searchForDuplicateScouting = false;
+      this.penalties = 0;
     } else {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
