@@ -591,11 +591,7 @@ func (handler submitPitImageScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 }
 
 func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025Actions) (db.Stats2025, error) {
-	overall_time := int64(0)
 	cycles := int64(0)
-	coral_picked_up := false
-	algae_picked_up := false
-	lastPlacedTime := int64(0)
 	stat := db.Stats2025{
 		CompCode: string(submit2025Actions.CompCode()), CompType: string(submit2025Actions.CompType()), TeamNumber: string(submit2025Actions.TeamNumber()),
 		MatchNumber: submit2025Actions.MatchNumber(), SetNumber: submit2025Actions.SetNumber(), CompLevel: string(submit2025Actions.CompLevel()),
@@ -605,6 +601,7 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		L1Teleop: 0, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
 		Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, CollectedBy: "",
 	}
+	overallTime := int64(135000)
 	// Loop over all actions.
 	for i := 0; i < submit2025Actions.ActionsListLength(); i++ {
 		var action submit_2025_actions.Action
@@ -644,13 +641,9 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		} else if action_type == submit_2025_actions.ActionTypePickupCoralAction {
 			var pick_up_action submit_2025_actions.PickupCoralAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
-			coral_picked_up = true
 		} else if action_type == submit_2025_actions.ActionTypePlaceCoralAction {
 			var place_action submit_2025_actions.PlaceCoralAction
 			place_action.Init(actionTable.Bytes, actionTable.Pos)
-			if !coral_picked_up {
-				return db.Stats2025{}, errors.New(fmt.Sprintf("Got PlaceCoralAction without corresponding PickupObjectAction"))
-			}
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
 			count_in_cycle := true
@@ -678,34 +671,20 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && auto {
 				stat.CoralMissedAuto += 1
-				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && !auto {
 				stat.CoralMissedTeleop += 1
-				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
-			coral_picked_up = false
-			if count_in_cycle {
-				if lastPlacedTime != int64(0) {
-					// If this is not the first time we place,
-					// start counting cycle time. We define cycle
-					// time as the time between placements.
-					overall_time += int64(action.Timestamp()) - lastPlacedTime
-				}
+			if count_in_cycle && !auto {
 				cycles += 1
-				lastPlacedTime = int64(action.Timestamp())
 			}
 		} else if action_type == submit_2025_actions.ActionTypePickupAlgaeAction {
 			var pick_up_action submit_2025_actions.PickupAlgaeAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
-			algae_picked_up = true
 		} else if action_type == submit_2025_actions.ActionTypePlaceAlgaeAction {
 			var place_action submit_2025_actions.PlaceAlgaeAction
 			place_action.Init(actionTable.Bytes, actionTable.Pos)
-			if !algae_picked_up {
-				return db.Stats2025{}, errors.New(fmt.Sprintf("Got PlaceAlgaeAction without corresponding PickupObjectAction"))
-			}
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
 			count_in_cycle := true
@@ -725,23 +704,13 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && auto {
 				stat.AlgaeMissedAuto += 1
-				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && !auto {
 				stat.AlgaeMissedTeleop += 1
-				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
-			algae_picked_up = false
-			if count_in_cycle {
-				if lastPlacedTime != int64(0) {
-					// If this is not the first time we place,
-					// start counting cycle time. We define cycle
-					// time as the time between placements.
-					overall_time += int64(action.Timestamp()) - lastPlacedTime
-				}
+			if count_in_cycle && !auto {
 				cycles += 1
-				lastPlacedTime = int64(action.Timestamp())
 			}
 		} else if action_type == submit_2025_actions.ActionTypeEndMatchAction {
 			var endMatchAction submit_2025_actions.EndMatchAction
@@ -755,10 +724,15 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			} else if endMatchAction.CageType() == submit_2025_actions.CageTypekBUDDIE {
 				stat.BuddieClimb = true
 			}
+			if stat.BuddieClimb || stat.ShallowCage || stat.DeepCage {
+				overallTime -= 10000
+			} else if stat.Park {
+				overallTime -= 5000
+			}
 		}
 	}
 	if cycles != 0 {
-		stat.AvgCycle = overall_time / cycles
+		stat.AvgCycle = overallTime / cycles
 	} else {
 		stat.AvgCycle = 0
 	}
