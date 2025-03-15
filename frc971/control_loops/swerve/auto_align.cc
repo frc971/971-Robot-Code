@@ -3,14 +3,14 @@
 using frc971::control_loops::swerve::AutoAlign;
 
 // TODO Move these constants to a json or something
-ABSL_FLAG(double, kDVx, 2.4, "Gain for x derivative error");
-ABSL_FLAG(double, kDVy, 2.4, "Gain for y derivative error");
+ABSL_FLAG(double, kDVx, 3.8, "Gain for x derivative error");
+ABSL_FLAG(double, kDVy, 3.8, "Gain for y derivative error");
 ABSL_FLAG(double, kDVtheta, 0.4, "Gain for theta derivative error");
 ABSL_FLAG(double, kPVx, 4.0, "Gain for x position error");
 ABSL_FLAG(double, kPVy, 4.0, "Gain for y position error");
 ABSL_FLAG(double, kPVtheta, 6.0, "Gain for theta position error");
 
-ABSL_FLAG(double, kVelLimit, 2.0, "Velocity Limit");
+ABSL_FLAG(double, kVelLimit, 1.8, "Velocity Limit");
 ABSL_FLAG(double, kOmegaLimit, 13.0, "Omega Limit");
 
 ABSL_FLAG(double, kXOffset, 0.0, "X Offset");
@@ -62,25 +62,11 @@ void AutoAlign::Iterate() {
   const double kVelocityLimit = absl::GetFlag(FLAGS_kVelLimit);
   const double kOmegaLimit = absl::GetFlag(FLAGS_kOmegaLimit);
 
-  constexpr double kThreshold = 0.0005;
-
   double x_error = x_goal - x + absl::GetFlag(FLAGS_kXOffset);
   double y_error = y_goal - y + absl::GetFlag(FLAGS_kYOffset);
   // Shortest distance (theta_error should be between -pi and pi)
   double theta_error = aos::math::NormalizeAngle(
       theta_goal - theta + absl::GetFlag(FLAGS_kThetaOffset));
-
-  if (std::abs(x_error) < kThreshold) {
-    x_error = 0.0;
-  }
-
-  if (std::abs(y_error) < kThreshold) {
-    y_error = 0.0;
-  }
-
-  if (std::abs(theta_error) < kThreshold) {
-    theta_error = 0.0;
-  }
 
   double dt =
       aos::time::DurationInSeconds(event_loop_->monotonic_now() - last_time_);
