@@ -10,7 +10,6 @@
         "@org_frc971/scouting/www/pipes": "workspace:*",
         "@org_frc971/scouting/www/pit_scouting": "workspace:*",
         "@org_frc971/scouting/www/scan": "workspace:*",
-        "@org_frc971/scouting/www/shift_schedule": "workspace:*",
         "@org_frc971/scouting/www/view": "workspace:*"
     }
 }

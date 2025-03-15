@@ -49,15 +49,6 @@
   <li class="nav-item">
     <a
       class="nav-link"
-      [class.active]="tabIs('ShiftSchedule')"
-      (click)="switchTabToGuarded('ShiftSchedule')"
-    >
-      Shift Schedule
-    </a>
-  </li>
-  <li class="nav-item">
-    <a
-      class="nav-link"
       [class.active]="tabIs('View')"
       (click)="switchTabToGuarded('View')"
     >
@@ -100,7 +91,6 @@
   ></app-entry>
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>
   <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
-  <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
   <app-view *ngSwitchCase="'View'"></app-view>
   <app-pit-scouting *ngSwitchCase="'Pit'"></app-pit-scouting>
   <app-scan *ngSwitchCase="'Scan'"></app-scan>

@@ -24,11 +24,6 @@ type TeamMatch2025 struct {
 	TeamNumber       string
 }
 
-type Shift struct {
-	MatchNumber                                                      int32 `gorm:"primaryKey"`
-	R1scouter, R2scouter, R3scouter, B1scouter, B2scouter, B3scouter string
-}
-
 type PitImage struct {
 	TeamNumber string `gorm:"primaryKey"`
 	CheckSum   string `gorm:"primaryKey"`
@@ -188,7 +183,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch2025{}, &Shift{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch2025{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -213,13 +208,6 @@ func (database *Database) AddToMatch2025(m TeamMatch2025) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&m)
-	return result.Error
-}
-
-func (database *Database) AddToShift(sh Shift) error {
-	result := database.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&sh)
 	return result.Error
 }
 
@@ -322,12 +310,6 @@ func (database *Database) ReturnAllParsedDriverRankings() ([]ParsedDriverRanking
 	return rankings, result.Error
 }
 
-func (database *Database) ReturnAllShifts() ([]Shift, error) {
-	var shifts []Shift
-	result := database.Find(&shifts)
-	return shifts, result.Error
-}
-
 func (database *Database) ReturnActions() ([]Action, error) {
 	var actions []Action
 	result := database.Find(&actions)
@@ -398,12 +380,6 @@ func (database *Database) QueryPitImageByChecksum(checksum_ string) (PitImage, e
 func ComputeSha256FromByteArray(arr []byte) string {
 	sum := sha256.Sum256(arr)
 	return fmt.Sprintf("%x", sum)
-}
-
-func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
-	var shifts []Shift
-	result := database.Where("match_number = ?", matchNumber_).Find(&shifts)
-	return shifts, result.Error
 }
 
 func (database *Database) QueryActions(teamNumber_ string) ([]Action, error) {

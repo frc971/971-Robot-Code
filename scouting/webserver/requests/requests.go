@@ -42,8 +42,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
@@ -58,8 +56,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -90,14 +86,10 @@ type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
 type RequestNotes2025ForTeam = request_notes_2025_for_team.RequestNotes2025ForTeam
 type RequestNotes2025ForTeamResponseT = request_notes_2025_for_team_response.RequestNotes2025ForTeamResponseT
-type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
-type RequestShiftScheduleResponseT = request_shift_schedule_response.RequestShiftScheduleResponseT
 type RequestAveragedDriverRankings2025 = request_averaged_driver_rankings_2025.RequestAveragedDriverRankings2025
 type RequestAveragedDriverRankings2025ResponseT = request_averaged_driver_rankings_2025_response.RequestAveragedDriverRankings2025ResponseT
 type RequestAveragedHumanRankings2025 = request_averaged_human_rankings_2025.RequestAveragedHumanRankings2025
 type RequestAveragedHumanRankings2025ResponseT = request_averaged_human_rankings_2025_response.RequestAveragedHumanRankings2025ResponseT
-type SubmitShiftSchedule = submit_shift_schedule.SubmitShiftSchedule
-type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftScheduleResponseT
 type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
 type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverRankingResponseT
 type Action2025 = submit_2025_actions.Action
@@ -116,18 +108,17 @@ type DeleteNotes2025ResponseT = delete_notes_2025_response.DeleteNotes2025Respon
 // We use an interface here because it makes unit testing easier.
 type Database interface {
 	AddToMatch2025(db.TeamMatch2025) error
-	AddToShift(db.Shift) error
 	AddToStats2025(db.Stats2025) error
 	ReturnMatches2025(compCode string) ([]db.TeamMatch2025, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllNotes2025(string) ([]db.NotesData2025, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
-	ReturnAllShifts() ([]db.Shift, error)
+
 	ReturnStats2025() ([]db.Stats2025, error)
 	ReturnStats2025ForTeam(compCode string, teamNumber string, matchNumber int32, setNumber int32, compLevel string, compType string) ([]db.Stats2025, error)
 	QueryDriverRanking2025(compCode string) ([]db.DriverRanking2025, error)
 	QueryHumanRanking2025(compCode string) ([]db.HumanRanking2025, error)
-	QueryAllShifts(int) ([]db.Shift, error)
+
 	QueryNotes(string) ([]string, error)
 	QueryNotes2025(compCode string, teamNumber string) ([]string, error)
 	QueryStats2025(compCode string) ([]db.Stats2025, error)
@@ -591,11 +582,7 @@ func (handler submitPitImageScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 }
 
 func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025Actions) (db.Stats2025, error) {
-	overall_time := int64(0)
 	cycles := int64(0)
-	coral_picked_up := false
-	algae_picked_up := false
-	lastPlacedTime := int64(0)
 	stat := db.Stats2025{
 		CompCode: string(submit2025Actions.CompCode()), CompType: string(submit2025Actions.CompType()), TeamNumber: string(submit2025Actions.TeamNumber()),
 		MatchNumber: submit2025Actions.MatchNumber(), SetNumber: submit2025Actions.SetNumber(), CompLevel: string(submit2025Actions.CompLevel()),
@@ -605,6 +592,7 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		L1Teleop: 0, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
 		Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, CollectedBy: "",
 	}
+	overallTime := int64(135000)
 	// Loop over all actions.
 	for i := 0; i < submit2025Actions.ActionsListLength(); i++ {
 		var action submit_2025_actions.Action
@@ -644,13 +632,9 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		} else if action_type == submit_2025_actions.ActionTypePickupCoralAction {
 			var pick_up_action submit_2025_actions.PickupCoralAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
-			coral_picked_up = true
 		} else if action_type == submit_2025_actions.ActionTypePlaceCoralAction {
 			var place_action submit_2025_actions.PlaceCoralAction
 			place_action.Init(actionTable.Bytes, actionTable.Pos)
-			if !coral_picked_up {
-				return db.Stats2025{}, errors.New(fmt.Sprintf("Got PlaceCoralAction without corresponding PickupObjectAction"))
-			}
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
 			count_in_cycle := true
@@ -678,34 +662,20 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && auto {
 				stat.CoralMissedAuto += 1
-				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDCORAL && !auto {
 				stat.CoralMissedTeleop += 1
-				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
-			coral_picked_up = false
-			if count_in_cycle {
-				if lastPlacedTime != int64(0) {
-					// If this is not the first time we place,
-					// start counting cycle time. We define cycle
-					// time as the time between placements.
-					overall_time += int64(action.Timestamp()) - lastPlacedTime
-				}
+			if count_in_cycle && !auto {
 				cycles += 1
-				lastPlacedTime = int64(action.Timestamp())
 			}
 		} else if action_type == submit_2025_actions.ActionTypePickupAlgaeAction {
 			var pick_up_action submit_2025_actions.PickupAlgaeAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
-			algae_picked_up = true
 		} else if action_type == submit_2025_actions.ActionTypePlaceAlgaeAction {
 			var place_action submit_2025_actions.PlaceAlgaeAction
 			place_action.Init(actionTable.Bytes, actionTable.Pos)
-			if !algae_picked_up {
-				return db.Stats2025{}, errors.New(fmt.Sprintf("Got PlaceAlgaeAction without corresponding PickupObjectAction"))
-			}
 			score_type := place_action.ScoreType()
 			auto := place_action.Auto()
 			count_in_cycle := true
@@ -725,23 +695,13 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && auto {
 				stat.AlgaeMissedAuto += 1
-				count_in_cycle = false
 			} else if score_type == submit_2025_actions.ScoreTypekMISSEDALGAE && !auto {
 				stat.AlgaeMissedTeleop += 1
-				count_in_cycle = false
 			} else {
 				return db.Stats2025{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
-			algae_picked_up = false
-			if count_in_cycle {
-				if lastPlacedTime != int64(0) {
-					// If this is not the first time we place,
-					// start counting cycle time. We define cycle
-					// time as the time between placements.
-					overall_time += int64(action.Timestamp()) - lastPlacedTime
-				}
+			if count_in_cycle && !auto {
 				cycles += 1
-				lastPlacedTime = int64(action.Timestamp())
 			}
 		} else if action_type == submit_2025_actions.ActionTypeEndMatchAction {
 			var endMatchAction submit_2025_actions.EndMatchAction
@@ -755,10 +715,15 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			} else if endMatchAction.CageType() == submit_2025_actions.CageTypekBUDDIE {
 				stat.BuddieClimb = true
 			}
+			if stat.BuddieClimb || stat.ShallowCage || stat.DeepCage {
+				overallTime -= 10000
+			} else if stat.Park {
+				overallTime -= 5000
+			}
 		}
 	}
 	if cycles != 0 {
-		stat.AvgCycle = overall_time / cycles
+		stat.AvgCycle = overallTime / cycles
 	} else {
 		stat.AvgCycle = 0
 	}
@@ -969,91 +934,6 @@ func (handler requestNotes2025ForTeamHandler) ServeHTTP(w http.ResponseWriter, r
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-type requestShiftScheduleHandler struct {
-	db Database
-}
-
-func (handler requestShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	_, success := parseRequest(w, requestBytes, "RequestShiftSchedule", request_shift_schedule.GetRootAsRequestShiftSchedule)
-	if !success {
-		return
-	}
-
-	shiftData, err := handler.db.ReturnAllShifts()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query shift schedule: %v", err))
-		return
-	}
-
-	var response RequestShiftScheduleResponseT
-	for _, shifts := range shiftData {
-		response.ShiftSchedule = append(response.ShiftSchedule, &request_shift_schedule_response.MatchAssignmentT{
-			MatchNumber: shifts.MatchNumber,
-			R1Scouter:   shifts.R1scouter,
-			R2Scouter:   shifts.R2scouter,
-			R3Scouter:   shifts.R3scouter,
-			B1Scouter:   shifts.B1scouter,
-			B2Scouter:   shifts.B2scouter,
-			B3Scouter:   shifts.B3scouter,
-		})
-	}
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-type submitShiftScheduleHandler struct {
-	db Database
-}
-
-func (handler submitShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// Get the username of the person submitting the data.
-	username := parseUsername(req)
-
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest[SubmitShiftSchedule](w, requestBytes, "SubmitShiftSchedule", submit_shift_schedule.GetRootAsSubmitShiftSchedule)
-	if !success {
-		return
-	}
-
-	log.Println("Got shift schedule from", username)
-	shift_schedule_length := request.ShiftScheduleLength()
-	for i := 0; i < shift_schedule_length; i++ {
-		var match_assignment submit_shift_schedule.MatchAssignment
-		request.ShiftSchedule(&match_assignment, i)
-		current_shift := db.Shift{
-			MatchNumber: match_assignment.MatchNumber(),
-			R1scouter:   string(match_assignment.R1Scouter()),
-			R2scouter:   string(match_assignment.R2Scouter()),
-			R3scouter:   string(match_assignment.R3Scouter()),
-			B1scouter:   string(match_assignment.B1Scouter()),
-			B2scouter:   string(match_assignment.B2Scouter()),
-			B3scouter:   string(match_assignment.B3Scouter()),
-		}
-		err = handler.db.AddToShift(current_shift)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit shift schedule: ", err))
-			return
-		}
-	}
-
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&SubmitShiftScheduleResponseT{}).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
 
@@ -1616,8 +1496,6 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/request/current_scouting", requestCurrentScoutingHandler{make(map[string]map[string]time.Time), db, clock})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/request/notes_2025_for_team", requestNotes2025ForTeamHandler{db})
-	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
-	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_2025_actions", submit2025ActionsHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking_2025", SubmitDriverRanking2025Handler{db})
