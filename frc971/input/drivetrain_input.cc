@@ -174,7 +174,7 @@ SwerveDrivetrainInputReader::GetSwerveGoals(
   // xbox
   constexpr double kMovementDeadband = 0.01;
   constexpr double kRotationDeadband = 0.05;
-  constexpr double kVelScale = 12.0;
+  constexpr double kVelScale = 6.0;
   constexpr double kOmegaScale = 5.0;
   constexpr double kRoundtoOneThreshold = 0.95;
 
