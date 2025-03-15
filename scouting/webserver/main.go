@@ -141,7 +141,7 @@ func main() {
 
 	scoutingServer := server.NewScoutingServer()
 	var realClock requests.RealClock
-	static.ServePages(scoutingServer, *dirPtr, database)
+	static.ServePages(scoutingServer, *dirPtr)
 	requests.HandleRequests(database, scoutingServer, realClock)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)

@@ -58,15 +58,6 @@
   <li class="nav-item">
     <a
       class="nav-link"
-      [class.active]="tabIs('Pit')"
-      (click)="switchTabToGuarded('Pit')"
-    >
-      Pit
-    </a>
-  </li>
-  <li class="nav-item">
-    <a
-      class="nav-link"
       [class.active]="tabIs('Scan')"
       (click)="switchTabToGuarded('Scan')"
     >
@@ -92,6 +83,5 @@
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>
   <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
   <app-view *ngSwitchCase="'View'"></app-view>
-  <app-pit-scouting *ngSwitchCase="'Pit'"></app-pit-scouting>
   <app-scan *ngSwitchCase="'Scan'"></app-scan>
 </ng-container>

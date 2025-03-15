@@ -6,10 +6,7 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/scouting/webserver/static",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//scouting/db",
-        "//scouting/webserver/server",
-    ],
+    deps = ["//scouting/webserver/server"],
 )
 
 go_test(
@@ -22,8 +19,5 @@ go_test(
     ],
     embed = [":static"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        "//scouting/db",
-        "//scouting/webserver/server",
-    ],
+    deps = ["//scouting/webserver/server"],
 )

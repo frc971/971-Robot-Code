@@ -8,7 +8,6 @@
         "@org_frc971/scouting/www/match_list": "workspace:*",
         "@org_frc971/scouting/www/notes": "workspace:*",
         "@org_frc971/scouting/www/pipes": "workspace:*",
-        "@org_frc971/scouting/www/pit_scouting": "workspace:*",
         "@org_frc971/scouting/www/scan": "workspace:*",
         "@org_frc971/scouting/www/view": "workspace:*"
     }

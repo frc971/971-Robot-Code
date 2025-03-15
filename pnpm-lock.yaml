@@ -204,9 +204,6 @@ importers:
       '@org_frc971/scouting/www/pipes':
         specifier: workspace:*
         version: link:pipes
-      '@org_frc971/scouting/www/pit_scouting':
-        specifier: workspace:*
-        version: link:pit_scouting
       '@org_frc971/scouting/www/scan':
         specifier: workspace:*
         version: link:scan
@@ -272,15 +269,6 @@ importers:
         version: link:../../webserver/requests/messages
 
   scouting/www/pipes: {}
-
-  scouting/www/pit_scouting:
-    dependencies:
-      '@angular/forms':
-        specifier: v16-lts
-        version: 16.2.12(@angular/common@16.2.12)(@angular/core@16.2.12)(@angular/platform-browser@16.2.12)(rxjs@7.5.7)
-      '@org_frc971/scouting/webserver/requests/messages':
-        specifier: workspace:*
-        version: link:../../webserver/requests/messages
 
   scouting/www/rpc:
     dependencies:

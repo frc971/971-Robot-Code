@@ -1,7 +1,6 @@
 package db
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"gorm.io/driver/postgres"
@@ -22,19 +21,6 @@ type TeamMatch2025 struct {
 	Alliance         string `gorm:"primaryKey"` // "R" or "B"
 	AlliancePosition int32  `gorm:"primaryKey"` // 1, 2, or 3
 	TeamNumber       string
-}
-
-type PitImage struct {
-	TeamNumber string `gorm:"primaryKey"`
-	CheckSum   string `gorm:"primaryKey"`
-	ImagePath  string
-	ImageData  []byte
-}
-
-type RequestedPitImage struct {
-	TeamNumber string
-	CheckSum   string `gorm:"primaryKey"`
-	ImagePath  string
 }
 
 type Stats2025 struct {
@@ -183,7 +169,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch2025{}, &Stats2025{}, &Action{}, &PitImage{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch2025{}, &Stats2025{}, &Action{}, &NotesData{}, &NotesData2025{}, &Ranking{}, &DriverRankingData{}, &DriverRanking2025{}, &HumanRanking2025{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -215,11 +201,6 @@ func (database *Database) AddAction(a Action) error {
 	// TODO(phil): Add check for a corresponding match in the `TeamMatch`
 	// table.
 	result := database.Create(&a)
-	return result.Error
-}
-
-func (database *Database) AddPitImage(p PitImage) error {
-	result := database.Create(&p)
 	return result.Error
 }
 
@@ -316,12 +297,6 @@ func (database *Database) ReturnActions() ([]Action, error) {
 	return actions, result.Error
 }
 
-func (database *Database) ReturnPitImages() ([]PitImage, error) {
-	var images []PitImage
-	result := database.Find(&images)
-	return images, result.Error
-}
-
 func (database *Database) ReturnStats2025() ([]Stats2025, error) {
 	var stats2025 []Stats2025
 	result := database.Find(&stats2025)
@@ -358,28 +333,6 @@ func (database *Database) queryMatches2025(teamNumber_ string, compCode string) 
 		Where("team_number = $1 AND comp_code = $2", teamNumber_, compCode).Order("comp_code").Order("match_number").
 		Find(&matches)
 	return matches, result.Error
-}
-
-func (database *Database) QueryPitImages(teamNumber_ string) ([]RequestedPitImage, error) {
-	var requestedPitImages []RequestedPitImage
-	result := database.Model(&PitImage{}).
-		Where("team_number = $1", teamNumber_).
-		Find(&requestedPitImages)
-
-	return requestedPitImages, result.Error
-}
-
-func (database *Database) QueryPitImageByChecksum(checksum_ string) (PitImage, error) {
-	var pitImage PitImage
-	result := database.
-		Where("check_sum = $1", checksum_).
-		Find(&pitImage)
-	return pitImage, result.Error
-}
-
-func ComputeSha256FromByteArray(arr []byte) string {
-	sum := sha256.Sum256(arr)
-	return fmt.Sprintf("%x", sum)
 }
 
 func (database *Database) QueryActions(teamNumber_ string) ([]Action, error) {

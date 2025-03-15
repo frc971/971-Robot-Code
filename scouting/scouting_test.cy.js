@@ -208,39 +208,6 @@ describe('Scouting app tests', () => {
     headerShouldBe('1 Init ');
   });
 
-  it('should: allow users to submit pit images.', () => {
-    switchToTab('Pit');
-    headerShouldBe('Pit Scouting');
-    setInputTo('#teamNumber', '971');
-
-    cy.get('#pitImage').selectFile('test_img_1.png');
-
-    clickButton('Submit');
-    headerShouldBe('Pit Scouting');
-    setInputTo('#teamNumber', '971');
-
-    cy.get('#pitImage').selectFile('test_img_2.png');
-
-    clickButton('Submit');
-    headerShouldBe('Pit Scouting');
-
-    switchToTab('View');
-
-    cy.get('[data-bs-toggle="dropdown"]').click();
-    cy.get('[id="pit_images_source_dropdown"]').click();
-    cy.get('table.table tbody th').should('contain', '971');
-    cy.get('img')
-      .first()
-      .should('be.visible')
-      .should('have.attr', 'src')
-      .should('include', 'test_img_1.png');
-    cy.get('img')
-      .last()
-      .should('be.visible')
-      .should('have.attr', 'src')
-      .should('include', 'test_img_2.png');
-  });
-
   it('should: let users enter match information manually.', () => {
     switchToTab('Entry');
     headerShouldBe(' Team Selection ');

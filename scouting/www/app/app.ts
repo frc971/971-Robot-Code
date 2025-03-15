@@ -2,14 +2,7 @@ import {Component, ElementRef, ViewChild, isDevMode} from '@angular/core';
 
 import {CompLevel} from '@org_frc971/scouting/www/entry';
 
-type Tab =
-  | 'MatchList'
-  | 'Notes'
-  | 'Entry'
-  | 'DriverRanking'
-  | 'View'
-  | 'Pit'
-  | 'Scan';
+type Tab = 'MatchList' | 'Notes' | 'Entry' | 'DriverRanking' | 'View' | 'Scan';
 
 // Ignore the guard for tabs that don't require the user to enter any data.
 const unguardedTabs: Tab[] = ['MatchList', 'Scan', 'View'];

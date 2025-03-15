@@ -17,20 +17,17 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -169,18 +166,6 @@ func RequestNotes2025(server string, requestBytes []byte, userName string) (*req
 		request_notes_2025_for_team_response.GetRootAsRequestNotes2025ForTeamResponse, DefaultUsername)
 }
 
-func RequestPitImages(server string, requestBytes []byte, userName string) (*request_pit_images_response.RequestPitImagesResponseT, error) {
-	return sendMessage[request_pit_images_response.RequestPitImagesResponseT](
-		server+"/requests/request/pit_images", requestBytes,
-		request_pit_images_response.GetRootAsRequestPitImagesResponse, DefaultUsername)
-}
-
-func RequestAllPitImages(server string, requestBytes []byte, userName string) (*request_all_pit_images_response.RequestAllPitImagesResponseT, error) {
-	return sendMessage[request_all_pit_images_response.RequestAllPitImagesResponseT](
-		server+"/requests/request/all_pit_images", requestBytes,
-		request_all_pit_images_response.GetRootAsRequestAllPitImagesResponse, DefaultUsername)
-}
-
 func RequestAllNotes(server string, requestBytes []byte, userName string) (*request_all_notes_response.RequestAllNotesResponseT, error) {
 	return sendMessage[request_all_notes_response.RequestAllNotesResponseT](
 		server+"/requests/request/all_notes", requestBytes,
@@ -221,12 +206,6 @@ func Submit2025Actions(server string, requestBytes []byte, userName string) (*su
 	return sendMessage[submit_2025_actions_response.Submit2025ActionsResponseT](
 		server+"/requests/submit/submit_2025_actions", requestBytes,
 		submit_2025_actions_response.GetRootAsSubmit2025ActionsResponse, DefaultUsername)
-}
-
-func SubmitPitImage(server string, requestBytes []byte, userName string) (*submit_pit_image_response.SubmitPitImageResponseT, error) {
-	return sendMessage[submit_pit_image_response.SubmitPitImageResponseT](
-		server+"/requests/submit/submit_pit_image", requestBytes,
-		submit_pit_image_response.GetRootAsSubmitPitImageResponse, DefaultUsername)
 }
 
 func Delete2025DataScouting(server string, requestBytes []byte, userName string) (*delete_2025_data_scouting_response.Delete2025DataScoutingResponseT, error) {

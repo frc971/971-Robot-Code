@@ -20,8 +20,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025"
@@ -30,15 +28,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -822,145 +817,6 @@ func TestRequestNotes2025(t *testing.T) {
 
 	if response.Notes2025[0].Data != "Notes" {
 		t.Fatal("requested notes 2025 did not match", response)
-	}
-}
-
-func TestSubmitPitImage(t *testing.T) {
-	database := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&database, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_pit_image.SubmitPitImageT{
-		TeamNumber: "483A", ImagePath: "483Arobot.jpg",
-		ImageData: []byte{12, 43, 54, 34, 98},
-	}).Pack(builder))
-
-	_, err := debug.SubmitPitImage("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to submit pit image: ", err)
-	}
-
-	expected := []db.PitImage{
-		{
-			TeamNumber: "483A", CheckSum: "177d9dc52bc25f391232e82521259c378964c068832a9178d73448ba4ac5e0b1",
-			ImagePath: "483Arobot.jpg", ImageData: []byte{12, 43, 54, 34, 98},
-		},
-	}
-
-	if !reflect.DeepEqual(database.images, expected) {
-		t.Fatal("Submitted image did not match", expected, database.images)
-	}
-}
-
-func TestRequestPitImages(t *testing.T) {
-	db := MockDatabase{
-		images: []db.PitImage{
-			{
-				TeamNumber: "932", ImagePath: "pitimage.jpg",
-				ImageData: []byte{3, 34, 44, 65}, CheckSum: "abcdf",
-			},
-			{
-				TeamNumber: "234", ImagePath: "234robot.png",
-				ImageData: []byte{64, 54, 21, 21, 76, 32}, CheckSum: "egrfd",
-			},
-			{
-				TeamNumber: "93A", ImagePath: "abcd.jpg",
-				ImageData: []byte{92, 94, 10, 30, 57, 32, 32}, CheckSum: "rgegfd",
-			},
-		},
-	}
-
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_pit_images.RequestPitImagesT{"932"}).Pack(builder))
-
-	response, err := debug.RequestPitImages("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to request pit images: ", err)
-	}
-
-	expected := request_pit_images_response.RequestPitImagesResponseT{
-		PitImageList: []*request_pit_images_response.PitImageT{
-			{
-				TeamNumber: "932", ImagePath: "pitimage.jpg", CheckSum: "abcdf",
-			},
-		},
-	}
-
-	if len(expected.PitImageList) != len(response.PitImageList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-
-	for i, pit_image := range expected.PitImageList {
-		if !reflect.DeepEqual(*pit_image, *response.PitImageList[i]) {
-			t.Fatal("Expected for pit image", i, ":", *pit_image, ", but got:", *response.PitImageList[i])
-		}
-	}
-}
-
-func TestRequestAllPitImages(t *testing.T) {
-	db := MockDatabase{
-		images: []db.PitImage{
-			{
-				TeamNumber: "32", ImagePath: "pitimage.jpg",
-				ImageData: []byte{3, 43, 44, 32}, CheckSum: "cdhrj",
-			},
-			{
-				TeamNumber: "231", ImagePath: "232robot.png",
-				ImageData: []byte{64, 54, 54, 21, 76, 32}, CheckSum: "rgre",
-			},
-			{
-				TeamNumber: "90", ImagePath: "abcd.jpg",
-				ImageData: []byte{92, 94, 10, 30, 57, 32, 32}, CheckSum: "erfer",
-			},
-		},
-	}
-
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_all_pit_images.RequestAllPitImagesT{}).Pack(builder))
-
-	response, err := debug.RequestAllPitImages("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to request pit images: ", err)
-	}
-
-	expected := request_all_pit_images_response.RequestAllPitImagesResponseT{
-		PitImageList: []*request_all_pit_images_response.PitImageT{
-			{
-				TeamNumber: "32", ImagePath: "pitimage.jpg", CheckSum: "cdhrj",
-			},
-			{
-				TeamNumber: "231", ImagePath: "232robot.png", CheckSum: "rgre",
-			},
-			{
-				TeamNumber: "90", ImagePath: "abcd.jpg", CheckSum: "erfer",
-			},
-		},
-	}
-
-	if len(expected.PitImageList) != len(response.PitImageList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-
-	for i, pit_image := range expected.PitImageList {
-		if !reflect.DeepEqual(*pit_image, *response.PitImageList[i]) {
-			t.Fatal("Expected for pit image", i, ":", *pit_image, ", but got:", *response.PitImageList[i])
-		}
 	}
 }
 
@@ -1777,7 +1633,6 @@ type MockDatabase struct {
 	driver_ranking      []db.DriverRankingData
 	stats2025           []db.Stats2025
 	actions             []db.Action
-	images              []db.PitImage
 	driver_ranking_2025 []db.DriverRanking2025
 	human_ranking_2025  []db.HumanRanking2025
 }
@@ -1891,20 +1746,6 @@ func (database *MockDatabase) QueryHumanRanking2025(compCode string) ([]db.Human
 
 }
 
-func (database *MockDatabase) QueryPitImages(requestedTeam string) ([]db.RequestedPitImage, error) {
-	var results []db.RequestedPitImage
-	for _, data := range database.images {
-		if data.TeamNumber == requestedTeam {
-			results = append(results, db.RequestedPitImage{
-				TeamNumber: data.TeamNumber,
-				ImagePath:  data.ImagePath,
-				CheckSum:   data.CheckSum,
-			})
-		}
-	}
-	return results, nil
-}
-
 func (database *MockDatabase) QueryStats2025(compCode string) ([]db.Stats2025, error) {
 	var results []db.Stats2025
 	for _, data := range database.stats2025 {
@@ -1985,17 +1826,8 @@ func (database *MockDatabase) AddHumanRanking2025(action db.HumanRanking2025) er
 	return nil
 }
 
-func (database *MockDatabase) AddPitImage(pitImage db.PitImage) error {
-	database.images = append(database.images, pitImage)
-	return nil
-}
-
 func (database *MockDatabase) ReturnActions() ([]db.Action, error) {
 	return database.actions, nil
-}
-
-func (database *MockDatabase) ReturnPitImages() ([]db.PitImage, error) {
-	return database.images, nil
 }
 
 func (database *MockDatabase) DeleteFromStats2025(compCode_ string, compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {

@@ -10,7 +10,6 @@ import {MatchListModule} from '@org_frc971/scouting/www/match_list';
 import {NotesModule} from '@org_frc971/scouting/www/notes';
 import {ViewModule} from '@org_frc971/scouting/www/view';
 import {DriverRankingModule} from '@org_frc971/scouting/www/driver_ranking';
-import {PitScoutingModule} from '@org_frc971/scouting/www/pit_scouting';
 import {ScanModule} from '@org_frc971/scouting/www/scan';
 
 @NgModule({
@@ -30,7 +29,6 @@ import {ScanModule} from '@org_frc971/scouting/www/scan';
     PipeModule,
     DriverRankingModule,
     ViewModule,
-    PitScoutingModule,
     ScanModule,
   ],
   exports: [App],

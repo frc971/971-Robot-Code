@@ -28,8 +28,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025"
@@ -40,8 +38,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
@@ -54,8 +50,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -74,12 +68,6 @@ type SubmitNotes = submit_notes.SubmitNotes
 type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
 type SubmitNotes2025 = submit_notes_2025.SubmitNotes2025
 type SubmitNotes2025ResponseT = submit_notes_2025_response.SubmitNotes2025ResponseT
-type SubmitPitImage = submit_pit_image.SubmitPitImage
-type SubmitPitImageResponseT = submit_pit_image_response.SubmitPitImageResponseT
-type RequestPitImages = request_pit_images.RequestPitImages
-type RequestPitImagesResponseT = request_pit_images_response.RequestPitImagesResponseT
-type RequestAllPitImages = request_all_pit_images.RequestAllPitImages
-type RequestAllPitImagesResponseT = request_all_pit_images_response.RequestAllPitImagesResponseT
 type RequestCurrentScouting = request_current_scouting.RequestCurrentScouting
 type RequestCurrentScoutingResponseT = request_current_scouting_response.RequestCurrentScoutingResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
@@ -122,11 +110,8 @@ type Database interface {
 	QueryNotes(string) ([]string, error)
 	QueryNotes2025(compCode string, teamNumber string) ([]string, error)
 	QueryStats2025(compCode string) ([]db.Stats2025, error)
-	QueryPitImages(string) ([]db.RequestedPitImage, error)
-	ReturnPitImages() ([]db.PitImage, error)
 	AddNotes(db.NotesData) error
 	AddNotes2025(db.NotesData2025) error
-	AddPitImage(db.PitImage) error
 	AddDriverRanking(db.DriverRankingData) error
 	AddAction(db.Action) error
 	AddDriverRanking2025(db.DriverRanking2025) error
@@ -548,39 +533,6 @@ func (handler submitNote2025ScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 	w.Write(builder.FinishedBytes())
 }
 
-type submitPitImageScoutingHandler struct {
-	db Database
-}
-
-func (handler submitPitImageScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest(w, requestBytes, "SubmitPitImage", submit_pit_image.GetRootAsSubmitPitImage)
-	if !success {
-		return
-	}
-
-	err = handler.db.AddPitImage(db.PitImage{
-		TeamNumber: string(request.TeamNumber()),
-		CheckSum:   db.ComputeSha256FromByteArray(request.ImageDataBytes()),
-		ImagePath:  string(request.ImagePath()),
-		ImageData:  request.ImageDataBytes(),
-	})
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
-		return
-	}
-
-	var response SubmitPitImageResponseT
-	builder := flatbuffers.NewBuilder(10)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
 func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025Actions) (db.Stats2025, error) {
 	cycles := int64(0)
 	stat := db.Stats2025{
@@ -797,78 +749,6 @@ func (handler request2025DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-type requestAllPitImagesHandler struct {
-	db Database
-}
-
-func (handler requestAllPitImagesHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	_, success := parseRequest(w, requestBytes, "RequestAllPitImages", request_all_pit_images.GetRootAsRequestAllPitImages)
-	if !success {
-		return
-	}
-
-	images, err := handler.db.ReturnPitImages()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pit images: %v", err))
-		return
-	}
-
-	var response RequestAllPitImagesResponseT
-	for _, data := range images {
-		response.PitImageList = append(response.PitImageList, &request_all_pit_images_response.PitImageT{
-			TeamNumber: data.TeamNumber,
-			ImagePath:  data.ImagePath,
-			CheckSum:   data.CheckSum,
-		})
-	}
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-type requestPitImagesHandler struct {
-	db Database
-}
-
-func (handler requestPitImagesHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest(w, requestBytes, "RequestPitImages", request_pit_images.GetRootAsRequestPitImages)
-	if !success {
-		return
-	}
-
-	images, err := handler.db.QueryPitImages(string(request.TeamNumber()))
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query pit images: %v", err))
-		return
-	}
-
-	var response RequestPitImagesResponseT
-	for _, data := range images {
-		response.PitImageList = append(response.PitImageList, &request_pit_images_response.PitImageT{
-			TeamNumber: data.TeamNumber,
-			ImagePath:  data.ImagePath,
-			CheckSum:   data.CheckSum,
-		})
-	}
-
-	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
@@ -1490,9 +1370,6 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer, clock Clo
 	scoutingServer.Handle("/requests/request/2025_data_scouting", request2025DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes_2025", submitNote2025ScoutingHandler{db})
-	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
-	scoutingServer.Handle("/requests/request/pit_images", requestPitImagesHandler{db})
-	scoutingServer.Handle("/requests/request/all_pit_images", requestAllPitImagesHandler{db})
 	scoutingServer.Handle("/requests/request/current_scouting", requestCurrentScoutingHandler{make(map[string]map[string]time.Time), db, clock})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/request/notes_2025_for_team", requestNotes2025ForTeamHandler{db})
