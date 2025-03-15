@@ -32,8 +32,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
@@ -41,7 +39,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -967,115 +964,6 @@ func TestRequestAllPitImages(t *testing.T) {
 	}
 }
 
-func TestRequestShiftSchedule(t *testing.T) {
-	db := MockDatabase{
-		shiftSchedule: []db.Shift{
-			{
-				MatchNumber: 1,
-				R1scouter:   "Bob",
-				R2scouter:   "James",
-				R3scouter:   "Robert",
-				B1scouter:   "Alice",
-				B2scouter:   "Mary",
-				B3scouter:   "Patricia",
-			},
-			{
-				MatchNumber: 2,
-				R1scouter:   "Liam",
-				R2scouter:   "Noah",
-				R3scouter:   "Oliver",
-				B1scouter:   "Emma",
-				B2scouter:   "Charlotte",
-				B3scouter:   "Amelia",
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_shift_schedule.RequestShiftScheduleT{}).Pack(builder))
-
-	response, err := debug.RequestShiftSchedule("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to request shift schedule: ", err)
-	}
-
-	expected := request_shift_schedule_response.RequestShiftScheduleResponseT{
-		ShiftSchedule: []*request_shift_schedule_response.MatchAssignmentT{
-			{
-				MatchNumber: 1,
-				R1Scouter:   "Bob",
-				R2Scouter:   "James",
-				R3Scouter:   "Robert",
-				B1Scouter:   "Alice",
-				B2Scouter:   "Mary",
-				B3Scouter:   "Patricia",
-			},
-			{
-				MatchNumber: 2,
-				R1Scouter:   "Liam",
-				R2Scouter:   "Noah",
-				R3Scouter:   "Oliver",
-				B1Scouter:   "Emma",
-				B2Scouter:   "Charlotte",
-				B3Scouter:   "Amelia",
-			},
-		},
-	}
-	if len(expected.ShiftSchedule) != len(response.ShiftSchedule) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.ShiftSchedule {
-		if !reflect.DeepEqual(*match, *response.ShiftSchedule[i]) {
-			t.Fatal("Expected for shift schedule", i, ":", *match, ", but got:", *response.ShiftSchedule[i])
-		}
-	}
-}
-
-func TestSubmitShiftSchedule(t *testing.T) {
-	database := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&database, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_shift_schedule.SubmitShiftScheduleT{
-		ShiftSchedule: []*submit_shift_schedule.MatchAssignmentT{
-			{MatchNumber: 1,
-				R1Scouter: "Bob",
-				R2Scouter: "James",
-				R3Scouter: "Robert",
-				B1Scouter: "Alice",
-				B2Scouter: "Mary",
-				B3Scouter: "Patricia"},
-		},
-	}).Pack(builder))
-
-	_, err := debug.SubmitShiftSchedule("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to submit shift schedule: ", err)
-	}
-
-	expected := []db.Shift{
-		{MatchNumber: 1,
-			R1scouter: "Bob",
-			R2scouter: "James",
-			R3scouter: "Robert",
-			B1scouter: "Alice",
-			B2scouter: "Mary",
-			B3scouter: "Patricia"},
-	}
-	if !reflect.DeepEqual(expected, database.shiftSchedule) {
-		t.Fatal("Expected ", expected, ", but got:", database.shiftSchedule)
-	}
-}
-
 func TestSubmitDriverRanking(t *testing.T) {
 	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
@@ -1886,7 +1774,6 @@ type MockDatabase struct {
 	matches2025         []db.TeamMatch2025
 	notes               []db.NotesData
 	notes2025           []db.NotesData2025
-	shiftSchedule       []db.Shift
 	driver_ranking      []db.DriverRankingData
 	stats2025           []db.Stats2025
 	actions             []db.Action
@@ -1971,19 +1858,6 @@ func (database *MockDatabase) ReturnAllNotes2025(compCode string) ([]db.NotesDat
 		}
 	}
 	return results, nil
-}
-
-func (database *MockDatabase) AddToShift(data db.Shift) error {
-	database.shiftSchedule = append(database.shiftSchedule, data)
-	return nil
-}
-
-func (database *MockDatabase) ReturnAllShifts() ([]db.Shift, error) {
-	return database.shiftSchedule, nil
-}
-
-func (database *MockDatabase) QueryAllShifts(int) ([]db.Shift, error) {
-	return []db.Shift{}, nil
 }
 
 func (database *MockDatabase) QueryDriverRanking2025(compCode string) ([]db.DriverRanking2025, error) {

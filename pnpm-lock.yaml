@@ -210,9 +210,6 @@ importers:
       '@org_frc971/scouting/www/scan':
         specifier: workspace:*
         version: link:scan
-      '@org_frc971/scouting/www/shift_schedule':
-        specifier: workspace:*
-        version: link:shift_schedule
       '@org_frc971/scouting/www/view':
         specifier: workspace:*
         version: link:view
@@ -311,15 +308,6 @@ importers:
       pako:
         specifier: 2.1.0
         version: 2.1.0
-
-  scouting/www/shift_schedule:
-    dependencies:
-      '@angular/forms':
-        specifier: v16-lts
-        version: 16.2.12(@angular/common@16.2.12)(@angular/core@16.2.12)(@angular/platform-browser@16.2.12)(rxjs@7.5.7)
-      '@org_frc971/scouting/webserver/requests/messages':
-        specifier: workspace:*
-        version: link:../../webserver/requests/messages
 
   scouting/www/test/authorize:
     dependencies:

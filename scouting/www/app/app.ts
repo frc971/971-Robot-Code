@@ -7,7 +7,6 @@ type Tab =
   | 'Notes'
   | 'Entry'
   | 'DriverRanking'
-  | 'ShiftSchedule'
   | 'View'
   | 'Pit'
   | 'Scan';

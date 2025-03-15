@@ -24,7 +24,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
@@ -32,7 +31,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -195,22 +193,10 @@ func RequestAllNotes2025(server string, requestBytes []byte, userName string) (*
 		request_all_notes_2025_response.GetRootAsRequestAllNotes2025Response, DefaultUsername)
 }
 
-func RequestShiftSchedule(server string, requestBytes []byte, userName string) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {
-	return sendMessage[request_shift_schedule_response.RequestShiftScheduleResponseT](
-		server+"/requests/request/shift_schedule", requestBytes,
-		request_shift_schedule_response.GetRootAsRequestShiftScheduleResponse, DefaultUsername)
-}
-
 func RequestCurrentScouting(server string, requestBytes []byte, userName string) (*request_current_scouting_response.RequestCurrentScoutingResponseT, error) {
 	return sendMessage[request_current_scouting_response.RequestCurrentScoutingResponseT](
 		server+"/requests/request/current_scouting", requestBytes,
 		request_current_scouting_response.GetRootAsRequestCurrentScoutingResponse, userName)
-}
-
-func SubmitShiftSchedule(server string, requestBytes []byte, userName string) (*submit_shift_schedule_response.SubmitShiftScheduleResponseT, error) {
-	return sendMessage[submit_shift_schedule_response.SubmitShiftScheduleResponseT](
-		server+"/requests/submit/shift_schedule", requestBytes,
-		submit_shift_schedule_response.GetRootAsSubmitShiftScheduleResponse, DefaultUsername)
 }
 
 func SubmitDriverRanking(server string, requestBytes []byte, userName string) (*submit_driver_ranking_response.SubmitDriverRankingResponseT, error) {

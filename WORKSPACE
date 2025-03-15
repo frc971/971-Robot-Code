@@ -971,7 +971,6 @@ npm_translate_lock(
         "@//scouting/www/pipes:package.json",
         "@//scouting/www/rpc:package.json",
         "@//scouting/www/scan:package.json",
-        "@//scouting/www/shift_schedule:package.json",
         "@//scouting/www/test/authorize:package.json",
         "@//scouting/www/view:package.json",
     ],
