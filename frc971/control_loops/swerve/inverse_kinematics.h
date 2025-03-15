@@ -40,6 +40,7 @@ class InverseKinematics {
     const Scalar vx = goal(States::kVx);
     const Scalar vy = goal(States::kVy);
     const Scalar omega = goal(States::kOmega);
+    const Scalar previous_theta = *module_theta;
     // module_velocity_in_robot_frame = R(-theta) * robot_vel +
     //     omega.cross(module_position);
     // module_vel_x = (cos(-theta) * vx - sin(-theta) * vy) - omega * module_y
@@ -67,6 +68,11 @@ class InverseKinematics {
       desired_theta = nominal_module_theta;
     }
     *module_theta += aos::math::NormalizeAngle(desired_theta - *module_theta);
+
+    if (module_vel_x == 0.0 && module_vel_y == 0.0) {
+      *module_theta = previous_theta;
+    }
+
     const Scalar module_accel_x = (stheta * vx + ctheta * vy) * omega;
     const Scalar module_accel_y = (-ctheta * vx + stheta * vy) * omega;
     const Scalar module_vel_norm_squared =
