@@ -89,7 +89,7 @@ function prepareDataScouting(options) {
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
-  cy.get('#review_data li').eq(1).should('have.text', ' Picked up Coral ');
+  cy.get('#review_data li').eq(1).should('have.text', ' Coral placed at kL1 ');
   cy.get('#review_data li')
     .last()
     .should('have.text', ' Ended Match; cageType: kSHALLOW_CAGE ');

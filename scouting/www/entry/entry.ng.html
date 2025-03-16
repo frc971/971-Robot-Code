@@ -281,28 +281,28 @@
             <button
               class="btn btn-warning"
               (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL1}); hasPickedUpCoral = false;"
-              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+              style="width: 40%; height: 12vh; margin: 20px 10px 10px 0px"
             >
               L1
             </button>
             <button
               class="btn btn-warning"
               (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL2}); hasPickedUpCoral = false;"
-              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+              style="width: 40%; height: 12vh; margin: 20px 10px 10px 0px"
             >
               L2
             </button>
             <button
               class="btn btn-warning"
               (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL3}); hasPickedUpCoral = false;"
-              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+              style="width: 40%; height: 12vh; margin: 20px 10px 10px 0px"
             >
               L3
             </button>
             <button
               class="btn btn-warning"
               (click)="changeSectionTo('Pickup'); actionHelper.addPlaceCoralAction({auto: autoPhase, scoreType: ScoreType.kL4}); hasPickedUpCoral = false;"
-              style="width: 48%; height: 12vh; margin: 20px 10px 10px 0px"
+              style="width: 40%; height: 12vh; margin: 20px 10px 10px 0px"
             >
               L4
             </button>
@@ -566,52 +566,54 @@
     <div class="row">
       <ul id="review_data">
         <div *ngIf="compType!='Regular'">This is a {{this.compType}} match</div>
-        <li *ngFor="let action of actionList" style="display: flex">
-          <div [ngSwitch]="action.actionTakenType" style="padding: 0px">
-            <span *ngSwitchCase="ActionType.StartMatchAction">
-              Started match at position {{(action.actionTaken | cast:
-              StartMatchActionT).position}}
-            </span>
-            <span *ngSwitchCase="ActionType.PickupCoralAction">
-              Picked up Coral
-            </span>
-            <span *ngSwitchCase="ActionType.PickupAlgaeAction">
-              Picked up Algae
-            </span>
-            <span *ngSwitchCase="ActionType.PlaceCoralAction">
-              Placed at {{stringifyScoreType((action.actionTaken | cast:
-              PlaceCoralActionT).scoreType)}}
-            </span>
-            <span *ngSwitchCase="ActionType.PlaceAlgaeAction">
-              Placed at {{stringifyScoreType((action.actionTaken | cast:
-              PlaceAlgaeActionT).scoreType)}}
-            </span>
-            <span *ngSwitchCase="ActionType.EndAutoPhaseAction">
-              Ended auto phase
-            </span>
-            <span *ngSwitchCase="ActionType.EndTeleopPhaseAction">
-              Ended teleop phase
-            </span>
-            <span *ngSwitchCase="ActionType.EndMatchAction">
-              Ended Match; cageType: {{stringifyCageType((action.actionTaken |
-              cast: EndMatchActionT).cageType)}}
-            </span>
-            <span *ngSwitchCase="ActionType.RobotDeathAction">
-              Robot dead: {{(action.actionTaken | cast:
-              RobotDeathActionT).robotDead}}
-            </span>
-            <span *ngSwitchCase="ActionType.MobilityAction">
-              Mobility: {{(action.actionTaken | cast:
-              MobilityActionT).mobility}}
-            </span>
-            <span *ngSwitchCase="ActionType.NoShowAction">NoShow: true</span>
-            <span *ngSwitchDefault>{{action.actionTakenType}}</span>
-            <span *ngSwitchCase="ActionType.PenaltyAction">
-              Penalties: {{(action.actionTaken | cast:
-              PenaltyActionT).penalties}}
-            </span>
-          </div>
-        </li>
+        <ng-container *ngFor="let action of actionList">
+          <li
+            *ngIf="action.actionTakenType != ActionType.PickupCoralAction && 
+        action.actionTakenType != ActionType.ScoreCoralAction &&
+        action.actionTakenType != ActionType.PickupAlgaeAction &&
+        action.actionTakenType != ActionType.ScoreAlgaeAction"
+            style="display: flex"
+          >
+            <div [ngSwitch]="action.actionTakenType" style="padding: 0px">
+              <span *ngSwitchCase="ActionType.StartMatchAction">
+                Started match at position {{(action.actionTaken | cast:
+                StartMatchActionT).position}}
+              </span>
+              <span *ngSwitchCase="ActionType.PlaceCoralAction">
+                Coral placed at {{stringifyScoreType((action.actionTaken | cast:
+                PlaceCoralActionT).scoreType)}}
+              </span>
+              <span *ngSwitchCase="ActionType.PlaceAlgaeAction">
+                Algae placed at {{stringifyScoreType((action.actionTaken | cast:
+                PlaceAlgaeActionT).scoreType)}}
+              </span>
+              <span *ngSwitchCase="ActionType.EndAutoPhaseAction">
+                Ended auto phase
+              </span>
+              <span *ngSwitchCase="ActionType.EndTeleopPhaseAction">
+                Ended teleop phase
+              </span>
+              <span *ngSwitchCase="ActionType.EndMatchAction">
+                Ended Match; cageType: {{stringifyCageType((action.actionTaken |
+                cast: EndMatchActionT).cageType)}}
+              </span>
+              <span *ngSwitchCase="ActionType.RobotDeathAction">
+                Robot dead: {{(action.actionTaken | cast:
+                RobotDeathActionT).robotDead}}
+              </span>
+              <span *ngSwitchCase="ActionType.MobilityAction">
+                Mobility: {{(action.actionTaken | cast:
+                MobilityActionT).mobility}}
+              </span>
+              <span *ngSwitchCase="ActionType.NoShowAction">NoShow: true</span>
+              <span *ngSwitchCase="ActionType.PenaltyAction">
+                Penalties: {{(action.actionTaken | cast:
+                PenaltyActionT).penalties}}
+              </span>
+              <span *ngSwitchDefault>{{action.actionTakenType}}</span>
+            </div>
+          </li>
+        </ng-container>
       </ul>
     </div>
     <div class="d-grid gap-5">
