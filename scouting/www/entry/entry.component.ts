@@ -351,9 +351,11 @@ export class EntryComponent implements OnInit {
           break;
         case ActionType.ScoreCoralAction:
           this.section = 'Pickup';
+          this.hasPickedUpCoral = true;
           break;
         case ActionType.ScoreAlgaeAction:
           this.section = 'Pickup';
+          this.hasPickedUpAlgae = true;
           break;
         case ActionType.EndTeleopPhaseAction:
           this.section = 'Pickup';
@@ -390,10 +392,15 @@ export class EntryComponent implements OnInit {
           // TODO(FILIP): Return user to the screen they
           // clicked dead robot on. Pickup is fine for now but
           // might cause confusion.
-          if (this.endGame) {
-            this.section = 'Endgame';
+          const robotDeadAction = lastAction.actionTaken as RobotDeathActionT;
+          if (robotDeadAction.robotDead) {
+            if (this.endGame) {
+              this.section = 'Endgame';
+            } else {
+              this.section = 'Pickup';
+            }
           } else {
-            this.section = 'Pickup';
+            this.section = 'Dead';
           }
           break;
         default:
