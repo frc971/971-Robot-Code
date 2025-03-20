@@ -260,12 +260,6 @@
       [ngClass]="{'d-grid': true, 'gap-4': autoPhase === true, 'gap-3': autoPhase === false}"
     >
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
-      <button
-        class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
-      >
-        DEAD
-      </button>
       <div class="d-grid gap-1" style="padding: 0">
         <div class="d-grid gap-1" style="padding: 0; margin: 0">
           <div
@@ -340,20 +334,6 @@
           +
         </button>
       </div>
-      <button
-        class="btn btn-primary"
-        *ngIf="autoPhase"
-        (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
-      >
-        Start Teleop
-      </button>
-      <button
-        *ngIf="!autoPhase"
-        class="btn btn-primary"
-        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({}); endGame=true;"
-      >
-        Endgame
-      </button>
     </div>
   </div>
   <div *ngSwitchCase="'Place Algae'" id="PlaceAlgae" class="container-fluid">
@@ -369,12 +349,6 @@
       [ngClass]="{'d-grid': true, 'gap-4': autoPhase === true, 'gap-3': autoPhase === false}"
     >
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
-      <button
-        class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
-      >
-        DEAD
-      </button>
 
       <div class="half-button-container">
         <button
@@ -421,20 +395,6 @@
           +
         </button>
       </div>
-      <button
-        class="btn btn-primary"
-        *ngIf="autoPhase"
-        (click)="autoPhase = false; actionHelper.addEndAutoPhaseAction({});"
-      >
-        Start Teleop
-      </button>
-      <button
-        *ngIf="!autoPhase"
-        class="btn btn-primary"
-        (click)="changeSectionTo('Endgame'); actionHelper.addEndTeleopPhaseAction({}); endGame=true;"
-      >
-        Endgame
-      </button>
     </div>
   </div>
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
