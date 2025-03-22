@@ -25,7 +25,7 @@ ABSL_DECLARE_FLAG(int32_t, max_target_id);
 ABSL_DECLARE_FLAG(double, outlier_std_devs);
 
 const auto kOrinColors =
-    absl::GetFlag(FLAGS_use_one_orin)
+    absl::GetFlag(FLAGS_use_orin1)
         ? std::map<std::string, cv::Scalar>{{"/orin1/camera0",
                                              cv::Scalar(255, 0, 255)},
                                             {"/orin1/camera1",
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
       config.has_value() ? &config->message() : nullptr);
 
   reader.RemapLoggedChannel(
-      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/constants" : "/imu/constants",
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/constants" : "/imu/constants",
       "y2025.Constants");
   if (absl::GetFlag(FLAGS_robot)) {
     reader.RemapLoggedChannel("/roborio/constants", "y2025.Constants");

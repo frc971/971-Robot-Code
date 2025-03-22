@@ -30,7 +30,8 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 ABSL_FLAG(std::string, cpu_name, "", "Pi/Orin name to calibrate.");
 ABSL_FLAG(bool, display_undistorted, false,
           "If true, display the undistorted image.");
-ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 
 namespace frc971::vision {
 namespace {
@@ -67,7 +68,7 @@ void Main() {
       aos::network::ParsePiOrOrinNumber(hostname).value() == 2) {
     LOG(INFO) << "\nHACK for 2024: Renaming orin2 to imu\n";
     camera_name =
-        absl::StrCat(absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu",
+        absl::StrCat(absl::GetFlag(FLAGS_use_orin1) ? "/orin1" : "/imu",
                      absl::GetFlag(FLAGS_channel));
   }
   CHECK(event_loop.GetChannel<CameraImage>(camera_name) != nullptr)

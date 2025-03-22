@@ -8,7 +8,7 @@
 #include "frc971/imu_fdcan/dual_imu_generated.h"
 #include "frc971/wpilib/imu_batch_static.h"
 
-ABSL_DECLARE_FLAG(bool, use_one_orin);
+ABSL_DECLARE_FLAG(bool, use_orin1);
 
 namespace frc971::imu_fdcan {
 

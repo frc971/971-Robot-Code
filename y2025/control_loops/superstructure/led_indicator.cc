@@ -2,7 +2,8 @@
 
 #include <chrono>
 
-ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 using y2025::control_loops::superstructure::LedIndicator;
 
 namespace chrono = std::chrono;
@@ -22,8 +23,8 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
               "/drivetrain")),
       drivetrain_status_fetcher_(
           event_loop_->MakeFetcher<frc971::control_loops::swerve::Status>(
-              absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/drivetrain"
-                                                : "/imu/drivetrain")),
+              absl::GetFlag(FLAGS_use_orin1) ? "/orin1/drivetrain"
+                                             : "/imu/drivetrain")),
       server_statistics_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/roborio/aos")),

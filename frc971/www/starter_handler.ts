@@ -2,9 +2,9 @@ import {ByteBuffer} from 'flatbuffers'
 import {Connection} from '../../aos/network/www/proxy'
 import {Status, ApplicationStatus, State, LastStopReason, FileState} from '../../aos/starter/starter_generated'
 
-const use_one_orin = true;
+const use_orin1 = true;
 const NODES = ['/orin1', '/roborio'];
-if (!use_one_orin) {
+if (!use_orin1) {
   NODES.push('/imu');
 }
 export class StarterHandler {

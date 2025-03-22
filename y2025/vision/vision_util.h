@@ -9,13 +9,13 @@
 
 #include "y2025/constants/constants_generated.h"
 
-ABSL_DECLARE_FLAG(bool, use_one_orin);
+ABSL_DECLARE_FLAG(bool, use_orin1);
 
 namespace y2025::vision {
 
 // Generate unique colors for each camera
 const auto kOrinColors =
-    absl::GetFlag(FLAGS_use_one_orin)
+    absl::GetFlag(FLAGS_use_orin1)
         ? std::map<std::string, cv::Scalar>{{"/orin1/camera0",
                                              cv::Scalar(255, 0, 255)},
                                             {"/orin1/camera1",

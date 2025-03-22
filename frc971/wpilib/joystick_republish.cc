@@ -10,7 +10,8 @@
 #include "frc971/input/joystick_state_generated.h"
 
 ABSL_FLAG(std::string, config, "aos_config.json", "Config file to use.");
-ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
 
@@ -20,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   aos::Sender<aos::JoystickState> sender(
       event_loop.MakeSender<aos::JoystickState>(
-          absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/aos" : "/imu/aos"));
+          absl::GetFlag(FLAGS_use_orin1) ? "/orin1/aos" : "/imu/aos"));
 
   event_loop.MakeWatcher(
       "/roborio/aos", [&](const aos::JoystickState &joystick_state) {

@@ -4,7 +4,8 @@
 
 ABSL_FLAG(bool, murata_only, false,
           "If true then only use the murata value and ignore the tdk.");
-ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 // Saturation for the gyro is measured in +- radians/s
 static constexpr double kMurataGyroSaturation = (300.0 * M_PI) / 180;
 
@@ -23,11 +24,11 @@ DualImuBlender::DualImuBlender(aos::EventLoop *event_loop)
           event_loop->MakeSender<frc971::IMUValuesBatchStatic>("/localizer")),
       dual_imu_blender_status_sender_(
           event_loop->MakeSender<frc971::imu::DualImuBlenderStatusStatic>(
-              absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")) {
+              absl::GetFlag(FLAGS_use_orin1) ? "/orin1" : "/imu")) {
   // TODO(max): Give this a proper priority
   event_loop->SetRuntimeRealtimePriority(15);
 
-  event_loop->MakeWatcher(absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu",
+  event_loop->MakeWatcher(absl::GetFlag(FLAGS_use_orin1) ? "/orin1" : "/imu",
                           [this](const frc971::imu::DualImu &dual_imu) {
                             HandleDualImu(&dual_imu);
                           });
