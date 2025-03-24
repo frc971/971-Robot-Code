@@ -1,0 +1,29 @@
+namespace frc971.wpilib;
+
+enum MeasurementHealth: ubyte {
+  GOOD = 0,
+  LIMITED = 1,
+  BAD = 2
+}
+
+table CANRangeStatus {
+  id:int (id: 0);
+
+  supply_voltage:float (id: 1);
+
+  distance:float (id: 2);
+
+  signal_strength:float (id: 3);
+
+  is_detected:bool (id: 4);
+
+  measurement_health:MeasurementHealth (id: 5);
+
+  ambient_signal: float (id: 6);
+
+  distance_std_dev:float (id: 7);
+
+  measurement_timestamp:uint64 (id: 8);
+
+  timestamp:uint64 (id: 9);
+}

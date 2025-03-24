@@ -576,3 +576,19 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
     ],
 )
+
+cc_library(
+    name = "can_range",
+    srcs = ["can_range.cc"],
+    hdrs = ["can_range.h"],
+    deps = [
+        ":can_range_fbs",
+        "//aos/logging",
+        "//third_party:phoenix6",
+    ],
+)
+
+static_flatbuffer(
+    name = "can_range_fbs",
+    srcs = ["can_range.fbs"],
+)
