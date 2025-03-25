@@ -172,8 +172,8 @@ class SwerveSimulation {
 
       rw_ = real_double(2 * 0.0254);
 
-      m_ = real_double(48.40);
-      J_ = real_double(6.0);
+      m_ = real_double(68.0);
+      J_ = real_double(4.5);
 
       Gd1_ = real_double(12.0 / 42.0);
       rs_ = real_double(28.0 / 20.0 / 2.0);
