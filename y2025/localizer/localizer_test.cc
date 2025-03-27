@@ -1,8 +1,10 @@
 #include "y2025/localizer/localizer.h"
 
 #include <chrono>
+#include <optional>
 #include <random>
 
+#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/simulated_event_loop.h"
@@ -15,20 +17,28 @@ class LocalizerTest : public ::testing::Test {
   LocalizerTest()
       : configuration_(aos::configuration::ReadConfig("y2025/aos_config.json")),
         event_loop_factory_(&configuration_.message()),
-        imu_node_([this]() {
-          // Get the constants sent before anything else happens.
-          // It has nothing to do with the roborio node.
-          SendSimulationConstants(&event_loop_factory_, 971,
-                                  "y2025/constants/test_constants.json");
-          return aos::configuration::GetNode(&configuration_.message(), "imu");
-        }()),
+        imu_node_(
+            absl::GetFlag(FLAGS_use_one_orin) ? std::make_optional([this]() {
+              // Get the constants sent before anything else happens.
+              // It has nothing to do with the roborio node.
+              SendSimulationConstants(&event_loop_factory_, 971,
+                                      "y2025/constants/test_constants.json");
+              return aos::configuration::GetNode(
+                  &configuration_.message(),
+                  absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu");
+            }())
+                                              : std::nullopt),
         orin1_node_(
             aos::configuration::GetNode(&configuration_.message(), "orin1")),
         roborio_node_(
             aos::configuration::GetNode(&configuration_.message(), "roborio")),
-        localizer_event_loop_(
-            event_loop_factory_.MakeEventLoop("localizer", imu_node_)),
-        imu_event_loop_(event_loop_factory_.MakeEventLoop("test", imu_node_)),
+        localizer_event_loop_(event_loop_factory_.MakeEventLoop(
+            "localizer", absl::GetFlag(FLAGS_use_one_orin)
+                             ? orin1_node_
+                             : imu_node_.value())),
+        imu_event_loop_(event_loop_factory_.MakeEventLoop(
+            "test", absl::GetFlag(FLAGS_use_one_orin) ? orin1_node_
+                                                      : imu_node_.value())),
         orin1_event_loop_(
             event_loop_factory_.MakeEventLoop("test", orin1_node_)),
         localizer_(localizer_event_loop_.get()) {
@@ -97,7 +107,7 @@ class LocalizerTest : public ::testing::Test {
   aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
   aos::SimulatedEventLoopFactory event_loop_factory_;
 
-  const aos::Node *const imu_node_;
+  std::optional<const aos::Node *const> imu_node_;
   const aos::Node *const orin1_node_;
   const aos::Node *const roborio_node_;
   std::unique_ptr<aos::EventLoop> localizer_event_loop_;

@@ -23,7 +23,6 @@
   ],
   "imports": [
     "y2025_roborio.json",
-    "y2025_imu.json",
-    "y2025_orin1.json"
+    "y2025_imu.json"
   ]
 }

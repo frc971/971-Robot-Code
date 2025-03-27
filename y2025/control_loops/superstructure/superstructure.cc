@@ -10,6 +10,7 @@
 
 ABSL_FLAG(bool, ignore_distance, false,
           "If true, ignore distance when shooting and obey joystick_reader");
+ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
 
 namespace y2025::control_loops::superstructure {
 
@@ -29,7 +30,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       auto_superstructure_goal_fetcher_(
           event_loop->MakeFetcher<y2025::control_loops::superstructure::Goal>(
-              "/imu/autonomous")),
+              absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/autonomous"
+                                                : "/imu/autonomous")),
       elevator_(
           robot_constants_->common()->elevator(),
           robot_constants_->robot()->elevator_constants()->zeroing_constants()),

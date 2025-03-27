@@ -20,17 +20,21 @@ ABSL_FLAG(double, max_pose_error_ratio, 0.4,
 ABSL_FLAG(bool, robot, false,
           "If true we're calibrating extrinsics for the robot, use the "
           "correct node path for the robot.");
-
 ABSL_DECLARE_FLAG(int32_t, min_target_id);
 ABSL_DECLARE_FLAG(int32_t, max_target_id);
 ABSL_DECLARE_FLAG(double, outlier_std_devs);
 
-const auto kOrinColors = std::map<std::string, cv::Scalar>{
-    {"/orin1/camera0", cv::Scalar(255, 0, 255)},
-    {"/orin1/camera1", cv::Scalar(255, 255, 0)},
-    {"/imu/camera0", cv::Scalar(0, 255, 255)},
-    {"/imu/camera1", cv::Scalar(255, 165, 0)},
-};
+const auto kOrinColors =
+    absl::GetFlag(FLAGS_use_one_orin)
+        ? std::map<std::string, cv::Scalar>{{"/orin1/camera0",
+                                             cv::Scalar(255, 0, 255)},
+                                            {"/orin1/camera1",
+                                             cv::Scalar(255, 255, 0)}}
+        : std::map<std::string, cv::Scalar>{
+              {"/orin1/camera0", cv::Scalar(255, 0, 255)},
+              {"/orin1/camera1", cv::Scalar(255, 255, 0)},
+              {"/imu/camera0", cv::Scalar(0, 255, 255)},
+              {"/imu/camera1", cv::Scalar(255, 165, 0)}};
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -51,8 +55,9 @@ int main(int argc, char **argv) {
       aos::logger::SortParts(aos::logger::FindLogs(argc, argv)),
       config.has_value() ? &config->message() : nullptr);
 
-  reader.RemapLoggedChannel("/imu/constants", "y2025.Constants");
-  reader.RemapLoggedChannel("/orin1/constants", "y2025.Constants");
+  reader.RemapLoggedChannel(
+      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/constants" : "/imu/constants",
+      "y2025.Constants");
   if (absl::GetFlag(FLAGS_robot)) {
     reader.RemapLoggedChannel("/roborio/constants", "y2025.Constants");
   }

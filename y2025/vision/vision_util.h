@@ -3,19 +3,28 @@
 #include <map>
 #include <string_view>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "opencv2/imgproc.hpp"
 
 #include "y2025/constants/constants_generated.h"
 
+ABSL_DECLARE_FLAG(bool, use_one_orin);
+
 namespace y2025::vision {
 
 // Generate unique colors for each camera
-const auto kOrinColors = std::map<std::string, cv::Scalar>{
-    {"/orin1/camera0", cv::Scalar(255, 0, 255)},
-    {"/orin1/camera1", cv::Scalar(255, 255, 0)},
-    {"/imu/camera0", cv::Scalar(0, 255, 255)},
-    {"/imu/camera1", cv::Scalar(255, 165, 0)},
-};
+const auto kOrinColors =
+    absl::GetFlag(FLAGS_use_one_orin)
+        ? std::map<std::string, cv::Scalar>{{"/orin1/camera0",
+                                             cv::Scalar(255, 0, 255)},
+                                            {"/orin1/camera1",
+                                             cv::Scalar(255, 255, 0)}}
+        : std::map<std::string, cv::Scalar>{
+              {"/orin1/camera0", cv::Scalar(255, 0, 255)},
+              {"/orin1/camera1", cv::Scalar(255, 255, 0)},
+              {"/imu/camera0", cv::Scalar(0, 255, 255)},
+              {"/imu/camera1", cv::Scalar(255, 165, 0)}};
 
 // Structure to store node name (e.g., orin1, imu), number, and a usable string
 struct CameraNode {

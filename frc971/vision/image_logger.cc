@@ -23,7 +23,7 @@ ABSL_FLAG(double, disabled_time, 5.0,
 ABSL_FLAG(bool, direct, false,
           "If true, write using O_DIRECT and write 512 byte aligned blocks "
           "whenever possible.");
-
+ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
 std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
   std::optional<std::string> log_name =
@@ -83,7 +83,8 @@ int main(int argc, char *argv[]) {
   });
 
   event_loop.MakeWatcher(
-      "/imu/aos", [&](const aos::JoystickState &joystick_state) {
+      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/aos" : "/imu/aos",
+      [&](const aos::JoystickState &joystick_state) {
         const auto timestamp = event_loop.context().monotonic_event_time;
         filesystem_status.Fetch();
 

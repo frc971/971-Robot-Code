@@ -101,7 +101,7 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
         localizer_state_fetcher_(
             event_loop
                 ->MakeFetcher<frc971::control_loops::swerve::LocalizerState>(
-                    "/imu/localizer")),
+                    "/orin1/localizer")),
         robot_constants_(robot_constants),
         common_(common) {
     CHECK(robot_constants_ != nullptr);

@@ -14,6 +14,8 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/localizer/status_static.h"
 
+ABSL_DECLARE_FLAG(bool, use_one_orin);
+
 namespace y2025::localizer {
 
 // This localizer is made to blend together the pose we get from our apriltag
@@ -59,7 +61,7 @@ class Localizer {
 
   typedef Eigen::Matrix<double, 3, 1> XYThetaPose;
 
-  static constexpr int kNumCameras = 4;
+  static constexpr int kNumCameras = 2;
 
   struct DebugPoseEstimate {
     uint64_t camera;

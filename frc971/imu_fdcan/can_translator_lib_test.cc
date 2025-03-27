@@ -20,10 +20,11 @@ class CANTranslatorTest : public ::testing::Test {
         can_frame_event_loop_(event_loop_factory_.MakeEventLoop("can_frame")),
         dual_imu_fetcher_(
             can_translator_event_loop_->MakeFetcher<frc971::imu::DualImu>(
-                "/imu")),
+                absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")),
         can_translator_status_fetcher_(
             can_translator_event_loop_
-                ->MakeFetcher<frc971::imu::CanTranslatorStatus>("/imu")),
+                ->MakeFetcher<frc971::imu::CanTranslatorStatus>(
+                    absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")),
         can_frame_sender_(
             can_frame_event_loop_
                 ->MakeSender<frc971::can_logger::CanFrameStatic>("/can")),

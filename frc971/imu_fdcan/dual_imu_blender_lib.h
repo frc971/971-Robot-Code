@@ -1,10 +1,14 @@
 #ifndef FRC971_IMU_FDCAN_DUAL_IMU_BLENDER_H_
 #define FRC971_IMU_FDCAN_DUAL_IMU_BLENDER_H_
 
+#include "absl/flags/declare.h"
+
 #include "aos/events/event_loop.h"
 #include "frc971/imu_fdcan/dual_imu_blender_status_static.h"
 #include "frc971/imu_fdcan/dual_imu_generated.h"
 #include "frc971/wpilib/imu_batch_static.h"
+
+ABSL_DECLARE_FLAG(bool, use_one_orin);
 
 namespace frc971::imu_fdcan {
 
