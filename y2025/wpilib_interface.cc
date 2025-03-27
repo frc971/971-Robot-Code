@@ -35,6 +35,7 @@
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/can_range.h"
 #include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
@@ -53,6 +54,7 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/control_loops/superstructure/led_indicator.h"
 #include "y2025/control_loops/superstructure/superstructure_can_position_static.h"
+#include "y2025/control_loops/superstructure/superstructure_can_range_status_static.h"
 #include "y2025/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2025/control_loops/superstructure/superstructure_position_static.h"
@@ -63,6 +65,7 @@ ABSL_FLAG(bool, ctre_diag_server, false,
 
 using ::aos::monotonic_clock;
 using ::frc971::CANConfiguration;
+using ::frc971::wpilib::CANRange;
 using ::frc971::wpilib::TalonFX;
 using frc971::wpilib::swerve::DrivetrainWriter;
 using frc971::wpilib::swerve::SwerveModule;
@@ -508,6 +511,57 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_output_event_loop);
+
+    // Thread 6.
+    // Sets up the can ranges
+    ::aos::ShmEventLoop can_range_reader_event_loop(&config.message());
+    can_range_reader_event_loop.set_name("CANRangeReader");
+
+    std::vector<ctre::phoenix6::BaseStatusSignal *> can_range_signal_registry;
+
+    std::shared_ptr<CANRange> front_left = std::make_shared<CANRange>(
+        1, "Drivetrain Bus", &can_range_signal_registry);
+    std::shared_ptr<CANRange> front_right = std::make_shared<CANRange>(
+        2, "Drivetrain Bus", &can_range_signal_registry);
+    std::shared_ptr<CANRange> back_left = std::make_shared<CANRange>(
+        3, "Drivetrain Bus", &can_range_signal_registry);
+    std::shared_ptr<CANRange> back_right = std::make_shared<CANRange>(
+        4, "Drivetrain Bus", &can_range_signal_registry);
+
+    aos::Sender<y2025::control_loops::superstructure::CANRangeStatusStatic>
+        superstructure_can_range_status_sender =
+            can_range_reader_event_loop.MakeSender<
+                y2025::control_loops::superstructure::CANRangeStatusStatic>(
+                "/superstructure/canivore");
+
+    frc971::wpilib::CANSensorReader can_range_reader(
+        &can_range_reader_event_loop, std::move(can_range_signal_registry),
+        rio_talons,
+        [&front_left, &front_right, &back_left, &back_right,
+         &superstructure_can_range_status_sender](
+            ctre::phoenix::StatusCode status) {
+          aos::Sender<
+              y2025::control_loops::superstructure::CANRangeStatusStatic>::
+              StaticBuilder superstructure_can_range_status_builder =
+                  superstructure_can_range_status_sender.MakeStaticBuilder();
+
+          front_left->SerializeStatus(
+              superstructure_can_range_status_builder->add_front_left());
+          front_right->SerializeStatus(
+              superstructure_can_range_status_builder->add_front_right());
+          back_left->SerializeStatus(
+              superstructure_can_range_status_builder->add_back_left());
+          back_right->SerializeStatus(
+              superstructure_can_range_status_builder->add_back_right());
+
+          superstructure_can_range_status_builder->set_status(
+              static_cast<int>(status));
+          superstructure_can_range_status_builder.CheckOk(
+              superstructure_can_range_status_builder.Send());
+        },
+        frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
+
+    AddLoop(&can_range_reader_event_loop);
 
     // Set up LED Indicator with its own event loop thread
     /*::aos::ShmEventLoop led_indicator_event_loop(&config.message());

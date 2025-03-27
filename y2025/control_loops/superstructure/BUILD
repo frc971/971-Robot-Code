@@ -83,6 +83,12 @@ static_flatbuffer(
     deps = ["//frc971/control_loops:can_talonfx_fbs"],
 )
 
+static_flatbuffer(
+    name = "superstructure_can_range_status_fbs",
+    srcs = ["superstructure_can_range_status.fbs"],
+    deps = ["//frc971/wpilib:can_range_fbs"],
+)
+
 flatbuffer_ts_library(
     name = "superstructure_can_position_ts_fbs",
     srcs = ["superstructure_can_position.fbs"],

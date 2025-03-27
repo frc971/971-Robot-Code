@@ -1,0 +1,17 @@
+include "frc971/wpilib/can_range.fbs";
+
+namespace y2025.control_loops.superstructure;
+
+table CANRangeStatus {
+    // The ctre::phoenix::StatusCode of the measurement
+    // Should be OK = 0
+    status:int (id: 0);
+
+    // Statuses of the CAN Ranges
+    front_left:frc971.wpilib.CANRangeStatus (id: 1);
+    front_right:frc971.wpilib.CANRangeStatus (id: 2);
+    back_left:frc971.wpilib.CANRangeStatus (id: 3);
+    back_right:frc971.wpilib.CANRangeStatus (id: 4);
+}
+
+root_type CANRangeStatus;

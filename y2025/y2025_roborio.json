@@ -248,6 +248,14 @@
       "max_size": 1024
     },
     {
+      "name": "/superstructure/canivore",
+      "type": "y2025.control_loops.superstructure.CANRangeStatus",
+      "source_node": "roborio",
+      "frequency": 220,
+      "num_senders": 2,
+      "max_size": 1024
+    },
+    {
       "name": "/roborio/drivetrain",
       "type": "frc971.control_loops.swerve.Goal",
       "source_node": "roborio",
