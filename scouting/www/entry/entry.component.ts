@@ -81,7 +81,7 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
 
 // The maximum number of bytes per QR code. The user can adjust this value to
 // make the QR code contain less information, but easier to scan.
-const QR_CODE_PIECE_SIZES = [150, 300, 450, 600, 750, 900];
+const QR_CODE_PIECE_SIZES = [150, 300, 450];
 
 // The default index into QR_CODE_PIECE_SIZES.
 const DEFAULT_QR_CODE_PIECE_SIZE_INDEX = QR_CODE_PIECE_SIZES.indexOf(450);
