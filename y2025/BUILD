@@ -70,6 +70,7 @@ robot_downloader(
         "//y2025/autonomous:autonomous_superstructure",
         "//frc971/vision:image_logger",
         "//frc971/vision:camera_focus",
+        "//y2025/vision:frame_logger",
     ],
     data = [
         ":aos_config",

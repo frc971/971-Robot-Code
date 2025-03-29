@@ -119,3 +119,31 @@ cc_binary(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "frame_logger_lib",
+    srcs = ["frame_logger.cc"],
+    hdrs = ["frame_logger.h"],
+    target_compatible_with = ["@platforms//cpu:arm64"],
+    deps = [
+        "//aos/events:event_loop",
+        "//aos/time",
+        "//aos/util:filesystem_fbs",
+        "//frc971/vision:vision_fbs",
+        "@arm64_yocto_sysroot//:opencv",
+        "@com_google_absl//absl/log",
+    ],
+)
+
+cc_binary(
+    name = "frame_logger",
+    srcs = ["frame_logger_main.cc"],
+    target_compatible_with = ["@platforms//cpu:arm64"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":frame_logger_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
