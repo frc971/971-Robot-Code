@@ -95,6 +95,7 @@ cc_library(
     deps = [
         "//aos/events:event_loop",
         "//aos/time",
+        "//aos/util:filesystem_fbs",
         "//frc971/vision:vision_fbs",
         "@arm64_yocto_sysroot//:opencv",
         "@com_google_absl//absl/log",
