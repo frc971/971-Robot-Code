@@ -18,14 +18,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -130,12 +128,6 @@ func RequestAveragedDriverRankings2025(server string, requestBytes []byte, userN
 		request_averaged_driver_rankings_2025_response.GetRootAsRequestAveragedDriverRankings2025Response, DefaultUsername)
 }
 
-func RequestAveragedHumanRankings2025(server string, requestBytes []byte, userName string) (*request_averaged_human_rankings_2025_response.RequestAveragedHumanRankings2025ResponseT, error) {
-	return sendMessage[request_averaged_human_rankings_2025_response.RequestAveragedHumanRankings2025ResponseT](
-		server+"/requests/request/averaged_human_rankings_2025", requestBytes,
-		request_averaged_human_rankings_2025_response.GetRootAsRequestAveragedHumanRankings2025Response, DefaultUsername)
-}
-
 func Request2025DataScouting(server string, requestBytes []byte, userName string) (*request_2025_data_scouting_response.Request2025DataScoutingResponseT, error) {
 	return sendMessage[request_2025_data_scouting_response.Request2025DataScoutingResponseT](
 		server+"/requests/request/2025_data_scouting", requestBytes,
@@ -194,12 +186,6 @@ func SubmitDriverRanking2025(server string, requestBytes []byte, userName string
 	return sendMessage[submit_driver_ranking_2025_response.SubmitDriverRanking2025ResponseT](
 		server+"/requests/submit/submit_driver_ranking_2025", requestBytes,
 		submit_driver_ranking_2025_response.GetRootAsSubmitDriverRanking2025Response, DefaultUsername)
-}
-
-func SubmitHumanRanking2025(server string, requestBytes []byte, userName string) (*submit_human_ranking_2025_response.SubmitHumanRanking2025ResponseT, error) {
-	return sendMessage[submit_human_ranking_2025_response.SubmitHumanRanking2025ResponseT](
-		server+"/requests/submit/submit_human_ranking_2025", requestBytes,
-		submit_human_ranking_2025_response.GetRootAsSubmitHumanRanking2025Response, DefaultUsername)
 }
 
 func Submit2025Actions(server string, requestBytes []byte, userName string) (*submit_2025_actions_response.Submit2025ActionsResponseT, error) {

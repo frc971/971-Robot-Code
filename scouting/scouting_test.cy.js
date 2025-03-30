@@ -372,7 +372,9 @@ describe('Scouting app tests', () => {
     setInputTo('#team_input_0', '123');
     setInputTo('#team_input_1', '456');
     setInputTo('#team_input_2', '789');
-    setInputTo('#human_player_team', '123');
+    setInputTo('#team_input_3', '1011');
+    setInputTo('#team_input_4', '1213');
+    setInputTo('#team_input_5', '1415');
     clickButton('Select');
 
     // Verify match and team key input.
@@ -380,13 +382,17 @@ describe('Scouting app tests', () => {
     cy.get('#team_key_label_0').should('have.text', ' 123 ');
     cy.get('#team_key_label_1').should('have.text', ' 456 ');
     cy.get('#team_key_label_2').should('have.text', ' 789 ');
-    cy.get('#hp_team_label').should('have.text', ' 123 ');
+    cy.get('#team_key_label_3').should('have.text', ' 1011 ');
+    cy.get('#team_key_label_4').should('have.text', ' 1213 ');
+    cy.get('#team_key_label_5').should('have.text', ' 1415 ');
 
-    // Rank drivers and human player
+    // Rank drivers
     setInputTo('#rank_0', 2);
     setInputTo('#rank_1', 1);
     setInputTo('#rank_2', 5);
-    setInputTo('#hp_rank', 5);
+    setInputTo('#rank_3', 4);
+    setInputTo('#rank_4', 3);
+    setInputTo('#rank_5', 6);
 
     // Submit.
     clickButton('Submit');

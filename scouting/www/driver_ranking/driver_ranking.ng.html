@@ -31,18 +31,10 @@
     <div>
       <label>Team Numbers</label>
       <input
-        *ngFor="let x of [1,2,3]; let i = index;"
+        *ngFor="let x of [1,2, 3, 4, 5, 6]; let i = index;"
         [(ngModel)]="team_ranking[i]"
         type="text"
         id="team_input_{{i}}"
-      />
-    </div>
-    <div>
-      <label>Human Player Team</label>
-      <input
-        [(ngModel)]="human_player_team"
-        type="text"
-        id="human_player_team"
       />
     </div>
     <button
@@ -69,30 +61,10 @@
           [(ngModel)]="rankings[i]"
           type="range"
           min="1"
-          max="5"
+          max="6"
           value="1"
         />
         <p id="label_{{i}}">{{rankings[i]}}</p>
-      </div>
-    </div>
-    <div>
-      <h2>Human Player Ranking:</h2>
-      <div class="d-flex flex-row justify-content-center pt-2">
-        <div class="d-flex flex-row">
-          <h1 id="hp_team_label" class="align-self-center">
-            {{human_player_team}}
-          </h1>
-        </div>
-
-        <input
-          id="hp_rank"
-          [(ngModel)]="human_player_ranking"
-          type="range"
-          min="1"
-          max="3"
-          value="1"
-        />
-        <p id="hp_label">{{human_player_ranking}}</p>
       </div>
     </div>
     <div class="d-flex flex-row justify-content-center pt-2">

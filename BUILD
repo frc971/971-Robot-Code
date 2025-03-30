@@ -79,12 +79,8 @@ npm_link_package(
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_notes_2025_response //scouting/webserver/requests/messages:delete_notes_2025_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025 //scouting/webserver/requests/messages:submit_driver_ranking_2025_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025_response //scouting/webserver/requests/messages:submit_driver_ranking_2025_response_go_fbs
-# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025 //scouting/webserver/requests/messages:submit_human_ranking_2025_go_fbs
-# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025_response //scouting/webserver/requests/messages:submit_human_ranking_2025_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025 //scouting/webserver/requests/messages:request_averaged_driver_rankings_2025_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response //scouting/webserver/requests/messages:request_averaged_driver_rankings_2025_response_go_fbs
-# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025 //scouting/webserver/requests/messages:request_averaged_human_rankings_2025_go_fbs
-# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response //scouting/webserver/requests/messages:request_averaged_human_rankings_2025_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting //scouting/webserver/requests/messages:request_current_scouting_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response //scouting/webserver/requests/messages:request_current_scouting_response_go_fbs
 

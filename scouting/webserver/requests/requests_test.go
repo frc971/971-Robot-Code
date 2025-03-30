@@ -22,8 +22,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_current_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_2025_for_team"
@@ -31,7 +29,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2025_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_2025"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_human_ranking_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_2025"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -884,40 +881,6 @@ func TestSubmitDriverRanking2025(t *testing.T) {
 	}
 }
 
-func TestSubmitHumanRanking2025(t *testing.T) {
-	database := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&database, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_human_ranking_2025.SubmitHumanRanking2025T{
-		CompCode:    "aof",
-		MatchNumber: 32,
-		TeamNumber:  "183",
-		Score:       2,
-	}).Pack(builder))
-
-	_, err := debug.SubmitHumanRanking2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to submit human ranking: ", err)
-	}
-
-	expected := []db.HumanRanking2025{
-		{
-			CompCode:    "aof",
-			MatchNumber: 32,
-			TeamNumber:  "183",
-			Score:       2},
-	}
-
-	if !reflect.DeepEqual(database.human_ranking_2025, expected) {
-		t.Fatal("Submitted human ranking did not match", expected, database.human_ranking_2025)
-	}
-}
-
 // Validates that we can request the driver rankings.
 func TestRequestDriverRankings(t *testing.T) {
 	db := MockDatabase{
@@ -1040,63 +1003,6 @@ func TestRequestAveragedDriverRanking2025(t *testing.T) {
 	for i, match := range expected.Rankings2025List {
 		if !reflect.DeepEqual(*match, *response.Rankings2025List[i]) {
 			t.Fatal("Expected for average driver ranking 2025", i, ":", *match, ", but got:", *response.Rankings2025List[i])
-		}
-	}
-}
-
-func TestRequestAveragedHumanRankings2025(t *testing.T) {
-	db := MockDatabase{
-		human_ranking_2025: []db.HumanRanking2025{
-			{
-				CompCode:    "sac",
-				MatchNumber: 26,
-				TeamNumber:  "82A",
-				Score:       1,
-			},
-			{
-				CompCode:    "sac",
-				MatchNumber: 23,
-				TeamNumber:  "82A",
-				Score:       3,
-			},
-			{
-				CompCode:    "sakc",
-				MatchNumber: 23,
-				TeamNumber:  "123",
-				Score:       3,
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	mockClock := MockClock{now: time.Now()}
-	HandleRequests(&db, scoutingServer, mockClock)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_averaged_human_rankings_2025.RequestAveragedHumanRankings2025T{CompCode: "sac"}).Pack(builder))
-
-	response, err := debug.RequestAveragedHumanRankings2025("http://localhost:8080", builder.FinishedBytes(), "debug_cli")
-	if err != nil {
-		t.Fatal("Failed to request averaged human rankings 2025: ", err)
-	}
-
-	expected := request_averaged_human_rankings_2025_response.RequestAveragedHumanRankings2025ResponseT{
-		Rankings2025List: []*request_averaged_human_rankings_2025_response.HumanRanking2025T{
-			{
-				CompCode:   "sac",
-				TeamNumber: "82A",
-				Score:      2,
-			},
-		},
-	}
-
-	if len(expected.Rankings2025List) != len(response.Rankings2025List) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.Rankings2025List {
-		if !reflect.DeepEqual(*match, *response.Rankings2025List[i]) {
-			t.Fatal("Expected for average human ranking", i, ":", *match, ", but got:", *response.Rankings2025List[i])
 		}
 	}
 }
@@ -1634,7 +1540,6 @@ type MockDatabase struct {
 	stats2025           []db.Stats2025
 	actions             []db.Action
 	driver_ranking_2025 []db.DriverRanking2025
-	human_ranking_2025  []db.HumanRanking2025
 }
 
 func (database *MockDatabase) AddToMatch2025(match db.TeamMatch2025) error {
@@ -1730,22 +1635,6 @@ func (database *MockDatabase) QueryDriverRanking2025(compCode string) ([]db.Driv
 	return results, nil
 }
 
-func (database *MockDatabase) QueryHumanRanking2025(compCode string) ([]db.HumanRanking2025, error) {
-	var results []db.HumanRanking2025
-	for _, data := range database.human_ranking_2025 {
-		if data.CompCode == compCode {
-			results = append(results, db.HumanRanking2025{
-				CompCode:    data.CompCode,
-				MatchNumber: data.MatchNumber,
-				TeamNumber:  data.TeamNumber,
-				Score:       data.Score,
-			})
-		}
-	}
-	return results, nil
-
-}
-
 func (database *MockDatabase) QueryStats2025(compCode string) ([]db.Stats2025, error) {
 	var results []db.Stats2025
 	for _, data := range database.stats2025 {
@@ -1807,10 +1696,6 @@ func (database *MockDatabase) ReturnAllDriverRankings2025() ([]db.DriverRanking2
 	return database.driver_ranking_2025, nil
 }
 
-func (database *MockDatabase) ReturnAllHumanRankings2025() ([]db.HumanRanking2025, error) {
-	return database.human_ranking_2025, nil
-}
-
 func (database *MockDatabase) AddAction(action db.Action) error {
 	database.actions = append(database.actions, action)
 	return nil
@@ -1818,11 +1703,6 @@ func (database *MockDatabase) AddAction(action db.Action) error {
 
 func (database *MockDatabase) AddDriverRanking2025(action db.DriverRanking2025) error {
 	database.driver_ranking_2025 = append(database.driver_ranking_2025, action)
-	return nil
-}
-
-func (database *MockDatabase) AddHumanRanking2025(action db.HumanRanking2025) error {
-	database.human_ranking_2025 = append(database.human_ranking_2025, action)
 	return nil
 }
 
