@@ -198,6 +198,7 @@ cc_library(
         "//frc971/queues:gyro_fbs",
         "//third_party:phoenix",
         "//third_party:wpilib",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

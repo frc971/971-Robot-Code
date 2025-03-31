@@ -18,16 +18,18 @@ ABSL_FLAG(double, max_pose_error_ratio, 0.3,
 ABSL_FLAG(double, distance_threshold, 4.5,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
-
+ABSL_FLAG(bool, use_one_orin, true, "Use One Orin instead of two.");
 namespace y2025::localizer {
 namespace {
 
 using States =
     frc971::control_loops::swerve::SimplifiedDynamics<double>::States;
 
-constexpr std::array<std::string_view, Localizer::kNumCameras>
-    kDetectionChannels{"/orin1/camera0", "/orin1/camera1", "/imu/camera0",
-                       "/imu/camera1"};
+const std::vector<std::string_view> kDetectionChannels =
+    absl::GetFlag(FLAGS_use_one_orin)
+        ? std::vector<std::string_view>{"/orin1/camera0", "/orin1/camera1"}
+        : std::vector<std::string_view>{"/orin1/camera0", "/imu/camera0",
+                                        "/orin1/camera1", "/imu/camera1"};
 
 size_t CameraIndexForName(std::string_view name) {
   auto name_iter =
@@ -346,10 +348,12 @@ void Localizer::SendStatus() {
                       stats->add_orin1_camera0());
   PopulateCameraStats(cameras_.at(CameraIndexForName("/orin1/camera1")),
                       stats->add_orin1_camera1());
-  PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera0")),
-                      stats->add_imu_camera0());
-  PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera1")),
-                      stats->add_imu_camera1());
+  if (!absl::GetFlag(FLAGS_use_one_orin)) {
+    PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera0")),
+                        stats->add_imu_camera0());
+    PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera1")),
+                        stats->add_imu_camera1());
+  }
   auto *estimates = status_builder->add_debug_estimates();
   for (const DebugPoseEstimate &estimate : debug_estimates_) {
     DebugPoseEstimateStatic *fb_estimate = estimates->emplace_back();

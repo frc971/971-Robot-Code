@@ -102,7 +102,6 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         ":config_imu",
-        ":config_orin1",
         ":config_roborio",
     ],
 )
@@ -170,32 +169,6 @@ aos_config(
         "//frc971/can_logger:can_logging_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//aos/events:aos_config",
-        "//frc971/control_loops/drivetrain:aos_config",
-        "//frc971/input:aos_config",
-    ],
-)
-
-aos_config(
-    name = "config_orin1",
-    src = "y2025_orin1.json",
-    flatbuffers = [
-        "//aos/network:message_bridge_client_fbs",
-        "//aos/network:message_bridge_server_fbs",
-        "//aos/network:timestamp_fbs",
-        "//aos/network:remote_message_fbs",
-        "//y2025/constants:constants_fbs",
-        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
-        "//frc971/orin:hardware_stats_fbs",
-        "//frc971/vision:calibration_fbs",
-        "//frc971/vision:target_map_fbs",
-        "//frc971/vision:vision_fbs",
-        "//aos/util:filesystem_fbs",
-        "@com_github_foxglove_schemas//:schemas",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
     deps = [
         "//aos/events:aos_config",
         "//frc971/control_loops/drivetrain:aos_config",

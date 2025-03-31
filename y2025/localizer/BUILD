@@ -24,6 +24,7 @@ cc_library(
         "//frc971/vision:target_map_fbs",
         "//frc971/vision:target_map_utils",
         "//y2025/constants:constants_fbs",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

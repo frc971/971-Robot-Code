@@ -1,5 +1,6 @@
 #include "frc971/imu_fdcan/can_translator_lib.h"
 
+ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
 using frc971::imu_fdcan::CANTranslator;
 
 constexpr std::size_t kCanFrameSize = 64;
@@ -7,11 +8,11 @@ constexpr std::size_t kCanFrameSize = 64;
 CANTranslator::CANTranslator(aos::EventLoop *event_loop,
                              std::string_view canframe_channel)
     : event_loop_(event_loop),
-      dual_imu_sender_(
-          event_loop->MakeSender<frc971::imu::DualImuStatic>("/imu")),
+      dual_imu_sender_(event_loop->MakeSender<frc971::imu::DualImuStatic>(
+          absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")),
       can_translator_status_sender_(
           event_loop->MakeSender<frc971::imu::CanTranslatorStatusStatic>(
-              "/imu")) {
+              absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")) {
   packets_arrived_.fill(false);
   // TODO(max): Update this with a proper priority
   event_loop->SetRuntimeRealtimePriority(58);

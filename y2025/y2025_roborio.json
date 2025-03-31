@@ -7,11 +7,11 @@
       "frequency": 100,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "orin1"
       ],
       "destination_nodes": [
         {
-          "name": "imu",
+          "name": "orin1",
           "priority": 5,
           "time_to_live": 50000000
         }
@@ -48,11 +48,11 @@
         "max_size": 192,
         "logger": "LOCAL_AND_REMOTE_LOGGER",
         "logger_nodes": [
-            "imu"
+            "orin1"
         ],
         "destination_nodes": [
             {
-                "name": "imu",
+                "name": "orin1",
                 "priority": 5,
                 "time_to_live": 50000000
             }
@@ -91,11 +91,11 @@
         "num_senders": 1,
         "logger": "LOCAL_AND_REMOTE_LOGGER",
         "logger_nodes": [
-            "imu"
+            "orin1"
         ],
         "destination_nodes": [
             {
-                "name": "imu",
+                "name": "orin1",
                 "priority": 5,
                 "time_to_live": 50000000
             }
@@ -133,7 +133,7 @@
       "num_senders": 2
     },
     {
-      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-message_bridge-Timestamp",
+      "name": "/roborio/aos/remote_timestamps/orin1/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 20,
       "source_node": "roborio",
@@ -148,11 +148,11 @@
       "max_size": 512,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "orin1"
       ],
       "destination_nodes": [
         {
-          "name": "imu",
+          "name": "orin1",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
@@ -170,11 +170,11 @@
       "max_size": 512,
         "logger": "LOCAL_AND_REMOTE_LOGGER",
         "logger_nodes": [
-            "imu"
+            "orin1"
         ],
         "destination_nodes": [
             {
-                "name": "imu",
+                "name": "orin1",
                 "priority": 5,
                 "time_to_live": 50000000
             }
@@ -187,11 +187,11 @@
       "frequency": 250,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "orin1"
       ],
       "destination_nodes": [
         {
-          "name": "imu",
+          "name": "orin1",
           "priority": 5,
           "time_to_live": 50000000
         }
@@ -205,11 +205,11 @@
         "num_senders": 1,
         "logger": "LOCAL_AND_REMOTE_LOGGER",
         "logger_nodes": [
-            "imu"
+            "orin1"
         ],
         "destination_nodes": [
             {
-                "name": "imu",
+                "name": "orin1",
                 "priority": 5,
                 "time_to_live": 50000000
             }
@@ -254,11 +254,11 @@
       "frequency": 250,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "orin1"
       ],
       "destination_nodes": [
         {
-          "name": "imu",
+          "name": "orin1",
           "priority": 5,
           "time_to_live": 50000000
         }
@@ -442,7 +442,7 @@
       "port": 971
     },
     {
-      "name": "imu"
+      "name": "orin1"
     }
   ]
 }

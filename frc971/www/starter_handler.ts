@@ -2,8 +2,11 @@ import {ByteBuffer} from 'flatbuffers'
 import {Connection} from '../../aos/network/www/proxy'
 import {Status, ApplicationStatus, State, LastStopReason, FileState} from '../../aos/starter/starter_generated'
 
-const NODES = ['/orin1', '/imu', '/roborio'];
-
+const use_one_orin = true;
+const NODES = ['/orin1', '/roborio'];
+if (!use_one_orin) {
+  NODES.push('/imu');
+}
 export class StarterHandler {
   private statuses = new Map<string, ApplicationStatus[]>();
 

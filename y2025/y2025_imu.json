@@ -1,63 +1,52 @@
 {
   "channels": [
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.util.FilesystemStatus",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 2
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.JoystickState",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 100,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
         "orin1"
-      ],
-      "destination_nodes": [
-        {
-          "name": "orin1",
-          "priority": 5,
-          "time_to_live": 50000000,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "imu"
-          ]
-        }
       ]
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "frc971.control_loops.swerve.AutonomousControllerDebug",
-      "source_node": "imu",
+      "source_node": "orin1",
       "max_size": 800,
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous_auto_align",
+      "name": "/orin1/autonomous_auto_align",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250,
       "num_senders": 10
     },
     {
-      "name": "/imu/autonomous_auto_align",
+      "name": "/orin1/autonomous_auto_align",
       "type": "frc971.control_loops.swerve.PositionGoal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250,
       "num_senders": 10
     },
     {
-      "name": "/imu/localizer",
+      "name": "/orin1/localizer",
       "type": "frc971.control_loops.swerve.LocalizerState",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250,
       "destination_nodes": [
         {
@@ -65,120 +54,111 @@
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "orin1"
           ],
           "time_to_live": 50000000
         }
       ]
     },
     {
-      "name": "/imu/localizer",
+      "name": "/orin1/localizer",
       "type": "y2025.localizer.Status",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250,
       "max_size": 50000
     },
     {
-      "name": "/imu/aos/remote_timestamps/orin1/imu/aos/aos-JoystickState",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
-      "logger": "NOT_LOGGED",
-      "frequency": 300,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.timing.Report",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 50,
       "num_senders": 30,
       "max_size": 13216
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "y2025.autonomous.AutonomousSuperstructureGoal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous_auto_align",
+      "name": "/orin1/autonomous_auto_align",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/drivetrain",
+      "name": "/orin1/drivetrain",
       "type": "frc971.control_loops.swerve.AutonomousInit",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/autonomous_auto_align",
+      "name": "/orin1/autonomous_auto_align",
       "type": "frc971.control_loops.swerve.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.logging.LogMessageFbs",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 200,
       "num_senders": 30
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.starter.Status",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 50,
       "num_senders": 20,
       "max_size": 9216
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.starter.StarterRpc",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.message_bridge.ServerStatistics",
-      "source_node": "imu",
+      "source_node": "orin1",
       "max_size": 2048,
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.message_bridge.ClientStatistics",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 20,
       "num_senders": 2
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.logging.DynamicLogCommand",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/imu/aos",
+      "name": "/orin1/aos",
       "type": "aos.message_bridge.Timestamp",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 15,
       "num_senders": 2,
       "logger_nodes": [
@@ -191,30 +171,30 @@
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "orin1"
           ],
           "time_to_live": 5000000
         }
       ]
     },
     {
-      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-message_bridge-Timestamp",
+      "name": "/orin1/aos/remote_timestamps/roborio/orin1/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 20,
-      "source_node": "imu",
+      "source_node": "orin1",
       "max_size": 208
     },
     {
-      "name": "/imu/aos/remote_timestamps/roborio/imu/localizer/frc971-control_loops-swerve-LocalizerState",
+      "name": "/orin1/aos/remote_timestamps/roborio/orin1/localizer/frc971-control_loops-swerve-LocalizerState",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 250,
-      "source_node": "imu"
+      "source_node": "orin1"
     },
     {
-      "name": "/imu/aos/remote_timestamps/roborio/imu/autonomous/y2025-control_loops-superstructure-Goal",
+      "name": "/orin1/aos/remote_timestamps/roborio/orin1/autonomous/y2025-control_loops-superstructure-Goal",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 250,
-      "source_node": "imu",
+      "source_node": "orin1",
       "max_size": 208
     },
     {
@@ -223,11 +203,11 @@
       "source_node": "roborio",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "orin1"
       ],
       "destination_nodes": [
         {
-          "name": "imu",
+          "name": "orin1",
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
@@ -238,9 +218,9 @@
       ]
     },
     {
-      "name": "/imu/autonomous",
+      "name": "/orin1/autonomous",
       "type": "y2025.control_loops.superstructure.Goal",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
@@ -252,14 +232,14 @@
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "orin1"
           ],
           "time_to_live": 5000000
         }
       ]
     },
     {
-      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-starter-StarterRpc",
+      "name": "/roborio/aos/remote_timestamps/orin1/roborio/aos/aos-starter-StarterRpc",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
@@ -268,9 +248,9 @@
       "max_size": 200
     },
     {
-      "name": "/imu/camera0",
+      "name": "/orin1/camera0",
       "type": "frc971.vision.CameraImage",
-      "source_node": "imu",
+      "source_node": "orin1",
       "channel_storage_duration": 1000000000,
       "frequency": 70,
       "max_size": 4752384,
@@ -279,9 +259,9 @@
       "num_senders": 18
     },
     {
-      "name": "/imu/camera1",
+      "name": "/orin1/camera1",
       "type": "frc971.vision.CameraImage",
-      "source_node": "imu",
+      "source_node": "orin1",
       "channel_storage_duration": 1000000000,
       "frequency": 70,
       "max_size": 4752384,
@@ -290,65 +270,65 @@
       "num_senders": 18
     },
     {
-      "name": "/imu/camera0",
+      "name": "/orin1/camera0",
       "type": "foxglove.CompressedImage",
-      "source_node": "imu",
+      "source_node": "orin1",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
       "frequency": 70,
       "max_size": 622384
     },
     {
-      "name": "/imu/camera1",
+      "name": "/orin1/camera1",
       "type": "foxglove.CompressedImage",
-      "source_node": "imu",
+      "source_node": "orin1",
       "logger": "NOT_LOGGED",
       "channel_storage_duration": 1000000000,
       "frequency": 70,
       "max_size": 622384
     },
     {
-      "name": "/imu/camera0",
+      "name": "/orin1/camera0",
       "type": "foxglove.ImageAnnotations",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 70,
       "max_size": 50000
     },
     {
-      "name": "/imu/camera1",
+      "name": "/orin1/camera1",
       "type": "foxglove.ImageAnnotations",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 70,
       "max_size": 50000
     },
     {
-      "name": "/imu/camera0",
+      "name": "/orin1/camera0",
       "type": "frc971.vision.TargetMap",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 70,
       "num_senders": 2,
       "max_size": 1024
     },
     {
-      "name": "/imu/camera1",
+      "name": "/orin1/camera1",
       "type": "frc971.vision.TargetMap",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 70,
       "num_senders": 2,
       "max_size": 1024
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.DualImu",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 1100,
       "num_senders": 1,
       "max_size": 496
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.CanTranslatorStatus",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 1000,
       "num_senders": 1,
       "max_size": 200
@@ -356,46 +336,46 @@
     {
       "name": "/can/cana",
       "type": "frc971.can_logger.CanFrame",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 9000,
       "channel_storage_duration": 7000000000,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/imu/localizer",
+      "name": "/orin1/localizer",
       "type": "frc971.IMUValuesBatch",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 2200,
       "max_size": 1600,
       "num_senders": 2
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.DualImuBlenderStatus",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 1100,
       "num_senders": 1,
       "max_size": 200
     },
     {
-      "name": "/imu/hardware_monitor",
+      "name": "/orin1/hardware_monitor",
       "type": "frc971.orin.HardwareStats",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 2
     },
     {
-      "name": "/imu/constants",
+      "name": "/orin1/constants",
       "type": "y2025.Constants",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 1,
       "num_senders": 2,
       "max_size": 65536
     },
     {
-      "name": "/imu/drivetrain",
+      "name": "/orin1/drivetrain",
       "type": "frc971.control_loops.swerve.Status",
-      "source_node": "imu",
+      "source_node": "orin1",
       "max_size": 10000,
       "frequency": 250,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -408,30 +388,30 @@
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "orin1"
           ],
           "time_to_live": 5000000
         }
       ]
     },
     {
-      "name": "/imu/aos/remote_timestamps/roborio/imu/drivetrain/frc971-control_loops-swerve-Status",
+      "name": "/orin1/aos/remote_timestamps/roborio/orin1/drivetrain/frc971-control_loops-swerve-Status",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
+      "source_node": "orin1",
       "frequency": 250
     },
     {
-        "name": "/imu/drivetrain",
+        "name": "/orin1/drivetrain",
         "type": "frc971.control_loops.swerve.CanPosition",
-        "source_node": "imu",
+        "source_node": "orin1",
         "frequency": 250,
-        "num_senders": 1,
+        "num_senders": 2,
         "max_size": 656
     },
     {
-        "name": "/imu/drivetrain",
+        "name": "/orin1/drivetrain",
         "type": "frc971.control_loops.swerve.Output",
-        "source_node": "imu",
+        "source_node": "orin1",
         "frequency": 400,
         "max_size": 200,
         "num_senders": 2
@@ -447,7 +427,7 @@
         "--rmem=8388608"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -456,35 +436,35 @@
       "user": "root",
       "args": ["--user=pi", "--irq_config=orin_irq_config.json"],
       "nodes": [
-          "imu"
+          "orin1"
       ]
     },
     {
       "name": "filesystem_monitor",
       "executable_name": "filesystem_monitor",
       "nodes": [
-          "imu"
+          "orin1"
       ]
     },
     {
       "name": "hardware_monitor",
       "executable_name": "hardware_monitor",
       "nodes": [
-          "imu"
+          "orin1"
       ]
     },
     {
       "name": "argus_monitor_imu",
       "executable_name": "argus_monitor",
       "args": [
-        "/imu/camera0",
+        "/orin1/camera0",
         "frc971.vision.TargetMap",
-        "/imu/camera1",
+        "/orin1/camera1",
         "frc971.vision.TargetMap",
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -492,7 +472,7 @@
       "executable_name": "localizer_logger",
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -500,7 +480,7 @@
       "executable_name": "joystick_republish",
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -512,7 +492,7 @@
         "--force_wmem_max=131072"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -523,7 +503,7 @@
         "--affinity=5"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -534,7 +514,7 @@
       ],
       "autostart": true,
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -545,7 +525,7 @@
       ],
       "autostart": true,
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -555,14 +535,14 @@
           "--channel=/can/cana"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
       "name": "dual_imu_blender",
       "executable_name": "dual_imu_blender",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -574,14 +554,14 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -589,7 +569,7 @@
       "autorestart": false,
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -600,7 +580,7 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -611,7 +591,7 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -623,7 +603,7 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -635,14 +615,14 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -653,7 +633,7 @@
           "--channel", "/camera0"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -664,7 +644,7 @@
           "--channel", "/camera1"
       ],
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -672,14 +652,14 @@
       "autorestart": false,
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
       "name": "auto_align_updater",
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -688,7 +668,7 @@
             "--nodie_on_malloc"
         ],
         "nodes": [
-            "imu"
+            "orin1"
         ]
     },
     {
@@ -698,7 +678,7 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     },
     {
@@ -708,7 +688,7 @@
       ],
       "user": "pi",
       "nodes": [
-        "imu"
+        "orin1"
       ]
     }
   ],
@@ -716,35 +696,35 @@
     {
       "match": {
         "name": "/constants*",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/constants"
+        "name": "/orin1/constants"
       }
     },
     {
       "match": {
         "name": "/aos*",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/aos"
+        "name": "/orin1/aos"
       }
     },
     {
       "match": {
         "name": "/camera*",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/camera"
+        "name": "/orin1/camera"
       }
     },
     {
       "match": {
         "name": "/aos",
         "type": "aos.RobotState",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
         "name": "/roborio/aos"
@@ -753,46 +733,46 @@
     {
       "match": {
         "name": "/hardware_monitor*",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/hardware_monitor"
+        "name": "/orin1/hardware_monitor"
       }
     },
     {
       "match": {
         "name": "/localizer*",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/localizer"
+        "name": "/orin1/localizer"
       }
     },
     {
       "match": {
         "name": "/autonomous*",
         "type": "frc971.control_loops.swerve.Goal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/autonomous"
+        "name":"/orin1/autonomous"
       }
     },
     {
       "match": {
         "name": "/autonomous",
         "type": "y2025.control_loops.superstructure.Goal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/autonomous"
+        "name": "/orin1/autonomous"
       }
     },
     {
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.Goal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
         "name":"/roborio/drivetrain"
@@ -802,7 +782,7 @@
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.Position",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
         "name":"/roborio/drivetrain"
@@ -812,130 +792,127 @@
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.Status",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/drivetrain"
+        "name":"/orin1/drivetrain"
       }
     },
     {
       "match": {
         "name": "/localizer",
         "type": "y2025.localizer.Status",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/localizer"
+        "name":"/orin1/localizer"
       }
     },
     {
       "match": {
         "name": "/autonomous",
         "type": "frc971.control_loops.swerve.Goal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/autonomous"
+        "name":"/orin1/autonomous"
       }
     },
     {
       "match": {
         "name": "/autonomous",
         "type": "frc971.control_loops.swerve.AutonomousControllerDebug",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/autonomous"
+        "name":"/orin1/autonomous"
       }
     },
     {
       "match": {
         "name": "/autonomous_auto_align",
         "type": "frc971.control_loops.swerve.Goal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/autonomous_auto_align"
+        "name":"/orin1/autonomous_auto_align"
       }
     },
     {
       "match": {
         "name": "/autonomous_auto_align",
         "type": "frc971.control_loops.swerve.PositionGoal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/autonomous_auto_align"
+        "name":"/orin1/autonomous_auto_align"
       }
     },
     {
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.AutonomousInit",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/drivetrain"
+        "name":"/orin1/drivetrain"
       }
     },
     {
       "match": {
         "name": "/localizer",
         "type": "frc971.control_loops.swerve.LocalizerState",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/localizer"
+        "name":"/orin1/localizer"
       }
     },
     {
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.CanPosition",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/drivetrain"
+        "name":"/orin1/drivetrain"
       }
     },
     {
       "match": {
         "name": "/drivetrain",
         "type": "frc971.control_loops.swerve.Output",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name":"/imu/drivetrain"
+        "name":"/orin1/drivetrain"
       }
     },
     {
       "match": {
         "name": "/autonomous",
         "type": "y2025.autonomous.AutonomousSuperstructureGoal",
-        "source_node": "imu"
+        "source_node": "orin1"
       },
       "rename": {
-        "name": "/imu/autonomous"
+        "name": "/orin1/autonomous"
       }
     }
   ],
   "nodes": [
     {
-      "name": "imu",
-      "hostname": "orin2",
+      "name": "orin1",
+      "hostname": "orin1",
       "hostnames": [
-        "orin-971-2",
-        "orin-7971-2",
-        "orin-8971-2",
-        "orin-9971-2"
+        "orin-971-1",
+        "orin-7971-1",
+        "orin-8971-1",
+        "orin-9971-1"
       ],
       "port": 971
     },
     {
       "name": "roborio"
-    },
-    {
-      "name": "orin1"
     }
   ]
 }

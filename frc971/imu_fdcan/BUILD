@@ -44,6 +44,7 @@ cc_library(
         ":dual_imu_fbs",
         "//aos/events:event_loop",
         "//frc971/can_logger:can_logging_fbs",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 

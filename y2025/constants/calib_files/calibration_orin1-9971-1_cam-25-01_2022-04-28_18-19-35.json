@@ -1,5 +1,5 @@
 {
- "node_name": "imu",
+ "node_name": "orin1",
  "team_number": 9971,
  "intrinsics": [
   651.7496,
@@ -50,6 +50,6 @@
  ],
  "calibration_timestamp": 1651169975291250720,
  "camera_id": "25-01",
- "camera_number": 0,
+ "camera_number": 1,
  "reprojection_error": 0.27975598
 }

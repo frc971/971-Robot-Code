@@ -1,9 +1,13 @@
 #ifndef FRC971_IMU_FDCAN_CAN_TRANSLATOR_LIB_H_
 #define FRC971_IMU_FDCAN_CAN_TRANSLATOR_LIB_H_
+#include "absl/flags/flag.h"
+
 #include "aos/events/event_loop.h"
 #include "frc971/can_logger/can_logging_generated.h"
 #include "frc971/imu_fdcan/can_translator_status_static.h"
 #include "frc971/imu_fdcan/dual_imu_static.h"
+
+ABSL_DECLARE_FLAG(bool, use_one_orin);
 
 namespace frc971::imu_fdcan {
 

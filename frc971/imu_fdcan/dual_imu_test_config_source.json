@@ -10,7 +10,7 @@
       "frequency": 400
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.DualImu",
       "frequency": 2000
     },
@@ -25,12 +25,12 @@
       "frequency": 1100
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.CanTranslatorStatus",
       "frequency": 100
     },
     {
-      "name": "/imu",
+      "name": "/orin1",
       "type": "frc971.imu.DualImuBlenderStatus",
       "frequency": 2000
     },

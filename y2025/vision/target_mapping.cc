@@ -54,7 +54,6 @@ ABSL_FLAG(uint64_t, skip_to, 1,
 ABSL_FLAG(bool, solve, true, "Whether to solve for the field's target map.");
 ABSL_FLAG(bool, split_field, false,
           "Whether to break solve into two sides of field");
-
 ABSL_DECLARE_FLAG(int32_t, frozen_target_id);
 ABSL_DECLARE_FLAG(bool, visualize_solver);
 
@@ -161,7 +160,9 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
       last_H_world_robot_(Eigen::Matrix4d::Identity()),
       max_delta_T_world_robot_(0.0) {
   reader_->RemapLoggedChannel("/orin1/constants", "y2025.Constants");
-  reader_->RemapLoggedChannel("/imu/constants", "y2025.Constants");
+  if (!absl::GetFlag(FLAGS_use_one_orin)) {
+    reader_->RemapLoggedChannel("/imu/constants", "y2025.Constants");
+  }
   // If it's Box of Orins, don't remap roborio constants
   reader_->MaybeRemapLoggedChannel<Constants>("/roborio/constants");
   reader_->Register();
