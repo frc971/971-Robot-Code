@@ -53,8 +53,10 @@ void SwerveControlLoops::RunIteration(
   }
 
   robot_state_fetcher_.Fetch();
-  if (robot_state_fetcher_.get() != nullptr &&
-      robot_state_fetcher_->user_button()) {
+  if ((robot_state_fetcher_.get() != nullptr &&
+       robot_state_fetcher_->user_button()) ||
+      (goal != nullptr && goal->has_joystick_goal() &&
+       goal->joystick_goal()->foc_override())) {
     naive_estimator_.use_localizer_theta(true);
   } else {
     naive_estimator_.use_localizer_theta(false);
@@ -183,15 +185,6 @@ void SwerveControlLoops::RunIteration(
             .last_time = now};
       }
       NaiveEstimator::State kinematics_state = current_state.value();
-
-      robot_state_fetcher_.Fetch();
-      if (goal->joystick_goal()->foc_override() ||
-          (robot_state_fetcher_.get() != nullptr &&
-           robot_state_fetcher_->user_button())) {
-        naive_estimator_.use_localizer_theta(true);
-      } else {
-        naive_estimator_.use_localizer_theta(false);
-      }
 
       Scalar goal_omega = 0;
 
