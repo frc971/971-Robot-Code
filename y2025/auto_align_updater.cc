@@ -18,12 +18,15 @@ ABSL_FLAG(std::string, config, "aos_config.json",
 
 // Distance to offset the robots position past the auto align goal tangent to
 // the tag.
-constexpr double kTangentOffset = 0.175;
+constexpr double kTangentOffset = 6 * 0.0254;
 // Distance to offset the robots position normal to the tag (left/right).
-constexpr double kNormalOffset = 2.5 * 0.0254;
-constexpr double kArmOffset = 2.5 * 0.0254;
+constexpr double kNormalOffset = 3 * 0.0254;
+constexpr double kArmOffset = 1.603578 * 0.0254;
 // Distance between the two poles in the reef.
 constexpr double kPoleDistance = 13 * 0.0254;
+
+constexpr double kGoalReefAvoidanceThreshold = 0.05;
+constexpr double kGoalReefAvoidanceOffset = 0.2;
 
 using frc971::control_loops::Pose;
 using y2025::Constants;
@@ -143,6 +146,16 @@ class AutoAlignUpdater {
                       offset * cos(final_pose.abs_theta() + M_PI / 2.0);
       double goal_y = final_pose.abs_pos()(1) +
                       offset * sin(final_pose.abs_theta() + M_PI / 2.0);
+
+      // tangent distance to the tag vector
+      // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_point_and_angle
+      const double distance =
+          std::abs((goal_y - state.y()) * std::cos(goal_theta) -
+                   (goal_x - state.x()) * std::sin(goal_theta));
+      if (distance > kGoalReefAvoidanceThreshold) {
+        goal_x += kGoalReefAvoidanceOffset * std::cos(goal_theta);
+        goal_y += kGoalReefAvoidanceOffset * std::sin(goal_theta);
+      }
 
       builder->set_theta(goal_theta);
       if (goal_fetcher_.get() == nullptr || !goal_fetcher_->theta_lock()) {
