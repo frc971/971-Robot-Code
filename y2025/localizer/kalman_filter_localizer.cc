@@ -100,8 +100,6 @@ void KalmanFilterLocalizer::HandleEstimatedSwerveState(
   // we get it.
   Eigen::Matrix<double, 3, 3> noise = Eigen::Matrix<double, 3, 3>::Identity();
 
-  noise *= 1e-6;
-
   kalman_filter_.Correct(z, H, noise, now);
 
   (*kalman_filter_.X_hat_mut())(StateIdx::kTheta) =
