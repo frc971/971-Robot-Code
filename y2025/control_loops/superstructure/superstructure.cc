@@ -37,6 +37,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
              robot_constants_->robot()->pivot_constants()->zeroing_constants()),
       wrist_(robot_constants_->common()->wrist(),
              robot_constants_->robot()->wrist_constants()->zeroing_constants()),
+      intake_(robot_constants_->common()->ground_intake_pivot(), {}),
       rio_can_position_fetcher_(
           event_loop->MakeFetcher<CANPosition>("/superstructure/rio")) {
   event_loop->SetRuntimeRealtimePriority(30);
@@ -109,6 +110,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   output_struct.end_effector_voltage = end_effector_voltage;
+
+  double ground_intake_roller_voltage =
+      robot_constants_->common()->intake_roller_voltages()->neutral();
+
+  if (unsafe_goal != nullptr && unsafe_goal->ground_intake_roller_goal() ==
+                                    GroundIntakeRollerGoal::INTAKE) {
+    ground_intake_roller_voltage =
+        robot_constants_->common()->intake_roller_voltages()->intake();
+  }
+
+  output_struct.ground_intake_roller_voltage = ground_intake_roller_voltage;
 
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::
@@ -405,15 +417,49 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.wrist_voltage) : nullptr,
           status->fbb());
 
+  aos::fbs::FixedStackAllocator<aos::fbs::Builder<
+      frc971::control_loops::
+          StaticZeroingSingleDOFProfiledSubsystemGoalStatic>::kBufferSize>
+      ground_intake_buffer;
+
+  aos::fbs::Builder<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoalStatic>
+      intake_goal_builder(&ground_intake_buffer);
+
+  double ground_intake_pivot_position =
+      robot_constants_->common()->ground_intake_pivot_set_points()->neutral();
+
+  if (unsafe_goal != nullptr &&
+      unsafe_goal->ground_intake_goal() == GroundIntakeGoal::CORAL_INTAKE) {
+    ground_intake_pivot_position = robot_constants_->common()
+                                       ->ground_intake_pivot_set_points()
+                                       ->coral_intake();
+  }
+
+  PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+      intake_goal_builder.get(), ground_intake_pivot_position);
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *intake_goal = &intake_goal_builder->AsFlatbuffer();
+
+  const flatbuffers::Offset<
+      frc971::control_loops::RelativeEncoderProfiledJointStatus>
+      intake_offset = intake_.Iterate(
+          intake_goal, position->ground_intake(),
+          output != nullptr ? &(output_struct.ground_intake_pivot_voltage)
+                            : nullptr,
+          status->fbb());
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = elevator_.zeroed() && pivot_.zeroed() && wrist_.zeroed();
-  const bool estopped =
-      elevator_.estopped() || pivot_.estopped() || wrist_.estopped();
+  const bool zeroed = elevator_.zeroed() && pivot_.zeroed() &&
+                      wrist_.zeroed() && intake_.zeroed();
+  const bool estopped = elevator_.estopped() || pivot_.estopped() ||
+                        wrist_.estopped() || intake_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
@@ -422,6 +468,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_pivot(pivot_status_offset);
   status_builder.add_end_effector_state(end_effector_status);
   status_builder.add_intake_complete(intake_complete_);
+  status_builder.add_ground_intake(intake_offset);
 
   (void)status->Send(status_builder.Finish());
 }

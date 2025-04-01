@@ -79,6 +79,16 @@ enum AutoAlignDirection : ubyte {
   RIGHT = 2,
 }
 
+enum GroundIntakeGoal : ubyte {
+  NEUTRAL = 0,
+  CORAL_INTAKE = 1,
+}
+
+enum GroundIntakeRollerGoal : ubyte {
+  NEUTRAL = 0,
+  INTAKE = 1,
+}
+
 table Goal {
   elevator_goal:ElevatorGoal (id: 0);
   pivot_goal:PivotGoal (id: 1);
@@ -88,6 +98,8 @@ table Goal {
   robot_side: RobotSide (id: 5);
   auto_align_direction: AutoAlignDirection (id: 6);
   theta_lock: bool = false (id: 7);
+  ground_intake_goal:GroundIntakeGoal (id: 8);
+  ground_intake_roller_goal:GroundIntakeRollerGoal (id: 9);
 }
 
 root_type Goal;

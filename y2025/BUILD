@@ -222,6 +222,7 @@ cc_library(
         "//y2025/constants:constants_fbs",
         "//y2025/control_loops/drivetrain:rotation_plants",
         "//y2025/control_loops/superstructure/elevator:elevator_plants",
+        "//y2025/control_loops/superstructure/ground_intake_pivot:ground_intake_pivot_plants",
         "//y2025/control_loops/superstructure/pivot:pivot_plants",
         "//y2025/control_loops/superstructure/wrist:wrist_plants",
         "@com_google_absl//absl/base",

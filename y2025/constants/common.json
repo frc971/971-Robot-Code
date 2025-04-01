@@ -20,7 +20,12 @@
     "climber_stator_current_limit": 100,
     "climber_supply_current_limit": 60,
     "wrist_stator_current_limit": 50,
-    "wrist_supply_current_limit": 25
+    "wrist_supply_current_limit": 25,
+    // TODO: Update the roller and pivot limits
+    "roller_stator_current_limit": 20,
+    "roller_supply_current_limit": 21,
+    "intake_pivot_stator_current_limit": 22,
+    "intake_pivot_supply_current_limit": 32
   },
   "translation_module_ratio": {{(12.0 / 54.0 * 38.0 / 16.0 * 15.0 / 45.0) * 1.8 * 0.0254}},
   // TODO Change these constants
@@ -42,6 +47,25 @@
         "upper": {{ 2 * 3.1415 / 3 }}
     },
     "loop": {% include 'y2025/control_loops/superstructure/pivot/integral_pivot_plant.json' %}
+  },
+  "ground_intake_pivot": { // TODO: Update constants
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 1.0,
+      "max_acceleration": 2.0
+    },
+    "default_profile_params":{
+      "max_velocity": 5.0,
+      "max_acceleration": 15.0
+    },
+    "range": {
+        "lower_hard": {{ 2 * -3.1415 / 3 }},
+        "upper_hard": {{ 2 * 3.1415 / 3 }},
+        "lower": {{ 2 * -3.1415 / 3 }},
+        "upper": {{ 2 * 3.1415 / 3 }}
+    },
+    "loop": {% include 'y2025/control_loops/superstructure/ground_intake_pivot/integral_ground_intake_pivot_plant.json' %}
   },
   // TODO change these constants for y2025 bot
   "wrist": {
@@ -86,6 +110,10 @@
   "climber_current": {
     "climb": 60.0,
     "retract": -4.0
+  },
+  "intake_roller_voltages": {
+    "neutral": 0.0, // fix these voltages to be correct
+    "intake": 5.0
   },
   "rotation": {
     "zeroing_voltage": 3.0,
@@ -153,6 +181,10 @@
     "algae_processor": 0.8045471934439157,
     "intake_hp_backup": 0.317912797392084,
     "climb": -{{3.14 / 4.0}}
+  },
+  "ground_intake_pivot_set_points": {
+    "neutral": 0.0,
+    "coral_intake": 1.0
   },
   "end_effector_voltages": {
     "spit": -6.0,

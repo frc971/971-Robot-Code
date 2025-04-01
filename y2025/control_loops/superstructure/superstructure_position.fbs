@@ -11,6 +11,10 @@ table Position {
     pivot:frc971.PotAndAbsolutePosition (id: 1);
 
     wrist:frc971.AbsolutePosition (id: 2);
+
+    // Position of the ground_intake_pivot (rotational)
+    // Pot sensor is represented as a Relative Encoder
+    ground_intake:frc971.RelativePosition (id: 3);
 }
 
 root_type Position;
