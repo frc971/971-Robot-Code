@@ -41,13 +41,13 @@ int main(int argc, char **argv) {
                                               : nullptr);
 
   reader.RemapLoggedChannel(
-      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/localizer" : "/imu/localizer",
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/localizer" : "/imu/localizer",
       "frc971.control_loops.swerve.LocalizerState");
   reader.RemapLoggedChannel(
-      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/localizer" : "/imu/localizer",
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/localizer" : "/imu/localizer",
       "y2025.localizer.Status");
   reader.RemapLoggedChannel(
-      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/constants" : "/imu/constants",
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/constants" : "/imu/constants",
       "y2025.Constants");
   reader.RemapLoggedChannel("/roborio/constants", "y2025.Constants");
   reader.RemapLoggedChannel("/orin1/constants", "y2025.Constants");

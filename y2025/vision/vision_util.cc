@@ -4,7 +4,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 
-ABSL_FLAG(bool, use_one_orin, true, "Use One Orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 
 namespace y2025::vision {
 
@@ -12,7 +13,7 @@ namespace y2025::vision {
 std::vector<CameraNode> CreateNodeList() {
   std::vector<CameraNode> list;
 
-  if (!absl::GetFlag(FLAGS_use_one_orin)) {
+  if (!absl::GetFlag(FLAGS_use_orin1)) {
     list.push_back({.node_name = "imu", .camera_number = 0});
     list.push_back({.node_name = "imu", .camera_number = 1});
   }

@@ -14,7 +14,7 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/localizer/status_static.h"
 
-ABSL_DECLARE_FLAG(bool, use_one_orin);
+ABSL_DECLARE_FLAG(bool, use_orin1);
 
 namespace y2025::localizer {
 

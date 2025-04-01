@@ -26,10 +26,10 @@ class DualImuBlenderTest : public ::testing::Test {
         dual_imu_blender_status_fetcher_(
             dual_imu_blender_event_loop_
                 ->MakeFetcher<frc971::imu::DualImuBlenderStatus>(
-                    absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")),
+                    absl::GetFlag(FLAGS_use_orin1) ? "/orin1" : "/imu")),
         dual_imu_sender_(
             dual_imu_event_loop_->MakeSender<frc971::imu::DualImuStatic>(
-                absl::GetFlag(FLAGS_use_one_orin) ? "/orin1" : "/imu")),
+                absl::GetFlag(FLAGS_use_orin1) ? "/orin1" : "/imu")),
         dual_imu_blender_(dual_imu_blender_event_loop_.get()) {}
 
   void CheckImuType(frc971::imu::ImuType type) {

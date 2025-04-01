@@ -160,7 +160,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
       last_H_world_robot_(Eigen::Matrix4d::Identity()),
       max_delta_T_world_robot_(0.0) {
   reader_->RemapLoggedChannel("/orin1/constants", "y2025.Constants");
-  if (!absl::GetFlag(FLAGS_use_one_orin)) {
+  if (!absl::GetFlag(FLAGS_use_orin1)) {
     reader_->RemapLoggedChannel("/imu/constants", "y2025.Constants");
   }
   // If it's Box of Orins, don't remap roborio constants

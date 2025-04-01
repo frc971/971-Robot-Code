@@ -31,7 +31,8 @@ ABSL_FLAG(std::string, constants_path, "y2025/constants/constants.json",
           "Path to the constant file");
 ABSL_FLAG(std::string, output_folder, "",
           "Name of the folder to write replayed logs to.");
-ABSL_FLAG(bool, use_one_orin, true, "Use one orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 
 std::string generate_filepath(char **argv) {
   std::string full_filename = argv[1];
@@ -79,18 +80,16 @@ int main(int argc, char **argv) {
   aos::logger::LogReader reader(logfiles, &config.message());
 
   reader.RemapLoggedChannel(
-      absl::GetFlag(FLAGS_use_one_orin) ? "/orin1/constants" : "/imu/constants",
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/constants" : "/imu/constants",
       "y2025.Constants");
   reader.RemapLoggedChannel("/roborio/constants", "y2025.Constants");
-  reader.RemapLoggedChannel(absl::GetFlag(FLAGS_use_one_orin)
-                                ? "/orin1/drivetrain"
-                                : "/imu/drivetrain",
-                            "frc971.control_loops.swerve.Output");
-  reader.RemapLoggedChannel(absl::GetFlag(FLAGS_use_one_orin)
-                                ? "/orin1/drivetrain"
-                                : "/imu/drivetrain",
-                            "frc971.control_loops.swerve.Status");
-  reader.RemapLoggedChannel(absl::GetFlag(FLAGS_use_one_orin)
+  reader.RemapLoggedChannel(
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/drivetrain" : "/imu/drivetrain",
+      "frc971.control_loops.swerve.Output");
+  reader.RemapLoggedChannel(
+      absl::GetFlag(FLAGS_use_orin1) ? "/orin1/drivetrain" : "/imu/drivetrain",
+      "frc971.control_loops.swerve.Status");
+  reader.RemapLoggedChannel(absl::GetFlag(FLAGS_use_orin1)
                                 ? "/orin1/autonomous_auto_align"
                                 : "/imu/autonomous_auto_align",
                             "frc971.control_loops.swerve.Goal");

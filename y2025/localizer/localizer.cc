@@ -18,7 +18,8 @@ ABSL_FLAG(double, max_pose_error_ratio, 0.3,
 ABSL_FLAG(double, distance_threshold, 4.5,
           "Distance in meters from the robot where we consider detections "
           "invalid due to the variance they have.");
-ABSL_FLAG(bool, use_one_orin, true, "Use One Orin instead of two.");
+ABSL_FLAG(bool, use_orin1, true,
+          "Use only the orin1 node instead of the imu node.");
 namespace y2025::localizer {
 namespace {
 
@@ -26,7 +27,7 @@ using States =
     frc971::control_loops::swerve::SimplifiedDynamics<double>::States;
 
 const std::vector<std::string_view> kDetectionChannels =
-    absl::GetFlag(FLAGS_use_one_orin)
+    absl::GetFlag(FLAGS_use_orin1)
         ? std::vector<std::string_view>{"/orin1/camera0", "/orin1/camera1"}
         : std::vector<std::string_view>{"/orin1/camera0", "/imu/camera0",
                                         "/orin1/camera1", "/imu/camera1"};
@@ -348,7 +349,7 @@ void Localizer::SendStatus() {
                       stats->add_orin1_camera0());
   PopulateCameraStats(cameras_.at(CameraIndexForName("/orin1/camera1")),
                       stats->add_orin1_camera1());
-  if (!absl::GetFlag(FLAGS_use_one_orin)) {
+  if (!absl::GetFlag(FLAGS_use_orin1)) {
     PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera0")),
                         stats->add_imu_camera0());
     PopulateCameraStats(cameras_.at(CameraIndexForName("/imu/camera1")),

@@ -101,14 +101,14 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":config_imu",
+        ":config_orin1",
         ":config_roborio",
     ],
 )
 
 aos_config(
-    name = "config_imu",
-    src = "y2025_imu.json",
+    name = "config_orin1",
+    src = "y2025_orin1.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",

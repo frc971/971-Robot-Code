@@ -44,9 +44,9 @@ const ROBOT_LENGTH = 32 * IN_TO_M;
 const CAMERA_COLORS = ['#ff00ff', '#ffff00'];
 const CAMERAS = ['/orin1/camera0', '/orin1/camera1'];
 
-const use_one_orin = true;
+const use_orin1 = true;
 
-if (!use_one_orin) {
+if (!use_orin1) {
   CAMERAS.push('/imu/camera0', '/imu/camera1');
   CAMERA_COLORS.push('#00ffff', '#ffa500');
 }
@@ -203,7 +203,7 @@ export class FieldHandler {
         );
       }
 
-      let imu_or_orin1 = use_one_orin ? 'orin1' : 'imu';
+      let imu_or_orin1 = use_orin1 ? 'orin1' : 'imu';
 
       // is this the right node?
       this.connection.addHandler(
