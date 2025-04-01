@@ -6,6 +6,8 @@ table Output {
     end_effector_voltage:double (id: 2);
     climber_current:double (id: 3);
     wrist_voltage:double (id: 4);
+    ground_intake_pivot_voltage:double (id: 5);
+    ground_intake_roller_voltage:double (id: 6);
 }
 
 root_type Output;

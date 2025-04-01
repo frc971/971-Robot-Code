@@ -13,6 +13,7 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/control_loops/drivetrain/rotation_plant.h"
 #include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
+#include "y2025/control_loops/superstructure/ground_intake_pivot/ground_intake_pivot_plant.h"
 #include "y2025/control_loops/superstructure/pivot/pivot_plant.h"
 #include "y2025/control_loops/superstructure/wrist/wrist_plant.h"
 
@@ -77,6 +78,7 @@ struct Values {
            control_loops::superstructure::elevator::kOutputRatio /
            kElevatorEncoderRatio() * kElevatorEncoderCountsPerRevolution();
   }
+
   struct PotAndAbsEncoderConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
@@ -90,10 +92,21 @@ struct Values {
         subsystem_params;
   };
 
+  struct PotConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::RelativeEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
+
   static constexpr double kPivotOutputRatio =
       control_loops::superstructure::pivot::kOutputRatio;
 
   static constexpr double kPivotPotRatio() { return (26.0 / 60.0); }
+
+  static constexpr double kIntakePotRatio() {
+    return (12.0 / 60.0) * (60.0 / 20.0);
+  }
 
   static constexpr double kPivotEncoderCountsPerRevolution() { return 4096.0; }
 
@@ -103,6 +116,14 @@ struct Values {
     return kPivotPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
            (2 * M_PI /*radians*/);
   }
+
+  static constexpr double kIntakePotRadiansPerVolt() {
+    return kIntakePotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kIntakeOutputRatio =
+      control_loops::superstructure::ground_intake_pivot::kOutputRatio;
 
   static constexpr double kMaxPivotEncoderPulsesPerSecond() {
     return control_loops::superstructure::pivot::kFreeSpeed / (2.0 * M_PI) *

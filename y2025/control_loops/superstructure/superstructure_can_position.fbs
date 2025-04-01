@@ -27,6 +27,12 @@ table CANPosition {
     climber_two:frc971.control_loops.CANTalonFX (id: 7);
 
     wrist:frc971.control_loops.CANTalonFX (id: 8);
+
+    // CAN position of the ground intake pivot kraken
+    ground_intake_pivot:frc971.control_loops.CANTalonFX (id: 9);
+
+    // CAN position of the ground intake rollers kraken
+    ground_intake_roller:frc971.control_loops.CANTalonFX (id: 10);
 }
 
 root_type CANPosition;

@@ -64,6 +64,16 @@ table WristSetPoints {
   climb:double (id: 13);
 }
 
+table GroundIntakeSetPoints {
+  neutral:double (id: 0);
+  coral_intake:double (id: 1);
+}
+
+table GroundIntakeVoltages {
+  neutral:double (id:0);
+  intake:double (id: 1);
+}
+
 table PotAndAbsEncoderConstants {
   zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
   potentiometer_offset:double (id: 1);
@@ -80,6 +90,7 @@ table RobotConstants {
   input_config: frc971.input.InputConfig (id: 3);
   swerve_zeroing:frc971.control_loops.swerve.SwerveZeroing (id: 4);
   wrist_constants:AbsEncoderConstants (id: 5);
+  intake_pivot_pot_offset:double (id: 6);
 }
 
 table EndEffectorVoltages {
@@ -144,6 +155,9 @@ table Common {
   processor_locations:[Location] (id: 20);
   pivot_can_move_elevator_threshold: double (id: 21);
   wrist_can_move_elevator_threshold: double (id: 22);
+  ground_intake_pivot_set_points:GroundIntakeSetPoints(id: 23);
+  ground_intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 24);
+  intake_roller_voltages: GroundIntakeVoltages (id: 25);
 }
 
 table Constants {
@@ -167,6 +181,10 @@ table CurrentLimits {
   wrist_supply_current_limit:double (id: 11);
   steer_stator_current_limit:double (id: 12);
   steer_supply_current_limit:double (id: 13);
+  roller_stator_current_limit:double (id: 14);
+  roller_supply_current_limit:double (id: 15);
+  intake_pivot_stator_current_limit:double (id: 16);
+  intake_pivot_supply_current_limit:double (id: 17);
 }
 
 root_type Constants;

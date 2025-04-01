@@ -33,6 +33,11 @@ class Superstructure
           ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
+  using RelativeEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::RelativeEncoderZeroingEstimator,
+          ::frc971::control_loops::RelativeEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
@@ -45,6 +50,7 @@ class Superstructure
   const PotAndAbsoluteEncoderSubsystem &elevator() const { return elevator_; }
   const PotAndAbsoluteEncoderSubsystem &pivot() const { return pivot_; }
   const AbsoluteEncoderSubsystem &wrist() const { return wrist_; }
+  const RelativeEncoderSubsystem &intake() const { return intake_; }
 
  protected:
   virtual void RunIteration(const Goal *goal, const Position *position,
@@ -60,6 +66,7 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem elevator_;
   PotAndAbsoluteEncoderSubsystem pivot_;
   AbsoluteEncoderSubsystem wrist_;
+  RelativeEncoderSubsystem intake_;
   aos::Fetcher<CANPosition> rio_can_position_fetcher_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;

@@ -15,6 +15,7 @@
 #include "y2025/constants/constants_generated.h"
 #include "y2025/constants/simulated_constants_sender.h"
 #include "y2025/control_loops/superstructure/elevator/elevator_plant.h"
+#include "y2025/control_loops/superstructure/ground_intake_pivot/ground_intake_pivot_plant.h"
 #include "y2025/control_loops/superstructure/pivot/pivot_plant.h"
 #include "y2025/control_loops/superstructure/superstructure.h"
 #include "y2025/control_loops/superstructure/superstructure_can_position_generated.h"
@@ -47,6 +48,11 @@ using AbsoluteEncoderSimulator = ::frc971::control_loops::SubsystemSimulator<
     ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus,
     Superstructure::AbsoluteEncoderSubsystem::State,
     constants::Values::AbsEncoderConstants>;
+
+using RelativeEncoderSimulator = ::frc971::control_loops::SubsystemSimulator<
+    ::frc971::control_loops::RelativeEncoderProfiledJointStatus,
+    Superstructure::RelativeEncoderSubsystem::State,
+    constants::Values::PotConstants>;
 
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
@@ -122,6 +128,22 @@ class SuperstructureSimulation {
                 ->wrist_constants()
                 ->zeroing_constants()
                 ->measured_absolute_position(),
+            dt_),
+        ground_intake_pivot_(
+            new CappedTestPlant(
+                ground_intake_pivot::MakeGroundIntakePivotPlant()),
+            PositionSensorSimulator(2 * M_PI *
+                                    constants::Values::kIntakePotRatio()),
+            {.subsystem_params =
+                 {simulated_robot_constants->common()->ground_intake_pivot(),
+                  {}},
+             .potentiometer_offset =
+                 simulated_robot_constants->robot()->intake_pivot_pot_offset()},
+            frc971::constants::Range::FromFlatbuffer(
+                simulated_robot_constants->common()
+                    ->ground_intake_pivot()
+                    ->range()),
+            simulated_robot_constants->robot()->intake_pivot_pot_offset(),
             dt_) {
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
@@ -136,6 +158,9 @@ class SuperstructureSimulation {
                             superstructure_status_fetcher_->pivot());
             wrist_.Simulate(superstructure_output_fetcher_->wrist_voltage(),
                             superstructure_status_fetcher_->wrist());
+            ground_intake_pivot_.Simulate(
+                superstructure_output_fetcher_->ground_intake_pivot_voltage(),
+                superstructure_status_fetcher_->ground_intake());
           }
           first_ = false;
           SendPositionMessage();
@@ -144,6 +169,8 @@ class SuperstructureSimulation {
   }
 
   AbsoluteEncoderSimulator *wrist() { return &wrist_; }
+
+  RelativeEncoderSimulator *intake_pivot() { return &ground_intake_pivot_; }
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
@@ -160,6 +187,11 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> pivot_offset =
         pivot_.encoder()->GetSensorValues(&pivot_builder);
 
+    frc971::RelativePosition::Builder intake_builder =
+        builder.MakeBuilder<frc971::RelativePosition>();
+    flatbuffers::Offset<frc971::RelativePosition> intake_offset =
+        ground_intake_pivot_.encoder()->GetSensorValues(&intake_builder);
+
     frc971::AbsolutePosition::Builder wrist_builder =
         builder.MakeBuilder<frc971::AbsolutePosition>();
     flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
@@ -169,6 +201,7 @@ class SuperstructureSimulation {
     position_builder.add_pivot(pivot_offset);
     position_builder.add_elevator(elevator_offset);
     position_builder.add_wrist(wrist_offset);
+    position_builder.add_ground_intake(intake_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
@@ -187,6 +220,7 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator elevator_;
   PotAndAbsoluteEncoderSimulator pivot_;
   AbsoluteEncoderSimulator wrist_;
+  RelativeEncoderSimulator ground_intake_pivot_;
 
   bool first_ = true;
 };
@@ -238,6 +272,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     constexpr double kEpsPivot = 0.001;
     constexpr double kEpsElevator = 0.001;
     constexpr double kEpsWrist = 0.001;
+    constexpr double kEpsGroundIntakePivot = 0.001;
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
@@ -490,6 +525,22 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     EXPECT_NEAR(wrist_set_point,
                 superstructure_status_fetcher_->wrist()->position(), kEpsWrist);
 
+    double ground_intake_pivot_expected_position =
+        simulated_robot_constants_->common()
+            ->ground_intake_pivot_set_points()
+            ->neutral();
+    if (superstructure_goal_fetcher_->ground_intake_goal() ==
+        GroundIntakeGoal::CORAL_INTAKE) {
+      ground_intake_pivot_expected_position =
+          simulated_robot_constants_->common()
+              ->ground_intake_pivot_set_points()
+              ->coral_intake();
+    }
+
+    EXPECT_NEAR(ground_intake_pivot_expected_position,
+                superstructure_status_fetcher_->ground_intake()->position(),
+                kEpsGroundIntakePivot);
+
     double climber_expected_current = 0.0;
 
     switch (superstructure_goal_fetcher_->climber_goal()) {
@@ -504,6 +555,25 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             simulated_robot_constants_->common()->climber_current()->retract();
         break;
     }
+
+    double ground_intake_expected_roller_voltage =
+        simulated_robot_constants_->common()
+            ->intake_roller_voltages()
+            ->neutral();
+
+    switch (superstructure_goal_fetcher_->ground_intake_roller_goal()) {
+      case GroundIntakeRollerGoal::NEUTRAL:
+        break;
+      case GroundIntakeRollerGoal::INTAKE:
+        ground_intake_expected_roller_voltage =
+            simulated_robot_constants_->common()
+                ->intake_roller_voltages()
+                ->intake();
+        break;
+    }
+
+    ASSERT_EQ(ground_intake_expected_roller_voltage,
+              superstructure_output_fetcher_->ground_intake_roller_voltage());
 
     ASSERT_TRUE(climber_expected_current ==
                 superstructure_output_fetcher_->climber_current());
@@ -567,7 +637,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   std::unique_ptr<aos::logger::Logger> logger_;
 };
 
-// Tests that the superstructure does nothing when the goal is to remain
+// Tests that the superstructure does nothing when the  is to remain
 // still.
 TEST_F(SuperstructureTest, DoesNothing) {
   SetEnabled(true);
@@ -1050,6 +1120,34 @@ TEST_F(SuperstructureTest, PivotElevatorMovesFirstPositionTest) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_pivot_goal(PivotGoal::SCORE_L3);
     goal_builder.add_elevator_goal(ElevatorGoal::SCORE_L3);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(4));
+
+  VerifyNearGoal();
+}
+
+TEST_F(SuperstructureTest, GroundIntakeSubsystemTest) {
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_ground_intake_goal(GroundIntakeGoal::NEUTRAL);
+    goal_builder.add_ground_intake_roller_goal(GroundIntakeRollerGoal::NEUTRAL);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(4));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_ground_intake_goal(GroundIntakeGoal::CORAL_INTAKE);
+    goal_builder.add_ground_intake_roller_goal(GroundIntakeRollerGoal::INTAKE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

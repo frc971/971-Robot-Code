@@ -38,6 +38,8 @@ table Status {
     intake_complete:bool (id: 5);
 
     wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 6);
+
+    ground_intake:frc971.control_loops.RelativeEncoderProfiledJointStatus (id: 7);
 }
 
 root_type Status;

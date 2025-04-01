@@ -78,6 +78,8 @@ using y2025::control_loops::superstructure::AutoAlignDirection;
 using y2025::control_loops::superstructure::ClimberGoal;
 using y2025::control_loops::superstructure::ElevatorGoal;
 using y2025::control_loops::superstructure::EndEffectorGoal;
+using y2025::control_loops::superstructure::GroundIntakeGoal;
+using y2025::control_loops::superstructure::GroundIntakeRollerGoal;
 using y2025::control_loops::superstructure::PivotGoal;
 using y2025::control_loops::superstructure::RobotSide;
 using y2025::control_loops::superstructure::WristGoal;
@@ -161,12 +163,6 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
       superstructure_goal_builder->set_pivot_goal(PivotGoal::SCORE_L1);
       superstructure_goal_builder->set_wrist_goal(WristGoal::SCORE_L1);
       climber_l1_latched_ = false;
-    } else if (data.IsPressed(kGroundIntake)) {
-      superstructure_goal_builder->set_elevator_goal(
-          ElevatorGoal::INTAKE_GROUND);
-      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_GROUND);
-      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_GROUND);
-      climber_l1_latched_ = false;
     } else if (data.IsPressed(kHumanPlayer)) {
       superstructure_goal_builder->set_elevator_goal(ElevatorGoal::INTAKE_HP);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_HP);
@@ -202,6 +198,25 @@ class Reader : public ::frc971::input::SwerveJoystickInput {
           ElevatorGoal::ALGAE_GROUND);
       superstructure_goal_builder->set_wrist_goal(WristGoal::ALGAE_GROUND);
       superstructure_goal_builder->set_pivot_goal(PivotGoal::ALGAE_GROUND);
+    }
+
+    if (data.IsPressed(kGroundIntake)) {
+      superstructure_goal_builder->set_ground_intake_goal(
+          GroundIntakeGoal::CORAL_INTAKE);
+      superstructure_goal_builder->set_ground_intake_roller_goal(
+          GroundIntakeRollerGoal::INTAKE);
+      superstructure_goal_builder->set_elevator_goal(
+          ElevatorGoal::INTAKE_GROUND);
+      superstructure_goal_builder->set_pivot_goal(PivotGoal::INTAKE_GROUND);
+      superstructure_goal_builder->set_wrist_goal(WristGoal::INTAKE_GROUND);
+      superstructure_goal_builder->set_end_effector_goal(
+          EndEffectorGoal::INTAKE);
+      climber_l1_latched_ = false;
+    } else {
+      superstructure_goal_builder->set_ground_intake_goal(
+          GroundIntakeGoal::NEUTRAL);
+      superstructure_goal_builder->set_ground_intake_roller_goal(
+          GroundIntakeRollerGoal::NEUTRAL);
     }
 
     localizer_state_fetcher_.Fetch();

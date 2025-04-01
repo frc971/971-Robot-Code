@@ -90,6 +90,9 @@ double elevator_pot_translate(double voltage) {
 double pivot_pot_translate(double voltage) {
   return voltage * Values::kPivotPotRadiansPerVolt();
 }
+double intake_pot_translate(double voltage) {
+  return voltage * Values::kIntakePotRadiansPerVolt();
+}
 
 }  // namespace
 
@@ -150,6 +153,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
                    Values::kWristEncoderRatio(), true /* wrist flipped */);
+      CopyPosition(*intake_pivot_potentiometer_, builder->add_ground_intake(),
+                   intake_pot_translate, false,
+                   robot_constants_->robot()->intake_pivot_pot_offset());
 
       builder.CheckOk(builder.Send());
     }
@@ -257,6 +263,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
+  void set_intake_pivot(::std::unique_ptr<frc::AnalogInput> pot) {
+    intake_pivot_potentiometer_ = ::std::move(pot);
+  }
+
  private:
   const Constants *robot_constants_;
 
@@ -265,6 +275,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
+
+  std::unique_ptr<frc::AnalogInput> intake_pivot_potentiometer_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 
@@ -332,6 +344,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                             make_unique<frc::AnalogInput>(1));
     sensor_reader.set_wrist(make_unique<frc::Encoder>(23, 22),
                             make_unique<frc::DigitalInput>(24));
+    sensor_reader.set_intake_pivot(make_unique<frc::AnalogInput>(7));
+
     // TODO: Set the roborio ports
 
     AddLoop(&sensor_reader_event_loop);
@@ -372,10 +386,20 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         12, false, "rio", &rio_signal_registry,
         current_limits->end_effector_stator_current_limit(),
         current_limits->end_effector_supply_current_limit());
-
+    // Set correct roborio ports for intake_pivot and rollers
+    std::shared_ptr<TalonFX> intake_pivot = std::make_shared<TalonFX>(
+        23, false, "rio", &rio_signal_registry,
+        current_limits->intake_pivot_stator_current_limit(),
+        current_limits->intake_pivot_supply_current_limit());
+    std::shared_ptr<TalonFX> rollers = std::make_shared<TalonFX>(
+        23, false, "rio", &rio_signal_registry,
+        current_limits->roller_stator_current_limit(),
+        current_limits->roller_supply_current_limit());
     canivore_talons.push_back(elevator_one);
     canivore_talons.push_back(elevator_two);
     rio_talons.push_back(end_effector);
+    rio_talons.push_back(intake_pivot);
+    rio_talons.push_back(rollers);
 
     std::shared_ptr<TalonFX> pivot =
         std::make_shared<TalonFX>(1, true, "rio", &rio_signal_registry,
@@ -437,9 +461,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader rio_can_sensor_reader(
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talons,
-        [&pivot, &climber_one, &climber_two, &end_effector,
-         &superstructure_rio_position_sender,
-         &wrist](ctre::phoenix::StatusCode status) {
+        [&pivot, &climber_one, &climber_two, &end_effector, &intake_pivot,
+         &rollers, &wrist, &superstructure_rio_position_sender](
+            ctre::phoenix::StatusCode status) {
           aos::Sender<y2025::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_rio_builder =
                   superstructure_rio_position_sender.MakeStaticBuilder();
@@ -458,6 +482,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           wrist->SerializePosition(superstructure_rio_builder->add_wrist(),
                                    constants::Values::kWristOutputRatio);
+          intake_pivot->SerializePosition(
+              superstructure_rio_builder->add_ground_intake_pivot(),
+              constants::Values::kIntakeOutputRatio);
+          rollers->SerializePosition(
+              superstructure_rio_builder->add_ground_intake_roller(), 1);
 
           superstructure_rio_builder->set_status(static_cast<int>(status));
           superstructure_rio_builder.CheckOk(superstructure_rio_builder.Send());
@@ -491,6 +520,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(-output.end_effector_voltage());
               talonfx_map.find("wrist")->second->WriteVoltage(
                   output.wrist_voltage(), false);
+              talonfx_map.find("intake_pivot")
+                  ->second->WriteVoltage(output.ground_intake_pivot_voltage(),
+                                         false);
+              talonfx_map.find("rollers")->second->WriteVoltage(
+                  output.ground_intake_roller_voltage(), false);
             });
 
     can_superstructure_writer.add_talonfx("elevator_one", elevator_one);
@@ -500,6 +534,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("climber_one", climber_one);
     can_superstructure_writer.add_talonfx("climber_two", climber_two);
     can_superstructure_writer.add_talonfx("wrist", wrist);
+    can_superstructure_writer.add_talonfx("intake_pivot", intake_pivot);
+    can_superstructure_writer.add_talonfx("rollers", rollers);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_superstructure_writer](

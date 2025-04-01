@@ -40,6 +40,8 @@
       ) %}
       "zeroing_constants": {{ wrist_zero | tojson(indent=2)}}
     },
+    // TODO get actual constants
+    "intake_pivot_pot_offset": 0,
     "input_config": {
       "use_redundant_joysticks": true,
       "vx_offset": 0.31496063,
