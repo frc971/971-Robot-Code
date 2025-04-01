@@ -57,6 +57,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     elevator_.Reset();
     pivot_.Reset();
     wrist_.Reset();
+    intake_.Reset();
   }
   OutputT output_struct;
 
