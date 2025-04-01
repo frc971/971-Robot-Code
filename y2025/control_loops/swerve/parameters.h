@@ -40,8 +40,8 @@ MakeSwerveParameters() {
   };
 
   return {
-      .mass = 35,
-      .moment_of_inertia = 2.63,
+      .mass = 68.0,
+      .moment_of_inertia = 4.5,
       .modules =
           {
               // front left
