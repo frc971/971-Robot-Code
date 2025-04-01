@@ -52,29 +52,29 @@ int main(int argc, char **argv) {
 
   SwerveModules modules{
       .front_left = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{2, true},
-          frc971::wpilib::TalonFXParams{3, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{13, true},
+          frc971::wpilib::TalonFXParams{0, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit(),
           current_limits->steer_stator_current_limit(),
           current_limits->steer_supply_current_limit()),
       .front_right = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{10, true},
-          frc971::wpilib::TalonFXParams{4, true}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{20, true},
+          frc971::wpilib::TalonFXParams{2, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit(),
           current_limits->steer_stator_current_limit(),
           current_limits->steer_supply_current_limit()),
       .back_left = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{7, true},
-          frc971::wpilib::TalonFXParams{6, false}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{19, true},
+          frc971::wpilib::TalonFXParams{3, false}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit(),
           current_limits->steer_stator_current_limit(),
           current_limits->steer_supply_current_limit()),
       .back_right = std::make_shared<SwerveModule>(
-          frc971::wpilib::TalonFXParams{11, true},
-          frc971::wpilib::TalonFXParams{0, true}, "Drivetrain Bus",
+          frc971::wpilib::TalonFXParams{7, true},
+          frc971::wpilib::TalonFXParams{1, true}, "Drivetrain Bus",
           &signals_registry, current_limits->drivetrain_stator_current_limit(),
           current_limits->drivetrain_supply_current_limit(),
           current_limits->steer_stator_current_limit(),
