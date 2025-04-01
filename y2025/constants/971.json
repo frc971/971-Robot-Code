@@ -6,10 +6,10 @@
 {
   "cameras": [
     {
-      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-0_cam-24-08_2025-03-01_13-52-45.json' %}
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-0_cam-24-05_2025-03-29_11-22-02.json' %}
     },
     {
-      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-1_cam-24-12_2025-03-01_13-51-04.json' %}
+      "calibration": {% include 'y2025/constants/calib_files/calibration_orin1-971-1_cam-24-12_2025-03-29_11-21-51.json' %}
     }
   ],
   "robot": {
