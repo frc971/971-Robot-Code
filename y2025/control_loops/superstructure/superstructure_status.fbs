@@ -35,7 +35,8 @@ table Status {
 
     end_effector_state:EndEffectorStatus (id: 4);
 
-    intake_complete:bool (id: 5);
+    // Deprecated since intake complete no longer used.
+    intake_complete:bool (id: 5, deprecated);
 
     wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 6);
 

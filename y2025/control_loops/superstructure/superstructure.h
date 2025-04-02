@@ -41,7 +41,6 @@ class Superstructure
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
-  bool GetIntakeComplete();
   inline static bool PositionNear(double position, double goal,
                                   double threshold) {
     return std::abs(position - goal) < threshold;
@@ -70,7 +69,6 @@ class Superstructure
   aos::Fetcher<CANPosition> rio_can_position_fetcher_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
-  bool intake_complete_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

@@ -285,12 +285,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       case EndEffectorGoal::NEUTRAL:
         break;
       case EndEffectorGoal::INTAKE:
-        if (!superstructure_.GetIntakeComplete()) {
-          expected_end_effector_status = EndEffectorStatus::INTAKE;
-          expected_end_effector_voltage = simulated_robot_constants_->common()
-                                              ->end_effector_voltages()
-                                              ->intake();
-        }
+        expected_end_effector_status = EndEffectorStatus::INTAKE;
+        expected_end_effector_voltage = simulated_robot_constants_->common()
+                                            ->end_effector_voltages()
+                                            ->intake();
         break;
       case EndEffectorGoal::SPIT:
         expected_end_effector_status = EndEffectorStatus::SPITTING;
