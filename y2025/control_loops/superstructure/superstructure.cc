@@ -46,8 +46,6 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
-bool Superstructure::GetIntakeComplete() { return intake_complete_; }
-
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
@@ -67,11 +65,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     alliance_ = joystick_state_fetcher_->alliance();
   }
 
-  if (rio_can_position_fetcher_.Fetch()) {
-    intake_complete_ =
-        rio_can_position_fetcher_.get()->end_effector()->torque_current() >
-        kEndEffectorMotorTorqueThreshold;
-  }
   if (joystick_state_fetcher_.get() != nullptr &&
       joystick_state_fetcher_->autonomous() &&
       auto_superstructure_goal_fetcher_.Fetch()) {
@@ -87,15 +80,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case EndEffectorGoal::NEUTRAL:
         break;
       case EndEffectorGoal::INTAKE:
-        if (!intake_complete_) {
-          end_effector_status = EndEffectorStatus::INTAKE;
-          end_effector_voltage =
-              robot_constants_->common()->end_effector_voltages()->intake();
-        } else {
-          end_effector_status = EndEffectorStatus::NEUTRAL;
-          end_effector_voltage =
-              robot_constants_->common()->end_effector_idling_voltage();
-        }
+        end_effector_status = EndEffectorStatus::INTAKE;
+        end_effector_voltage =
+            robot_constants_->common()->end_effector_voltages()->intake();
         break;
       case EndEffectorGoal::SPIT:
         end_effector_status = EndEffectorStatus::SPITTING;
@@ -107,7 +94,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           end_effector_voltage =
               robot_constants_->common()->end_effector_voltages()->spit();
         }
-        intake_complete_ = false;
 
         break;
     }
@@ -471,7 +457,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_wrist(wrist_status_offset);
   status_builder.add_pivot(pivot_status_offset);
   status_builder.add_end_effector_state(end_effector_status);
-  status_builder.add_intake_complete(intake_complete_);
   status_builder.add_ground_intake(intake_offset);
 
   (void)status->Send(status_builder.Finish());
