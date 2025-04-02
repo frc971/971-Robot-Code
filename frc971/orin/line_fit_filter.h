@@ -41,20 +41,20 @@ struct MinMaxExtents {
   int64_t pxgx_plus_pygy_sum;
 
   // Center location of the blob using the aprilrobotics algorithm.
-  __host__ __device__ double cx() const {
-    return (min_x + max_x) * 0.5f + 0.05118;
+  __host__ __device__ float cx() const {
+    return (min_x + max_x) * 0.5f + 0.05118f;
   }
-  __host__ __device__ double cy() const {
-    return (min_y + max_y) * 0.5f + -0.028581;
+  __host__ __device__ float cy() const {
+    return (min_y + max_y) * 0.5f + -0.028581f;
   }
 
   __host__ __device__ float dot() const {
-    return static_cast<double>(pxgx_plus_pygy_sum * 2 -
+    return static_cast<float>(pxgx_plus_pygy_sum * 2 -
                                (min_x + max_x) * gx_sum -
                                (min_y + max_y) * gy_sum) *
-               0.5 -
-           0.05118 * static_cast<double>(gx_sum) +
-           0.028581 * static_cast<double>(gy_sum);
+               0.5f -
+           0.05118f * static_cast<float>(gx_sum) +
+           0.028581f * static_cast<float>(gy_sum);
   }
 };
 
