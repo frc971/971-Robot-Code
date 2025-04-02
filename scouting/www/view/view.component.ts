@@ -6,10 +6,6 @@ import {
   RequestAveragedDriverRankings2025Response,
 } from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response_generated';
 import {
-  HumanRanking2025,
-  RequestAveragedHumanRankings2025Response,
-} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
-import {
   Stats2025,
   Request2025DataScoutingResponse,
 } from '@org_frc971/scouting/webserver/requests/messages/request_2025_data_scouting_response_generated';
@@ -28,7 +24,7 @@ import {
   ViewDataRequestor,
 } from '@org_frc971/scouting/www/rpc';
 
-type Source = 'Notes' | 'Stats2025' | 'DriverRanking' | 'HumanRanking';
+type Source = 'Notes' | 'Stats2025' | 'DriverRanking';
 
 //TODO(Filip): Deduplicate
 const COMP_LEVEL_LABELS = {
@@ -67,7 +63,6 @@ export class ViewComponent {
   // Stores the corresponding data.
   noteList: Note2025[] = [];
   driverRankingList: DriverRanking2025[] = [];
-  humanRankingList: HumanRanking2025[] = [];
   statList: Stats2025[] = [];
 
   // Fetch notes on initialization.
@@ -85,11 +80,6 @@ export class ViewComponent {
           .teamNumber()
           .localeCompare(a.teamNumber(), undefined, {numeric: true});
       });
-      this.humanRankingList.sort(function (a, b) {
-        return b
-          .teamNumber()
-          .localeCompare(a.teamNumber(), undefined, {numeric: true});
-      });
       this.noteList.sort(function (a, b) {
         return b
           .teamNumber()
@@ -99,11 +89,6 @@ export class ViewComponent {
       this.statList.sort((a, b) => b.matchNumber() - a.matchNumber());
     } else {
       this.driverRankingList.sort(function (a, b) {
-        return a
-          .teamNumber()
-          .localeCompare(b.teamNumber(), undefined, {numeric: true});
-      });
-      this.humanRankingList.sort(function (a, b) {
         return a
           .teamNumber()
           .localeCompare(b.teamNumber(), undefined, {numeric: true});
@@ -126,7 +111,6 @@ export class ViewComponent {
     this.errorMessage = '';
     this.noteList = [];
     this.driverRankingList = [];
-    this.humanRankingList = [];
     this.statList = [];
     this.fetchCurrentSource();
   }
@@ -144,10 +128,6 @@ export class ViewComponent {
 
       case 'DriverRanking': {
         this.fetchDriverRanking2025();
-      }
-
-      case 'HumanRanking': {
-        this.fetchHumanRanking2025();
       }
     }
   }
@@ -296,20 +276,6 @@ export class ViewComponent {
       this.driverRankingList =
         await this.viewDataRequestor.fetchDriverRanking2025List(this.compCode);
       this.progressMessage = 'Successfully fetched driver ranking data.';
-    } catch (e) {
-      this.errorMessage = e;
-      this.progressMessage = '';
-    }
-  }
-
-  async fetchHumanRanking2025() {
-    this.progressMessage = 'Fetching human ranking data. Please be patient.';
-    this.errorMessage = '';
-
-    try {
-      this.humanRankingList =
-        await this.viewDataRequestor.fetchHumanRanking2025List(this.compCode);
-      this.progressMessage = 'Successfully fetched human ranking data.';
     } catch (e) {
       this.errorMessage = e;
       this.progressMessage = '';

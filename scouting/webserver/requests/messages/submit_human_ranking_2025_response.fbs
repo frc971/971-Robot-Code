@@ -1,8 +1,0 @@
-namespace scouting.webserver.requests;
-
-table SubmitHumanRanking2025Response {
-    // empty response
-}
-
-root_type SubmitHumanRanking2025Response;
-

@@ -1,7 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {SubmitDriverRanking2025} from '@org_frc971/scouting/webserver/requests/messages/submit_driver_ranking_2025_generated';
-import {SubmitHumanRanking2025} from '@org_frc971/scouting/webserver/requests/messages/submit_human_ranking_2025_generated';
 import {ErrorResponse} from '@org_frc971/scouting/webserver/requests/messages/error_response_generated';
 
 // TeamSelection: Display form to input which
@@ -19,10 +18,8 @@ export class DriverRankingComponent {
   section: Section = 'TeamSelection';
 
   // Stores the team keys and rank (order of the array).
-  team_ranking: string[] = ['971', '972', '973'];
-  human_player_team: string = '971';
-  human_player_ranking: number = 1;
-  rankings: number[] = [1, 1, 1];
+  team_ranking: string[] = ['971', '972', '973', '974', '975', '976'];
+  rankings: number[] = [1, 1, 1, 1, 1, 1];
 
   match_number: number = 1;
   comp_code: string = '2016nytr';
@@ -37,37 +34,8 @@ export class DriverRankingComponent {
     this.section = 'TeamSelection';
   }
 
-  async submitHumanRankingData() {
-    const builder = new Builder();
-
-    builder.finish(
-      SubmitHumanRanking2025.createSubmitHumanRanking2025(
-        builder,
-        builder.createString(this.comp_code),
-        this.match_number,
-        builder.createString(this.human_player_team),
-        this.human_player_ranking
-      )
-    );
-    const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/submit/submit_human_ranking_2025', {
-      method: 'POST',
-      body: buffer,
-    });
-
-    if (!res.ok) {
-      const resBuffer = await res.arrayBuffer();
-      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
-
-      const errorMessage = parsedResponse.errorMessage();
-      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
-      return;
-    }
-  }
-
   async submitDriverRankingData() {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
       const builder = new Builder();
 
       builder.finish(
@@ -99,7 +67,6 @@ export class DriverRankingComponent {
   }
   async submitData() {
     await this.submitDriverRankingData();
-    await this.submitHumanRankingData();
 
     if (this.errorMessage == '') {
       // Increment the match number.
@@ -107,10 +74,8 @@ export class DriverRankingComponent {
 
       // Reset Data.
       this.section = 'TeamSelection';
-      this.team_ranking = ['971', '972', '973'];
-      this.human_player_ranking = 1;
-      this.rankings = [1, 1, 1];
-      this.human_player_team = '971';
+      this.team_ranking = ['971', '972', '973', '974', '975', '976'];
+      this.rankings = [1, 1, 1, 1, 1, 1];
       this.comp_code = '0';
       this.errorMessage = '';
     }

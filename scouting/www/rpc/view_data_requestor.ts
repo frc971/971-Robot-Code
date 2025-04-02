@@ -11,11 +11,6 @@ import {
   DriverRanking2025,
   RequestAveragedDriverRankings2025Response,
 } from '@org_frc971/scouting/webserver/requests/messages/request_averaged_driver_rankings_2025_response_generated';
-import {RequestAveragedHumanRankings2025} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_generated';
-import {
-  HumanRanking2025,
-  RequestAveragedHumanRankings2025Response,
-} from '@org_frc971/scouting/webserver/requests/messages/request_averaged_human_rankings_2025_response_generated';
 import {Request2025DataScouting} from '@org_frc971/scouting/webserver/requests/messages/request_2025_data_scouting_generated';
 import {
   Stats2025,
@@ -122,46 +117,6 @@ export class ViewDataRequestor {
       driverRankingList.push(parsedResponse.rankings2025List(i));
     }
     return driverRankingList;
-  }
-
-  // Returns human ranking entries from the database.
-  async fetchHumanRanking2025List(
-    comp_code: string
-  ): Promise<HumanRanking2025[]> {
-    const builder = new Builder();
-
-    builder.finish(
-      RequestAveragedHumanRankings2025.createRequestAveragedHumanRankings2025(
-        builder,
-        builder.createString(comp_code)
-      )
-    );
-
-    const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/request/averaged_human_rankings_2025', {
-      method: 'POST',
-      body: buffer,
-    });
-
-    const resBuffer = await res.arrayBuffer();
-    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-
-    if (!res.ok) {
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
-      const errorMessage = parsedResponse.errorMessage();
-      throw `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
-    }
-
-    const parsedResponse =
-      RequestAveragedHumanRankings2025Response.getRootAsRequestAveragedHumanRankings2025Response(
-        fbBuffer
-      );
-    // Convert the flatbuffer list into an array. That's more useful.
-    const humanRankingList = [];
-    for (let i = 0; i < parsedResponse.rankings2025ListLength(); i++) {
-      humanRankingList.push(parsedResponse.rankings2025List(i));
-    }
-    return humanRankingList;
   }
 
   // Returns all data scouting entries from the database.
