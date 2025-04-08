@@ -18,7 +18,7 @@ export class DriverRankingComponent {
   section: Section = 'TeamSelection';
 
   // Stores the team keys and rank (order of the array).
-  team_ranking: string[] = ['971', '972', '973', '974', '975', '976'];
+  team_ranking: string[] = ['1', '2', '3', '4', '5', '6'];
   rankings: number[] = [1, 1, 1, 1, 1, 1];
 
   match_number: number = 1;
@@ -74,9 +74,8 @@ export class DriverRankingComponent {
 
       // Reset Data.
       this.section = 'TeamSelection';
-      this.team_ranking = ['971', '972', '973', '974', '975', '976'];
+      this.team_ranking = ['1', '2', '3', '4', '5', '6'];
       this.rankings = [1, 1, 1, 1, 1, 1];
-      this.comp_code = '0';
       this.errorMessage = '';
     }
   }

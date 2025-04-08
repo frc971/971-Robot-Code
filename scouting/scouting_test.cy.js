@@ -80,7 +80,7 @@ function submitDataScouting(
   cy.get('button.match-item').eq(matchButtonKey).click();
 
   // Select Starting Position.
-  headerShouldBe(teamNumber + ' Init ');
+  headerShouldBe('2016nytr Team ' + teamNumber + ' Init ');
   cy.get('[type="radio"]').first().check();
   clickButton('Start Match');
 
@@ -108,7 +108,7 @@ function submitDataScouting(
   clickButton('UNDO');
   clickButton('End Match');
 
-  headerShouldBe(teamNumber + ' Review and Submit ');
+  headerShouldBe('2016nytr Team ' + teamNumber + ' Review and Submit ');
 
   cy.get('#review_data li')
     .eq(0)
@@ -121,7 +121,7 @@ function submitDataScouting(
   cy.get('#review_data li:contains("Penalties")').its('length').should('eq', 1);
 
   clickButton('Submit');
-  headerShouldBe(teamNumber + ' End ');
+  headerShouldBe('2016nytr Team ' + teamNumber + ' End ');
 }
 function visit(path) {
   cy.visit(path, {
@@ -190,7 +190,7 @@ describe('Scouting app tests', () => {
     // We should now be able to continue scouting.
     cy.get('#pre_scouting').click();
     clickButton('Next');
-    headerShouldBe('1 Init ');
+    headerShouldBe('2016nytr Team 1 Init ');
   });
 
   it('should: allow users to scout practice matches.', () => {
@@ -205,7 +205,7 @@ describe('Scouting app tests', () => {
     // We should now be able to continue scouting.
     cy.get('#practice_match').click();
     clickButton('Next');
-    headerShouldBe('1 Init ');
+    headerShouldBe('2016nytr Team 1 Init ');
   });
 
   it('should: let users enter match information manually.', () => {
@@ -219,7 +219,7 @@ describe('Scouting app tests', () => {
 
     clickButton('Next');
 
-    headerShouldBe('5254 Init ');
+    headerShouldBe('2016nytr Team 5254 Init ');
   });
 
   //TODO(FILIP): Verify last action when the last action header gets added.
@@ -271,14 +271,14 @@ describe('Scouting app tests', () => {
     clickButton('UNDO');
 
     // User should be back on pickup screen.
-    headerShouldBe('3990 Pickup ');
+    headerShouldBe('2016nytr Team 3990 Pickup ');
 
     // Check the same thing but for undoing place.
     clickButton('PICKUP ALGAE');
     clickButton('SCORE ALGAE');
     clickButton('Net');
     clickButton('UNDO');
-    headerShouldBe('3990 Place Algae ');
+    headerShouldBe('2016nytr Team 3990 Place Algae ');
   });
 
   it('should: submit note scouting for multiple teams', () => {

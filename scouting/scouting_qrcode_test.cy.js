@@ -53,7 +53,7 @@ function prepareDataScouting(options) {
   cy.get('button.match-item').eq(matchButtonKey).click();
 
   // Select Starting Position.
-  headerShouldBe(teamNumber + ' Init ');
+  headerShouldBe('2016nytr Team ' + teamNumber + ' Init ');
   cy.get('[type="radio"]').first().check();
   clickButton('Start Match');
 
@@ -85,7 +85,7 @@ function prepareDataScouting(options) {
   cy.contains(/Shallow Cage/).click();
 
   clickButton('End Match');
-  headerShouldBe(teamNumber + ' Review and Submit ');
+  headerShouldBe('2016nytr Team ' + teamNumber + ' Review and Submit ');
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
@@ -118,7 +118,7 @@ describe('Scouting app tests', () => {
       teamNumber: 333,
     });
     clickButton('Create QR Code');
-    headerShouldBe('333 QR Code ');
+    headerShouldBe('2016nytr Team 333 QR Code ');
 
     cy.get('#qr_code_piece_size').select('150');
 
