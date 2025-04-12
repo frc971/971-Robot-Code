@@ -161,7 +161,7 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true}); this.dead=true;"
       >
         DEAD
       </button>
@@ -407,7 +407,7 @@
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
-        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true});"
+        (click)="changeSectionTo('Dead'); actionHelper.addRobotDeathAction({robotDead: true}); this.dead = true;"
       >
         DEAD
       </button>
@@ -461,6 +461,10 @@
         </label>
       </div>
       <div style="display: flex">
+        <label class="form-check-label">Defense</label>
+        <input [(ngModel)]="defense" class="form-check-input" type="checkbox" />
+      </div>
+      <div style="display: flex">
         <h5>Penalties :</h5>
         <button
           class="btn-light"
@@ -481,7 +485,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-primary"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({cageType: endGameAction});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addDefense(); actionHelper.addEndMatchAction({cageType: endGameAction});"
       >
         End Match
       </button>
@@ -490,7 +494,16 @@
   <div *ngSwitchCase="'Dead'" id="Dead" class="container-fluid">
     <h2>Robot is dead</h2>
     <div class="d-grid gap-3">
-      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-secondary"
+        (click)="undoLastAction(); this.dead=false;"
+      >
+        UNDO
+      </button>
+      <div style="display: flex">
+        <label class="form-check-label">Defense</label>
+        <input [(ngModel)]="defense" class="form-check-input" type="checkbox" />
+      </div>
       <div style="display: flex">
         <h5>Penalties :</h5>
         <button
@@ -517,7 +530,7 @@
       </button>
       <button
         class="btn btn-primary"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); actionHelper.addEndMatchAction({cageType: endGameAction});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addDefense(); actionHelper.addEndMatchAction({cageType: endGameAction});"
       >
         End Match
       </button>
@@ -570,6 +583,9 @@
               <span *ngSwitchCase="ActionType.PenaltyAction">
                 Penalties: {{(action.actionTaken | cast:
                 PenaltyActionT).penalties}}
+              </span>
+              <span *ngSwitchCase="ActionType.DefenseAction">
+                Defense: {{(action.actionTaken | cast: DefenseActionT).defense}}
               </span>
               <span *ngSwitchDefault>{{action.actionTakenType}}</span>
             </div>

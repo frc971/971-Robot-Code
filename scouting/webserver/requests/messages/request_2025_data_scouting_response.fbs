@@ -42,6 +42,7 @@ table Stats2025 {
   buddie_climb: bool (id:18);
   robot_died: bool (id:22);
   no_show: bool (id:25);
+  defense:bool (id:37);
 
   collected_by:string (id:21);
   comp_type:string (id:24);

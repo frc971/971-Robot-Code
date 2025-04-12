@@ -22,6 +22,8 @@ import {
   MobilityActionT,
   PenaltyAction,
   PenaltyActionT,
+  DefenseAction,
+  DefenseActionT,
   PickupCoralAction,
   ScoreCoralAction,
   PickupCoralActionT,
@@ -119,6 +121,7 @@ export class EntryComponent implements OnInit {
   readonly PlaceAlgaeActionT = PlaceAlgaeActionT;
   readonly RobotDeathActionT = RobotDeathActionT;
   readonly PenaltyActionT = PenaltyActionT;
+  readonly DefenseActionT = DefenseActionT;
   readonly EndMatchActionT = EndMatchActionT;
 
   section: Section = 'Team Selection';
@@ -144,6 +147,8 @@ export class EntryComponent implements OnInit {
   mobilityCompleted: boolean = false;
   hasPickedUpCoral: boolean = false;
   hasPickedUpAlgae: boolean = false;
+  defense: boolean = false;
+  dead: boolean = false;
 
   // TODO(phil): Come up with a better name here.
   selectedValue = 0;
@@ -293,6 +298,10 @@ export class EntryComponent implements OnInit {
     return false;
   }
 
+  async sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   addPenalty(): void {
     this.penalties += 1;
   }
@@ -303,8 +312,14 @@ export class EntryComponent implements OnInit {
     }
   }
 
-  addPenalties(): void {
+  async addPenalties(): Promise<void> {
+    await this.sleep(2);
     this.actionHelper.addPenaltyAction({penalties: this.penalties});
+  }
+
+  async addDefense(): Promise<void> {
+    await this.sleep(4);
+    this.actionHelper.addDefenseAction({defense: this.defense});
   }
 
   addAction(actionType: ActionType, action: ConcreteAction): void {
@@ -334,6 +349,7 @@ export class EntryComponent implements OnInit {
   undoLastAction() {
     if (this.actionList.length > 0) {
       let lastAction = this.actionList.pop();
+
       switch (lastAction?.actionTakenType) {
         case ActionType.EndAutoPhaseAction:
           this.autoPhase = true;
@@ -378,8 +394,16 @@ export class EntryComponent implements OnInit {
           }
           break;
         case ActionType.EndMatchAction:
-          this.section = 'Endgame';
-          // Also delete the penalty action.
+          if (!this.dead) {
+            this.section = 'Endgame';
+          } else {
+            this.section = 'Dead';
+          }
+          break;
+        case ActionType.PenaltyAction:
+          this.undoLastAction();
+          break;
+        case ActionType.DefenseAction:
           this.undoLastAction();
           break;
         case ActionType.MobilityAction:
@@ -576,6 +600,7 @@ export class EntryComponent implements OnInit {
       this.autoPhase = true;
       this.actionList = [];
       this.mobilityCompleted = false;
+      this.defense = false;
       this.hasPickedUpAlgae = false;
       this.hasPickedUpCoral = false;
       this.compType = 'Regular';

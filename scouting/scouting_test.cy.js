@@ -114,9 +114,7 @@ function submitDataScouting(
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
   cy.get('#review_data li').eq(1).should('have.text', ' Coral placed at kL2 ');
-  cy.get('#review_data li')
-    .last()
-    .should('have.text', ' Ended Match; cageType: kDEEP_CAGE ');
+  cy.get('#review_data li').last().should('have.text', ' Defense: false ');
   // Ensure that the penalties action is only submitted once.
   cy.get('#review_data li:contains("Penalties")').its('length').should('eq', 1);
 

@@ -46,6 +46,7 @@ type Stats2025 struct {
 	RobotDied                                bool
 	Park, ShallowCage, DeepCage, BuddieClimb bool
 	NoShow                                   bool
+	Defense                                  bool
 	CollectedBy                              string
 }
 

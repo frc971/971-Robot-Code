@@ -532,7 +532,7 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 		L1Auto: 0, L2Auto: 0, L3Auto: 0, L4Auto: 0,
 		ProcessorTeleop: 0, NetTeleop: 0, CoralDroppedTeleop: 0, AlgaeDroppedTeleop: 0, CoralMissedTeleop: 0, AlgaeMissedTeleop: 0,
 		L1Teleop: 0, L2Teleop: 0, L3Teleop: 0, L4Teleop: 0,
-		Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, CollectedBy: "",
+		Penalties: 0, ShallowCage: false, DeepCage: false, AvgCycle: 0, Park: false, BuddieClimb: false, RobotDied: false, NoShow: false, Defense: false, CollectedBy: "",
 	}
 	overallTime := int64(135000)
 	// Loop over all actions.
@@ -561,6 +561,10 @@ func ConvertActionsToStat2025(submit2025Actions *submit_2025_actions.Submit2025A
 			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
 			stat.Penalties += penaltyAction.Penalties()
 
+		} else if action_type == submit_2025_actions.ActionTypeDefenseAction {
+			var defenseAction submit_2025_actions.DefenseAction
+			defenseAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.Defense = defenseAction.Defense()
 		} else if action_type == submit_2025_actions.ActionTypeRobotDeathAction {
 			var robotDeathAction submit_2025_actions.RobotDeathAction
 			robotDeathAction.Init(actionTable.Bytes, actionTable.Pos)
@@ -733,6 +737,7 @@ func (handler request2025DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			BuddieClimb:        stat.BuddieClimb,
 			RobotDied:          stat.RobotDied,
 			NoShow:             stat.NoShow,
+			Defense:            stat.Defense,
 			CollectedBy:        stat.CollectedBy,
 			CompType:           stat.CompType,
 		})

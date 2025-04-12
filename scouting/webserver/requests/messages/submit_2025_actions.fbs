@@ -27,6 +27,10 @@ table PenaltyAction {
     penalties: int (id:0);
 }
 
+table DefenseAction {
+    defense:bool (id:0);
+}
+
 table PickupCoralAction {
     auto:bool (id:0);
 }
@@ -85,6 +89,7 @@ union ActionType {
     ScoreAlgaeAction,
     PlaceAlgaeAction,
     PenaltyAction,
+    DefenseAction,
     RobotDeathAction,
     EndTeleopPhaseAction,
     EndMatchAction

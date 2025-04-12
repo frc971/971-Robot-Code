@@ -36,6 +36,7 @@ jinja2_template(
             "ScoreAlgaeAction",
             "RobotDeathAction",
             "StartMatchAction",
+            "DefenseAction",
             "EndAutoPhaseAction",
             "EndTeleopPhaseAction",
         ],
