@@ -322,6 +322,13 @@ export class EntryComponent implements OnInit {
     this.actionHelper.addDefenseAction({defense: this.defense});
   }
 
+  async endMatchSequence(): Promise<void> {
+    this.actionHelper.addEndMatchAction({cageType: this.endGameAction});
+    await this.addPenalties();
+    await this.addDefense();
+    this.changeSectionTo('Review and Submit');
+  }
+
   addAction(actionType: ActionType, action: ConcreteAction): void {
     let timestamp: number = 0;
 
